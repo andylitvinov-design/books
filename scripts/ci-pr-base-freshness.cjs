@@ -59,6 +59,39 @@ function verifiedIndependentPublicRasterAdvance(compare,testedBase,liveBase,cand
  });
 }
 
+
+// Reconstruct the same package evidence as the protected Specialist, only
+// when the exact source HEAD contains the immutable tested BASE. A live PR
+// file list or the current production manifest is never a substitute.
+async function readPinnedPackageEvidence({github,owner,repo,pr,testedBase,paths}){
+ const names=paths.filter(p=>/(?:^|\/)(?:package(?:-lock)?\.json|npm-shrinkwrap\.json|pnpm-lock\.yaml|yarn\.lock|bun\.lockb?)$/.test(p));
+ if(!names.length)return undefined;
+ if(names.length!==2||!names.includes('package.json')||!names.includes('package-lock.json')||
+    !SHA.test(pr.head?.sha||'')||!SHA.test(testedBase||''))return undefined;
+ try{
+  const relation=(await github.rest.repos.compareCommits({owner,repo,base:testedBase,head:pr.head.sha,per_page:100})).data;
+  if(relation?.status!=='ahead'||relation.behind_by!==0||
+     relation.base_commit?.sha!==testedBase||relation.merge_base_commit?.sha!==testedBase)return undefined;
+  const read=async (path,ref)=>{
+   const file=(await github.rest.repos.getContent({owner,repo,path,ref})).data;
+   if(file?.type!=='file'||file.path!==path||!SHA.test(file.sha||'')||
+      !Number.isSafeInteger(file.size)||file.size<1||file.size>2_000_000)return null;
+   const blob=file.encoding==='base64'&&file.content?file:
+     (await github.rest.git.getBlob({owner,repo,file_sha:file.sha})).data;
+   if(blob?.sha!==file.sha||blob.encoding!=='base64'||typeof blob.content!=='string'||
+      blob.content.length>3_000_000)return null;
+   const bytes=Buffer.from(blob.content,'base64');
+   if(bytes.length!==file.size)return null;
+   return bytes.toString('utf8');
+  };
+  const [basePackage,currentPackage,baseLock,currentLock]=await Promise.all([
+   read('package.json',testedBase),read('package.json',pr.head.sha),
+   read('package-lock.json',testedBase),read('package-lock.json',pr.head.sha)]);
+  return [basePackage,currentPackage,baseLock,currentLock].every(x=>typeof x==='string')?
+   {basePackage,currentPackage,baseLock,currentLock}:undefined;
+ }catch{return undefined;}
+}
+
 async function assessBaseFreshness({github,owner,repo,pr,verifiedRunBase,classifierBase,decideRoute,baseAdvancePolicy}){
  const fail=reason=>({ok:false,reason});
  if(!Number.isSafeInteger(pr?.number)||pr.number<1||!SHA.test(pr.base?.sha||'')||
@@ -114,10 +147,12 @@ async function assessBaseFreshness({github,owner,repo,pr,verifiedRunBase,classif
     if(baseAdvancePolicy && required.some(name=>
         typeof baseAdvancePolicy[name]!=='function'))
       return fail('TRUSTED_BASE_ADVANCE_POLICY_INCOMPLETE');
-    const approved=name=>{
+    const packageEvidence=pr.mergeable===true && typeof baseAdvancePolicy?.safeNonOverlappingProductAdvance==='function' ?
+      await readPinnedPackageEvidence({github,owner,repo,pr,testedBase:verifiedRunBase,paths}):undefined;
+    const approved=(name,...extra)=>{
       if(!baseAdvancePolicy)return false; // legacy direct callers are narrow
       try{
-        return baseAdvancePolicy[name](comparison,verifiedRunBase,actual,paths)===true;
+        return baseAdvancePolicy[name](comparison,verifiedRunBase,actual,paths,...extra)===true;
       }catch{return false;}
     };
     const detachedCi=rows.every(row=>ISOLATED_CI_ONLY.has(row.filename))&&
@@ -167,11 +202,14 @@ async function assessBaseFreshness({github,owner,repo,pr,verifiedRunBase,classif
     // Mirror the exact current protected Specialist's ordinary-product loose-base rule.
     // No fallback to PR-authored or default-branch-defined acceptance policy.
     const nonOverlappingProduct=pr.mergeable===true&&
-      approved('safeNonOverlappingProductAdvance');
+      approved('safeNonOverlappingProductAdvance',packageEvidence);
+    const additionalProtectedProof=pr.mergeable===true&&(
+      approved('safeDetachedCiSourceAdvance')||approved('safeUnrelatedPublicLeafAdvance')||
+      approved('safeIsolatedFeatureAdvance',true));
     if(!detachedCi&&!independentRaster&&!documentationOnly&&!independentMaintenance&&
        !independentPresentation&&!disjointPublicSource&&!trustedPolicyAdvance&&
        !independentQaAdvance&&!independentDomainTest&&!composedIndependent&&
-       !scopedIndependent&&!mixedIndependent&&!nonOverlappingProduct)
+       !scopedIndependent&&!mixedIndependent&&!nonOverlappingProduct&&!additionalProtectedProof)
       return fail('SENSITIVE_COMPARE_UNSAFE');
     revalidatedReason=detachedCi?'ISOLATED_CI_PUBLIC_MEDIA_REVALIDATED':
       independentRaster?'INDEPENDENT_PUBLIC_RASTER_REVALIDATED':
@@ -296,7 +334,10 @@ async function loadTrustedClassifier(workspace){
  // final native protected-ref pin for both event and hourly coordinators.
  if(typeof impact.safeNonOverlappingProductAdvance==='function')
    names.push('safeNonOverlappingProductAdvance');
+ for(const name of ['safeDetachedCiSourceAdvance','safeUnrelatedPublicLeafAdvance','safeIsolatedFeatureAdvance']){
+  if(typeof impact[name]==='function')names.push(name);
+ }
  const baseAdvancePolicy=Object.fromEntries(names.map(name=>[name,impact[name]]));
  return {classifierBase,decideRoute:mod.decideRoute,baseAdvancePolicy};
 }
-module.exports={assessBaseFreshness,coreRunBase,coreRunBaseForCheck,loadTrustedClassifier,verifiedDetachedCiMediaAdvance,verifiedIndependentPublicRasterAdvance};
+module.exports={readPinnedPackageEvidence,assessBaseFreshness,coreRunBase,coreRunBaseForCheck,loadTrustedClassifier,verifiedDetachedCiMediaAdvance,verifiedIndependentPublicRasterAdvance};

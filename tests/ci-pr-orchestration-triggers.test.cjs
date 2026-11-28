@@ -370,7 +370,11 @@ test('interrupted Core recovery never resubmits intentional cancellation or a st
   assert.ok(recover.includes('!runs.some(r=>r.id===event.id)'));
   assert.ok(!recover.includes('new Set(["cancelled"'), 'superseded HEAD cancellations cannot be retried');
   assert.ok(recover.includes('parents[1]?.sha !== live.head.sha'));
-  assert.ok(recover.includes('parents[0]?.sha !== live.base.sha'));
+  assert.ok(recover.includes('testedBase=parents[0].sha'));
+  assert.ok(recover.includes('verifiedRunBase:testedBase'));
+  assert.ok(recover.includes('!await retryBaseAllowed(latestPr)'));
+  assert.ok(recover.includes('delta.merge_base_commit?.sha!==testedBase'));
+  assert.ok(!recover.includes('latestPr.base.sha !== live.base.sha'));
 });
 
 test('successful Core CI refills capacity through the unified event runner without waiting for Watchdog',()=>{
