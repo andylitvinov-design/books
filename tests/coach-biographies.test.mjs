@@ -37,3 +37,108 @@ test('editorial personality memory is isolated, immutable, versioned and wired f
  assert.equal(getCoachPersonalityMemory('mira',0),null);
  assert.equal(getCoachPersonalityMemory('mira','1'),null);
 });
+
+
+import {getCoachPersonalityMemoryHistory,validateCoachMemoryAppend} from '../lib/coaching/coach-personality-memory.mjs';
+// Regression fingerprints for published editorial revisions; not a cryptographic approval/security boundary.
+// Append a new pin for a new revision, never replace old pins to accommodate a changed story.
+const memoryPins={
+  "mira": [
+    "a97380617e68f7c9",
+    "48f23a4c1229a91c"
+  ],
+  "max": [
+    "fc9c37612d65783b",
+    "abaaaea260121c4c"
+  ],
+  "sofia": [
+    "321e08c22c435383",
+    "0ec06b7893fe7409"
+  ],
+  "alex": [
+    "32062ffdd6d5722a",
+    "66916a143014f16d"
+  ],
+  "merlin": [
+    "0d00084ae455f737",
+    "43e7a7f5cbb0b2d3"
+  ],
+  "harry": [
+    "2a3abf9650d207f3",
+    "aadd5cc1a3e9294f"
+  ],
+  "genie": [
+    "99265dbff0afc988",
+    "b88e5a1d008115d8"
+  ],
+  "caesar": [
+    "ac805d33a3e558f5",
+    "4bcd15b1f6ccc711"
+  ],
+  "lea": [
+    "8eed2fe11efde8dc",
+    "cd75af9b500670b1"
+  ],
+  "noah": [
+    "b50584282524a40c",
+    "b2cd03467cc1c036"
+  ],
+  "iris": [
+    "519d0e3b980c4064",
+    "b3746b26ce01e6c4"
+  ],
+  "ray": [
+    "2e7679a0df7d3220",
+    "ceadddb0db11695c"
+  ]
+};
+const biographyPins={
+  "mira": "5c811c7354227cf3",
+  "max": "692c23eaa11674be",
+  "sofia": "f133b3476b86394d",
+  "alex": "36be5d0edb4c059d",
+  "merlin": "4d4e5d58e91da8e8",
+  "harry": "848b33fa803c7b83",
+  "genie": "e91e89653ec77417",
+  "caesar": "323118617354764b",
+  "lea": "7861d5b80a08c320",
+  "noah": "e0bb7057d4bca293",
+  "iris": "07b73086c1af72d1",
+  "ray": "1cb867e0550b3df9"
+};
+function editorialFingerprint(value){
+ let h=14695981039346656037n;const s=JSON.stringify(value);
+ for(let i=0;i<s.length;i++)h=BigInt.asUintN(64,(h^BigInt(s.charCodeAt(i)))*1099511628211n);
+ return h.toString(16).padStart(16,'0');
+}
+const fingerprintRelease=r=>editorialFingerprint([r.revision,r.previous,r.entries.map(e=>[e.id,e.kind,e.anchor,e.topic,e.text])]);
+test('published canon and editorial revisions remain intact when memory evolves',()=>{
+ for(const id of COACH_LEGEND_IDS){
+  const history=getCoachPersonalityMemoryHistory(id),b=getCoachBiography(id);
+  assert.equal(editorialFingerprint([b.title,b.origin,b.people,b.flaw,b.events,b.success,b.attitude,b.limits,b.motif]),biographyPins[id],id+' base canon');
+  assert.ok(Object.isFrozen(history)&&Object.isFrozen(history[0])&&Object.isFrozen(history[0].entries));
+  assert.ok(history.length>=2);
+  assert.deepEqual(history.slice(0,memoryPins[id].length).map(fingerprintRelease),memoryPins[id],id+' prior revision');
+  assert.equal(validateCoachMemoryAppend(id,history.slice(0,1),history.slice(0,2)),true);
+  assert.equal(getCoachPersonalityMemory(id,1).entries.length,3);
+  const second=getCoachPersonalityMemory(id,2);
+  assert.equal(second.entries.length,5);
+  assert.equal(second.entries.filter(e=>e.kind==='judgment').length,2);
+  assert.equal(second.entries.filter(e=>e.kind==='reaction').length,2);
+  const next=[...history,{revision:history.length+1,previous:history.length,entries:[{...history[0].entries[1],id:'judgment-future-test',topic:'Synthetic future editorial topic',text:'A synthetic test opinion; never a published record.'}]}];
+  assert.equal(validateCoachMemoryAppend(id,history,next),true);
+  const rewritten=structuredClone(next);rewritten[0].entries[0].text+=' Changed.';
+  assert.equal(validateCoachMemoryReleases(id,rewritten),true);
+  assert.equal(validateCoachMemoryAppend(id,history,rewritten),false);
+  const removed=structuredClone(next);removed[0].entries.pop();
+  assert.equal(validateCoachMemoryAppend(id,history,removed),false);
+  const reordered=structuredClone(next);reordered[0].entries.reverse();
+  assert.equal(validateCoachMemoryAppend(id,history,reordered),false);
+  assert.equal(validateCoachMemoryAppend(id,history,history),false);
+  for(const lang of ['ru','en','es']){
+   const policy=buildCoachBehaviorPolicy(id,{},lang).systemInstructions;
+   for(const e of second.entries)assert.ok(policy.includes(e.text),id+' '+lang+' '+e.id);
+  }
+ }
+ assert.equal(getCoachPersonalityMemoryHistory('constructor'),null);
+});
