@@ -775,3 +775,56 @@ test('V3 readiness fast path is bound to authenticated exact run, merge parents,
  assert.equal((await assess({github:moving,owner,repo,pr:p,classifierBase:target,decideRoute:()=> 'FULL',
   readReadyReceipt:async()=>x})).reason,'BASE_MOVED_DURING_CHECK');
 });
+
+
+test('hourly inventory uses protected V3, caches exact receipt only while the live run attempt and target match',async()=>{
+ const {createSweepReadyReader}=require('../scripts/ci-pr-sweep-ready-receipt.cjs');
+ const owner='andylitvinov-design',repo='books',full=owner+'/'+repo;
+ const source='c'.repeat(40),merge='d'.repeat(40),target='e'.repeat(40);
+ const p={number:42,state:'open',draft:false,mergeable:true,mergeable_state:'clean',
+   base:{ref:'codex/public-book-library',sha:target},head:{sha:source,ref:'feature',repo:{full_name:full}}};
+ const check={id:99,name:'hh-merge-check',app:{id:15368,slug:'github-actions'},
+   head_sha:source,status:'completed',conclusion:'success',check_suite:{id:55},
+   details_url:'https://github.com/'+full+'/actions/runs/11/job/22'};
+ const run={id:11,check_suite_id:55,run_attempt:2,event:'pull_request',status:'completed',conclusion:'success',
+   name:'HH PR core release gate',path:'.github/workflows/hh-pr-core-release.yml',
+   head_sha:source,head_branch:'feature',repository:{full_name:full},head_repository:{full_name:full},pull_requests:[]};
+ const jobs=[{id:21,run_id:11,run_attempt:2,name:'core-lint-types-build',status:'completed',conclusion:'success'},
+   {id:22,run_id:11,run_attempt:2,name:'hh-merge-check',status:'completed',conclusion:'success',
+    check_run_url:'https://api.github.com/repos/'+full+'/check-runs/99'},
+   {id:23,run_id:11,name:'hh-eslint-repair',status:'completed',conclusion:'skipped'}];
+ const proof={schema:'HH_MERGE_READY_V3',repo:full,pr:42,head:source,tested_merge:merge,
+    accepted_base:target,policy_base:target,run_id:11,run_attempt:2};
+ let live={...run},reads=0,pages=0,verifications=0,badPage=false;
+ const github={rest:{actions:{getWorkflowRun:async()=>{reads++;return {data:live};}}},
+  request:async(_url,params)=>{pages++;assert.equal(params.attempt_number,live.run_attempt);
+    return {data:{total_count:badPage?4:jobs.length,jobs}};}};
+ const read=createSweepReadyReader({github,owner,repo,verify:async args=>{
+  verifications++;assert.equal(args.jobs.length,2);return proof;
+ }});
+ assert.deepEqual(await read({pr:p,check,target}),proof);
+ assert.deepEqual(await read({pr:p,check,target}),proof);
+ assert.equal(pages,1);assert.equal(verifications,1);assert.equal(reads,3);
+ assert.equal(await read({pr:p,check,target:source}),null);
+ assert.equal(await read({pr:p,check:{...check,head_sha:target},target}),null);
+ assert.equal(await read({pr:p,check:{...check,details_url:'https://example.com/'+full+'/actions/runs/11/job/22'},target}),null);
+ live={...run,conclusion:'failure'};assert.equal(await read({pr:p,check,target}),null);
+ live={...run,run_attempt:3};assert.equal(await read({pr:p,check,target}),null);
+ live={...run};badPage=true;
+ const fresh=createSweepReadyReader({github,owner,repo,verify:async()=>proof});
+ assert.equal(await fresh({pr:p,check,target}),null);
+ badPage=false;let calls=0;
+ const moving={...github,rest:{actions:{getWorkflowRun:async()=>({data:++calls===1?run:{...run,run_attempt:3}})}}};
+ assert.equal(await createSweepReadyReader({github:moving,owner,repo,verify:async()=>proof})({pr:p,check,target}),null);
+ jobs[1].check_run_url='https://api.github.com/repos/'+full+'/check-runs/100';
+ assert.equal(await fresh({pr:p,check,target}),null);
+});
+test('both hourly inventory passes use the same V3 reader with the strict fallback intact',()=>{
+ const src=require('node:fs').readFileSync('.github/workflows/hh-pr-full-inventory.yml','utf8');
+ assert.equal((src.match(/createSweepReadyReader\(\{/g)||[]).length,1);
+ assert.ok(src.includes('readReadyReceipt:unifiedRequired?target=>readSweepReady'));
+ assert.ok(src.includes('verifiedRunBase:rows=>baseEvidence.coreRunBaseForCheck'));
+ assert.ok(src.includes('await assessCurrentBase(live,checks)'));
+ assert.ok(src.includes('await assessCurrentBase(live,freshChecks)'));
+ assert.ok(src.includes('await mergeSafety.auditNativeMerge'));
+});
