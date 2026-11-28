@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { verify, requiresCurrentProductionBase, classifyPrState, diagnoseAggregateError, awaitPositiveMergeability, verifiedPriorSpecialistEvidence, reusePriorSpecialistState } from '../scripts/ci-specialist-aggregate.mjs';
-import { verifyStableProtectedBase, observeProtectedBaseDrift } from '../scripts/ci-specialist-aggregate.mjs';
+import { verifyStableProtectedBase, observeProtectedBaseDrift, independentPackageOnlyAdvisories } from '../scripts/ci-specialist-aggregate.mjs';
 import { inspectJobs, trustedRequiredJobs, inspectWorkflowRuns } from '../lib/ci/specialist-aggregate.mjs';
 import { safeComposedIndependentAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeIndependentRouterPolicyAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeStandaloneVideoAfterSpecialistScopeAdvance, safeNonOverlappingProductAdvance, safeIndependentMixedCandidateAdvance, normalizeIdenticalProtectedOverlap } from '../lib/ci/production-base-impact.mjs';
 
@@ -1429,4 +1429,42 @@ test('final base race retries freshness only, never real source failure or stabl
  assert.equal(await observeProtectedBaseDrift(preview,ctx,['lib/coaching/x.mjs'],two),two);
  assert.equal(comparisons,1);
  assert.equal(await observeProtectedBaseDrift({...preview,compare:async()=>{throw Error('unavailable');}},ctx,[],base),base);
+});
+
+test('root-only optional product workflows are advisory only for verified isolated server dependency additions',async()=>{
+ const names=['hh-static-image-cost-guard','opora-module-ci','hh-owner-telegram-video','hh-live-audio-ci'].map(n=>'.github/workflows/'+n+'.yml');
+ const security='.github/workflows/hh-billing-isolated.yml';
+ const basePackage={name:'hh',dependencies:{react:'19.0.0'},scripts:{'test:app':'node --conditions=react-server --test tests/coach-old.test.mjs'}};
+ const currentPackage=JSON.parse(JSON.stringify(basePackage));currentPackage.dependencies.ws='8.23.0';
+ const baseLock={lockfileVersion:3,packages:{'':{dependencies:basePackage.dependencies},'node_modules/react':{version:'19.0.0',integrity:'sha512-old'}}};
+ const currentLock=JSON.parse(JSON.stringify(baseLock));currentLock.packages[''].dependencies=currentPackage.dependencies;
+ currentLock.packages['node_modules/ws']={version:'8.23.0',integrity:'sha512-new',resolved:'https://registry.npmjs.org/ws/-/ws-8.23.0.tgz'};
+ const ownerYaml=n=>"on:\n  pull_request:\n    paths:\n      - 'package-lock.json'\n      - 'lib/"+n+"/**'\njobs:\n  test:\n    runs-on: ubuntu-latest\n";
+ const source=new Map([...names,security].map((n,i)=>[n,ownerYaml(i===1?'opora':'owner-'+i)]));
+ const paths=['package.json','package-lock.json','lib/coaching/clarity-course.mjs'];
+ const files={base:source,current:new Map(source),changedRows:paths.map(filename=>({filename,status:'M'})),
+   basePackage:JSON.stringify(basePackage),currentPackage:JSON.stringify(currentPackage),baseLock:JSON.stringify(baseLock),currentLock:JSON.stringify(currentLock)};
+ const expect=[...names,security];
+ const proof=(f=files,p=paths)=>[...independentPackageOnlyAdvisories(f,p,expect)];
+ assert.deepEqual(proof(),names);
+ assert.deepEqual(proof(files,[...paths,'lib/opora/course.mjs']),names.filter(n=>n!==names[1]));
+ assert.deepEqual(proof(files,[...paths,'next.config.ts']),[]);
+ assert.deepEqual(proof(files,[...paths,'scripts/ci-freshness.mjs']),[]);
+ assert.deepEqual(proof({...files,current:new Map([...source,[names[0],source.get(names[0])+'# changed']])}),names.slice(1));
+ assert.deepEqual(proof({...files,baseLock:null}),[]);
+ const altered=JSON.parse(files.currentLock);altered.packages['node_modules/react'].version='20.0.0';
+ assert.deepEqual(proof({...files,currentLock:JSON.stringify(altered)}),[]);
+ const installer=JSON.parse(files.currentLock);installer.packages['node_modules/ws'].hasInstallScript=true;
+ assert.deepEqual(proof({...files,currentLock:JSON.stringify(installer)}),[]);
+ const peerOld=JSON.parse(files.baseLock),peerNew=JSON.parse(files.currentLock);
+ peerOld.packages['node_modules/react'].peerDependencies={ws:'*'};peerNew.packages['node_modules/react'].peerDependencies={ws:'*'};
+ assert.deepEqual(proof({...files,baseLock:JSON.stringify(peerOld),currentLock:JSON.stringify(peerNew)}),[]);
+ const candidateRun=(filename,id,conclusion)=>({...run('completed',conclusion),path:filename,id});
+ const api={pr:async()=>({...pr,mergeable:true}),target:async()=>base,
+   runs:async()=>[...names.map((n,i)=>candidateRun(n,10+i,'failure')),candidateRun(security,30,'success')],
+   jobs:async()=>[{name:'test',status:'completed',conclusion:'success'}]};
+ const good=await verify(api,ctx,files,{maxWaitMs:0});
+ assert.deepEqual(good.expected,[security]);assert.equal(good.executed.length,1);
+ assert.deepEqual(good.advisory.packageOnly,[...names].sort());
+ await assert.rejects(()=>verify({...api,runs:async()=>[candidateRun(security,30,'failure')]},ctx,files,{maxWaitMs:0}),/SPECIALIST_FAILED/);
 });
