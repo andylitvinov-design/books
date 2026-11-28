@@ -3,8 +3,9 @@ import {getAppConfig,requireSameOrigin,requestOrigin} from '@/lib/app/config'
 import {createRequestAuth} from '@/lib/app/session'
 import {consumeRate} from '@/lib/app/database'
 import {PRIVATE_HEADERS,readBody,safeError} from '@/lib/app/http'
+import {coachMemorySelectionEnabled} from '@/lib/app/my-coach-memory-selection'
 import {AppError} from '@/lib/assessments/contracts'
-import {listCoachDrafts,saveCoachDraft,discardCoachDraft,resumeCoachDraft,stepCoachProfileDraft,stepCoachCourseGate} from '@/lib/app/my-coach-protocol-drafts'
+import {listCoachDrafts,saveCoachDraft,discardCoachDraft,resumeCoachDraft,stepCoachProfileDraft,stepCoachCourseGate,recallCoachCourseCheckpoint} from '@/lib/app/my-coach-protocol-drafts'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export const revalidate=0
@@ -26,10 +27,14 @@ async function handle(request,write){
     result=await saveCoachDraft(config,actor,input)
    }else if(input.action==='resume'&&Object.keys(input).every(k=>['action','confirmed','id','revision'].includes(k))){
     await consumeRate(config,{op:'my-coach-draft-resume',actor:actor.id},30,3600)
-    result={...await resumeCoachDraft(config,actor,input),profileV3Enabled:process.env.HH_MY_COACH_PROFILE_V3_ENABLED==='true',courseGateEnabled:process.env.HH_MY_COACH_COURSE_GATE_ENABLED==='true'}
+    result={...await resumeCoachDraft(config,actor,input),profileV3Enabled:process.env.HH_MY_COACH_PROFILE_V3_ENABLED==='true',courseGateEnabled:process.env.HH_MY_COACH_COURSE_GATE_ENABLED==='true',courseGateRecallEnabled:coachMemorySelectionEnabled()}
    }else if(input.action==='discard'&&Object.keys(input).every(k=>['action','confirmed','id'].includes(k))){
     await consumeRate(config,{op:'my-coach-draft-discard',actor:actor.id},30,3600)
     result=await discardCoachDraft(config,actor,input)
+   }else if(input.action==='course-gate-recall'){
+    if(process.env.HH_MY_COACH_COURSE_GATE_ENABLED!=='true'||!coachMemorySelectionEnabled())throw new AppError('NOT_FOUND',404)
+    await consumeRate(config,{op:'my-coach-course-memory-recall',actorId:actor.id},20,3600)
+    result=await recallCoachCourseCheckpoint(config,actor,input)
    }else if(['course-gate-start','course-gate-answer','course-gate-correct'].includes(input.action)){
     if(process.env.HH_MY_COACH_COURSE_GATE_ENABLED!=='true')throw new AppError('NOT_FOUND',404)
     await consumeRate(config,{op:'my-coach-course-gate',actor:actor.id},120,3600)
@@ -47,7 +52,7 @@ async function handle(request,write){
    if(params.get('view')==='capabilities'){
     if([...params.keys()].length!==1)throw new AppError('MY_COACH_DRAFT_INVALID',400)
     // Metadata-only; no draft or personal data read. Same verified owner and origin.
-    result={profileV3Enabled:process.env.HH_MY_COACH_PROFILE_V3_ENABLED==='true',courseGateEnabled:process.env.HH_MY_COACH_COURSE_GATE_ENABLED==='true'}
+    result={profileV3Enabled:process.env.HH_MY_COACH_PROFILE_V3_ENABLED==='true',courseGateEnabled:process.env.HH_MY_COACH_COURSE_GATE_ENABLED==='true',courseGateRecallEnabled:coachMemorySelectionEnabled()}
    }else result=await listCoachDrafts(config,actor,{before:params.get('before'),beforeId:params.get('beforeId'),view:params.get('view'),personaId:params.get('personaId')})
   }
   return auth.apply(NextResponse.json(result,{headers:PRIVATE_HEADERS}))

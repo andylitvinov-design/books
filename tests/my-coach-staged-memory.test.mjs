@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { projectCoachPriorSessions, projectCoachSelectedContext,
+import { packCoachDialogueContext, projectCoachPriorSessions, projectCoachSelectedContext,
   COACH_STAGED_MEMORY_VERSION } from '../lib/coaching/coach-staged-memory.mjs'
 import { issueCoachMemoryTicket, verifyCoachMemoryTicket } from '../lib/coaching/coach-staged-memory-ticket.mjs'
 import { normalizeGenerativeCoachInput } from '../lib/coaching/generative-persona.mjs'
@@ -41,6 +41,27 @@ test('personal stage passes only server-reviewed source kinds and category-scope
   assert.deepEqual(projectCoachSelectedContext(snapshot).items, [])
   assert.equal(JSON.stringify(goals).includes('PRIVATE EMAIL'), false)
 })
+test('reviewed context respects the full 1200-byte envelope without splitting multilingual evidence', () => {
+  const first = { kind: 'goals', sourceKind: 'saved_life_plan', text: 'я'.repeat(240) }
+  const oversizedRemainder = { ...first, text: 'ё'.repeat(210) + '—'.repeat(30) }
+  const later = { ...first, text: 'Revisaré la decisión mañana 🌱' }
+  const packet = projectCoachSelectedContext({ items: [first, oversizedRemainder, later] }, { goals: true })
+  assert.ok(Buffer.byteLength(JSON.stringify(packet), 'utf8') <= 1200)
+  assert.deepEqual(packet.items, [first, later])
+})
+
+test('the dialogue packer accepts an exact JSON byte limit and caps the item count', () => {
+  const row = { kind: 'goals', sourceKind: 'saved_life_plan', text: 'я'.repeat(240) }
+  const items = [row, row, { ...row, text: '' }]
+  const padding = 1200 - Buffer.byteLength(JSON.stringify({ version: 2, purpose: 'coaching_dialogue', items }))
+  const last = { ...row, text: 'a'.repeat(padding) }
+  const packet = packCoachDialogueContext([row, row, last])
+  assert.equal(Buffer.byteLength(JSON.stringify(packet), 'utf8'), 1200)
+  assert.deepEqual(packet.items, [row, row, last])
+  assert.deepEqual(packCoachDialogueContext([row, row, { ...last, text: last.text + 'a' }]).items, [row, row])
+  assert.equal(packCoachDialogueContext(Array(10).fill({ ...row, text: 'mañana' })).items.length, 6)
+})
+
 test('route requires authenticated owner and origin; personal uses live policy+DB grants', () => {
   const route = readFileSync(new URL('../app/api/app/my-coach/staged-memory/route.js', import.meta.url), 'utf8')
   const service = readFileSync(new URL('../lib/app/my-coach-staged-memory.js', import.meta.url), 'utf8')

@@ -20,7 +20,7 @@ try {
   // CREATE DATABASE is a distinct empty DB on the same ephemeral test server.
   await client.query('CREATE DATABASE hh_client_memory_test')
 } finally { await client.end() }
-const result = spawnSync(process.execPath, ['--test', 'tests/client-memory-postgres.integration.mjs'], {
+const result = spawnSync(process.execPath, ['--conditions=react-server', '--test', 'tests/client-memory-postgres.integration.mjs'], {
   stdio: 'inherit', env: { ...process.env,
     HH_TEST_ADMIN_DATABASE_URL: testDb.toString(),
     HH_CLIENT_MEMORY_TEST_APPLY_PROPOSALS: 'synthetic-only',

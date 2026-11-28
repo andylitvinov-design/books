@@ -23,6 +23,7 @@ export async function POST(request) {
     if (provided && provided !== actor.id) throw new AppError('ACCOUNT_CHANGED', 409)
     await consumeRate(config, { op: 'my-coach-staged-memory', actor: actor.id }, 18, 3600)
     const data = await readBody(request, 2048)
+    if(data.stage==='reviewed_fields'&&provided!==actor.id)throw new AppError('ACCOUNT_CHANGED',409)
     const result = await readMyCoachStagedMemory(config, actor, data)
     return auth.apply(NextResponse.json(result, { headers: PRIVATE_HEADERS }))
   } catch (error) {

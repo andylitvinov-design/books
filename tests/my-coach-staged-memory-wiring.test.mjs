@@ -187,3 +187,17 @@ test('an explicit recent introduction beats incomplete unrelated foundation with
  assert.equal(coachPriorRecapRole(fallback,fallback.foundation),'earliest_reviewed_not_introductory')
  assert.match(service(),/coachPriorRecapRole\(reviewed,recap\)/)
 })
+
+test('model packets treat a staged checkbox as a request and require a separate current ledger check',()=>{
+  const content=service()
+  assert.match(content,/await readApprovedCoachReviewedFields\(config,actor,/)
+  assert.doesNotMatch(content,/supplemental\.push\(\.\.\.coachReviewedFieldContext\(/)
+  assert.match(content,/provider==='groq'/)
+  assert.match(content,/input\?\.voiceTurn!==true/)
+})
+
+test('reviewed-field expiry cannot downgrade a prior personal context request to account-wide',()=>{
+  assert.match(ui(),/contextSessionToken=\{contextSession\?\.token\}/)
+  assert.match(ui(),/reviewedSessionActive=\{Boolean\(contextSession&&!contextSession\.expired\)\}/)
+  assert.match(control(),/reviewedSessionActive&&contextSessionToken/)
+})

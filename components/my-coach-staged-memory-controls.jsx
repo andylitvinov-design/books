@@ -52,13 +52,17 @@ const copy={
 export default function MyCoachStagedMemoryControls({locale='en',provider='gemini_free',
  invitationAccepted=false,identityConfirmed=false,focusConfirmed=false,priorAllowed=false,onPriorAllowed,
  topicKey='',onTopicKey,assessmentsAllowed=false,onAssessmentsAllowed,onMemoryChange,
- contextSessionToken,contextRevision=0,children}){
+ contextSessionToken,contextAccountId,contextRevision=0,reviewedSessionActive=false,onReviewedFieldsWithdraw,children}){
  const lang=copy[locale]?locale:'en',t=copy[lang]
  const [allowGoals,setAllowGoals]=useState(false)
  const [allowProfile,setAllowProfile]=useState(false)
  const [sharePersonal,setSharePersonal]=useState(false)
  const [sharePrior,setSharePrior]=useState(false)
- const [shareReviewedFields,setShareReviewedFields]=useState(false)
+ const [reviewedFieldProof,setReviewedFieldProof]=useState('')
+ const [reviewedFieldNotice,setReviewedFieldNotice]=useState('')
+ const [reviewedGrant,setReviewedGrant]=useState(null)
+ const [reviewedBusy,setReviewedBusy]=useState(false)
+ const [reviewedError,setReviewedError]=useState(false)
  const [shareAxes,setShareAxes]=useState(false)
  const [identity,setIdentity]=useState(null)
  const [stageToken,setStageToken]=useState('')
@@ -71,13 +75,14 @@ export default function MyCoachStagedMemoryControls({locale='en',provider='gemin
  lastCallback.current=onMemoryChange
  const wantsMemory=priorAllowed||allowGoals||allowProfile||assessmentsAllowed
  const effectiveTopicKey=topicKey||(allowProfile?'meaning_purpose':'')
+ const shareReviewedFields=Boolean(reviewedSessionActive&&reviewedGrant&&reviewedGrant.stageToken===stageToken&&
+   reviewedGrant.sessionToken===contextSessionToken&&reviewedGrant.expiresAt>Date.now())
 
  useEffect(()=>{
    if(!invitationAccepted||!priorAllowed)setSharePrior(false)
-   if(!invitationAccepted||!priorAllowed||!sharePrior||provider!=='groq')setShareReviewedFields(false)
- },[invitationAccepted,priorAllowed,sharePrior,provider])
+ },[invitationAccepted,priorAllowed])
  useEffect(()=>{
-   setIdentity(null);setStageToken('');setPersonal(null);setShareReviewedFields(false)
+   setIdentity(null);setStageToken('');setPersonal(null);setReviewedFieldProof('');setReviewedFieldNotice('');setReviewedGrant(null)
    if(!invitationAccepted||!wantsMemory){setLoadingIdentity(false);return}
    const controller=new AbortController()
    setLoadingIdentity(true);setFailed(false)
@@ -92,10 +97,42 @@ export default function MyCoachStagedMemoryControls({locale='en',provider='gemin
         typeof value.stageToken!=='string'||value.stageToken.length>140)throw Error('INVALID')
      if(controller.signal.aborted)return
      setIdentity(value.prior||null);setStageToken(value.stageToken)
+     if(typeof value.reviewedFieldProof==='string'&&/^[0-9a-f]{64}$/.test(value.reviewedFieldProof))
+       setReviewedFieldProof(value.reviewedFieldProof)
+     if(typeof value.reviewedFieldNotices?.[lang]==='string')setReviewedFieldNotice(value.reviewedFieldNotices[lang])
    }).catch(()=>{if(!controller.signal.aborted)setFailed(true)})
      .finally(()=>{if(!controller.signal.aborted)setLoadingIdentity(false)})
    return()=>controller.abort()
- },[provider,invitationAccepted,wantsMemory,priorAllowed,focusRevision])
+ },[provider,invitationAccepted,wantsMemory,priorAllowed,focusRevision,lang])
+
+ useEffect(()=>{
+   if(!reviewedGrant)return
+   const timer=setTimeout(()=>setReviewedGrant(current=>current===reviewedGrant?null:current),
+     Math.max(0,reviewedGrant.expiresAt-Date.now()))
+   return()=>clearTimeout(timer)
+ },[reviewedGrant])
+
+ async function changeReviewedPermission(enabled){
+   if(!reviewedSessionActive||!contextSessionToken||!contextAccountId||reviewedBusy)return
+   if(!enabled){onReviewedFieldsWithdraw?.();setReviewedGrant(null)}
+   setReviewedBusy(true);setReviewedError(false)
+   try{
+     const response=await fetch('/api/app/my-coach/staged-memory',{
+       method:'POST',credentials:'same-origin',cache:'no-store',
+       headers:{'Content-Type':'application/json','X-HH-Account-ID':contextAccountId},
+       body:JSON.stringify({stage:'reviewed_fields',provider:'groq',decision:enabled?'grant':'revoke',
+         contextSessionToken,...(enabled?{stageToken,reviewProof:reviewedFieldProof,confirmed:true}:{})}),
+     })
+     if(!response.ok)throw Error('UNAVAILABLE')
+     const result=await response.json()
+     if(enabled){
+       if(result.granted!==true||!Number.isSafeInteger(result.expiresAt)||result.expiresAt<=Date.now())
+         throw Error('UNAVAILABLE')
+       setReviewedGrant({stageToken,sessionToken:contextSessionToken,expiresAt:result.expiresAt})
+     }
+   }catch{setReviewedError(true)}
+   finally{setReviewedBusy(false)}
+ }
 
  useEffect(()=>{
    setPersonal(null);setSharePersonal(false);setShareAxes(false)
@@ -135,7 +172,10 @@ export default function MyCoachStagedMemoryControls({locale='en',provider='gemin
 
  return <section className={styles.goalPrivacy} data-coach-staged-memory aria-label={t.title}>
    <label data-coach-prior-session-opt-in>
-     <input type="checkbox" checked={priorAllowed} onChange={event=>{if(!event.target.checked)setSharePrior(false);onPriorAllowed?.(event.target.checked)}}/>
+     <input type="checkbox" checked={priorAllowed} disabled={reviewedBusy} onChange={event=>{
+       if(!event.target.checked){if(shareReviewedFields)void changeReviewedPermission(false);setSharePrior(false)}
+       onPriorAllowed?.(event.target.checked)
+     }}/>
      {' '}{t.prior}
    </label>
    <small>{provider==='gemini_free'?t.extra:t.other}</small>
@@ -161,14 +201,20 @@ export default function MyCoachStagedMemoryControls({locale='en',provider='gemin
    </div>:null}
    {invitationAccepted&&priorAllowed&&identity&&!loadingIdentity&&
      <label data-coach-prior-provider-sharing>
-       <input type="checkbox" checked={sharePrior} onChange={event=>setSharePrior(event.target.checked)}/>
+       <input type="checkbox" checked={sharePrior} disabled={reviewedBusy} onChange={event=>{
+         if(!event.target.checked&&shareReviewedFields)void changeReviewedPermission(false)
+         setSharePrior(event.target.checked)
+       }}/>
        {' '}{t.sharePrior}
      </label>}
-   {invitationAccepted&&identityConfirmed&&priorAllowed&&sharePrior&&provider==='groq'&&!loadingIdentity&&identity?.reviewedFields?.fields?.length>0&&
+   {invitationAccepted&&identityConfirmed&&priorAllowed&&sharePrior&&provider==='groq'&&!loadingIdentity&&
+     reviewedFieldProof&&reviewedFieldNotice&&reviewedSessionActive&&contextSessionToken&&contextAccountId&&identity?.reviewedFields?.fields?.length>0&&
      <label data-coach-reviewed-fields-sharing>
-       <input type="checkbox" checked={shareReviewedFields} onChange={event=>setShareReviewedFields(event.target.checked)}/>
-       {' '}{({ru:'Разрешаю передать проверенному Groq (без хранения данных) до трёх коротких подтверждённых ответов из предыдущего протокола. Полная история не передаётся этим разрешением.',en:'Allow verified Groq (zero data retention) to receive up to three short reviewed answers from the previous protocol. This does not share the full archive.',es:'Autorizo a Groq verificado (sin retención) a recibir hasta tres respuestas breves revisadas del protocolo anterior. No se comparte el archivo completo.'})[lang]}
+       <input type="checkbox" checked={shareReviewedFields} disabled={reviewedBusy} onChange={event=>void changeReviewedPermission(event.target.checked)}/>
+       {' '}{({ru:'Разрешаю Groq получить до трёх коротких подтверждённых ответов из этого протокола для текущей текстовой беседы.',en:'Allow Groq to receive up to three short reviewed answers from this protocol for the current text conversation.',es:'Autorizo a Groq a recibir hasta tres respuestas breves revisadas de este protocolo para la conversación de texto actual.'})[lang]}
+       <small>{reviewedFieldNotice}</small>
      </label>}
+   {reviewedError&&<p role="status">{({ru:'Не удалось обновить разрешение на отправку ответов.',en:'Could not update permission to share reviewed answers.',es:'No se pudo actualizar el permiso para compartir respuestas revisadas.'})[lang]}</p>}
    {identityConfirmed&&focusConfirmed&&<details className={styles.voicePrivacyDetails} data-coach-memory-personal>
      <summary>{t.details}</summary>
      {children}
