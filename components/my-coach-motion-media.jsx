@@ -12,6 +12,7 @@ import CoachReactionDirectorMedia from './coach-reaction-director-media'
 import CoachPresentationLayers from './coach-presentation-layers'
 import {selectCoachReactionCameraGroup} from '@/lib/coaching/coach-reaction-director.mjs'
 import {qualityScreenedReactionMedia,qualityScreenedPublicPresence,coachPresentationReturn} from '@/lib/coaching/coach-reaction-quality.mjs'
+import {withStagedV8Reactions,stagedV8CameraGroup,stagedV8Presentation,stagedV8Return} from '@/lib/coaching/coach-reaction-v8.mjs'
 
 // Samir has a calm, silent cinematic loop. Keep the original six videos and do not connect decorative motion to TTS or client microphone audio.
 // Merlin and Harry have welcoming smiles, with Harry's existing attentive loop retained.
@@ -40,7 +41,7 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
   const directorActive=sessionContext&&Boolean(reactionIntent)
   const presentationActive=isCoachPresentationContext(context,presentationLoop)
   const pinnedPresentation=useMemo(()=>presentationActive?protectedCoachPresence(personaId,REACTION_V4_RELEASED):null,[presentationActive,personaId])
-  const presentation=useMemo(()=>qualityScreenedPublicPresence(personaId,REACTION_V4_RELEASED,pinnedPresentation),[pinnedPresentation,personaId])
+  const presentation=useMemo(()=>stagedV8Presentation(personaId,REACTION_V4_RELEASED,qualityScreenedPublicPresence(personaId,REACTION_V4_RELEASED,pinnedPresentation)),[pinnedPresentation,personaId])
   // Owner 2026-11-28: original acting is additive, never replaced by HD.
   // Play the exact approved opening once, then the current screened HD loop.
   // Native resolution is not an eligibility criterion for a pinned original.
@@ -48,14 +49,14 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
   // pose/color matching is a separate remaster, not a crossfade of faces.
   const opening=presentationActive?coachPresentationOpening(personaId):null
   const openingActive=Boolean(opening&&openingDone!==personaId)
-  const returnClip=useMemo(()=>opening&&presentation?coachPresentationReturn(personaId,REACTION_V4_RELEASED,presentation,opening):null,[personaId,presentation,opening])
+  const returnClip=useMemo(()=>opening&&presentation?(stagedV8Return(personaId,REACTION_V4_RELEASED,presentation,opening)||coachPresentationReturn(personaId,REACTION_V4_RELEASED,presentation,opening)):null,[personaId,presentation,opening])
   const returnActive=Boolean(!openingActive&&returnClip&&returnDone!==personaId)
   const activePresentation=openingActive?opening:returnActive?returnClip:presentation
   // Lock the released HD camera for the whole session. Exhaustion holds its
   // verified anchor, never switches camera or falls back to legacy SD.
   const preferredGroup=REACTION_V5_CAMERA_GROUPS[personaId]||'primary'
-  const cameraGroup=useMemo(()=>selectCoachReactionCameraGroup(personaId,REACTION_V4_RELEASED,preferredGroup),[personaId,preferredGroup])
-  const released=useMemo(()=>sessionContext&&cameraGroup?qualityScreenedReactionMedia(releasedReactionMedia(personaId,REACTION_V4_RELEASED,cameraGroup)):null,[sessionContext,personaId,cameraGroup])
+  const cameraGroup=useMemo(()=>stagedV8CameraGroup(personaId,REACTION_V4_RELEASED)||selectCoachReactionCameraGroup(personaId,REACTION_V4_RELEASED,preferredGroup),[personaId,preferredGroup])
+  const released=useMemo(()=>sessionContext&&cameraGroup?withStagedV8Reactions(qualityScreenedReactionMedia(releasedReactionMedia(personaId,REACTION_V4_RELEASED,cameraGroup))):null,[sessionContext,personaId,cameraGroup])
   const sessionPoster=useMemo(()=>sessionContext?protectedCoachPresence(personaId,REACTION_V4_RELEASED)?.poster:null,[sessionContext,personaId])
   function failCamera(group=cameraGroup){setUnavailableCamera(personaId+':'+group)}
   const phaseState=PHASES.has(phase)?phase:'idle'
