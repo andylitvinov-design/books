@@ -84,6 +84,15 @@ test('Spanish public program discovery stays localized without changing private 
  assert.ok(read('components/app/clarity-program.jsx').includes("lang==='es'?'/es/app/portrait?discover=programs'"))
 })
 
+import {summarizeAntiStressRuns} from '../lib/app/my-page-courses.mjs'
+test('therapy run progress uses only exact verified 45-minute course records',()=>{
+ const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0'),sessions=['anti_stress_ground','anti_stress_calm','anti_stress_resource']
+ const run={id:id(1),programId:'anti-stress-three-session',programType:'therapy',status:'in_progress',totalElapsedMs:1350000,days:sessions.map((sessionId,i)=>({sessionId,protocolId:id(i+2),elapsedMs:[900000,450000,0][i],status:['time_limit','paused','not_started'][i]}))}
+ assert.deepEqual(summarizeAntiStressRuns([run,run]).map(c=>[c.percent,c.state,c.day]),[[50,'paused',2]])
+ assert.deepEqual(summarizeAntiStressRuns([{...run,totalElapsedMs:1},{...run,status:'completed'},{...run,programType:'coaching'},{...run,status:'ready'}]),[])
+ const done={...run,status:'completed',totalElapsedMs:2700000,days:run.days.map(d=>({...d,elapsedMs:900000,status:'time_limit'}))}
+ assert.equal(summarizeAntiStressRuns([done])[0].percent,100)
+})
 
 test('approved compact My Page dashboard preserves owner-scoped data and real course disclosures',()=>{
  const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')

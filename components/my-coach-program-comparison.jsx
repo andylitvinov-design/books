@@ -12,7 +12,7 @@ import styles from './my-coach-program-comparison.module.css'
 function ComparisonCard({program:p,copy,lang,selected,onSelect}){
  const selectLabel=p.title
  const paidOffer=coachCourseOffer(p.id,lang)
- return <article className={styles.card} data-coach-comparison-program={p.id} data-selected={selected}>
+ return <article className={styles.card} data-coach-comparison-program={p.id} data-selected={selected} data-program-type={p.id==='antistress'||p.id==='anti-stress'?'therapy':'coaching'}>
   <span className={styles.art} data-art={p.id} aria-hidden="true"/>
   <div className={styles.intro}>
    <button type="button" className={styles.select} onClick={onSelect} aria-pressed={selected} aria-label={selectLabel}>

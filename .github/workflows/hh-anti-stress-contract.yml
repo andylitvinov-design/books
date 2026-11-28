@@ -1,0 +1,65 @@
+name: HH Anti-Stress contract
+on:
+  pull_request:
+    branches: [feat/clarity-three-day-coaching-p0-20261126, codex/public-book-library]
+    paths:
+      - 'lib/coaching/anti-stress-*.mjs'
+      - 'lib/coaching/gemini-live-free.mjs'
+      - 'lib/coaching/coach-program-mode.mjs'
+      - 'lib/coaching/logical-course-clock-engine.mjs'
+      - 'lib/coaching/clarity-course-clock.mjs'
+      - 'lib/app/anti-stress-runs.js'
+      - 'lib/app/anti-stress-live-relay.js'
+      - 'lib/app/anti-stress-live-upgrade.js'
+      - 'lib/app/anti-stress-private-memory.js'
+      - 'app/api/app/anti-stress/**'
+      - 'components/app/anti-stress-*'
+      - 'components/my-coach-gemini-live.jsx'
+      - 'lib/coaching/coach-session-stage-view.mjs'
+      - 'lib/app/my-page-courses*'
+      - 'components/app/my-page-courses.jsx'
+      - 'tests/my-page-courses.test.mjs'
+      - 'components/anti-stress-result*'
+      - 'tests/anti-stress-*.test.mjs'
+      - 'tests/anti-stress-rls-isolated.sql'
+      - 'docs/coaching/anti-stress-runs.proposal.sql'
+      - '.github/workflows/hh-anti-stress-contract.yml'
+permissions:
+  contents: read
+concurrency:
+  group: anti-stress-contract-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify domain, clock, consent and private archive contracts
+        run: |
+          node --check lib/app/anti-stress-runs.js
+          node --check lib/app/anti-stress-private-memory.js
+          node --check lib/app/anti-stress-live-upgrade.js
+          node --check app/api/app/anti-stress/live-relay/route.js
+          node --check app/api/app/anti-stress/session/route.js
+          node --test tests/anti-stress-relay-entry.test.mjs tests/anti-stress-private-memory.test.mjs tests/anti-stress-therapy-course.test.mjs tests/anti-stress-runs.test.mjs tests/anti-stress-archive.test.mjs tests/anti-stress-gemini-mint.test.mjs tests/anti-stress-trusted-live-connection.test.mjs tests/clarity-course-clock.test.mjs tests/my-page-courses.test.mjs
+      - name: Rehearse exact proposed therapy SQL on disposable PostgreSQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          name=hh-anti-stress-ci
+          docker run --rm -d --name "$name" -e POSTGRES_DB=hh_anti_stress_test -e POSTGRES_PASSWORD=synthetic-only -v "$PWD:/workspace:ro" postgres:17-alpine >/dev/null
+          trap 'docker rm -f "$name" >/dev/null 2>&1 || true' EXIT
+          ready=false
+          for _ in $(seq 1 40); do
+            if docker exec "$name" pg_isready -h 127.0.0.1 -U postgres -d hh_anti_stress_test >/dev/null 2>&1; then ready=true; break; fi
+            sleep 1
+          done
+          test "$ready" = true
+          docker exec "$name" psql -U postgres -d hh_anti_stress_test -v ON_ERROR_STOP=1 -f /workspace/tests/anti-stress-rls-isolated.sql | tee /tmp/hh-anti-stress-rls.log
+          grep -q ANTI_STRESS_RLS_SYNTHETIC_PASS /tmp/hh-anti-stress-rls.log

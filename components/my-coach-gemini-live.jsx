@@ -1,6 +1,8 @@
 'use client'
 import {clarityCourseDay} from '@/lib/coaching/clarity-course.mjs'
 import {connectClarityBrowserRelay} from '@/lib/coaching/clarity-relay-client.mjs'
+import {ANTI_STRESS_SESSION_IDS} from '@/lib/coaching/coach-program-mode.mjs'
+import {connectAntiStressBrowserRelay} from '@/lib/coaching/anti-stress-relay-client.mjs'
 
 import {forwardRef,useEffect,useImperativeHandle,useRef,useState} from 'react'
 import {beginPrivateCoachSalutation} from '@/lib/coaching/coach-private-greeting.mjs'
@@ -132,7 +134,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   openingPrior=null,allowOpeningPrior=false,
   liveContextAccess='',contextRevision=0,localRecoveryTurns=[],onUnconfirmedInput,
   privateGreetingText='',onPrivateGreeting,onPrivateRecallRequest,clarityOpeningMemoryStageToken='',clarityOpeningMemoryScope=null,
-  methodSession=null,prepareMethodSession,clarityRelaySelection=null,onClarityRelayClock,speechReviewConsent=false,speechReviewProvider='groq',onSpeechReviewCandidate,
+  methodSession=null,prepareMethodSession,clarityRelaySelection=null,onClarityRelayClock,therapyRelaySelection=null,onTherapyRelayClock,onTherapyRelayClosed,onClarityRelayClosed,speechReviewConsent=false,speechReviewProvider='groq',onSpeechReviewCandidate,
 },ref){
   const lang=safeLocale(locale),t=ui[lang]
   const [phase,setPhase]=useState('idle')
@@ -147,7 +149,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     elapsedSeconds,outputMuted,onSessionStart,onVoiceStateChange,onMicLevel,onInputInterim,
     onInputFinal,onOutputInterim,onOutputFinal,onInterrupted,
     onDirectorProgress,onOpeningProgress,onNotice,openingPrior,allowOpeningPrior,
-    liveContextAccess,contextRevision,localRecoveryTurns,onUnconfirmedInput,methodSession,prepareMethodSession,privateGreetingText,onPrivateGreeting,onPrivateRecallRequest,clarityRelaySelection,onClarityRelayClock,clarityOpeningMemoryStageToken,clarityOpeningMemoryScope,speechReviewConsent,speechReviewProvider,onSpeechReviewCandidate}
+    liveContextAccess,contextRevision,localRecoveryTurns,onUnconfirmedInput,methodSession,prepareMethodSession,privateGreetingText,onPrivateGreeting,onPrivateRecallRequest,clarityRelaySelection,onClarityRelayClock,therapyRelaySelection,onTherapyRelayClock,onTherapyRelayClosed,onClarityRelayClosed,clarityOpeningMemoryStageToken,clarityOpeningMemoryScope,speechReviewConsent,speechReviewProvider,onSpeechReviewCandidate}
 
   const notify=text=>{
     setNotice(text)
@@ -1340,7 +1342,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     const body={personaId:r.personaId,locale:r.locale,settings:r.settings,courseSessionId:r.courseSessionId,
       voiceName:r.voiceName,consent:true,voiceConsent:true,trainingUseConsent:true,
       ...(r.methodSession?{methodId:r.methodSession.methodId,methodSessionId:r.methodSession.methodSessionId}:{})}
-    const openingMemoryStageToken=propsRef.current.clarityOpeningMemoryStageToken
+    const openingMemoryStageToken=r.therapyMode?'':propsRef.current.clarityOpeningMemoryStageToken
     if(openingMemoryStageToken){
       r.clarityOpeningMemoryStageToken=openingMemoryStageToken
       body.openingMemoryStageToken=openingMemoryStageToken
@@ -1348,11 +1350,14 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       if(scope?.topicKey)body.openingMemoryTopicKey=scope.topicKey
       if(scope?.contextSessionToken)body.openingMemoryContextSessionToken=scope.contextSessionToken
     }
-    r.clarityRelay=connectClarityBrowserRelay({selection:{...selected,body},explicitPlay:true,
+    // Both course transports reuse the same PCM player, barge-in and pause logic.
+    const connect=r.therapyMode?connectAntiStressBrowserRelay:connectClarityBrowserRelay
+    r.clarityRelay=connect({selection:{...selected,body},explicitPlay:true,
       isForeground:()=>!r.ended&&!r.paused&&runtime.current===r&&document.visibilityState==='visible',
       onClock:ack=>{
         // Even a late pause ACK belongs to the same owner/run/protocol.
-        if(propsRef.current.onClarityRelayClock?.(ack,selected)!==true)return false
+        const callback=r.therapyMode?propsRef.current.onTherapyRelayClock:propsRef.current.onClarityRelayClock
+        if(callback?.(ack,selected)!==true)return false
         if(ack.status==='active'&&!r.ended&&!r.paused&&runtime.current===r){
           r.ready=true
           if(!r.sessionStarted){
@@ -1370,6 +1375,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
         const verified=receipt.terminalVerified===true||receipt.status==='not_started'
         if(!verified)relayStopUnverified.current=true
         r.resolveCourseStop?.(verified)
+        if(r.therapyMode)propsRef.current.onTherapyRelayClosed?.(receipt)
+        else propsRef.current.onClarityRelayClosed?.(receipt)
         if(current){
           finishCourseMedia(r,receipt.status==='time_limit'?'idle':'paused')
           if(!receipt.terminalVerified)notify(receipt.status==='not_started'?t.failure:t.resumeUnavailable)
@@ -1437,7 +1444,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     const p=propsRef.current
     if(!p.enabled||!p.canStart){notify(t.requires);return false}
     const clarityDay=clarityCourseDay(p.courseSessionId)
-    if(clarityDay&&(!p.clarityRelaySelection||p.clarityRelaySelection.day!==clarityDay||relayClosing.current||relayStopUnverified.current)){notify(t.requires);return false}
+    const therapyMode=ANTI_STRESS_SESSION_IDS.includes(p.courseSessionId)
+    const selected=therapyMode?p.therapyRelaySelection:clarityDay?p.clarityRelaySelection:null
+    if((therapyMode||clarityDay)&&(!selected||(therapyMode?selected.sessionId!==p.courseSessionId:selected.day!==clarityDay)||relayClosing.current||relayStopUnverified.current)){notify(t.requires);return false}
     if(runtime.current?.paused){
       if(runtime.current.ended||runtime.current.resumeUnavailable){notify(t.resumeUnavailable);return false}
       void resumePausedSession(runtime.current);return true
@@ -1489,7 +1498,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       speechReviewBuffer:createSpeechReviewBuffer(),speechReviewQueue:null,
       abort:new AbortController(),timer:null,reconnectTimer:null,
       resampler:new GeminiLivePcmResampler(context.sampleRate),
-      audioGate:new GeminiLiveBargeGate(),claritySelection:clarityDay?p.clarityRelaySelection:null}
+      audioGate:new GeminiLiveBargeGate(),claritySelection:selected,therapyMode}
     if(r.claritySelection)r.courseStopPromise=new Promise(resolve=>{r.resolveCourseStop=resolve})
     r.replyWatch=new GeminiLiveReplyWatchdog({
       canFire:()=>!r.ended&&!r.paused&&r.ready&&(r.claritySelection?r.clarityRelay?.snapshot().canSendAudio:r.socket?.readyState===1)&&
@@ -1498,7 +1507,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
         !r.reconnectTimer,
       onStall:()=>recoverStalledReply(r),
     })
-    const canMirrorAudio=()=>runtime.current===r&&!r.ended&&!r.paused&&!blocksSyntheticCoachAvatar(propsRef.current,r)
+    const canMirrorAudio=()=>runtime.current===r&&!r.ended&&!r.paused&&
+      !ANTI_STRESS_SESSION_IDS.includes(propsRef.current.courseSessionId)&&!blocksSyntheticCoachAvatar(propsRef.current,r)
     r.player=new GeminiLivePcmPlayer(context,{
       onScheduledPcm:(samples,start,ctx)=>simliPilotRef.current?.schedule(samples,start,ctx,canMirrorAudio),
       onPlaybackClear:()=>simliPilotRef.current?.clear(),
@@ -1610,7 +1620,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   return <div className={styles.root} data-my-coach-voice={phase}
     data-gemini-free-live-audio="true"
     data-coach-audio-profile-version={runtime.current?.ready?runtime.current.liveToken?.audioProfile?.version:undefined}
-    data-coach-audio-profile-mode={runtime.current?.ready?runtime.current.liveToken?.audioProfile?.mode:undefined}
+    data-coach-audio-profile-mode={runtime.current?.ready?(runtime.current.therapyMode?'therapy':runtime.current.liveToken?.audioProfile?.mode):undefined}
     data-coach-audio-profile-voice={runtime.current?.ready?runtime.current.liveToken?.audioProfile?.voiceName:undefined}
     data-coach-audio-recovering={audioNeedsGesture?'true':undefined}>
     <button type="button" className={styles.button}
@@ -1633,7 +1643,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
           phase==='listening'?t.listening:phase==='speaking'?t.speaking:t.thinking}
       </span>}
     {notice&&<p className={styles.note} role="status">{notice}</p>}
-    {personaId==='caesar'&&process.env.NEXT_PUBLIC_HH_SIMLI_OWNER_DIALOGUE_PILOT==='true'&&<SimliDialoguePilot ref={simliPilotRef} target="coach" locale={lang}
+    {!ANTI_STRESS_SESSION_IDS.includes(courseSessionId)&&personaId==='caesar'&&process.env.NEXT_PUBLIC_HH_SIMLI_OWNER_DIALOGUE_PILOT==='true'&&<SimliDialoguePilot ref={simliPilotRef} target="coach" locale={lang}
       phase={phase} blocked={blocksSyntheticCoachAvatar(propsRef.current,runtime.current)||phase==='paused'}
       revision={personaId+'|'+lang+'|'+voiceName+'|'+contextRevision}/>}
   </div>

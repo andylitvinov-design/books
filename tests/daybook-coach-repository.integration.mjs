@@ -8,7 +8,7 @@ import {createDaybookJournalRepository} from '../lib/app/daybook-journal.js'
 import {createPersonalGoalRepository} from '../lib/app/daybook-personal-goals.js'
 import {createDaybookCoachRepository} from '../lib/app/daybook-coach.js'
 import {issueCoachContextSession} from '../lib/app/coach-context-session.js'
-import {manageCoachContextConsent,buildCoachContextSnapshot,coachContextConsentOptions,readCoachEntrySources} from '../lib/app/coach-context-snapshot.js'
+import {manageCoachContextConsent,buildCoachContextSnapshot,coachContextConsentOptions,readCoachEntrySources,readCoachMaterialOpeningNote} from '../lib/app/coach-context-snapshot.js'
 import {appendCoachContextGrant} from '../lib/coaching/context-cloud-grant-writer.mjs'
 import {closeDatabase,transaction} from '../lib/app/database.js'
 const url=process.env.HH_DAYBOOK_COACH_TEST_DATABASE_URL
@@ -148,9 +148,24 @@ test('material notes share only the approved excerpt and stop sharing after asse
   assert.deepEqual(await load(b,'groq',bSession.token),[])
   assert.deepEqual(await load(a,'gemini_free'),[])
   assert.deepEqual(await load(a,'groq',otherSession.token),[])
+  const geminiEnv={...env,HH_COACH_CONTEXT_GEMINI_FREE_POLICY:'synthetic',
+   HH_COACH_CONTEXT_GEMINI_FREE_NOTICE_EN:'synthetic',HH_COACH_CONTEXT_GEMINI_FREE_NOTICE_RU:'synthetic',
+   HH_COACH_CONTEXT_GEMINI_FREE_NOTICE_ES:'synthetic'}
+  const materialScope={itemId:draft.id,topicKey,sourceRevision:materialPreview.item.sourceRevision,contextSessionToken:materialSession.token}
+  assert.equal(await readCoachMaterialOpeningNote(config,a,materialScope,geminiEnv),'')
+  const geminiReview={...review,provider:'gemini_free'}
+  const geminiPreview=await manageCoachContextConsent(config,a,geminiReview,geminiEnv)
+  await manageCoachContextConsent(config,a,{...geminiReview,operation:'grant',confirmed:true,
+   sourceRevision:geminiPreview.item.sourceRevision,policyVersion:geminiPreview.policyVersion,reviewToken:geminiPreview.reviewToken},geminiEnv)
+  const note=await readCoachMaterialOpeningNote(config,a,materialScope,geminiEnv)
+  assert.ok(note.includes(approvedText))
+  assert.ok(!note.includes('Private ending'))
+  assert.equal(await readCoachMaterialOpeningNote(config,b,materialScope,geminiEnv),'')
+  assert.equal(await readCoachMaterialOpeningNote(config,a,{...materialScope,itemId:randomUUID()},geminiEnv),'')
   if(material.kind==='video')await admin.query("update app_private.personal_videos set ready_at=ready_at+interval '1 second' where id=$1",[material.id])
   else await admin.query("update app_private.client_live_photos_v1 set status='deleted' where id=$1",[material.id])
   assert.deepEqual(await load(),[])
+  assert.equal(await readCoachMaterialOpeningNote(config,a,materialScope,geminiEnv),'')
   await assert.rejects(manageCoachContextConsent(config,a,review,env),{code:'CONTEXT_ITEM_UNAVAILABLE'})
   assert.deepEqual((await journal.read(a,draft.id)).entry.material,material)
  }

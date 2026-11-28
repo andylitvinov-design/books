@@ -1,0 +1,8 @@
+.card{border:1px solid #ded2c4;border-radius:18px;padding:16px;background:#fbf7f0;color:#3e382e;display:grid;gap:12px;min-width:0;overflow-wrap:anywhere}
+.card h3,.card h4,.card p,.card dl,.card dd{margin:0}
+.card dl{display:grid;gap:10px}
+.card dt,.card p{font-size:.84rem;color:#66594c}
+.rating{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px;font-size:.9rem}
+.rating meter{grid-column:1/-1;width:100%;height:12px;accent-color:#638b76}
+.rating meter::-webkit-meter-optimum-value,.rating meter::-webkit-meter-suboptimum-value,.rating meter::-webkit-meter-even-less-good-value{background:#638b76}
+.rating meter::-moz-meter-bar{background:#638b76}

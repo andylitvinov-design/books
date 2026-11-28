@@ -311,7 +311,7 @@ test('existing voice panel routes Clarity through the trusted relay and binds th
  const voice=read('components/my-coach-gemini-live.jsx'),page=read('components/my-coach-live-dialogue.jsx')
  const begin=voice.slice(voice.indexOf('  async function begin('),voice.indexOf('  function startSession('))
  assert.ok(begin.indexOf('connectCourseRelay(r);return')<begin.indexOf('const token=await getToken(r)'))
- assert.match(voice,/onClarityRelayClock\?\.\(ack,selected\)!==true/)
+ assert.match(voice,/const callback=r\.therapyMode\?propsRef\.current\.onTherapyRelayClock:propsRef\.current\.onClarityRelayClock\s+if\(callback\?\.\(ack,selected\)!==true\)return false/)
  assert.match(voice,/r\.ready=true[\s\S]*?server sends the opening/)
  assert.match(voice,/if\(r\.claritySelection\)return !r\.ended&&!r\.paused&&r\.clarityRelay\?\.sendAudio/)
  assert.match(page,/projectClarityPanelClock\(\{previous:relayClockRef\.current,selection,owner,ack\}\)/)
@@ -384,6 +384,14 @@ test('committed relay visits preserve authorship across the same protocol and re
  assert.match(ui,/item\.relayHandoff===true&&result\?\.relayHandoff===true/)
  assert.match(store,/clarityRelayArchiveMatches\(relayBinding,value\.protocol,\{from:old\.protocol\.turns\.length\}\)/)
 })
+
+test('Clarity permits only a single consented memory fingerprint on an exact existing run',()=>{
+ const memorySelection={provider:'gemini_live_free',consent:true,fingerprint:'a'.repeat(64)}
+ assert.deepEqual(normalizeClarityRelayEntry(frame({runId:id(10),memorySelection}),owner).memorySelection,memorySelection)
+ for(const bad of [null,{...memorySelection,consent:false},{...memorySelection,provider:'groq'},{...memorySelection,value:'raw'},{...memorySelection,fingerprint:'bad'}])assert.throws(()=>normalizeClarityRelayEntry(frame({runId:id(10),memorySelection:bad}),owner),invalid)
+ assert.throws(()=>normalizeClarityRelayEntry(frame({memorySelection}),owner),invalid)
+})
+
 
 test('relay initialization times out before provider allocation and disposes a late controller',async()=>{
  let release;const pending=new Promise(resolve=>{release=resolve})

@@ -18,25 +18,62 @@ test('all twelve registered personas have distinct coaching and therapy audio pr
  assert.equal(coachAudioModeForCourse(null),'coaching');assert.equal(coachAudioModeForCourse({type:'therapy'}),'therapy');assert.equal(coachAudioModeForCourse({mode:'therapy'}),'coaching');assert.equal(coachAudioModeForCourse({programType:'therapy'}),'coaching')
 })
 
-import {geminiFreeLiveConfig,issueGeminiFreeLiveToken,normalizeGeminiFreeLiveStart} from '../lib/coaching/gemini-live-free.mjs'
-import {geminiLiveSetupForToken} from '../lib/coaching/gemini-live-transport.mjs'
-import {COACH_AUDIO_PROFILE_VERSION} from '../lib/coaching/coach-audio-wire.mjs'
+import {geminiFreeLiveSetup,normalizeGeminiFreeLiveStart} from '../lib/coaching/gemini-live-free.mjs'
+import {ANTI_STRESS_SESSION_IDS,ANTI_STRESS_PROGRAM_ID,coachProgramSettings} from '../lib/coaching/coach-program-mode.mjs'
 import {normalizeGeminiCoachTtsInput,synthesizeGeminiCoachTts} from '../lib/coaching/gemini-coach-tts.mjs'
 const body={personaId:'mira',locale:'ru',settings:{},voiceName:'Sulafat',consent:true,voiceConsent:true,trainingUseConsent:true}
-test('all 16 approved public Coaching configurations reach exact outbound token JSON and browser setup',async()=>{
- const config=geminiFreeLiveConfig({HH_GEMINI_FREE_API_KEY:'AIza'+'A'.repeat(36),HH_MY_COACH_GEMINI_FREE_ENABLED:'true',HH_MY_COACH_GEMINI_FREE_TIER_CONFIRMED:'true',HH_MY_COACH_GEMINI_FREE_DATA_APPROVED:'true',HH_MY_COACH_GEMINI_LIVE_FREE_ENABLED:'true',HH_COACHING_BRAIN_ENABLED:'true',HH_COACHING_LIVE_VOICE_ENABLED:'true',HH_COACHING_LIVE_VOICE_APPROVED:'true'})
+test('live tokens preserve each approved base voice and select exact mode only in guarded therapy path',()=>{
  for(const id of ['mira','max','sofia','alex','merlin','harry','genie','caesar'])for(const locale of ['ru','en']){
-  const voice=approvedGeminiVoice(id,locale),start=normalizeGeminiFreeLiveStart({...body,personaId:id,locale,voiceName:voice});let sent;
-  const token=await issueGeminiFreeLiveToken(config,start,{now:1795100000000,fetcher:async(_url,o)=>{sent=JSON.parse(o.body);return {ok:true,status:200,json:async()=>({name:'auth_tokens/synthetic-audio-profile'})}}});
-  const setup=sent.bidiGenerateContentSetup;assert.ok(sent.fieldMask.split(',').includes('systemInstruction'));assert.ok(setup.systemInstruction.parts[0].text.includes(coachVocalDelivery(id,locale,voice,'coaching')));assert.ok(!setup.systemInstruction.parts[0].text.includes(coachVocalDelivery(id,locale,voice,'therapy')));
-  assert.equal(token.audioProfile.version,COACH_AUDIO_PROFILE_VERSION);assert.equal(token.audioProfile.mode,'coaching');assert.equal(token.audioProfile.voiceName,voice);
-  const socket=geminiLiveSetupForToken(token,start).setup;assert.deepEqual(socket.generationConfig.speechConfig,setup.generationConfig.speechConfig);assert.deepEqual(socket.realtimeInputConfig,setup.realtimeInputConfig);
-  for(const patch of [{mode:'therapy'},{version:'wrong'},{locale:'es'},{voiceName:'wrong'},{silenceDurationMs:1},{courseSessionId:'different'}])assert.throws(()=>geminiLiveSetupForToken({...token,audioProfile:{...token.audioProfile,...patch}},start));
-  assert.throws(()=>geminiLiveSetupForToken({...token,audioProfile:null},start)); const {audioProfile,...legacy}=token;assert.equal(geminiLiveSetupForToken(legacy,start).setup.generationConfig.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName,voice)
+  const voice=approvedGeminiVoice(id,locale)
+  const start=normalizeGeminiFreeLiveStart({...body,personaId:id,locale,voiceName:voice})
+  const ordinary=geminiFreeLiveSetup(start), internal={...start,courseSessionId:ANTI_STRESS_SESSION_IDS[0]}
+  assert.throws(()=>geminiFreeLiveSetup(internal)); assert.throws(()=>normalizeGeminiFreeLiveStart({...body,courseSessionId:ANTI_STRESS_SESSION_IDS[0]}))
+  const therapy=geminiFreeLiveSetup(internal,{trustedTherapy:true})
+  assert.equal(ordinary.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName,voice);assert.equal(therapy.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName,voice)
+  assert.ok(ordinary.systemInstruction.parts[0].text.includes(coachVocalDelivery(id,locale,voice,'coaching')))
+  assert.ok(therapy.systemInstruction.parts[0].text.includes(coachVocalDelivery(id,locale,voice,'therapy')))
+  assert.ok(!therapy.systemInstruction.parts[0].text.includes(coachVocalDelivery(id,locale,voice,'coaching')))
+  assert.equal(therapy.realtimeInputConfig.automaticActivityDetection.silenceDurationMs,1400)
  }
- assert.throws(()=>normalizeGeminiFreeLiveStart({...body,courseSessionId:'anti_stress_ground'}));assert.throws(()=>normalizeGeminiFreeLiveStart({...body,mode:'therapy'}))
+ assert.equal(coachAudioModeForCourse(coachProgramSettings(ANTI_STRESS_PROGRAM_ID)),'therapy')
 })
-test('TTS default sends the same profile and public request cannot select therapy',async()=>{
- const request={provider:'gemini_tts_free',locale:'ru',personaId:'mira',text:'Нейтральный тест.',voiceName:'Sulafat',voiceConsent:true,cloudVoiceConsent:true,trainingUseConsent:true};assert.throws(()=>normalizeGeminiCoachTtsInput({...request,mode:'therapy'}));const input=normalizeGeminiCoachTtsInput(request);let sent;
- await assert.rejects(synthesizeGeminiCoachTts({config:{provider:'gemini_tts_free',model:'gemini-3.8-flash-lite-tts',apiKey:'AIza'+'A'.repeat(36)},input,fetcher:async(_u,o)=>{sent=JSON.parse(o.body);return {ok:false,status:503}}}),/GEMINI_COACH_TTS_UNAVAILABLE/);assert.equal(sent.input[0].content[0].annotations[0].style,coachVocalDelivery('mira','ru',input.voiceName,'coaching'));assert.equal(sent.store,false)
+test('TTS public request rejects mode overrides; internal trusted course changes delivery without changing voice or making a vendor call',async()=>{
+ const request={provider:'gemini_tts_free',locale:'ru',personaId:'mira',text:'Нейтральный тест.',voiceName:'Sulafat',voiceConsent:true,cloudVoiceConsent:true,trainingUseConsent:true}
+ assert.throws(()=>normalizeGeminiCoachTtsInput({...request,mode:'therapy'}));assert.throws(()=>normalizeGeminiCoachTtsInput({...request,trustedProgramSettings:{type:'therapy'}}))
+ const input=normalizeGeminiCoachTtsInput(request), config={provider:'gemini_tts_free',model:'gemini-3.8-flash-lite-tts',apiKey:'AIza'+'A'.repeat(36)}
+ for(const mode of ['coaching','therapy']){
+  let sent;const fetcher=async(_url,o)=>{sent=JSON.parse(o.body);return {ok:false,status:503}}
+  await assert.rejects(synthesizeGeminiCoachTts({config,input,fetcher,trustedProgramSettings:coachProgramSettings(mode==='therapy'?ANTI_STRESS_PROGRAM_ID:null)}),/GEMINI_COACH_TTS_UNAVAILABLE/)
+  assert.equal(sent.input[0].content[0].annotations[0].style,coachVocalDelivery('mira','ru',input.voiceName,mode));assert.equal(sent.generation_config.speech_config[0].voice,input.voiceName);assert.equal(sent.store,false)
+ }
+})
+
+import {geminiFreeLiveConfig,issueGeminiFreeLiveToken} from '../lib/coaching/gemini-live-free.mjs'
+import {createAntiStressRun} from '../lib/coaching/anti-stress-runs.mjs'
+import {geminiLiveSetupForToken} from '../lib/coaching/gemini-live-transport.mjs'
+import {COACH_AUDIO_PROFILE_VERSION} from '../lib/coaching/coach-audio-wire.mjs'
+import {readFileSync} from 'node:fs'
+test('exact outgoing provider JSON and browser socket agree for each approved RU/EN coach in both modes',async()=>{
+ const config=geminiFreeLiveConfig({HH_GEMINI_FREE_API_KEY:'AIza'+'A'.repeat(36),HH_MY_COACH_GEMINI_FREE_ENABLED:'true',HH_MY_COACH_GEMINI_FREE_TIER_CONFIRMED:'true',HH_MY_COACH_GEMINI_FREE_DATA_APPROVED:'true',HH_MY_COACH_GEMINI_LIVE_FREE_ENABLED:'true',HH_COACHING_BRAIN_ENABLED:'true',HH_COACHING_LIVE_VOICE_ENABLED:'true',HH_COACHING_LIVE_VOICE_APPROVED:'true'})
+ const now=1795100000000,uuid=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0'),protocolId=uuid(2)
+ const run=createAntiStressRun({id:uuid(1),protocolIds:[protocolId,uuid(3),uuid(4)],access:'free',createdAt:now})
+ for(const id of ['mira','max','sofia','alex','merlin','harry','genie','caesar'])for(const locale of ['ru','en'])for(const mode of ['coaching','therapy']){
+  const voice=approvedGeminiVoice(id,locale),ordinary=normalizeGeminiFreeLiveStart({...body,personaId:id,locale,voiceName:voice})
+  const start=mode==='therapy'?{...ordinary,courseSessionId:ANTI_STRESS_SESSION_IDS[0]}:ordinary
+  const opts=mode==='therapy'?{antiStressLease:{leaseId:uuid(90),run,sessionId:start.courseSessionId,protocolId,now,previousCredentialExpiresAt:null,reservedExpiresAt:new Date(now+900000).toISOString(),expiresAt:new Date(now+900000).toISOString(),newSessionExpireTime:new Date(now+45000).toISOString()}}:{}
+  let sent;const token=await issueGeminiFreeLiveToken(config,start,{now,...opts,fetcher:async(_url,o)=>{sent=JSON.parse(o.body);return {ok:true,status:200,json:async()=>({name:'auth_tokens/synthetic-audio-profile'})}}})
+  const setup=sent.bidiGenerateContentSetup;assert.ok(sent.fieldMask.split(',').includes('systemInstruction'))
+  assert.ok(setup.systemInstruction.parts[0].text.includes(coachVocalDelivery(id,locale,voice,mode)))
+  assert.equal(token.audioProfile.version,COACH_AUDIO_PROFILE_VERSION);assert.equal(token.audioProfile.mode,mode);assert.equal(token.audioProfile.voiceName,voice)
+  assert.equal(token.audioProfile.silenceDurationMs,mode==='therapy'?1400:900)
+  const socket=geminiLiveSetupForToken(token,start).setup
+  assert.deepEqual(socket.generationConfig.speechConfig,setup.generationConfig.speechConfig);assert.deepEqual(socket.realtimeInputConfig,setup.realtimeInputConfig)
+  for(const patch of [{mode:mode==='therapy'?'coaching':'therapy'},{version:'wrong'},{locale:'es'},{voiceName:'wrong'},{silenceDurationMs:1},{courseSessionId:'different'}])assert.throws(()=>geminiLiveSetupForToken({...token,audioProfile:{...token.audioProfile,...patch}},start))
+  assert.throws(()=>geminiLiveSetupForToken({...token,audioProfile:null},start))
+  const {audioProfile,...legacy}=token;
+  if(mode==='therapy')assert.throws(()=>geminiLiveSetupForToken(legacy,start));else assert.equal(geminiLiveSetupForToken(legacy,start).setup.generationConfig.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName,voice);
+  if(mode==='coaching')assert.ok(!setup.systemInstruction.parts[0].text.includes(coachVocalDelivery(id,locale,voice,'therapy')));
+ }
+ const ui=readFileSync(new URL('../components/my-coach-gemini-live.jsx',import.meta.url),'utf8')
+ assert.ok(ui.includes('geminiLiveSetupForToken(token,r)'));assert.ok(ui.includes('[personaId,lang,voiceName,courseSessionId,enabled]'));assert.ok(ui.includes('data-coach-audio-profile-mode={runtime.current?.ready?'))
 })

@@ -38,6 +38,7 @@ function courseView(c,locale,t){
    const href=clarityMyPageRunHref(locale,c)
    return href?{title:t.clarity+' · '+t.run+' '+c.ordinal,detail:[c.day?t.session+' '+c.day+'/3':'',t.time+' '+Math.floor(c.done/60000)+'/60 '+t.minutes].filter(Boolean).join(' · '),href,Icon:MessageCircle}:null
   }
+  case 'therapy':return {art:'antistress',title:t.antistress+' · Therapy',detail:[c.day?t.session+' '+c.day+'/3':'',Math.floor(c.done/60000)+'/45 '+t.minutes].filter(Boolean).join(' · '),href:root+'/app/my-coaching-plan?tab=reports&antiStressRun='+encodeURIComponent(c.id),Icon:Flower2}
   case 'legacy':return {art:c.group==='antistress'?'antistress':'clarity',title:c.group==='clarity'?t.legacyClarity:t[c.group]||t.coach,detail:t.saved+' · '+c.done,href:c.group==='goal'?root+'/app/daybook?start=vector':c.group==='clarity'?root+'/app/daybook?program=clarity':root+'/my-coach',Icon:c.group==='goal'?Target:MessageCircle}
   default:return null
  }
