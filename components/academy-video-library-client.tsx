@@ -6,6 +6,7 @@ import { ArrowUpRight, ChevronDown, Film, Play } from "lucide-react";
 import { useState } from "react";
 
 import type { PublicLocale } from "@/lib/public-locales";
+import { AcademyVideoCourseJourney } from "@/components/academy-video-course-journey";
 import styles from "./academy-video-library.module.css";
 import { CatalogStarRating, StarFilter, matchesStarFilter, sortByStars, useCatalogRatings } from "@/components/catalog-star-rating";
 import AcademyVideoProgress from "@/components/app/academy-video-progress";
@@ -115,7 +116,7 @@ function poster(videoId: string) {
 }
 
 function courseVideoCount(course: AcademyVideoCourse) {
-  return course.chapters.reduce((total, chapter) => total + chapter.videos.length, 0);
+  return course.chapters.reduce((total, chapter) => total + chapter.videos.filter((video) => !video.unavailable).length, 0);
 }
 
 function programVideoCount(program: AcademyVideoProgram) {
@@ -253,6 +254,38 @@ export function AcademyVideoLibraryClient({
                                      </div>
                                      <small>{t.freeInfo}</small>
                                    </div> : null}
+                                  {group.language === "ru" && !minimumStars && !sortRated ? (() => {
+                                    const available = course.chapters.flatMap((chapter) =>
+                                      chapter.videos.filter((video) => !video.unavailable && /^[A-Za-z0-9_-]{11}$/.test(video.id))
+                                        .map((video) => ({
+                                          id: chapter.id + "/" + video.id,
+                                          title: (chapter.title ? chapter.title + " · " : "") + video.title,
+                                          order: 0,
+                                          youtubeId: video.id,
+                                        })));
+                                    const unavailable = course.chapters.flatMap((chapter) =>
+                                      chapter.videos.filter((video) => video.unavailable));
+                                    if (!available.length) return <p className={styles.sourceNote}>{t.unavailable}</p>;
+                                    return <>
+                                      <AcademyVideoCourseJourney
+                                      key={course.id}
+                                      locale={locale}
+                                      courseId={"archive:" + course.id}
+                                      title={course.title}
+                                      description={course.description || course.category}
+                                      poster={course.poster}
+                                      lessons={available.map((video, index) => ({ ...video, order: index + 1 }))}
+                                      renderVideoExtras={lesson => lesson.youtubeId ? <>
+                                        <CatalogStarRating locale={locale} summary={stars.ratings[lesson.youtubeId]} onRate={value=>stars.rate(lesson.youtubeId!,value)} unavailable={stars.unavailable} compact/>
+                                        <AcademyVideoProgress key={lesson.youtubeId} videoId={lesson.youtubeId} title={lesson.title} locale={locale}/>
+                                      </> : null}
+                                      />
+                                      {unavailable.length ? <p className={styles.sourceNote} role="note">
+                                        {unavailable.length} · {t.unavailable}
+                                      </p> : null}
+                                    </>;
+                                  })() : (
+                                  <>
                                    {course.chapters.map((chapter) => (
                                     <section className={styles.chapter} key={chapter.id}>
                                       {chapter.title ? <h4>{chapter.title}</h4> : null}
@@ -308,6 +341,8 @@ export function AcademyVideoLibraryClient({
                                       })}
                                     </section>
                                   ))}
+                                  </>
+                                  )}
                                   <Link className={styles.details} href={course.href}>{t.details} <ArrowUpRight size={16} aria-hidden="true" /></Link>
                                 </div>
                               ) : null}

@@ -47,3 +47,15 @@
 .slideCta:hover{background:#0a605f}
 .slideCta:focus-visible{outline:3px solid #549d95;outline-offset:3px}
 @media(max-width:430px){.pageCanvas{padding:13px;gap:13px}.pageCanvas .cover{aspect-ratio:16/9}.reflection,.instructions{padding:12px;gap:9px}.reflection p,.instructions .body{font-size:14px}}
+
+/* Russian embedded-video programmes: supporting author slides are kept, but off the learning screen. */
+.extras { margin: 10px 0 30px; border: 1px solid #dfd0bd; border-radius: 13px; background: #fffaf5; }
+.extras > summary { padding: 13px 15px; color: #75533d; font: 750 12px/1.4 system-ui, sans-serif; cursor: pointer; }
+.extras > div { display: grid; gap: 10px; padding: 0 12px 13px; }
+.extras article { min-width: 0; padding: 13px; border: 1px solid #e9dbcc; border-radius: 11px; background: white; }
+.extras article h3 { margin: 0 0 7px; color: #4f3a2b; font: 600 18px/1.3 Georgia, serif; }
+.extras article p { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.5; color: #69584b; }
+.extras article img { display: block; width: 100%; max-height: 270px; object-fit: contain; border-radius: 9px; }
+.extras article audio { display: block; width: 100%; }
+.extras article a { font-size: 12px; color: #7b533c; }
+.extras :is(summary, a):focus-visible { outline: 3px solid #965b3e; outline-offset: 2px; }

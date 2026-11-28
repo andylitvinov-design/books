@@ -127,13 +127,14 @@ test("All 41 unique recovered PsiMaster videos appear in their matching Russian 
   assert.ok(media.every((video) => video.sourceUrl.startsWith("https://psimaster.net/service?")), "every record retains its exact PsiMaster origin");
   assert.match(page, /const videoCollections = templeVideoCollections\(stage\.id, locale\)/);
   assert.match(page, /const videoIndex = templeStages\.map/);
-  assert.match(page, /<AcademyVideoPlayer youtubeId=\{video\.id\}/);
+  assert.match(page, /<AcademyVideoCourseJourney/);
+  assert.match(page, /youtubeId: video\.id/);
   assert.match(page, /className="temple-video-series"/);
   assert.match(page, /className="temple-video-index"/);
   assert.match(page, /aria-label=\{vt\.navigate\}/);
   assert.match(page, /className="temple-video-series-summary-text"/);
   assert.match(page, /collection\.repeatedCount > 0/);
-  assert.match(page, /<ol className="temple-video-grid">/);
+  assert.match(page, /courseId=\{"temple:" \+ collection\.key\}/);
   assert.match(assignments, /repeatedCount: originals\.length - videos\.length/);
   assert.match(assignments, /description: ".*"/);
   assert.match(page, /collection\.sourceUrl/);

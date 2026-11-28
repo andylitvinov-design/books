@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, ListVideo, Play } from "lucide-react";
 
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
+import { AcademyVideoCourseJourney } from "@/components/academy-video-course-journey";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./academy-course-video-playlist.module.css";
 
@@ -49,7 +50,7 @@ const copy = {
   },
 } as const;
 
-export function AcademyCourseVideoPlaylist({
+function LegacyAcademyCourseVideoPlaylist({
   locale,
   courseTitle,
   lessons,
@@ -154,4 +155,25 @@ export function AcademyCourseVideoPlaylist({
       </div>
     </section>
   );
+}
+
+/** New source course route uses ordered reflections; existing compact embeds retain their player. */
+export function AcademyCourseVideoPlaylist(props: {
+  locale: PublicLocale;
+  courseTitle: string;
+  lessons: AcademyOrderedVideoLesson[];
+  introText?: string;
+  compact?: boolean;
+  courseId?: string;
+  description?: string;
+}) {
+  const { locale, courseTitle, lessons, courseId, description } = props;
+  if (!courseId) return <LegacyAcademyCourseVideoPlaylist {...props} />;
+  if (!lessons.length) return null;
+  return <div id="academy-video-lessons" data-academy-course-playlist data-video-lesson-count={lessons.length}>
+    <AcademyVideoCourseJourney locale={locale} courseId={"source:" + courseId} title={courseTitle}
+      description={description || props.introText} lessons={lessons.map(lesson => ({
+        id: lesson.id, title: lesson.title, order: lesson.order, youtubeId: lesson.id,
+      }))} />
+  </div>;
 }
