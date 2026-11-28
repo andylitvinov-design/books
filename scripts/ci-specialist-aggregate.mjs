@@ -464,7 +464,28 @@ export async function awaitPositiveMergeability(api, ctx, target, sleep = delay)
     const fresh = await api.pr(ctx.number);
     assertSame(fresh, ctx, false);
     if (await api.target() !== target) return null;
-    if (fresh.mergeable === true && fresh.base.sha === target) return fresh;
+    if (fresh.mergeable === true) {
+      if (fresh.base.sha === target) return fresh;
+      // GitHub's PR base snapshot may lag even its own freshly computed
+      // merge commit. Accept the exact two-parent merge proof, not a guess
+      // from a stale snapshot. The final gate still checks full base impact.
+      if (typeof api.commit === 'function' &&
+          /^[0-9a-f]{40}$/.test(fresh.merge_commit_sha || '')) {
+        let proof;
+        try { proof = await api.commit(fresh.merge_commit_sha); }
+        catch { /* A missing/recomputed merge commit remains unproven. */ }
+        if (proof?.sha === fresh.merge_commit_sha &&
+            Array.isArray(proof.parents) && proof.parents.length === 2 &&
+            proof.parents[0]?.sha === target &&
+            proof.parents[1]?.sha === ctx.head) {
+          // Close the race while the immutable commit was read. Do not
+          // return evidence for a target that has already moved again.
+          if (await api.target() !== target) return null;
+          console.log('CI_MERGEABILITY_SNAPSHOT_RECOVERED: verified exact GitHub merge parents');
+          return fresh;
+        }
+      }
+    }
     if (fresh.mergeable !== null && fresh.mergeable !== true) return null;
   }
   return null;
@@ -585,8 +606,9 @@ export function trustedAdditiveActionlint(base, current) {
 
 // General, read-only prior HEAD evidence for every applicable Specialist.
 // An exact SHA change alone does not invalidate a previously tested tree.
-// This is NOT a path-name or status-copy waiver: identical source AND
-// proposed merge trees, same protected base, immutable run/attempt identity,
+// This is NOT a path-name or status-copy waiver: identical proposed merge
+// trees, identical source or pure incorporation of the tested protected BASE,
+// same protected base, immutable run/attempt identity,
 // actual successful Core + unified gate, and its complete executed-job
 // receipt are mandatory. No candidate workflow may authorize its own reuse.
 const PRIOR_SHA=/^[0-9a-f]{40}$/;
@@ -597,6 +619,24 @@ function priorCheckout(lines,sha) {
   const positions=lines.flatMap((line,i)=>line==='[command]/usr/bin/git log -1 --format=%H'?[i]:[]);
   return positions.length===1&&lines[positions[0]+1]===sha;
 }
+
+// Reuse all Specialists for a pure incorporation of the ALREADY tested
+// protected base when the old and new proposed merge trees are identical.
+// A two-parent source merge alone does not prove equivalence: the resulting
+// source tree must equal the current proposed checkout and the old checkout.
+export function verifiedEquivalentHeadTrees(ctx,old,current,merge,before) {
+  if(![ctx.head,ctx.previousHead,ctx.base,ctx.merge,old?.tree?.sha,current?.tree?.sha,
+    merge?.tree?.sha,before?.tree?.sha].every(x=>PRIOR_SHA.test(x||''))||
+    old.sha!==ctx.previousHead||current.sha!==ctx.head||merge.sha!==ctx.merge||
+    merge.parents?.length!==2||merge.parents[0]?.sha!==ctx.base||
+    merge.parents[1]?.sha!==ctx.head||before.parents?.length!==2||
+    before.parents[0]?.sha!==ctx.base||before.parents[1]?.sha!==ctx.previousHead||
+    before.tree.sha!==merge.tree.sha)return false;
+  if(old.tree.sha===current.tree.sha)return true;
+  return current.parents?.length===2&&current.parents[0]?.sha===ctx.previousHead&&
+    current.parents[1]?.sha===ctx.base&&current.tree.sha===merge.tree.sha;
+}
+
 export async function verifiedPriorSpecialistEvidence(api,ctx,pr,files,expected) {
   const none=new Map();
   if(![ctx.head,ctx.previousHead,ctx.base,ctx.merge].every(x=>PRIOR_SHA.test(x||''))||
@@ -611,7 +651,11 @@ export async function verifiedPriorSpecialistEvidence(api,ctx,pr,files,expected)
       return c;
     };
     const [old,current,merge]=await Promise.all([commit(ctx.previousHead),commit(ctx.head),commit(ctx.merge)]);
-    if(old.tree.sha!==current.tree.sha||merge.parents?.length!==2||
+    const sameSource=old.tree.sha===current.tree.sha;
+    const incorporatedBase=current.parents?.length===2&&
+      current.parents[0]?.sha===ctx.previousHead&&current.parents[1]?.sha===ctx.base&&
+      current.tree.sha===merge.tree.sha;
+    if((!sameSource&&!incorporatedBase)||merge.parents?.length!==2||
        merge.parents[0]?.sha!==ctx.base||merge.parents[1]?.sha!==ctx.head)return none;
     const runs=await api.runsForWorkflow(ctx.previousHead,PRIOR_CORE);
     if(!Array.isArray(runs)||runs.length>100)return none;
@@ -647,8 +691,7 @@ export async function verifiedPriorSpecialistEvidence(api,ctx,pr,files,expected)
        f[5]!==ctx.previousHead||f[6]!==ctx.base||!priorCheckout(c,oldMerge)||
        !priorCheckout(g,oldMerge))return none;
     const before=await commit(oldMerge);
-    if(before.parents?.length!==2||before.parents[0]?.sha!==ctx.base||
-       before.parents[1]?.sha!==ctx.previousHead||before.tree.sha!==merge.tree.sha)return none;
+    if(!verifiedEquivalentHeadTrees(ctx,old,current,merge,before))return none;
     const receipt=g.filter(line=>line.startsWith('Specialist CI aggregate for PR #'));
     const header='Specialist CI aggregate for PR #'+ctx.number+' head='+ctx.previousHead+' event_base=';
     if(receipt.length!==1||!receipt[0].startsWith(header)||
@@ -679,7 +722,7 @@ export async function verifiedPriorSpecialistEvidence(api,ctx,pr,files,expected)
          expected.includes(name)&&typeof files.base.get(name)==='string'&&
          files.base.get(name)===files.current.get(name))
         result.set(name,{name,run_id:runId,jobs,prior_head:ctx.previousHead,prior_gate_run:run.id,
-          prior_run_attempt:actual.run_attempt});
+          prior_run_attempt:actual.run_attempt,...(!sameSource?{proof_mode:'equivalent_merge_tree',prior_merge:oldMerge,tested_merge:ctx.merge,tested_base:ctx.base}: {})});
     }
     return result;
   }catch{return none;}
@@ -1560,8 +1603,9 @@ export async function verify(api,ctx,files,options={}) {
   // green gate or authorization to reuse a different source tree.
   console.log('CI_FINAL_SPECIALIST_EVIDENCE:'+JSON.stringify({head:ctx.head,tested_base:ctx.base,
     executed:executed.map(x=>({name:x.name,run_id:x.run_id,jobs:x.jobs})),reused:state.reused||[]}));
+  let acceptedBase=null;
   if (requireCurrentBase && typeof api.target === 'function')
-    await verifyStableProtectedBase(api,ctx,verifyCurrentBase,fresh,sleep);
+    acceptedBase=await verifyStableProtectedBase(api,ctx,verifyCurrentBase,fresh,sleep);
   else await verifyCurrentBase(fresh);
   const reused=state.reused||[];
   if(reused.length){
@@ -1583,7 +1627,7 @@ export async function verify(api,ctx,files,options={}) {
     packageOnly:[...packageOnlyAdvisory].sort(),
     dispatcherOnly:[...dispatcherAdvisory].sort(),
   };
-  return {risk,expected,delegated,executed,reused,advisory,packageImpact,head:ctx.head,base:ctx.base};
+  return {risk,expected,delegated,executed,reused,advisory,packageImpact,head:ctx.head,base:ctx.base,acceptedBase};
 }
 
 // Reuse the successful Core and domain jobs for CI-policy-only production
@@ -1776,6 +1820,34 @@ export function diagnoseAggregateError(error) {
   return {category,action,symptomKeys:[...new Set(symptoms)].sort().slice(0,30)};
 }
 
+
+// This receipt is emitted ONLY by the protected verifier after every required
+// workflow and the final protected-ref proof succeeds. It is evidence, not a
+// merge permission. The native consumer must authenticate the actual successful
+// job/attempt, immutable checkout and trusted workflow before using it.
+export function mergeReadyReceipt(ctx,files,result,env) {
+  const sha=x=>typeof x==='string'&&/^[0-9a-f]{40}$/.test(x);
+  const pos=x=>Number.isSafeInteger(x)&&x>0;
+  const run=Number(env.GITHUB_RUN_ID),attempt=Number(env.GITHUB_RUN_ATTEMPT);
+  if(!pos(run)||!pos(attempt)||!pos(ctx.number)||!sha(ctx.head)||!sha(ctx.base)||
+     !sha(files.testedMergeSha)||!sha(result?.acceptedBase)||
+     result.head!==ctx.head||result.base!==ctx.base||
+     !Array.isArray(result.expected)||result.expected.length>300||
+     !Array.isArray(result.executed)||!Array.isArray(result.reused)||
+     (result.policyRevalidatedAgainst&&result.policyRevalidatedAgainst!==result.acceptedBase))return null;
+  const validPath=x=>typeof x==='string'&&/^\.github\/workflows\/[a-z0-9._-]+\.ya?ml$/i.test(x);
+  const expected=new Set(result.expected);
+  const evidence=[...result.executed,...result.reused];
+  if(expected.size!==result.expected.length||[...expected].some(x=>!validPath(x))||
+     evidence.length!==expected.size||new Set(evidence.map(x=>x?.name)).size!==expected.size||
+     evidence.some(x=>!expected.has(x?.name)||!pos(x.run_id)||!pos(x.jobs)))return null;
+  return {schema:'HH_MERGE_READY_V3',repo:ctx.repo,pr:ctx.number,head:ctx.head,
+    tested_base:ctx.base,tested_merge:files.testedMergeSha,accepted_base:result.acceptedBase,
+    policy_base:result.policyRevalidatedAgainst||ctx.base,run_id:run,run_attempt:attempt,
+    required:[...expected].sort(),evidence:evidence.map(x=>({path:x.name,run_id:x.run_id,jobs:x.jobs,
+      ...(x.prior_head?{prior_head:x.prior_head}:{})})).sort((a,b)=>a.path.localeCompare(b.path))};
+}
+
 async function main() {
   const env=process.env;
   if (env.GITHUB_EVENT_NAME !== 'pull_request') throw Error('ONLY_PULL_REQUEST_EVENT');
@@ -1830,6 +1902,8 @@ async function main() {
     '\nTrusted policy revalidated: ' + (result.policyRevalidatedAgainst || 'not required') +
     '\nNon-gating CI advisory: ' + JSON.stringify(result.advisory).slice(0,2000);
   console.log(report);
+  const ready=verifiedBase?mergeReadyReceipt(checkedCtx,files,result,env):null;
+  if(ready) console.log('HH_MERGE_READY_V3:'+JSON.stringify(ready));
   if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY,report+'\n');
 }
 

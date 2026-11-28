@@ -907,7 +907,7 @@ test('native PR receipts use slim runners; OPORA retains all real unit and brows
 
 
 test('scenario cache identity follows generator closure and pinned encoder, not unrelated npm changes',()=>{
-  const files=['hh-pr-core-release.yml','hh-static-image-cost-guard.yml','holistic-support-mandala.yml','ia-v2.yml','release-reaudit.yml','site-video-browser.yml'];
+  const files=['hh-pr-core-release.yml','hh-static-image-cost-guard.yml','holistic-support-mandala.yml','ia-v2.yml','release-reaudit.yml','site-video-browser.yml','hh-public-services-production.yml'];
   const producer=workflow(files[1]);
   const key=producer.split('\n').find(line=>line.includes('key: hh-core-media-v1-'))?.trim();
   assert.ok(key);

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {validPersonalVideoDuration} from '../lib/app/personal-video-file-contract.mjs';
 import {MATERIAL_TAB_IDS,selectedMaterialTab,materialTabSearch} from '../lib/app/my-materials-tabs.mjs';
 
 test('exact three private views with backward-compatible video default',()=>{
@@ -21,8 +22,8 @@ test('existing media providers are single-mounted in one accessible view',()=>{
   assert.match(ui,/data-my-materials-tabs/);
   assert.match(ui,/aria-selected=\{activeTab===id\}/);
   for(const tab of MATERIAL_TAB_IDS)assert.match(ui,new RegExp('my-materials-panel-'+tab));
-  assert.match(ui,/activeTab==='avatars'\?<MyLivePhotos locale=\{locale\}\/>/);
-  assert.match(ui,/activeTab==='photos'\?<SupportPhotoCabinet locale=\{locale\}\/>/);
+  assert.match(ui,/activeTab==='avatars'\?<MyLivePhotos locale=\{locale\} materialAccountId=\{accountId\}\/>/);
+  assert.match(ui,/activeTab==='photos'\?<SupportPhotoCabinet locale=\{locale\} materialAccountId=\{accountId\}\/>/);
   assert.match(ui,/PersonalVideoMessengerPanel/);
   assert.match(ui,/savePrivateMp4/);
   assert.match(ui,/appFetch\('personal-videos'/);
@@ -37,7 +38,7 @@ test('existing media providers are single-mounted in one accessible view',()=>{
 test('My Materials retains already-shipped gift route, 25-second MP4 and EN/RU/ES labels', () => {
   const ui = readFileSync('components/app/my-personal-videos.jsx', 'utf8');
   assert.match(ui, /mode=gift/);
-  assert.match(ui, /\[10,15,20,25,30,60\]/);
+  assert.equal(validPersonalVideoDuration(25),true);
   assert.match(ui, /gift:'Personal Gift'/);
   assert.match(ui, /gift:'Живая открытка'/);
   assert.match(ui, /gift:'Tarjeta viva'/);

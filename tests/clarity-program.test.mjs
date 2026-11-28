@@ -59,7 +59,7 @@ test('three independent notes, legacy isolation, duplicate protection and no fak
  const entries=[legacy,e(1),e(2,{revision:0}),e(3),e(1,{id:'duplicate'}),e(2,{goalId:'foreign'})]
  assert.deepEqual(clarityRecordedDays(entries),[1,3]);assert.equal(clarityDayNotes(entries,1).length,2)
  assert.deepEqual(clarityLegacyNotes(entries),[legacy]);assert.deepEqual(clarityRecordedDays([legacy]),[])
- const ui=read('components/app/clarity-program.jsx');assert.match(ui,/CoachingCourseDashboard/);assert.match(ui,/tags:entry\?\.tags\|\|\[clarityDayTag\(day\)\]/)
+ const ui=read('components/app/clarity-program.jsx');assert.match(ui,/CoachingCourseDashboard/);assert.match(ui,/tags:entry\?\.tags\|\|\(homework\?clarityHomeworkTags\(homework.reportId,homework.row.id\):\[clarityDayTag\(day\)\]/)
  assert.match(ui,/if\(!draft.current\)/);assert.match(ui,/hasMore\?/);assert.match(ui,/await saver.current.save/)
  const pub=read('lib/public-coaching-programs.mjs');assert.match(pub,/id==='clarity'\?CLARITY_SYLLABUS\[locale\]/)
 })
