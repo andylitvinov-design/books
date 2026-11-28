@@ -873,7 +873,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       completed:false,finished:false,ratings:[],total:8,step:1,
       current:'permission',axisTitle:({ru:'Проверка доступа',en:'Access review',es:'Revisión de acceso'})[lang]}:
       newProfileProgress)
-  const courseGateRequired=!freshPrivateProfile&&!profileV3&&coachCourseGateHandoffRequired({enabled:courseGateEnabled,autosave:autoSaveEnabled,courseSessionId:selectedCourseId,locale:conversationLang,opening:openingProgress})
+  const conversationReviewAlreadyStarted=courseFieldReview?.version===THEMATIC_TRANSCRIPT_REVIEW_VERSION&&courseFieldReview.events?.length>0
+  const courseGateRequired=!conversationReviewAlreadyStarted&&!freshPrivateProfile&&!profileV3&&coachCourseGateHandoffRequired({enabled:courseGateEnabled,autosave:autoSaveEnabled,courseSessionId:selectedCourseId,locale:conversationLang,opening:openingProgress})
   const courseGateCanStart=Boolean(courseGateRequired&&!courseGate&&!courseGateAttemptRef.current&&voiceState.phase==='idle'&&!busy&&!paused&&!protocolOpen)
   // Never let the free dialogue ask another core question while the server gate is required.
   useEffect(()=>{
@@ -1609,7 +1610,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   function courseGateHandoffText(locale){return ({ru:'Вступление завершено. Продолжим в режиме проверяемого протокола: сначала ответ, затем проверка и сохранение. Вы можете начать или закончить сессию.',en:'The opening is complete. Continue in verified protocol mode: answer, verify, then save. You can start or finish the session.',es:'La introducción ha terminado. Continúa con el protocolo verificado: responder, verificar y guardar. Puedes empezar o terminar la sesión.'})[locale]}
   function courseGateOpeningAfter(rows,locale){
     const opening=coachOpeningProgress({turns:rows,locale,personaId:openingEvidencePersonaId,...localOpeningScope})
-    return !freshPrivateProfile&&!profileV3&&coachCourseGateHandoffRequired({enabled:courseGateEnabled,autosave:autoSaveRef.current,courseSessionId:selectedCourseId,locale,opening})
+    return !conversationReviewAlreadyStarted&&!freshPrivateProfile&&!profileV3&&coachCourseGateHandoffRequired({enabled:courseGateEnabled,autosave:autoSaveRef.current,courseSessionId:selectedCourseId,locale,opening})
   }
   async function sendMessage(raw,{voiceTurn=false,utteranceLocale=null,onApprovedPhrase=null,forceLocal=false}={}){
     if(courseGateRequired||courseGateRef.current||courseGateAttemptRef.current||courseGateBusyRef.current)return null
@@ -2242,7 +2243,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     try{
       insightResult=protocolSaveSnapshotRef.current||currentProtocol()
       insightOverview=myCoachProtocolPdfOptions(insightResult,{locale:conversationLang}).protocolOverview||''
-      insightRows=coachCourseProtocolRows(insightResult.courseSessionId,insightResult.turns,insightResult.courseFieldReview,lang)
+      insightRows=coachCourseProtocolRows(insightResult.courseSessionId,insightResult.turns,insightResult.courseFieldReview,lang,{scenarioVersion:coachReviewScenarioVersion(insightResult.courseFieldReview)||insightResult.courseScenarioVersion||null})
       insightProfile=coachSavedProfileV3(insightResult,lang)
     }catch{/* show unavailable, retain original dialogue */}
   }
