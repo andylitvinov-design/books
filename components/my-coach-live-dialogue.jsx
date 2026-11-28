@@ -2482,7 +2482,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(privateProfile){toggleComposer();return}
     // The private entry read has settled. Keep Play in the original gesture
     // and leave the owner-only archive preview closed until explicitly requested.
-    if(saveToAccount&&greetingIdentity.hasPreviousProtocol&&!protocolIdRef.current)
+    // Clarity's first protocol is allocated by the authenticated relay. A
+    // local UUID (even for a returning client) would reject its first ACK.
+    if(!clarityCourseDay(id)&&saveToAccount&&greetingIdentity.hasPreviousProtocol&&!protocolIdRef.current)
       protocolIdRef.current=crypto.randomUUID()
     if(liveVoiceSelected&&liveVoiceReady&&!busy&&!paused&&!replaying){
       speechRef.current?.startSession?.()
