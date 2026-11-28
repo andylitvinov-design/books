@@ -378,6 +378,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [activeSessionSeconds,setActiveSessionSeconds]=useState(0)
   const activeClockRef=useRef(null)
   if(!activeClockRef.current)activeClockRef.current=createCoachActiveClock()
+  // Separate advisory contact clock; never added to the paid/course ledger.
+  const contactClockRef=useRef(null)
+  if(!contactClockRef.current)contactClockRef.current=createCoachActiveClock()
+  const [contactElapsedSeconds,setContactElapsedSeconds]=useState(0)
   const voicePauseRef=useRef(false),pauseActionRef=useRef(null)
   const [busy,setBusy]=useState(false)
   const [error,setError]=useState('')
@@ -718,6 +722,15 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       window.clearInterval(timer);document.removeEventListener('visibilitychange',onVisibility)
     }
   },[sessionClockStarted,paused,voicePaused,coachProfileOpen,openingProgress.completed,openingProgress.declined,resumePending])
+  const contactConnected=sessionClockStarted&&(geminiLiveConsent||turns.length>0)
+  useEffect(()=>{
+    const clock=contactClockRef.current
+    const tick=()=>setContactElapsedSeconds(clock.sample(window.performance.now()))
+    const visibility=()=>setContactElapsedSeconds(clock.setRunning(window.performance.now(),contactConnected&&!openingProgress.declined&&!resumePending&&document.visibilityState==='visible'&&!paused&&!voicePaused&&!voicePauseRef.current&&!coachProfileOpenRef.current))
+    visibility();const timer=window.setInterval(tick,1000)
+    document.addEventListener('visibilitychange',visibility)
+    return()=>{clock.setRunning(window.performance.now(),false);window.clearInterval(timer);document.removeEventListener('visibilitychange',visibility)}
+  },[contactConnected,openingProgress.declined,resumePending,paused,voicePaused,coachProfileOpen])
   const sessionTimebox=coachTimeboxState(sessionClockStarted&&openingProgress.completed&&!openingProgress.declined?Math.floor(activeSessionSeconds):null)
   const minuteRuler=coachMinuteRuler(sessionTimebox.elapsedSeconds)
   const openingActive=!openingProgress.completed
@@ -1701,6 +1714,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             ...(coachEngine==='gemini_free'?{geminiFreeDataConsent:true}:{})
           }:{}),
           elapsedSeconds:sessionClockStarted?Math.floor(activeClockRef.current.sample(window.performance.now())):0,
+          contactElapsedSeconds:Math.min(7200,Math.floor(contactClockRef.current.sample(window.performance.now()))),
           openingHistory,
           // The deterministic server opening needs the same name-only context.
           // External-provider memory sharing still requires its separate consent.
@@ -2405,7 +2419,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             locale={conversationLang} personaId={personaId} settings={settings}
             courseSessionId={selectedCourseId}
             methodSession={methodSession} prepareMethodSession={ensureCoachMethodSession}
-            voiceName={selectedGeminiVoice} elapsedSeconds={activeSessionSeconds}
+            voiceName={selectedGeminiVoice} elapsedSeconds={activeSessionSeconds} contactElapsedSeconds={contactElapsedSeconds}
             openingPrior={openingPrior} allowOpeningPrior={Boolean(openingPrior)&&openingProgress.checkmarks.invitation}
             enabled={liveVoiceReady} canStart={!nameCorrectionRef.current&&!courseGateRequired&&!busy&&!paused&&!coachProfileOpen&&!replaying&&liveVoiceReady}
             liveContextAccess={liveContextAccess} contextRevision={contextRevision}
