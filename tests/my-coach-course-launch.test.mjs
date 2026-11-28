@@ -154,7 +154,7 @@ test('exact course-run CTA restores only its verified matching saved session',()
  const gate=read('components/my-coach-greeting-gate.jsx')
  assert.doesNotMatch(gate,/window\.confirm/)
  assert.match(gate,/onResumeSession\(entry.item\)/)
- assert.ok(gate.indexOf('if(courseRunId)return',gate.indexOf('function chooseSession'))<gate.indexOf('onStart?.(id,options)'))
+ assert.ok(gate.indexOf('if(courseRunId&&!entry.boundStart)return',gate.indexOf('function chooseSession'))<gate.indexOf('onStart?.(id,options)'))
 })
 test('saved session entry never restarts on unknown, partial or ambiguous history',()=>{
  const item={id:'saved',courseSessionId:'intro',personaId:'genie',durationSeconds:420}
