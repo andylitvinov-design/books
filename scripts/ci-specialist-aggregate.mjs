@@ -8,11 +8,11 @@ import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance, safeIndependentDomainTestAdvance, safeComposedIndependentAdvance, safeScopedDisjointProductionAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeNonOverlappingProductAdvance, normalizeIdenticalProtectedOverlap, REVALIDATABLE_CI_POLICY_FILES } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance, safeIndependentDomainTestAdvance, safeComposedIndependentAdvance, safeScopedDisjointProductionAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeNonOverlappingProductAdvance, normalizeIdenticalProtectedOverlap, verifiedAdditiveServerPackageEvidence, REVALIDATABLE_CI_POLICY_FILES } from '../lib/ci/production-base-impact.mjs';
 import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import { requiresRealMediaWebKit } from '../lib/ci/merge-check-light.mjs';
 import {
-  TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
+  TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists, parsePrTrigger, matchesTrigger,
   inspectWorkflowRuns, inspectJobs, trustedConditionalJobs, trustedRequiredJobs, trustedConditionallyInapplicableJobs, validateParameters, classifyReleaseRisk, concurrencyOnlyAdvisory, selfTriggerRemovalAdvisory, isConcurrencyAdvisoryRun,
 } from '../lib/ci/specialist-aggregate.mjs';
 
@@ -443,6 +443,55 @@ export async function awaitPositiveMergeability(api, ctx, target, sleep = delay)
   return null;
 }
 
+// A final gate reads the protected target before and after the impact proof.
+// If it moved in that tiny window, repeat ONLY the read-only freshness proof.
+// Keep the exact same executed Core/Specialist evidence and never retry a
+// confirmed source failure or a changed PR HEAD as a harmless base advance.
+export async function verifyStableProtectedBase(api, ctx, verify, initialPr, sleep = delay) {
+  let live = initialPr;
+  const isBaseError = error => String(error?.message || error).includes(
+    'PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
+  for (let attempt=0; attempt<4; attempt++) {
+    const target = await api.target();
+    let failure;
+    try { await verify(live, true, target); }
+    catch (error) { if (!isBaseError(error)) throw error; failure=error; }
+    const after = await api.target();
+    if (after === target) {
+      if (failure) throw failure;
+      return target;
+    }
+    console.log('CI_FINAL_BASE_RETRY: protected target advanced during freshness proof; retain executed jobs');
+    if (attempt<3) {
+      await sleep(250*(attempt+1));
+      live=await api.pr(ctx.number);
+      assertSame(live,ctx,false);
+    }
+  }
+  throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
+}
+
+// Advisory only: identify a moving target early without cancelling actual
+// required specialists, or making a preliminary result a merge authorization.
+export async function observeProtectedBaseDrift(api, ctx, changed, previous) {
+  try {
+    const target=await api.target();
+    if (!/^[0-9a-f]{40}$/.test(target || '') || target===previous) return previous;
+    if (target===ctx.base) return target;
+    const diff=await api.compare(ctx.base,target);
+    const rows=Array.isArray(diff?.files)?diff.files:[];
+    const paths=new Set(changed);
+    console.log('CI_BASE_ADVANCE_PREVIEW:'+JSON.stringify({
+      tested_base:ctx.base,observed_base:target,head:ctx.head,
+      compare_status:diff?.status??null,ahead_by:diff?.ahead_by??null,
+      reported_file_rows:rows.length,overlap:rows.filter(row=>paths.has(row?.filename)||
+        paths.has(row?.previous_filename)).map(row=>row.filename).slice(0,30),
+      target_paths:rows.slice(0,30).map(row=>row?.filename),advisory_only:true,
+    }));
+    return target;
+  } catch { return previous; } // final authoritative proof still fails closed
+}
+
 function assertSame(pr, ctx, requireCurrentBase = false) {
   const reason = classifyPrState(pr, ctx, requireCurrentBase);
   if (reason) throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:' + reason);
@@ -620,6 +669,57 @@ export function reusePriorSpecialistState(state,prior) {
     reused:[...reusable].map(name=>prior.get(name))};
 }
 
+
+// These are independently owned optional product specialists, not mandatory
+// Core, security, data, billing, CI/Guard or provider-coaching owners. Their
+// root-manifest selector alone does not require a merge to wait when a reviewed
+// additive server dependency closure leaves every existing resolution intact.
+// No job is declared successful by this rule; its original outcome is advisory.
+const PACKAGE_ONLY_ADVISORY_OWNERS = new Set([
+  '.github/workflows/hh-static-image-cost-guard.yml',
+  '.github/workflows/opora-module-ci.yml',
+  '.github/workflows/hh-owner-telegram-video.yml',
+  '.github/workflows/hh-live-audio-ci.yml',
+]);
+export function independentPackageOnlyAdvisories(files,changed,expected) {
+  const result=new Set();
+  if(!Array.isArray(changed)||!Array.isArray(expected)||
+     !changed.includes('package.json')||!changed.includes('package-lock.json')||
+     !verifiedAdditiveServerPackageEvidence(files,changed)) return result;
+  try {
+    const old=JSON.parse(files.baseLock).packages, next=JSON.parse(files.currentLock).packages;
+    const added=new Set(Object.keys(next).filter(p=>!Object.hasOwn(old,p)).map(p=>p.slice('node_modules/'.length)));
+    if(!added.size) return result;
+    // Even an unchanged existing lock row might acquire a formerly absent
+    // optional peer. Reject any prior dependency/peer edge into the additions.
+    for(const [p,row] of Object.entries(old)) {
+      if(!p) continue;
+      if(['dependencies','optionalDependencies','peerDependencies'].some(k=>
+         Object.keys(row[k]||{}).some(name=>added.has(name)))) return result;
+    }
+    for(const name of added) {
+      const row=next['node_modules/'+name];
+      if(!row||row.hasInstallScript||row.link||row.inBundle||row.bin||
+         !/^https:\/\/registry\.npmjs\.org\//.test(row.resolved||'')) return result;
+    }
+  } catch { return result; }
+  const productPaths=changed.filter(p=>p!=='package.json'&&p!=='package-lock.json');
+  // A change to global application/CI execution policy stays strict.
+  if(productPaths.some(p=>/^(?:\.github\/actions\/|\.github\/workflows\/hh-pr-core-release\.|lib\/ci\/|scripts\/ci-|next\.config\.|middleware\.|tsconfig\.|eslint\.config\.|vercel\.json$|app\/(?:layout|globals)\.)/i.test(p)))return result;
+  for(const path of expected) {
+    if(!PACKAGE_ONLY_ADVISORY_OWNERS.has(path)||changed.includes(path))continue;
+    const old=files.base.get(path), current=files.current.get(path);
+    if(typeof old!=='string'||old!==current)continue;
+    try {
+      const trigger=parsePrTrigger(old,path);
+      if(!trigger?.paths||!matchesTrigger(trigger,['package.json','package-lock.json'],TARGET))continue;
+      if(productPaths.length&&matchesTrigger(trigger,productPaths,TARGET))continue;
+      result.add(path);
+    } catch { /* unknown trigger stays mandatory */ }
+  }
+  return result;
+}
+
 export async function verify(api,ctx,files,options={}) {
   // Distinguish an absent workflow from a queued run and genuine execution.
   // Running checks use the long deadline; registered queued checks get a separate,
@@ -673,13 +773,13 @@ export async function verify(api,ctx,files,options={}) {
   const approvedBaseChanges = new Set();
   const approvedPresentationBases = new Set();
   const approvedDisjointBases = new Set();
-  async function verifyCurrentBase(live, allowMergeabilityRetry = true) {
+  async function verifyCurrentBase(live, allowMergeabilityRetry = true, observedTarget) {
     assertSame(live, ctx, false);
     if (!requireCurrentBase) return;
     // GitHub's pull_request.base.sha is an event/PR snapshot and can lag the
     // protected branch after a verified merge checkout has been created.
     // Compare against the actual production ref while keeping HEAD exact.
-    const liveBaseSha = typeof api.target === 'function' ? await api.target() : live.base.sha;
+    const liveBaseSha = observedTarget ?? (typeof api.target === 'function' ? await api.target() : live.base.sha);
     if (!/^[0-9a-f]{40}$/.test(liveBaseSha)) {
       throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
     }
@@ -950,7 +1050,10 @@ export async function verify(api,ctx,files,options={}) {
   // release workflow, regardless of filename or route classification.
   const mandala = WORKFLOW_PREFIX + 'holistic-support-mandala.yml';
   if (routed.expected.includes(mandala)) advisoryPaths.delete(mandala);
-  const expected=routed.expected.filter(name=>!advisoryPaths.has(name) && !concurrencyAdvisory.has(name) && !selfTriggerAdvisory.has(name));
+  const packageOnlyAdvisory=pinnedChangeRows ? independentPackageOnlyAdvisories(files,changed,routed.expected) : new Set();
+  for(const replacement of replacements) packageOnlyAdvisory.delete(replacement);
+  const expected=routed.expected.filter(name=>!advisoryPaths.has(name) && !concurrencyAdvisory.has(name) && !selfTriggerAdvisory.has(name) && !packageOnlyAdvisory.has(name));
+  if(packageOnlyAdvisory.size) console.log('CI_PACKAGE_ONLY_ADVISORY:'+JSON.stringify([...packageOnlyAdvisory].sort()));
   // A moving production SHA is not itself a failing PR. Wait for required
   // exact-HEAD specialist evidence before considering any base-sync recovery.
   // Earlier BASE_ADVANCED errors cancelled still-running browser/macOS work;
@@ -991,7 +1094,13 @@ export async function verify(api,ctx,files,options={}) {
   // only after these specialist outcomes are terminal.
   const sensitiveFreshnessInterval = 90_000;
   let nextSensitiveFreshnessCheck = start + sensitiveFreshnessInterval;
+  let nextDriftPreview = start + sensitiveFreshnessInterval, previewedBase=ctx.base;
   for (;;) {
+    if (requireCurrentBase && deferBaseUntilSpecialists && now() >= nextDriftPreview &&
+        typeof api.target === 'function' && typeof api.compare === 'function') {
+      previewedBase=await observeProtectedBaseDrift(api,ctx,changed,previewedBase);
+      nextDriftPreview=now()+sensitiveFreshnessInterval;
+    }
     if (requireCurrentBase && !deferBaseUntilSpecialists && now() >= nextSensitiveFreshnessCheck) {
       // Fresh PR identity/HEAD and production ref; existing exception logic
       // still admits only exhaustively verified, disjoint BASE advances.
@@ -1012,10 +1121,11 @@ export async function verify(api,ctx,files,options={}) {
       }
     }
     const allRuns=[...indexed,...recovered.values()];
-    fastDiagnostics=allRuns.filter(run=>advisoryPaths.has(String(run.path || '').split('@')[0]) &&
+    fastDiagnostics=allRuns.filter(run=>(advisoryPaths.has(String(run.path || '').split('@')[0]) || packageOnlyAdvisory.has(String(run.path || '').split('@')[0])) &&
       (run.status !== 'completed' || run.conclusion !== 'success')).map(run=>String(run.path).split('@')[0]+':'+(run.conclusion || run.status || 'unknown'));
     const eligibleRuns = rows => rows.filter(run =>
       !advisoryPaths.has(String(run.path || '').split('@')[0]) &&
+      !packageOnlyAdvisory.has(String(run.path || '').split('@')[0]) &&
       !isConcurrencyAdvisoryRun(run,pr,concurrencyAdvisory) &&
       !isConcurrencyAdvisoryRun(run,pr,selfTriggerAdvisory));
     state=inspectWorkflowRuns({expected,runs:eligibleRuns(allRuns),pr});
@@ -1208,7 +1318,14 @@ export async function verify(api,ctx,files,options={}) {
     job_evidence_ms:now()-evidenceStart, evidence_parallelism:3,
   }));
   const fresh=await api.pr(ctx.number);
-  await verifyCurrentBase(fresh);
+  // Preserve independently authenticated terminal job evidence even when
+  // the final target genuinely needs reconciliation. This receipt is NOT a
+  // green gate or authorization to reuse a different source tree.
+  console.log('CI_FINAL_SPECIALIST_EVIDENCE:'+JSON.stringify({head:ctx.head,tested_base:ctx.base,
+    executed:executed.map(x=>({name:x.name,run_id:x.run_id,jobs:x.jobs})),reused:state.reused||[]}));
+  if (requireCurrentBase && typeof api.target === 'function')
+    await verifyStableProtectedBase(api,ctx,verifyCurrentBase,fresh,sleep);
+  else await verifyCurrentBase(fresh);
   const reused=state.reused||[];
   if(reused.length){
     const latest=inspectWorkflowRuns({expected:reused.map(x=>x.name),runs:await api.runs(ctx.head),pr:fresh});
@@ -1226,6 +1343,7 @@ export async function verify(api,ctx,files,options={}) {
       ...state.orphanFailures.map(item => 'orphan:'+item),...fastDiagnostics],
     concurrencyOnly:[...concurrencyAdvisory].sort(),
     selfTriggerOnly:[...selfTriggerAdvisory].sort(),
+    packageOnly:[...packageOnlyAdvisory].sort(),
   };
   return {risk,expected,delegated,executed,reused,advisory,packageImpact,head:ctx.head,base:ctx.base};
 }

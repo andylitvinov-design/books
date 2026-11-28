@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { verify, requiresCurrentProductionBase, classifyPrState, diagnoseAggregateError, awaitPositiveMergeability, verifiedPriorSpecialistEvidence, reusePriorSpecialistState } from '../scripts/ci-specialist-aggregate.mjs';
+import { verifyStableProtectedBase, observeProtectedBaseDrift, independentPackageOnlyAdvisories } from '../scripts/ci-specialist-aggregate.mjs';
 import { inspectJobs, trustedRequiredJobs, inspectWorkflowRuns } from '../lib/ci/specialist-aggregate.mjs';
 import { safeComposedIndependentAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeIndependentRouterPolicyAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeStandaloneVideoAfterSpecialistScopeAdvance, safeNonOverlappingProductAdvance, safeIndependentMixedCandidateAdvance, normalizeIdenticalProtectedOverlap } from '../lib/ci/production-base-impact.mjs';
 
@@ -622,7 +623,7 @@ test('#5093: protected BASE drift must not trigger auto-sync before required mac
   path:workflow,id:981,head_branch:pr.head.ref});
  let elapsed=0,polls=0,jobReads=0,baseReads=0,compares=0;
  const api={
-  pr:async()=>mediaPr,target:async()=>{baseReads++;return latest;},
+  pr:async()=>mediaPr,target:async()=>{assert.equal(jobReads,1,'no final target authorization before Mac evidence');baseReads++;return latest;},
   compare:async()=>{compares++;return {
     status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
     base_commit:{sha:base},merge_base_commit:{sha:base},
@@ -641,7 +642,7 @@ test('#5093: protected BASE drift must not trigger auto-sync before required mac
  assert.equal(polls,2,'the real Mac specialist must finish before BASE is considered stale');
  assert.equal(jobReads,1,'successful exact-run macOS job evidence is independently read');
  assert.equal(compares,1,'only final protected BASE comparison can trigger auto-sync');
- assert.equal(baseReads,1,'no early or periodic stale-base branch update while Mac is active');
+ assert.equal(baseReads,2,'two final target reads bracket the same proof after Mac completes');
  let redPolls=0,redBaseReads=0;
  await assert.rejects(()=>verify({...api,
   target:async()=>{redBaseReads++;return latest;},
@@ -859,7 +860,7 @@ test('all required specialists finish before BASE_ADVANCED; not only macOS (#519
     now:()=>elapsed,sleep:async ms=>{elapsed+=ms;}}),/PRODUCTION_BASE_CHANGED/);
   assert.equal(polls,2,'the actual specialist should finish before base reconciliation');
   assert.equal(jobReads,1,'read the exact-HEAD completed specialist job');
-  assert.equal(baseReads,1,'only final target comparison, not an early rejection');
+  assert.equal(baseReads,2,'final target proof is bracketed by two reads, not an early rejection');
   assert.equal(compares,1,'do not repeatedly compare moving production during CI');
   let redPolls=0,redBaseReads=0;
   await assert.rejects(()=>verify({...api,
@@ -1400,4 +1401,70 @@ test('universal moving-base proof treats feature-owned CI regressions as local, 
   assert.equal(accept({...delta,commits:[]}),false);
   assert.equal(accept({...delta,files:[...rows,rows[0]]}),false);
   assert.equal(accept({...delta,files:[{...rows[0],status:'renamed',previous_filename:'old.jsx'}]}),false);
+});
+
+test('final base race retries freshness only, never real source failure or stable rejected delta',async()=>{
+ const one='d'.repeat(40),two='e'.repeat(40);
+ const live={...pr,mergeable:true};
+ const bad=()=>Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
+ let calls=[], reads=[one,two,two,two],refresh=0;
+ const api={target:async()=>reads.shift(),pr:async()=>{refresh++;return live;}};
+ assert.equal(await verifyStableProtectedBase(api,ctx,async(p,retry,target)=>{
+   calls.push(target);if(target===one)throw bad();
+ },live,async()=>{}),two);
+ assert.deepEqual(calls,[one,two]);assert.equal(refresh,1);
+ reads=[one,one];calls=[];
+ await assert.rejects(()=>verifyStableProtectedBase(api,ctx,async(p,r,target)=>{calls.push(target);throw bad();},live,async()=>{}),/PRODUCTION_BASE_CHANGED/);
+ assert.deepEqual(calls,[one]);
+ reads=[one,two];calls=[];
+ await assert.rejects(()=>verifyStableProtectedBase(api,ctx,async()=>{throw Error('SPECIALIST_FAILED');},live,async()=>{}),/SPECIALIST_FAILED/);
+ assert.deepEqual(reads,[two]);
+ reads=[one,two];await assert.rejects(()=>verifyStableProtectedBase({...api,pr:async()=>({...live,head:{...live.head,sha:two}})},ctx,async()=>{},live,async()=>{}),/PR_HEAD_CHANGED/);
+ reads=[one,two,one,two,one,two,one,two];let attempts=0;
+ await assert.rejects(()=>verifyStableProtectedBase(api,ctx,async()=>{attempts++;},live,async()=>{}),/PRODUCTION_BASE_CHANGED/);
+ assert.equal(attempts,4);
+ let comparisons=0;
+ const preview={target:async()=>two,compare:async()=>{comparisons++;return {status:'ahead',ahead_by:2,files:[{filename:'lib/coaching/x.mjs'}]};}};
+ assert.equal(await observeProtectedBaseDrift(preview,ctx,['lib/coaching/x.mjs'],base),two);
+ assert.equal(await observeProtectedBaseDrift(preview,ctx,['lib/coaching/x.mjs'],two),two);
+ assert.equal(comparisons,1);
+ assert.equal(await observeProtectedBaseDrift({...preview,compare:async()=>{throw Error('unavailable');}},ctx,[],base),base);
+});
+
+test('root-only optional product workflows are advisory only for verified isolated server dependency additions',async()=>{
+ const names=['hh-static-image-cost-guard','opora-module-ci','hh-owner-telegram-video','hh-live-audio-ci'].map(n=>'.github/workflows/'+n+'.yml');
+ const security='.github/workflows/hh-billing-isolated.yml';
+ const basePackage={name:'hh',dependencies:{react:'19.0.0'},scripts:{'test:app':'node --conditions=react-server --test tests/coach-old.test.mjs'}};
+ const currentPackage=JSON.parse(JSON.stringify(basePackage));currentPackage.dependencies.ws='8.23.0';
+ const baseLock={lockfileVersion:3,packages:{'':{dependencies:basePackage.dependencies},'node_modules/react':{version:'19.0.0',integrity:'sha512-old'}}};
+ const currentLock=JSON.parse(JSON.stringify(baseLock));currentLock.packages[''].dependencies=currentPackage.dependencies;
+ currentLock.packages['node_modules/ws']={version:'8.23.0',integrity:'sha512-new',resolved:'https://registry.npmjs.org/ws/-/ws-8.23.0.tgz'};
+ const ownerYaml=n=>"on:\n  pull_request:\n    paths:\n      - 'package-lock.json'\n      - 'lib/"+n+"/**'\njobs:\n  test:\n    runs-on: ubuntu-latest\n";
+ const source=new Map([...names,security].map((n,i)=>[n,ownerYaml(i===1?'opora':'owner-'+i)]));
+ const paths=['package.json','package-lock.json','lib/coaching/clarity-course.mjs'];
+ const files={base:source,current:new Map(source),changedRows:paths.map(filename=>({filename,status:'M'})),
+   basePackage:JSON.stringify(basePackage),currentPackage:JSON.stringify(currentPackage),baseLock:JSON.stringify(baseLock),currentLock:JSON.stringify(currentLock)};
+ const expect=[...names,security];
+ const proof=(f=files,p=paths)=>[...independentPackageOnlyAdvisories(f,p,expect)];
+ assert.deepEqual(proof(),names);
+ assert.deepEqual(proof(files,[...paths,'lib/opora/course.mjs']),names.filter(n=>n!==names[1]));
+ assert.deepEqual(proof(files,[...paths,'next.config.ts']),[]);
+ assert.deepEqual(proof(files,[...paths,'scripts/ci-freshness.mjs']),[]);
+ assert.deepEqual(proof({...files,current:new Map([...source,[names[0],source.get(names[0])+'# changed']])}),names.slice(1));
+ assert.deepEqual(proof({...files,baseLock:null}),[]);
+ const altered=JSON.parse(files.currentLock);altered.packages['node_modules/react'].version='20.0.0';
+ assert.deepEqual(proof({...files,currentLock:JSON.stringify(altered)}),[]);
+ const installer=JSON.parse(files.currentLock);installer.packages['node_modules/ws'].hasInstallScript=true;
+ assert.deepEqual(proof({...files,currentLock:JSON.stringify(installer)}),[]);
+ const peerOld=JSON.parse(files.baseLock),peerNew=JSON.parse(files.currentLock);
+ peerOld.packages['node_modules/react'].peerDependencies={ws:'*'};peerNew.packages['node_modules/react'].peerDependencies={ws:'*'};
+ assert.deepEqual(proof({...files,baseLock:JSON.stringify(peerOld),currentLock:JSON.stringify(peerNew)}),[]);
+ const candidateRun=(filename,id,conclusion)=>({...run('completed',conclusion),path:filename,id});
+ const api={pr:async()=>({...pr,mergeable:true}),target:async()=>base,
+   runs:async()=>[...names.map((n,i)=>candidateRun(n,10+i,'failure')),candidateRun(security,30,'success')],
+   jobs:async()=>[{name:'test',status:'completed',conclusion:'success'}]};
+ const good=await verify(api,ctx,files,{maxWaitMs:0});
+ assert.deepEqual(good.expected,[security]);assert.equal(good.executed.length,1);
+ assert.deepEqual(good.advisory.packageOnly,[...names].sort());
+ await assert.rejects(()=>verify({...api,runs:async()=>[candidateRun(security,30,'failure')]},ctx,files,{maxWaitMs:0}),/SPECIALIST_FAILED/);
 });
