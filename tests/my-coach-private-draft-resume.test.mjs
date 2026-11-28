@@ -106,7 +106,10 @@ test('explicit continuation after private restore freezes the active clock and k
  assert.ok(ui.includes('setResumePending(false);setPaused(false);toggleComposer()'))
  assert.ok(ui.includes('window.setInterval(heartbeat,30000)'))
  assert.ok(ui.includes('data-coach-resume-minutes'))
- assert.ok(gate.includes("Начать заново"))
+ assert.doesNotMatch(gate,/Начать заново|window\.confirm/)
+ assert.ok(gate.includes('onResumeSession(entry.item)'))
+ assert.ok(gate.indexOf("if(entry.kind!=='new')")<gate.indexOf('onStart?.(id,options)'))
+ assert.ok(ui.includes('onResumeSession={restorePrivateDraft}'))
 })
 
 
