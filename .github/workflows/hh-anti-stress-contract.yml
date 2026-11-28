@@ -13,7 +13,9 @@ on:
       - 'lib/app/anti-stress-live-upgrade.js'
       - 'lib/app/anti-stress-private-memory.js'
       - 'app/api/app/anti-stress/**'
-      - 'components/app/anti-stress-archive*'
+      - 'components/app/anti-stress-*'
+      - 'components/my-coach-gemini-live.jsx'
+      - 'lib/coaching/coach-session-stage-view.mjs'
       - 'lib/app/my-page-courses*'
       - 'components/app/my-page-courses.jsx'
       - 'tests/my-page-courses.test.mjs'
@@ -54,7 +56,7 @@ jobs:
           docker run --rm -d --name "$name" -e POSTGRES_DB=hh_anti_stress_test -e POSTGRES_PASSWORD=synthetic-only -v "$PWD:/workspace:ro" postgres:17-alpine >/dev/null
           trap 'docker rm -f "$name" >/dev/null 2>&1 || true' EXIT
           ready=false
-          for attempt in $(seq 1 40); do
+          for _ in $(seq 1 40); do
             if docker exec "$name" pg_isready -h 127.0.0.1 -U postgres -d hh_anti_stress_test >/dev/null 2>&1; then ready=true; break; fi
             sleep 1
           done
