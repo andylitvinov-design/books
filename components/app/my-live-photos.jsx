@@ -1,4 +1,5 @@
 'use client';
+import CoachMaterialNote from './coach-material-note';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import SiteOwnerAvatarGallery from './site-owner-avatar-gallery';
@@ -85,7 +86,7 @@ const styles = {
   field: { width: '100%', minHeight: 40, border: '1px solid #b5cdca', borderRadius: 10, padding: '8px 9px', fontSize: 15, background: 'white' },
   button: { padding: '10px 13px', minHeight: 43, borderRadius: 12, border: '1px solid #6eafab', background: '#e7f6f3', color: '#164c4a', fontWeight: 650, fontSize: 14 },
 };
-export default function MyLivePhotos({ locale = 'en' }) {
+export default function MyLivePhotos({ locale = 'en', materialAccountId }) {
   const t = COPY[locale] || COPY.en;
   const [items, setItems] = useState([]);
   const [enabled, setEnabled] = useState(false);
@@ -316,6 +317,7 @@ export default function MyLivePhotos({ locale = 'en' }) {
           {item.status === 'provider_cleanup_pending' ? t.retryCleanup :
             item.status === 'local_cleanup_pending' ? t.retryLocal : t.remove}</button>
       </div>
+      {materialAccountId&&item.status==='ready'&&<CoachMaterialNote accountId={materialAccountId} locale={locale} kind="avatar" id={item.id}/>}
       {opened?.id === item.id ? <div style={{ marginTop: 10 }}>
         <video controls playsInline preload="metadata" src={opened.url} style={{ width: '100%', maxHeight: 280, borderRadius: 12, background: '#101c1c' }}/>
         <p><a href={opened.url} download>{t.download}</a></p>

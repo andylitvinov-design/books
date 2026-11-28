@@ -8,6 +8,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import ts from 'typescript'
 import { programFromContinuation, programDaybookPath } from '../lib/app/program-daybook-entry.mjs'
 import { clarityDaybookPath } from '../lib/app/clarity-program.mjs'
+import { isPageAuthContinuation, pageAuthSuccessPath } from '../lib/app/page-auth-continuation.mjs'
 
 // Actual page/component SSR with installed ReactDOM; only fixture collaborators.
 // Effects do not run on the server. No application/auth/provider module is loaded.
@@ -139,12 +140,19 @@ const failedPracticeDeclarations = findAll(callbackBlocks[0], node => ts.isVaria
   && node.name.getText(route) === 'failedPracticeDestination')
 assert.equal(failedPracticeDeclarations.length, 1)
 const failedPracticeExpression = failedPracticeDeclarations[0].initializer.getText(route)
-const redirect = (change = {}) => vm.runInNewContext(destinationExpression, {
-  origin: 'https://synthetic-site.invalid', locale: 'en', intentId: null, serviceId: null,
-  continueTo: 'coaching-intake', requestId: null, returnPath: null, program: null,
-  coachingMode: null, coachingLang: null, profi: null,
-  programFromContinuation, programDaybookPath, clarityDaybookPath, ...change,
-}, { timeout: 1000 })
+const pageReturns=findAll(callbackBlocks[0],node=>ts.isVariableDeclaration(node)&&node.name.getText(route)==='pageReturn')
+assert.equal(pageReturns.length,1)
+const pageReturnExpression=pageReturns[0].initializer.getText(route)
+const redirect = (change = {}) => {
+  const context={
+    origin:'https://synthetic-site.invalid',locale:'en',intentId:null,serviceId:null,
+    continueTo:'coaching-intake',requestId:null,returnPath:null,program:null,
+    coachingMode:null,coachingLang:null,profi:null,
+    programFromContinuation,programDaybookPath,clarityDaybookPath,isPageAuthContinuation,pageAuthSuccessPath,...change,
+  }
+  const pageReturn=vm.runInNewContext(pageReturnExpression,context,{timeout:1000})
+  return vm.runInNewContext(destinationExpression,{...context,pageReturn},{timeout:1000})
+}
 const authQueryFunctions = findAll(route, node => ts.isArrowFunction(node)
   && node.getText(route).includes("url.searchParams.set('auth', value)"))
 assert.equal(authQueryFunctions.length, 2)
@@ -158,7 +166,7 @@ test('actual callback destination stays same-origin/same-path with only constant
         { continueTo: 'coaching-intake', origin, locale, destination }, { timeout: 1000 })
       assert.equal(failedPracticeDestination, destination, 'private return never changes on Google failure')
       const result = vm.runInNewContext(`(${fn.getText(route)})(${JSON.stringify(reason)})`,
-        { URL, destination, failedPracticeDestination, linkedAccount: null, locale }, { timeout: 1000 })
+        { URL, destination, failedPracticeDestination, pageReturn:null, linkedAccount: null, locale }, { timeout: 1000 })
       const url = new URL(result)
       assert.equal(url.origin, origin)
       assert.equal(url.pathname, `/${locale}/coaching/intake`)
@@ -174,6 +182,16 @@ test('actual callback destination stays same-origin/same-path with only constant
     }
   }
   assert.equal(programFromContinuation('https://evil.invalid'), null)
+  const selected='/en/my-coach?clarityDay=2'
+  const pageReturn=pageAuthSuccessPath(selected,'my-coach-action','en')
+  const destination=redirect({continueTo:'my-coach-action',returnPath:selected})
+  assert.equal(destination,'https://synthetic-site.invalid'+pageReturn)
+  assert.equal(new URL(destination).searchParams.get('hh_resume'),'my-coach-action')
+  for(const fn of authQueryFunctions){
+    const failed=vm.runInNewContext(`(${fn.getText(route)})('cancelled')`,{URL,destination,failedPracticeDestination:destination,pageReturn,linkedAccount:null,locale:'en'},{timeout:1000})
+    assert.equal(new URL(failed).searchParams.has('hh_resume'),false)
+    assert.equal(new URL(failed).searchParams.get('clarityDay'),'2')
+  }
   assert.equal(redirect({ continueTo: 'enquiry', returnPath: '/en/coaching/intake' }), 'https://synthetic-site.invalid/en/coaching/intake?hh_enquiry=google')
 })
 

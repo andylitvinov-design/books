@@ -1,6 +1,7 @@
 'use client'
 import {coachCourseProtocolRows} from '@/lib/coaching/coach-course-protocol-schema.mjs'
 import {coachGroupTone} from '@/lib/coaching/coach-session-stage-view.mjs'
+import {ClarityInnerVector} from './clarity-semantic-result'
 import {EvidenceChecks} from './my-coach-session-state-card'
 import styles from './my-coach-session-state-card.module.css'
 const copy={
@@ -19,6 +20,7 @@ export default function MyCoachCourseProgress({courseSessionId,turns,review,loca
  const groupList=groups||[{id:'course',label:t.title,children:rows,total:rows.length,recorded:rows.filter(row=>row.quote).length,confirmed,verifiedFraction:confirmed/rows.length,recordedFraction:rows.filter(row=>row.quote).length/rows.length,skippedFraction:skipped/rows.length}]
  const words=({ru:['Занесено','Проверено'],en:['Captured','Verified'],es:['Registrado','Verificado']})[lang]
  return <section data-coach-course-progress aria-label={t.title} style={{display:'grid',gap:8,margin:'10px 0'}}>
+   {courseSessionId==='clarity_day_2'&&<ClarityInnerVector rows={rows} locale={lang}/>}
    <strong>{t.title}</strong>
    <small>{t.confirmed}: {confirmed}/{rows.length} · {t.needs_confirmation}: {pending}{skipped>0?' · '+t.skipped_by_client+': '+skipped:''}</small>
    {groupList.map(group=><section key={group.id} className={styles.protocolGroup} data-coach-protocol-group={group.id}>
@@ -28,7 +30,8 @@ export default function MyCoachCourseProgress({courseSessionId,turns,review,loca
      const row=rows.find(x=>x.id===child.id);if(!row)return null
      return <div key={row.id} data-stage-id={row.id} data-stage-status={row.active?'current':row.status==='confirmed'?'done':row.status==='skipped_by_client'?'skipped':row.status==='needs_confirmation'?'needs_confirmation':'pending'} data-course-field-status={row.status} aria-current={row.active?'step':undefined} style={{display:'grid',gap:3,...(row.active?{background:'#eef8f0',borderRadius:10,padding:6}:{})}}>
       <b>{row.label}{row.active?' · '+(provisional?({ru:'Ориентир',en:'Suggested',es:'Orientativo'})[lang]:({ru:'Сейчас',en:'Current',es:'Actual'})[lang]):''}</b>
-      <small>{t[row.status]}{row.turnIndex!==null?' · '+t.source+' '+(row.turnIndex+1):''}</small>
+      <small>{t[row.status]}{Number.isInteger(row.turnIndex)?' · '+t.source+' '+(row.turnIndex+1):''}</small>
+      {row.status==='confirmed'&&Number.isInteger(row.current)&&row.current>=0&&row.current<=10&&<strong data-coach-axis-score>{row.current}/10{Number.isInteger(row.desired)&&row.desired>=0&&row.desired<=10?' → '+row.desired+'/10':''}</strong>}
       {row.quote&&<small data-coach-field-answer style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{row.quote}</small>}
       <EvidenceChecks row={row} locale={lang}/>
      </div>

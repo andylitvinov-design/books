@@ -15,8 +15,15 @@ test('every AI coach hero and card uses the same intentional guest-only Google g
  assert.doesNotMatch(authorization,/setPhase\(|onStart\?\.|chooseSession\(/)
  // OAuth restores the intended topic, not fabricated playback.
  // A fresh screen after redirect must play the greeting before starting.
- assert.match(greeting,/if\(entryPending\|\|!greetingStarted\|\|chosen.current\|\|switching.current\|\|gate.busy\)return/)
+ const choose=greeting.slice(greeting.indexOf(' function chooseSession('),greeting.indexOf(' function showTopics('))
+ assert.match(choose,/if\(entryPending\|\|!greetingStarted\|\|chosen.current\|\|switching.current\|\|gate.busy\)return/)
+ assert.match(choose,/if\(courseRunId&&!accountSaving\)return/)
+ assert.match(choose,/if\(clarityDay&&id!==clarityCourseId\(clarityDay\)\)return/)
+ assert.match(choose,/const entry=resolveEntry\(id\)[\s\S]*?if\(entry.kind==='resume'&&onResumeSession\)\{void onResumeSession\(entry.item\);return\}[\s\S]*?if\(courseRunId&&!entry.boundStart\)return[\s\S]*?onStart\?\.\(id,options\)/)
  assert.match(greeting,/onStart:\(\)=>\{if\(audioRun.current===generation\)\{setGreetingStarted\(true\)/)
+ assert.match(authorization,/if\(courseRunId\)return/)
+ assert.match(authorization,/if\(clarityDay&&action.id!==clarityCourseId\(clarityDay\)\)return/)
+ assert.match(greeting,/chooseSession\(clarityCourseId\(clarityDay\)\|\|readyTopic\|\|INTRODUCTORY_COACH_SESSION_ID\)/)
  assert.match(greeting,/onEnd:\(\)=>\{if\(audioRun.current===generation\).*audio\?\.ended.*setPhase\('complete'\)/)
  assert.equal((greeting.match(/setPhase\('complete'\)/g)||[]).length,1)
  assert.match(greeting,/url.searchParams.set\('greetingProgram',id\)/)

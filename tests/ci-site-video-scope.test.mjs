@@ -209,6 +209,21 @@ test('new HEAD with identical source and proposed merge tree reuses only a real 
  };
  assert.deepEqual(verifiedEquivalentPriorCoreBuild(identity,oldHead,read()),{
   runId:101,attempt:2,jobId:201,previousHead:oldHead,mergeTree});
+ // A pure sync of the already-tested base may change the source tree while
+ // preserving every byte of the actual proposed merge checkout.
+ const incorporated={tree:{sha:mergeTree},parents:[{sha:oldHead},{sha:coreBase}]};
+ assert.deepEqual(verifiedEquivalentPriorCoreBuild(identity,oldHead,read({patch:{
+  [coreHead]:incorporated
+ }})),{runId:101,attempt:2,jobId:201,previousHead:oldHead,mergeTree});
+ for(const bad of [
+  {...incorporated,parents:[{sha:oldHead},{sha:'3'.repeat(40)}]},
+  {...incorporated,parents:[{sha:coreBase},{sha:oldHead}]},
+  {...incorporated,tree:{sha:'3'.repeat(40)}},
+  {...incorporated,parents:[{sha:oldHead},{sha:coreBase},{sha:'3'.repeat(40)}]}
+ ])assert.equal(verifiedEquivalentPriorCoreBuild(identity,oldHead,read({patch:{[coreHead]:bad}})),null);
+ assert.equal(verifiedEquivalentPriorCoreBuild(identity,oldHead,read({patch:{
+   [coreHead]:incorporated,[oldMerge]:{tree:{sha:'3'.repeat(40)}}
+ }})),null);
  for(const patch of [
   {[oldHead]:{tree:{sha:'3'.repeat(40)}}},
   {[oldMerge]:{tree:{sha:'3'.repeat(40)}}},

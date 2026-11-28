@@ -14,16 +14,16 @@ const copy={
 }
 function DraftRow({item,t,lang,onAction,busy}){
  const [checked,setChecked]=useState(false),[name,setName]=useState(''),[goal,setGoal]=useState(''),[summary,setSummary]=useState(''),[step,setStep]=useState('')
- const [courseFieldReview,setCourseFieldReview]=useState(null)
- const p=item.protocol,opening=p.opening
- const nameValid=!name.trim()||(!coachIsNameRepairUtterance(name)&&/^[\p{L}][\p{L}'’ -]{0,59}$/u.test(name.trim()))
+ const [courseFieldReview,setCourseFieldReview]=useState(item.draftCourseReview||null)
+ const p=item.protocol,opening=p.opening,lockedGate=item.courseGateArchive
+ const nameValid=Boolean(lockedGate)||!name.trim()||(!coachIsNameRepairUtterance(name)&&/^[\p{L}][\p{L}'’ -]{0,59}$/u.test(name.trim()))
  function reviewed(){
   // User may explicitly confirm the preferred name and new summary; never
   // carry forward an unchecked inferred opening, profile score or AI goal.
   const {opening:ignored,profileCheckin:ignoredProfile,provenance:ignoredProvenance,courseFieldReview:ignoredReview,...transcript}=p
   return {...transcript,courseSessionId:item.courseSessionId,goal:goal.trim(),clientSummary:summary.trim(),clientNextStep:step.trim(),
-    ...(courseFieldReview?{courseFieldReview}:{}),
-    ...(name.trim()?{opening:{version:'hh-coach-opening-v1-20261122',completed:false,declined:false,
+    ...((lockedGate?lockedGate.review:courseFieldReview)?{courseFieldReview:lockedGate?lockedGate.review:courseFieldReview}:{}),
+    ...(lockedGate&&opening?{opening}:!lockedGate&&name.trim()?{opening:{version:'hh-coach-opening-v1-20261122',completed:false,declined:false,
       name:name.trim(),continuity:'',focus:'',feelings:'',invitationQuote:'',confirmedQuote:'',
       checkmarks:{invitation:false,name:true,continuity:false,focus:false,feelings:false,confirmation:false}}}:{})}
  }
@@ -33,9 +33,9 @@ function DraftRow({item,t,lang,onAction,busy}){
    <button type="button" className={styles.primaryButton} disabled={busy} onClick={()=>{if(window.confirm(({en:'This file contains private conversation text. Keep it secure and share only with explicit permission. Download?',ru:'Файл содержит личный диалог. Храните его безопасно и передавайте только с явного разрешения. Скачать?',es:'El archivo contiene un diálogo privado. Guárdalo de forma segura y compártelo solo con permiso explícito. ¿Descargar?'})[lang]))downloadCoachQualityTranscript(p)}}>{({en:'Export private QA transcript (JSON)',ru:'Скачать стенограмму для анализа (JSON)',es:'Exportar transcripción privada (JSON)'})[lang]}</button>
    {opening?.name&&<p>{t.name}: {opening.name} ({t.unreviewed})</p>}
    <MyCoachSavedProfileV3 protocol={p} locale={lang}/>
-   <MyCoachCourseFieldReview courseSessionId={item.courseSessionId} turns={p.turns} locale={lang} value={courseFieldReview} onChange={value=>{setCourseFieldReview(value);setChecked(false)}} disabled={busy}/>
-   {p.turns.map((row,i)=><div className={styles.reportSection} key={i}><b>{row.role==='user'?t.you:t.coach}</b><p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{row.content}</p></div>)}
-   <label>{t.name}<input value={name} maxLength={60} onChange={e=>{setName(e.target.value);setChecked(false)}}/></label>
+   <MyCoachCourseFieldReview courseSessionId={item.courseSessionId} turns={p.turns} locale={lang} value={lockedGate?lockedGate.review:courseFieldReview} onChange={value=>{if(!lockedGate){setCourseFieldReview(value);setChecked(false)}}} disabled={busy||Boolean(lockedGate)}/>
+   {p.turns.map((row,i)=><div className={styles.reportSection} key={i}><b>{row.role==='user'?t.you:row.authorPersonaId||t.coach}</b><p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{row.content}</p></div>)}
+   {!lockedGate&&<label>{t.name}<input value={name} maxLength={60} onChange={e=>{setName(e.target.value);setChecked(false)}}/></label>}
    <label>{t.goal}<textarea rows={2} value={goal} maxLength={180} onChange={e=>{setGoal(e.target.value);setChecked(false)}}/></label>
    <label>{t.summary}<textarea rows={3} value={summary} maxLength={1000} onChange={e=>{setSummary(e.target.value);setChecked(false)}}/></label>
    <label>{t.step}<textarea rows={2} value={step} maxLength={500} onChange={e=>{setStep(e.target.value);setChecked(false)}}/></label>
@@ -73,6 +73,10 @@ export default function MyCoachDraftArchive({accountId,locale='en',onReviewed}){
     method:'POST',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json','X-HH-Account-ID':accountId},
     body:JSON.stringify(reviewed?{action:'save',consent:true,protocol:reviewed,draftRevision:item.revision}:{action:'discard',confirmed:true,id:item.id})})
    const result=await response.json().catch(()=>null)
+   if(response.status===409&&result?.error==='CLARITY_SESSION_STILL_OPEN'){
+    if(ownerRef.current===accountId)setNotice(({ru:'Протокол сохранён. Продолжите незавершённую сессию перед сохранением итогового отчёта.',en:'The protocol is saved. Continue the unfinished session before saving its final report.',es:'El protocolo está guardado. Continúa la sesión pendiente antes de guardar su informe final.'})[lang])
+    return
+   }
    if(!response.ok||(reviewed?result?.saved!==true:result?.deleted!==true))throw Error('DRAFT_ACTION')
    if(ownerRef.current!==accountId)return
    setState(previous=>({...previous,items:previous.items.filter(x=>x.id!==item.id)}))
