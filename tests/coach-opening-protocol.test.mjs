@@ -272,3 +272,69 @@ test('Gemini Live receives the same six localized personality questions without 
   assert.equal(new Set(reactions.map(r=>r.split('. ')[0])).size,7)
  }
 })
+
+
+test('delay replies never complete preferred name or restore a corrupt prior name',()=>{
+ for(const [locale,yes,reply,name] of [['en','yes','Not yet.','Noria'],['ru','да','Пока нет.','Анна'],['es','sí','Todavía no.','María']]){
+  let p=coachOpeningProgress({locale,turns:[yes,reply]})
+  assert.equal(p.current,'name')
+  assert.equal(p.checkmarks.name,false)
+  assert.equal(p.answers.name,undefined)
+  p=coachOpeningProgress({locale,turns:[yes,reply,name]})
+  assert.equal(p.answers.name.value,name)
+  p=coachOpeningProgress({locale,turns:[yes],allowPrior:true,priorSession:{name:reply.replace(/\.$/,'')}})
+  assert.equal(p.prior.name,'')
+ }
+})
+
+test('recognized wrong-gate question cannot turn its response into preferred name or bypass feelings',()=>{
+ const question=gate=>({role:'assistant',content:coachOpeningQuestion('mira',gate,'en')})
+ const user=content=>({role:'user',content})
+ const turns=[question('invitation'),user('yes'),question('name'),user('Not yet.'),
+  question('focus'),user('Noria')]
+ let p=coachOpeningProgress({turns,locale:'en'})
+ assert.equal(p.current,'name')
+ assert.equal(p.checkmarks.name,false)
+ turns.push(question('name'),user('Noria'),question('focus'),user('goal'),question('confirmation'),user('yes'))
+ p=coachOpeningProgress({turns,locale:'en'})
+ assert.equal(p.answers.name.value,'Noria')
+ assert.equal(p.current,'feelings')
+ assert.equal(p.completed,false)
+ turns.push(question('feelings'),user('I feel anxious'),question('confirmation'),user('yes'))
+ p=coachOpeningProgress({turns,locale:'en'})
+ assert.equal(p.completed,true)
+ assert.equal(p.answers.feelings.quote,'I feel anxious')
+})
+
+
+test('first-party initial name echo holds identity until the client confirms the actual echo',async()=>{
+ const {coachOpeningFirstNameCandidate,coachNameCorrectionQuestion}=await import('../lib/coaching/coach-opening-protocol.mjs')
+ const assistant=content=>({role:'assistant',content})
+ const user=content=>({role:'user',content})
+ for(const [locale,yes,name,invalid] of [['en','Yes','Maya','Not yet'],['ru','Да','Анна','Пока нет'],['es','Sí','María','Todavía no']]){
+  const scope={locale,personaId:'mira'}
+  const turns=[assistant(coachOpeningQuestion('mira','invitation',locale)),user(yes),assistant(coachOpeningQuestion('mira','name',locale))]
+  assert.equal(coachOpeningFirstNameCandidate({...scope,turns,message:invalid}),'')
+  assert.equal(coachOpeningFirstNameCandidate({...scope,turns,message:name}),name)
+  turns.push(user(name),assistant(coachNameCorrectionQuestion(name,locale)))
+  let p=coachOpeningProgress({...scope,turns})
+  assert.equal(p.current,'name')
+  assert.equal(p.checkmarks.name,false)
+  assert.equal(p.pendingNameCorrection.name,name)
+  const wrong=[...turns,assistant(coachOpeningQuestion('mira','focus',locale)),user(yes)]
+  assert.equal(coachOpeningProgress({...scope,turns:wrong}).checkmarks.name,false)
+  turns.push(user(yes))
+  p=coachOpeningProgress({...scope,turns})
+  assert.equal(p.answers.name.value,name)
+  assert.equal(p.current,'focus')
+  assert.equal(p.pendingNameCorrection,null)
+ }
+})
+
+test('first-party opening uses local full question evidence rather than lossy client-only history',()=>{
+ const turns=[{role:'assistant',content:coachOpeningQuestion('mira','invitation','en')},{role:'user',content:'Yes'},
+  {role:'assistant',content:coachOpeningQuestion('mira','focus','en')}]
+ const reply=coachOpeningTurn({locale:'en',openingHistory:['Yes'],openingTurns:turns,message:'Maya'},'mira')
+ assert.equal(reply.openingProgress.current,'name')
+ assert.equal(reply.openingProgress.checkmarks.name,false)
+})
