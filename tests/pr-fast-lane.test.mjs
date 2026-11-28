@@ -1882,3 +1882,26 @@ test('Coach and Site Video CI-only classifiers keep exact policy contracts execu
  assert.match(core,/node --test[^\n]*tests\/ci-coach-only-impact\.test\.mjs/);
  assert.match(video,/node --test tests\/ci-site-video-scope\.test\.mjs/);
 });
+
+
+test('Core lint narrows only immutable BASE-proven additive prebuild test registrations',async()=>{
+  const {classifyPackageImpact}=await import('../lib/ci/specialist-aggregate.mjs');
+  const before={name:'fixture',scripts:{prebuild:'npm run test:coaching:release',lint:'eslint .','test:coaching:release':'node --test tests/coach-old.test.mjs'},dependencies:{next:'15.5.21'}};
+  const after=structuredClone(before); after.scripts['test:coaching:release']+=' tests/coach-new.test.mjs';
+  const changed=['package.json','tests/coach-new.test.mjs','components/example.tsx'];
+  const classify=(value,paths=changed)=>classifyPackageImpact({changed:paths,basePackage:JSON.stringify(before),currentPackage:JSON.stringify(value)}).mode;
+  assert.equal(classify(after),'core');
+  assert.equal(classify(after,[...changed,'package-lock.json']),'full');
+  assert.equal(classify(after,['package.json']),'full');
+  for(const mutate of [x=>x.scripts.lint='echo skipped',x=>x.dependencies.next='15.5.22',x=>x.scripts.prebuild='echo skipped',x=>x.scripts['test:coaching:release']='node --test tests/coach-new.test.mjs',x=>x.scripts['test:coaching:release']+=' && echo changed']){
+    const candidate=structuredClone(after); mutate(candidate); assert.equal(classify(candidate),'full');
+  }
+  const step=workflow('hh-pr-core-release.yml').split('id: changed_lint')[1].split('      - name: Mobile Dock')[0];
+  assert.ok(step.includes('git show "$BASE_SHA:lib/ci/specialist-aggregate.mjs"'));
+  assert.ok(step.includes("impact.mode!=='core'"));
+  assert.ok(step.includes('git diff --no-renames --name-only -z'));
+  assert.ok(step.includes('manifest_touched=true'));
+  assert.match(step,/else\s+full_lint=true/);
+  assert.ok(step.includes('npm run lint'));
+  assert.ok(step.includes('npx --no-install eslint "${files[@]}"'));
+});

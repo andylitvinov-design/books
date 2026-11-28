@@ -506,17 +506,49 @@ jobs:
             fi
           fi
           files=()
-          # ESLint config, TypeScript config and dependency changes can
-          # invalidate lint results across unchanged sources. Keep the
-          # original whole-repository lint on these exact changes.
+          # Config or real dependency changes still require whole-repo lint.
+          # An exact additive test registration cannot change ESLint inputs.
           full_lint=false
+          manifest_touched=false
+          lint_paths="$RUNNER_TEMP/hh-core-lint-paths.z"
+          git diff --no-renames --name-only -z "$BASE_SHA" HEAD > "$lint_paths"
           while IFS= read -r -d '' f; do
             case "$f" in
-              eslint.config.*|.eslintrc*|package.json|package-lock.json|tsconfig.json)
+              package.json)
+                manifest_touched=true ;;
+              eslint.config.*|*/eslint.config.*|.eslintrc*|*/.eslintrc*|.eslintignore|*/.eslintignore|package-lock.json|*/package-lock.json|*/package.json|npm-shrinkwrap.json|*/npm-shrinkwrap.json|tsconfig.json|tsconfig.*.json|*/tsconfig*.json|jsconfig*.json|*/jsconfig*.json|.npmrc|*/.npmrc)
                 full_lint=true ;;
             esac
             if [[ "$f" =~ \.(cjs|mjs|js|jsx|ts|tsx)$ && -f "$f" ]]; then files+=("$f"); fi
-          done < <(git diff --name-only -z "$BASE_SHA" HEAD)
+          done < "$lint_paths"
+          if [[ "$manifest_touched" == true && "$full_lint" == false ]]; then
+            # Reuse the existing immutable tested-BASE manifest classifier.
+            # Failure, unknown metadata, arbitrary commands or changed locks
+            # must retain the original full lint. No PR-owned policy import.
+            policy="$RUNNER_TEMP/hh-core-lint-package-policy.mjs"
+            if git show "$BASE_SHA:lib/ci/specialist-aggregate.mjs" > "$policy" &&
+               node --input-type=module - "$BASE_SHA" "$policy" "$lint_paths" <<'NODE'
+          import {execFileSync} from 'node:child_process';
+          import {readFileSync} from 'node:fs';
+          import {pathToFileURL} from 'node:url';
+          const [base,policy,pathsFile]=process.argv.slice(2);
+          const raw=readFileSync(pathsFile,'utf8');
+          if (!raw.endsWith('\0')) process.exit(1);
+          const changed=raw.slice(0,-1).split('\0');
+          const {classifyPackageImpact}=await import(pathToFileURL(policy).href);
+          const basePackage=execFileSync('git',['show',base+':package.json'],{encoding:'utf8'});
+          const currentPackage=execFileSync('git',['show','HEAD:package.json'],{encoding:'utf8'});
+          if (readFileSync('package.json','utf8')!==currentPackage) process.exit(1);
+          const impact=classifyPackageImpact({changed,basePackage,currentPackage});
+          if (impact.mode!=='core') process.exit(1);
+          console.log('HH_CORE_LINT_ADDITIVE_TEST_REGISTRATION: '+impact.reason);
+          NODE
+            then
+              echo 'Verified additive prebuild tests only; lint changed JS/TS sources'
+            else
+              full_lint=true
+            fi
+          fi
           if [[ "$full_lint" == true ]]; then
             # eslint-config-next uses FlatCompat and @rushstack/eslint-patch.
             # Its worker-mode initialization fails on ESLint 9.39.4 (PR #5701).
