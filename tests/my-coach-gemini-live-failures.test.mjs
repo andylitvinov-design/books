@@ -496,7 +496,7 @@ test('Clarity credential expiry pauses without claiming trusted time-limit compl
 })
 
 
-test('disabled Clarity entry cannot consume shared Gemini attempt or successful quota',()=>{
+test('disabled Clarity entry cannot consume quota and retired grants stay off with the relay enabled',async()=>{
  const route=load('app/api/app/[...path]/route.js')
  const access=load('lib/app/clarity-course-access.js')
  const handler=route.slice(route.indexOf("if (joined === 'my-coach/live-token')"),route.indexOf("if (joined === 'my-coach/live-checkpoint')"))
@@ -506,5 +506,14 @@ test('disabled Clarity entry cannot consume shared Gemini attempt or successful 
  const mint=handler.indexOf('issueGeminiFreeLiveToken(vendor,start')
  assert.ok(veto>handler.indexOf('normalizeGeminiFreeLiveStart(')&&attempts>veto&&reserve>attempts&&mint>reserve)
  assert.match(access,/const CLARITY_TRUSTED_TRANSPORT_ADAPTER_READY=false/)
- assert.match(access,/if\(!day\|\|!clarityCourseEnabled\(\)\)throw unavailable\(\)/)
+ let writes=0
+ const candidate=access.replace(/^import .*$/gm,'').replace(/\bexport /g,'')
+   .replace('CLARITY_TRUSTED_TRANSPORT_ADAPTER_READY=false','CLARITY_TRUSTED_TRANSPORT_ADAPTER_READY=true')
+ const {clarityCourseEnabled,clarityReserve}=runInNewContext(candidate+'\n;({clarityCourseEnabled,clarityReserve})',{
+   process:{env:{HH_CLARITY_FREE_COURSE_ENABLED:'true',HH_CLARITY_CUMULATIVE_CLOCK_ENABLED:'true'}},
+   AppError:Error,clarityCourseDay:()=>1,randomUUID:()=>crypto.randomUUID(),transaction:()=>{writes++},
+ })
+ assert.equal(clarityCourseEnabled(),true)
+ await assert.rejects(()=>clarityReserve({}, {}, 'clarity_day_1'),/CLARITY_COURSE_UNAVAILABLE/)
+ assert.equal(writes,0)
 })

@@ -14,14 +14,14 @@ class Socket extends EventEmitter{
  input(value){this.emit('message',JSON.stringify(value))}
  pong(){this.emit('pong',Buffer.from(this.pings.at(-1)))}
 }
-function fixture({beforePersist=async()=>{},segmentBudgetMs=null,previousRun=null,loadOpeningNote}={}){
+function fixture({beforePersist=async()=>{},segmentBudgetMs=null,previousRun=null,loadOpeningNote,readReference}={}){
  const base=previousRun?previousRun.clock.lastEventAt+1000:1795100000000,client=new Socket(),provider=new Socket(),protocolId=id(2)
  let run=previousRun||createClarityRun({id:id(1),ordinal:1,access:'free',protocolIds:[protocolId,id(3),id(4)],createdAt:base})
  const previousCredentialExpiresAt=previousRun?base:null
  const lease={leaseId:previousRun?id(11):id(10),run,day:1,protocolId,now:base,previousCredentialExpiresAt,
   ...clarityRunCredentialWindow(run,{day:1,protocolId,now:base,previousCredentialExpiresAt})}
  let now=base,seq=previousRun?200:20,tid=0;const timers=new Map(),events=[],retirements=[]
- const relay=bindClarityTrustedLiveConnection({client,provider,lease,coachId:'mira',setup:{setup:{model:'synthetic'}},loadOpeningNote,segmentDeadlineMs:segmentBudgetMs===null?null:base+segmentBudgetMs,clock:()=>now,uuid:()=>id(++seq),
+ const relay=bindClarityTrustedLiveConnection({client,provider,lease,coachId:'mira',setup:{setup:{model:'synthetic'}},loadOpeningNote,readReference,segmentDeadlineMs:segmentBudgetMs===null?null:base+segmentBudgetMs,clock:()=>now,uuid:()=>id(++seq),
   schedule:(fn,ms)=>{timers.set(++tid,{fn,at:now+ms});return tid},cancel:key=>timers.delete(key),
   retireLease:async binding=>{retirements.push({binding,status:run.clock.days[0].status,elapsed:run.clock.days[0].elapsedMs})},
   persist:async e=>{events.push(e);await beforePersist(e);run=advanceClarityRun(run,e);return clarityRunSummary(run)}})
@@ -72,6 +72,38 @@ test('loss of the relay client during the opening lookup never discloses the sto
  await f.relay.settled()
  assert.equal(f.provider.messages.length,1)
  assert.deepEqual(f.events,[])
+})
+test('Clarity closes a committed opening when the approved reference stalls',async()=>{
+ let entered,release
+ const checking=new Promise(resolve=>{entered=resolve})
+ const pending=new Promise(resolve=>{release=resolve})
+ const f=fixture({readReference:()=>{entered();return pending}})
+ f.ready();f.consent();await checking
+ assert.equal(f.events[0].type,'begin')
+ f.advance(5000)
+ await new Promise(resolve=>setImmediate(resolve))
+ assert.equal(f.provider.readyState,3)
+ assert.equal(f.run.clock.days[0].status,'paused')
+ assert.equal(f.run.clock.days[0].elapsedMs,0)
+ release('CLIENT-APPROVED REFERENCE DATA (late synthetic source)')
+ await f.relay.settled()
+ assert.equal(f.provider.messages.length,1)
+})
+test('Clarity completes an explicit pause while opening memory is still pending',async()=>{
+ let entered,release
+ const checking=new Promise(resolve=>{entered=resolve})
+ const pending=new Promise(resolve=>{release=resolve})
+ const f=fixture({loadOpeningNote:()=>{entered();return pending}})
+ f.ready();f.consent();await checking
+ f.client.input({type:'hh_clarity_pause'})
+ await new Promise(resolve=>setImmediate(resolve))
+ assert.equal(f.provider.readyState,3)
+ assert.equal(f.client.readyState,3)
+ assert.deepEqual(f.events,[])
+ assert.equal(f.run.clock.days[0].elapsedMs,0)
+ release('CLIENT-APPROVED REFERENCE DATA (late synthetic source)')
+ await f.relay.settled()
+ assert.equal(f.provider.messages.length,1)
 })
 test('real pongs credit only the observed interval; pause closes upstream before persisting stop',async()=>{
  const f=fixture();f.ready();f.consent();await f.relay.settled()

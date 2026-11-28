@@ -12,6 +12,18 @@ on:
       - 'lib/app/clarity-course-runs.js'
       - 'lib/app/coaching-free-day-quota.js'
       - 'lib/coaching/clarity-course-clock.mjs'
+      - 'lib/coaching/clarity-*.mjs'
+      - 'lib/coaching/goal-*.mjs'
+      - 'lib/coaching/relay-session-capacity.mjs'
+      - 'lib/app/clarity-*.js'
+      - 'lib/app/goal-course-store.js'
+      - 'app/api/app/my-coach/live-relay/**'
+      - 'app/api/app/clarity-course/**'
+      - 'components/my-coach-gemini-live.jsx'
+      - 'tests/clarity-*.test.mjs'
+      - 'tests/goal-course-*.test.mjs'
+      - 'tests/daybook-clarity-*.test.mjs'
+      - 'docs/coaching/goal-course-storage.proposal.sql'
       - 'tests/personal-coaching-rls-isolated.integration.mjs'
       - 'tests/ci-coaching-rls-guard.test.mjs'
       - 'lib/agent-director/commander-owned-runtime.mjs'
@@ -155,6 +167,9 @@ jobs:
           node --check lib/academy/coaching-audio-model.js
           node --check lib/academy/coaching-audio-store.js
           node --test tests/coaching-overload-session.test.mjs tests/coaching-grow-20-measurement.test.mjs tests/coaching-feasibility.test.mjs tests/coaching-reconnect.test.mjs tests/coaching-one-screen-mobile.test.mjs tests/personal-coaching-client-context.test.mjs tests/personal-coaching-session.test.mjs tests/personal-coaching-voice.test.mjs tests/personal-coaching-model-selection.test.mjs tests/coaching-intelligence-p1.test.mjs tests/coaching-intelligence-offline.test.mjs tests/coaching-intelligence-state.test.mjs tests/coaching-author-audio.test.mjs tests/coaching-author-audio-synthetic.test.mjs tests/coaching-audio-my-materials.test.mjs tests/tradition-coaching-courses.test.mjs tests/tradition-coaching-completion.test.mjs tests/tradition-coaching-persistence.test.mjs tests/business-coaching-90-days.test.mjs tests/academy-discovery-hero.test.mjs tests/reports-development-program.test.mjs
+      - name: Verify course relay, trusted clock and independent results
+        run: |
+          node --conditions=react-server --test tests/clarity-trusted-live-connection.test.mjs tests/clarity-relay-entry.test.mjs tests/clarity-course-clock.test.mjs tests/clarity-course-runs.test.mjs tests/clarity-repeat-payment.test.mjs tests/clarity-resume-scope.test.mjs tests/clarity-journal-scope.test.mjs tests/goal-course-runs.test.mjs tests/goal-course-result-document.test.mjs
       # Drafts normally defer the costly full App database matrix. Rehearse
       # only the new Clarity proposal on the already allocated focused runner.
       # Ready PRs still use the original App R1 database gate, not this shortcut.

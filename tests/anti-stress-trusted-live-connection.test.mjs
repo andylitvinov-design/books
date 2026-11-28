@@ -249,6 +249,21 @@ test('fresh reference is checked after committed consent but before audio and up
  assert.equal(g.run.clock.days[0].status,'paused')
  assert.equal(g.run.clock.days[0].elapsedMs,0)
 })
+test('Therapy persists a pause even while the reference read has not returned',async()=>{
+ let entered,release
+ const checking=new Promise(resolve=>{entered=resolve})
+ const pending=new Promise(resolve=>{release=resolve})
+ const f=fixture({readReference:()=>{entered();return pending}})
+ f.ready();f.consent();await checking
+ f.client.input({type:'hh_anti_stress_pause'})
+ await new Promise(resolve=>setImmediate(resolve))
+ assert.deepEqual(f.events.map(e=>e.type),['begin','pause'])
+ assert.equal(f.run.clock.days[0].status,'paused')
+ assert.equal(f.run.clock.days[0].elapsedMs,0)
+ release('CLIENT-APPROVED REFERENCE DATA (late synthetic source)')
+ await f.relay.settled()
+ assert.equal(f.provider.messages.length,1)
+})
 
 test('therapy pause ACK waits for actual asynchronous provider closure and retirement',async()=>{
  for(const code of [1000,1006]){
