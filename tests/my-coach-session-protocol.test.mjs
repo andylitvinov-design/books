@@ -1,3 +1,5 @@
+import './my-coach-speech-evidence.test.mjs'
+import './my-coach-speech-review.test.mjs'
 import './coach-private-recall.test.mjs'
 import './goal-session-scenarios.test.mjs'
 import './my-coach-session-stage-view.test.mjs'

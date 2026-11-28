@@ -110,6 +110,25 @@ try {
     return page;
   };
 
+  // The approved inline help entry must open the existing consultant in place,
+  // not the legacy support route or a second floating launcher.
+  async function checkInlineHelp(page, selector) {
+    const trigger=page.locator(selector);
+    const previousUrl=page.url();
+    await expect(trigger).toBeVisible();
+    await expect(page.locator("[data-hh-ihelp-trigger]")).toHaveCount(0);
+    await trigger.click();
+    const dialog=page.locator("[data-hh-ihelp-dialog]");
+    await expect(dialog).toBeVisible({timeout:30000});
+    await expect(dialog.locator("[data-hh-ihelp-welcome]")).toBeVisible({timeout:30000});
+    await expect(dialog.locator("[data-hh-assistant-service]")).toHaveCount(3);
+    assert.equal(page.url(),previousUrl,"Inline help must not navigate");
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await expect(trigger).toBeFocused();
+    assert.equal(page.url(),previousUrl,"Closing help must preserve the page");
+  }
+
  // Shamanica Business currently has six expandable service shelves beneath
  // the hero and quiz. Reject stale first-screen-only card assertions: verify
  // the real six photo-backed categories, their working second level, and
@@ -121,6 +140,7 @@ try {
   await expect(page.locator("[data-sitewide-antistress-banner]")).toHaveCount(0);
   await expect(page.locator("[data-hh-ihelp-trigger]:visible")).toHaveCount(0);
   await expect(page.locator("[data-shamanica-ihelp-trigger]")).toBeVisible();
+  if(width===390) await checkInlineHelp(page,"[data-shamanica-ihelp-trigger]");
   const shelves=section.locator("[data-business-cabinet-shelves]");
   await expect(shelves).toHaveAttribute("data-expanded","false");
   await expect(shelves.locator("[data-business-shelf]")).toHaveCount(6);
@@ -211,6 +231,8 @@ try {
     await expect(quiz).toHaveAttribute("data-services-quiz-questions", "4");
     await expect(quiz).toHaveAttribute("data-services-quiz-step", "1");
     await expect(page.locator("[data-hh-ihelp-trigger]")).toHaveCount(0);
+    if(width===390) await checkInlineHelp(page,"[data-services-ihelp-trigger]");
+    await expect(quiz).toHaveAttribute("data-services-quiz-step", "1");
     await expect(quiz.locator("[data-quiz-dot]")).toHaveCount(4);
     await expect(quiz.locator("[data-services-quiz-question]")).toHaveCount(1);
     await expect(quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice]')).toHaveCount(4);
@@ -1703,6 +1725,13 @@ try {
       try{await checkCompactBusiness(page,locale,width);}
       finally{await page.close();}
     }
+  }
+  for(const locale of ["ru","en","es"]){
+    const page=await createPage(390);
+    try{
+      await page.goto(origin+"/"+locale+"/shamanica",{waitUntil:"domcontentloaded"});
+      await checkInlineHelp(page,"[data-shamanica-ihelp-trigger]");
+    }finally{await page.close();}
   }
   diagnostics.devIssueOverlay = false;
   assert.deepEqual(diagnostics.pageErrors, [], "Unexpected browser page errors");
