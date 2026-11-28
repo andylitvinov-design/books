@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { verify, requiresCurrentProductionBase, classifyPrState, diagnoseAggregateError, awaitPositiveMergeability, verifiedPriorSpecialistEvidence, reusePriorSpecialistState, revalidateAfterTrustedPolicyAdvance } from '../scripts/ci-specialist-aggregate.mjs';
 import { createRequire } from 'node:module';
-import { verifyStableProtectedBase, observeProtectedBaseDrift, independentPackageOnlyAdvisories, verifiedCoachDispatcherIsolation, independentDispatcherAdvisories, provenNonApplicableWorkflows } from '../scripts/ci-specialist-aggregate.mjs';
+import { verifyStableProtectedBase, observeProtectedBaseDrift, independentPackageOnlyAdvisories, verifiedCoachDispatcherIsolation, independentDispatcherAdvisories, provenNonApplicableWorkflows, withCompletedSpecialistEvidence } from '../scripts/ci-specialist-aggregate.mjs';
 import { inspectJobs, trustedRequiredJobs, inspectWorkflowRuns } from '../lib/ci/specialist-aggregate.mjs';
 import { safeComposedIndependentAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeIndependentRouterPolicyAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeStandaloneVideoAfterSpecialistScopeAdvance, safeNonOverlappingProductAdvance, safeIndependentMixedCandidateAdvance, normalizeIdenticalProtectedOverlap, safeDetachedBenchmarkAdvance, safeTrustedPolicyAdvance } from '../lib/ci/production-base-impact.mjs';
 
@@ -1620,4 +1620,45 @@ test('public browser gate composes proven route-local and server-dependency isol
  assert.deepEqual(scope(rows,{...files,current:new Map([[store,trigger+'# edited'],[video,trigger]])}),[video]);
  const lock=JSON.parse(files.currentLock);lock.packages['node_modules/react'].version='20.0.0';
  assert.deepEqual(scope(rows,{...files,currentLock:JSON.stringify(lock)}),[]);
+});
+
+test('completed specialist attempt cache saves repeated job reads without hiding new attempts or incomplete evidence',async()=>{
+ const green={id:31,run_attempt:1,status:'completed',conclusion:'success'};
+ const job=(attempt=1,name='test',status='completed',conclusion='success')=>({id:42,run_id:31,run_attempt:attempt,name,status,conclusion});
+ let calls=0,rows=[job()];
+ const api=withCompletedSpecialistEvidence({jobs:async()=>{calls++;return rows;}});
+ assert.deepEqual(await api.completedSpecialistJobs(green,['test']),rows);
+ assert.deepEqual(await api.completedSpecialistJobs(green,['test']),rows);
+ assert.equal(calls,1);
+ rows=[job(2)];const again={...green,run_attempt:2};
+ assert.deepEqual(await api.completedSpecialistJobs(again,['test']),rows);assert.equal(calls,2);
+ rows=[job(2,'test'),{...job(2,'new-required'),id:43}];
+ assert.equal((await api.completedSpecialistJobs(again,['test','new-required'])).length,2);assert.equal(calls,3);
+ rows=[job(3,'test','in_progress',null)];const third={...green,run_attempt:3};
+ await api.completedSpecialistJobs(third,['test']);await api.completedSpecialistJobs(third,['test']);assert.equal(calls,5);
+ rows=[job(4,'test','completed','failure')];const fourth={...green,run_attempt:4};
+ await api.completedSpecialistJobs(fourth,['test']);await api.completedSpecialistJobs(fourth,['test']);assert.equal(calls,7);
+ rows=[job(4)];await api.completedSpecialistJobs({...green,run_attempt:undefined});await api.completedSpecialistJobs({...green,run_attempt:undefined});assert.equal(calls,9);
+});
+test('a newly protected policy can finish the current waiting gate without old optional jobs',async()=>{
+ const newer='d'.repeat(40);
+ const source={base:new Map([[path,yaml]]),current:new Map([[path,yaml]]),
+   changedRows:[{filename:'lib/crm/a.js',status:'M'}]};
+ let elapsed=0,polls=0,handOff=0;
+ const live={...pr,mergeable:true};
+ const api={pr:async()=>live,target:async()=>elapsed>=90_000?newer:base,
+   compare:async()=>({status:'ahead',ahead_by:1,files:[{filename:'scripts/ci-specialist-aggregate.mjs'}]}),
+   runs:async()=>{polls++;return [run('in_progress',null)];},
+   jobs:async()=>{throw Error('old optional run must not be required by test handoff');}};
+ const receipt={head,risk:'STRICT',expected:[],executed:[],policyRevalidatedAgainst:newer};
+ const opts={maxWaitMs:180_000,pollMs:30_000,now:()=>elapsed,sleep:async ms=>{elapsed+=ms;}};
+ const result=await verify(api,ctx,source,{...opts,tryProtectedPolicy:async remaining=>{
+   handOff++;assert.equal(remaining,90_000);return receipt;
+ }});
+ assert.deepEqual(result,receipt);assert.equal(handOff,1);assert.equal(polls,3);
+ elapsed=0;
+ await assert.rejects(()=>verify(api,ctx,source,{...opts,tryProtectedPolicy:async()=>{throw Error('SPECIALIST_FAILED');}}),/SPECIALIST_FAILED/);
+ elapsed=0;handOff=0;
+ await assert.rejects(()=>verify(api,ctx,source,{...opts,tryProtectedPolicy:async()=>{handOff++;return null;}}),/RUNNING_TIMEOUT/);
+ assert.equal(handOff,1,'unapproved policy does not restart or extend original wait');
 });
