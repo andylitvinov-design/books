@@ -62,7 +62,7 @@ test('compact defaults are limited to these eight published renders, not About o
 // Execute only the existing reporting blocks with a synthetic locator oracle.
 // This checks truthful evidence serialization, not actual browser playback.
 const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
-async function run(script,{live=true,present=false,badIframe=false,hydrationReady=true}={}) {
+async function run(script,{live=true,present=false,badIframe=false,hydrationReady=true,coachHome=false}={}) {
  const source=readFileSync(new URL(`../scripts/${script}`, import.meta.url), 'utf8');
  const pageScript=script==='verify-page-video-release.mjs';
  const start=pageScript?source.indexOf('    const approvedRussian ='):source.indexOf('  let russianPresentationVerified =')>=0?source.indexOf('  let russianPresentationVerified ='):source.indexOf("  for (const home of ['/', '/ru']) {");
@@ -87,19 +87,26 @@ async function run(script,{live=true,present=false,badIframe=false,hydrationRead
    };
  }
  const page={
+   url:()=> 'https://holistichouse.vercel.app'+(coachHome?(home.startsWith('/ru')?'/ru/my-coach':'/en/my-coach'):home),
    locator:s=>loc(s),
    waitForLoadState:async state=>{assert.equal(state,'load')},
    // Synthetic browser oracle: never evaluate browser globals in Node.
    evaluate:async()=>hydrationReady,
  };
  const expect=l=>({
+   toHaveURL:async predicate=>assert.ok(predicate(new URL(page.url()))),
+   toBeVisible:async()=>assert.ok(coachHome),
    toHaveCount:async n=>{
      const actual=l.full.includes('home-intro')?0:l.full.includes('iframe')?0:
        l.full.includes('home-presentation')?(present?1:0):1;
      assert.equal(actual,n);
    },
    toHaveAttribute:async (name,value)=>{
-     if(name==='aria-busy'){
+     if(name==='lang'){
+       assert.ok(coachHome);assert.equal(value,home.startsWith('/ru')?'ru':'en');
+     } else if(name==='aria-current'){
+       assert.ok(coachHome);assert.equal(value,'page');
+     } else if(name==='aria-busy'){
        assert.equal(value,'false');
        assert.ok(scrolled&&hydrated,'Hydration must complete before Play is ready');
      } else if(name==='src'){
@@ -136,4 +143,15 @@ for(const script of ['verify-page-video-release.mjs','verify-site-video-browser.
 test('synthetic site-video reporter cannot pass before actual React hydration',async()=>{
   await assert.rejects(run('verify-site-video-browser.mjs',{present:true,hydrationReady:false}),
     /Next router is not hydrated/);
+});
+
+
+test('new My Coach home reports exact aliases without claiming legacy video playback',async()=>{
+ const r=await run('verify-site-video-browser.mjs',{live:false,coachHome:true});
+ assert.ok(r.some(x=>/PASS:.*EN\/RU aliases open My Coach/.test(x)));
+ assert.ok(!r.some(x=>/PASS:.*RU presentation click-to-iframe verified/.test(x)));
+});
+test('new My Coach live aliases use the same strict catalog contract',async()=>{
+ const r=await run('verify-site-video-browser.mjs',{coachHome:true});
+ assert.ok(r.some(x=>/PASS:.*EN\/RU aliases open My Coach/.test(x)));
 });
