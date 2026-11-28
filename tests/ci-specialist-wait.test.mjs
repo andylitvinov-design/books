@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { verify, requiresCurrentProductionBase, classifyPrState, diagnoseAggregateError, awaitPositiveMergeability, verifiedPriorSpecialistEvidence, reusePriorSpecialistState } from '../scripts/ci-specialist-aggregate.mjs';
 import { inspectJobs, trustedRequiredJobs, inspectWorkflowRuns } from '../lib/ci/specialist-aggregate.mjs';
-import { safeComposedIndependentAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeIndependentRouterPolicyAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeStandaloneVideoAfterSpecialistScopeAdvance, safeNonOverlappingProductAdvance, safeIndependentMixedCandidateAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeComposedIndependentAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeIndependentRouterPolicyAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeStandaloneVideoAfterSpecialistScopeAdvance, safeNonOverlappingProductAdvance, safeIndependentMixedCandidateAdvance, normalizeIdenticalProtectedOverlap } from '../lib/ci/production-base-impact.mjs';
 
 const repo = 'andylitvinov-design/books', head = 'a'.repeat(40), base = 'b'.repeat(40);
 const path = '.github/workflows/mobile.yml';
@@ -1291,6 +1291,39 @@ test('mixed tested candidate: independent protected domain is not stale just bec
   assert.equal((await verify(api,ctx,files,{maxWaitMs:0})).head,head);
   await assert.rejects(()=>verify({...api,pr:async()=>({...exact,mergeable:false})},ctx,files,{maxWaitMs:0}),/MERGE_CONFLICT/);
   await assert.rejects(()=>verify({...api,pr:async()=>({...exact,head:{...exact.head,sha:target}})},ctx,files,{maxWaitMs:0}),/PR_HEAD_CHANGED/);
+});
+
+
+test('same regular protected blob is not a conflicting change; unknown or different evidence stays strict',async()=>{
+  const target='d'.repeat(40),blob='e'.repeat(40),name='lib/site-videos/model.js';
+  const row={filename:name,status:'modified',sha:blob};
+  const delta={status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+    base_commit:{sha:base},merge_base_commit:{sha:base},commits:[{sha:target}],files:[row]};
+  const entry={type:'blob',mode:'100644',sha:blob};
+  const rows=[{filename:name,status:'M'}];
+  const normalize=(d=delta,c=rows,a=entry,b=entry)=>normalizeIdenticalProtectedOverlap(d,base,target,c,async()=>a,async()=>b);
+  assert.deepEqual((await normalize()).identical,[name]);
+  assert.deepEqual((await normalize()).compare.files,[]);
+  const other={filename:'components/unrelated-page.jsx',status:'modified'};
+  assert.deepEqual((await normalize({...delta,files:[row,other]})).compare.files,[other]);
+  for(const result of [
+    await normalize(delta,rows,{...entry,sha:'f'.repeat(40)}),
+    await normalize(delta,rows,entry,{...entry,mode:'100755'}),
+    await normalize(delta,rows,entry,null),
+    await normalize({...delta,commits:[]}),
+    await normalize({...delta,files:[row,row]}),
+    await normalize({...delta,files:[{...row,status:'renamed',previous_filename:'old.js'}]}),
+    await normalize({...delta,files:[{...row,filename:'package-lock.json'}]},[{filename:'package-lock.json',status:'M'}]),
+    await normalize({...delta,files:[{...row,filename:'lib/ci/production-base-impact.mjs'}]},[{filename:'lib/ci/production-base-impact.mjs',status:'M'}]),
+  ]) assert.deepEqual(result.identical,[]);
+  const exact={...pr,mergeable:true,base:{...pr.base,sha:target}};
+  const files={base:new Map(),current:new Map(),changedRows:[...rows,{filename:'app/api/app/my-coach/turn/route.js',status:'M'}]};
+  const api={pr:async()=>exact,target:async()=>target,compare:async()=>delta,
+    entry:async()=>entry,runs:async()=>[],jobs:async()=>[]};
+  // An unchanged HEAD may keep its real specialist evidence, not fabricate new tests.
+  assert.equal((await verify(api,ctx,files,{maxWaitMs:0,readTestedEntry:async()=>entry})).head,head);
+  await assert.rejects(()=>verify({...api,entry:async()=>({...entry,mode:'100755'})},ctx,files,{maxWaitMs:0,readTestedEntry:async()=>entry}),/PRODUCTION_BASE_CHANGED/);
+  await assert.rejects(()=>verify({...api,pr:async()=>({...exact,mergeable:false})},ctx,files,{maxWaitMs:0,readTestedEntry:async()=>entry}),/MERGE_CONFLICT/);
 });
 
 
