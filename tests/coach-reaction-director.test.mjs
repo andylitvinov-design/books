@@ -362,7 +362,7 @@ test('all public personas have protected original or explicit neutral-only/still
  assert.equal(coachPresentationOpening('unknown'),null)
  const source=readFileSync(new URL('../components/my-coach-motion-media.jsx',import.meta.url),'utf8')
  assert.ok(source.includes('protectedCoachPresence(personaId,REACTION_V4_RELEASED)'))
- assert.ok(source.includes("presentationActive&&personaId!=='mira'?coachPresentationOpening(personaId):null"))
+ assert.ok(source.includes('const opening=originalOpening&&Math.min(originalOpening.width,originalOpening.height)>=768?originalOpening:null'))
  assert.ok(source.includes('openingDone!==personaId'))
  assert.ok(source.includes('setOpeningDone(personaId)'))
 })
@@ -497,14 +497,18 @@ test('quality hold retains the HD camera and does not return to legacy video',()
 })
 
 
-test('Mira public presentation starts in screened HD, never the 480px opening',()=>{
+test('all four 480px public originals are bypassed for screened same-camera HD presence',()=>{
  const src=readFileSync(new URL('../components/my-coach-motion-media.jsx',import.meta.url),'utf8')
- assert.ok(src.includes("const opening=presentationActive&&personaId!=='mira'?coachPresentationOpening(personaId):null"))
- const original=coachPresentationOpening('mira')
- assert.equal(original.width,480)
- const pinned=protectedCoachPresence('mira',REACTION_V4_RELEASED)
- const hd=qualityScreenedPresentation(pinned,releasedReactionMedia('mira',REACTION_V4_RELEASED,pinned.group))
- assert.equal(hd.id,'MIR-01');assert.ok(hd.width>=1080);assert.equal(hd.anchorHash,pinned.anchorHash)
+ assert.ok(src.includes('const opening=originalOpening&&Math.min(originalOpening.width,originalOpening.height)>=768?originalOpening:null'))
+ for(const [coach,id] of Object.entries({mira:'MIR-01',sofia:'SOF-02',max:'MAX-01',alex:'ALX-01'})){
+  const original=coachPresentationOpening(coach)
+  assert.equal(original.width,480)
+  const pinned=protectedCoachPresence(coach,REACTION_V4_RELEASED)
+  const hd=qualityScreenedPresentation(pinned,releasedReactionMedia(coach,REACTION_V4_RELEASED,pinned.group))
+  assert.equal(hd.id,id);assert.ok(hd.width>=1080);assert.equal(hd.anchorHash,pinned.anchorHash)
+ }
+ for(const coach of ['merlin','harry'])assert.ok(Math.min(coachPresentationOpening(coach).width,coachPresentationOpening(coach).height)>=768)
+
 })
 
 
