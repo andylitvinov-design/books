@@ -97,7 +97,8 @@ function prReport(p,commitRows,commentRows,checkData,registryRows,now){
 }
 
 if(typeof module==='object'&&module.exports){module.exports={identity,receipts,ledger,prReport,verifyMeta};return;}
-const doc=env.document,el=id=>doc.getElementById(id);
+const doc=env.document;if(!doc)return;
+const el=id=>doc.getElementById(id);
 if(!el('agents-performance')||!el('agents-registry-refresh')||!el('agents-pr-find'))return;
 const put=(id,text)=>{const e=el(id);if(e)e.textContent=text;};
 const node=(tag,text)=>{const x=doc.createElement(tag);if(text!==undefined)x.textContent=text;return x;};

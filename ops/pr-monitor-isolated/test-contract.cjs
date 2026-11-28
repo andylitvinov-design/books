@@ -500,8 +500,9 @@ test('live open count is independent of stale dispatcher snapshot; zero is a rea
 
 
 test('agent evidence is explicit opt-in and separate from confirmed commit/merge',()=>{
- const {identity,receipts,ledger,prReport}=require('./agents-performance.js');
  const source=read('agents-performance.js');
+ const scope={module:{exports:{}}};new vm.Script(source).runInNewContext(scope);
+ const {identity,receipts,ledger,prReport}=scope.module.exports;
  assert.doesNotMatch(source,/MutationObserver|setInterval\s*\(|api\.github\.com|raw\.githubusercontent\.com|process\.env|localStorage|\.innerHTML\s*=/);
  const expected=[{"source":"/api/verified-pr-meta/:number","destination":"https://api.github.com/repos/andylitvinov-design/books/pulls/:number"},{"source":"/api/agent-trace-registry","destination":"https://api.github.com/repos/andylitvinov-design/books/issues/1419/comments?per_page=100&sort=created&direction=desc"},{"source":"/api/agent-trace-comments/:number","destination":"https://api.github.com/repos/andylitvinov-design/books/issues/:number/comments?per_page=100&sort=created&direction=desc"},{"source":"/api/agent-trace-commits/:number","destination":"https://api.github.com/repos/andylitvinov-design/books/pulls/:number/commits?per_page=100"},{"source":"/api/agent-trace-checks/:sha","destination":"https://api.github.com/repos/andylitvinov-design/books/commits/:sha/check-runs?per_page=100"}];
  for(const route of expected)assert.deepEqual(conf.rewrites.find(x=>x.source===route.source),route);
