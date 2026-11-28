@@ -1238,6 +1238,8 @@ test('private archive read never blocks microphone, playback or next voice turn'
   assert.ok(h.clock.heardSamples>0,'coach audio plays while archive is pending')
   h.capture(h.r,new Float32Array(1536).fill(.1))
   assert.ok(h.sent.length>0,'microphone PCM is delivered while archive is pending')
+  // End the synthetic human audio onset before the next provider reply.
+  for(let i=0;i<40;i++)h.capture(h.r,new Float32Array(1536))
   if(outcome==='success')deliver('Private owner recap')
   if(outcome==='failure')fail(Error('archive unavailable'))
   await settleResume()
