@@ -121,3 +121,15 @@ test('all therapy progress groups and archive rows use the same exact session sc
   assert.equal(antiStressProgressProjection({selection,locale,data:{...make(rows),reviewRevision:0}}),null)
  }
 })
+
+test('therapy contact is confirmed by exact bound server start, not elapsed minutes or answer ledger',()=>{
+ for(const sessionId of ANTI_STRESS_SESSION_IDS)for(const locale of ['en','ru','es']){
+  const s=antiStressScenario(sessionId,locale),selection={runId:'run',protocolId:'protocol',sessionId};
+  const binding={programType:'therapy',courseRunId:'run',protocolId:'protocol',sessionId,scenarioVersion:s.version,time:{status:'active',elapsedSeconds:0,remainingSeconds:900}};
+  const run={id:'run',programType:'therapy',revision:1,days:Array.from({length:3},(_,i)=>i===s.number-1?{protocolId:'protocol',sessionId,status:'active',elapsedMs:0}:{})};
+  const data={binding,run,reviewRevision:0,protocol:{binding,rows:antiStressProtocolRows(sessionId,[],locale)}};
+  const p=antiStressProgressProjection({selection,locale,data});assert.equal(p.groups[0].tone,'green');assert.equal(p.groups[0].confirmed,1);assert.equal(p.elapsedMinutes,0);assert.ok(p.groups.slice(1).every(g=>g.tone==='gray'));
+  const forged={...data,protocol:{...data.protocol,binding:{...binding,time:null}}};assert.equal(antiStressProgressProjection({selection,locale,data:forged,elapsedMs:900000}).groups[0].tone,'gray');
+  assert.equal(antiStressProgressProjection({selection,locale,elapsedMs:900000}).groups[0].tone,'gray');
+ }
+})

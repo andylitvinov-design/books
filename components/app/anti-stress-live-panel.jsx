@@ -89,6 +89,7 @@ export default function AntiStressLivePanel({accountId,locale='en',run,day,onRef
  const protocolScope=accountId+':'+run.id+':'+day.protocolId+':'+lang
  const protocolScopeRef=useRef(protocolScope);protocolScopeRef.current=protocolScope
  const minuteBucket=Math.floor(elapsed/60000)
+ const clockStatus=clock?.status||day.status
  useEffect(()=>{
   const c=new AbortController(),selection={runId:run.id,protocolId:day.protocolId,sessionId:day.sessionId}
   const q=new URLSearchParams({runId:run.id,sessionId:day.sessionId,locale:lang,view:'protocol'})
@@ -96,10 +97,10 @@ export default function AntiStressLivePanel({accountId,locale='en',run,day,onRef
    if(c.signal.aborted||protocolScopeRef.current!==protocolScope)return
    const checked=antiStressProgressProjection({selection,locale:lang,data})
    if(!checked?.available)throw Error('PROTOCOL_BINDING')
-   setProtocolRead(prior=>prior?.scope===protocolScope&&prior.data?.reviewRevision>data.reviewRevision?{...prior,stale:true}:{scope:protocolScope,data,stale:false})
+   setProtocolRead(prior=>prior?.scope===protocolScope&&(prior.data?.reviewRevision>data.reviewRevision||prior.data?.run?.revision>data.run?.revision)?{...prior,stale:true}:{scope:protocolScope,data,stale:false})
   }).catch(()=>{if(!c.signal.aborted&&protocolScopeRef.current===protocolScope)setProtocolRead(prior=>({scope:protocolScope,data:prior?.scope===protocolScope?prior.data:null,stale:true}))})
   return()=>c.abort()
- },[accountId,run.id,day.protocolId,day.sessionId,lang,protocolScope,minuteBucket,protocolRefresh])
+ },[accountId,run.id,day.protocolId,day.sessionId,lang,protocolScope,minuteBucket,clockStatus,protocolRefresh])
  const completed=clock?.status==='time_limit'||day.status==='time_limit'
  const canStart=Boolean(identity.status==='ready'&&voiceName&&!fault&&!completed&&!stopping&&run.access==='free'&&run.currentDay===day.day&&['not_started','paused'].includes(day.status))
  const currentMaterials=materialContext?.owner===accountId?materialContext:null
