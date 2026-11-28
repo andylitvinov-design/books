@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { verify, requiresCurrentProductionBase, classifyPrState, diagnoseAggregateError, awaitPositiveMergeability, verifiedPriorSpecialistEvidence, reusePriorSpecialistState } from '../scripts/ci-specialist-aggregate.mjs';
+import { verifyStableProtectedBase, observeProtectedBaseDrift } from '../scripts/ci-specialist-aggregate.mjs';
 import { inspectJobs, trustedRequiredJobs, inspectWorkflowRuns } from '../lib/ci/specialist-aggregate.mjs';
 import { safeComposedIndependentAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeIndependentRouterPolicyAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeStandaloneVideoAfterSpecialistScopeAdvance, safeNonOverlappingProductAdvance, safeIndependentMixedCandidateAdvance, normalizeIdenticalProtectedOverlap } from '../lib/ci/production-base-impact.mjs';
 
@@ -622,7 +623,7 @@ test('#5093: protected BASE drift must not trigger auto-sync before required mac
   path:workflow,id:981,head_branch:pr.head.ref});
  let elapsed=0,polls=0,jobReads=0,baseReads=0,compares=0;
  const api={
-  pr:async()=>mediaPr,target:async()=>{baseReads++;return latest;},
+  pr:async()=>mediaPr,target:async()=>{assert.equal(jobReads,1,'no final target authorization before Mac evidence');baseReads++;return latest;},
   compare:async()=>{compares++;return {
     status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
     base_commit:{sha:base},merge_base_commit:{sha:base},
@@ -641,7 +642,7 @@ test('#5093: protected BASE drift must not trigger auto-sync before required mac
  assert.equal(polls,2,'the real Mac specialist must finish before BASE is considered stale');
  assert.equal(jobReads,1,'successful exact-run macOS job evidence is independently read');
  assert.equal(compares,1,'only final protected BASE comparison can trigger auto-sync');
- assert.equal(baseReads,1,'no early or periodic stale-base branch update while Mac is active');
+ assert.equal(baseReads,2,'two final target reads bracket the same proof after Mac completes');
  let redPolls=0,redBaseReads=0;
  await assert.rejects(()=>verify({...api,
   target:async()=>{redBaseReads++;return latest;},
@@ -859,7 +860,7 @@ test('all required specialists finish before BASE_ADVANCED; not only macOS (#519
     now:()=>elapsed,sleep:async ms=>{elapsed+=ms;}}),/PRODUCTION_BASE_CHANGED/);
   assert.equal(polls,2,'the actual specialist should finish before base reconciliation');
   assert.equal(jobReads,1,'read the exact-HEAD completed specialist job');
-  assert.equal(baseReads,1,'only final target comparison, not an early rejection');
+  assert.equal(baseReads,2,'final target proof is bracketed by two reads, not an early rejection');
   assert.equal(compares,1,'do not repeatedly compare moving production during CI');
   let redPolls=0,redBaseReads=0;
   await assert.rejects(()=>verify({...api,
@@ -1400,4 +1401,32 @@ test('universal moving-base proof treats feature-owned CI regressions as local, 
   assert.equal(accept({...delta,commits:[]}),false);
   assert.equal(accept({...delta,files:[...rows,rows[0]]}),false);
   assert.equal(accept({...delta,files:[{...rows[0],status:'renamed',previous_filename:'old.jsx'}]}),false);
+});
+
+test('final base race retries freshness only, never real source failure or stable rejected delta',async()=>{
+ const one='d'.repeat(40),two='e'.repeat(40);
+ const live={...pr,mergeable:true};
+ const bad=()=>Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
+ let calls=[], reads=[one,two,two,two],refresh=0;
+ const api={target:async()=>reads.shift(),pr:async()=>{refresh++;return live;}};
+ assert.equal(await verifyStableProtectedBase(api,ctx,async(p,retry,target)=>{
+   calls.push(target);if(target===one)throw bad();
+ },live,async()=>{}),two);
+ assert.deepEqual(calls,[one,two]);assert.equal(refresh,1);
+ reads=[one,one];calls=[];
+ await assert.rejects(()=>verifyStableProtectedBase(api,ctx,async(p,r,target)=>{calls.push(target);throw bad();},live,async()=>{}),/PRODUCTION_BASE_CHANGED/);
+ assert.deepEqual(calls,[one]);
+ reads=[one,two];calls=[];
+ await assert.rejects(()=>verifyStableProtectedBase(api,ctx,async()=>{throw Error('SPECIALIST_FAILED');},live,async()=>{}),/SPECIALIST_FAILED/);
+ assert.deepEqual(reads,[two]);
+ reads=[one,two];await assert.rejects(()=>verifyStableProtectedBase({...api,pr:async()=>({...live,head:{...live.head,sha:two}})},ctx,async()=>{},live,async()=>{}),/PR_HEAD_CHANGED/);
+ reads=[one,two,one,two,one,two,one,two];let attempts=0;
+ await assert.rejects(()=>verifyStableProtectedBase(api,ctx,async()=>{attempts++;},live,async()=>{}),/PRODUCTION_BASE_CHANGED/);
+ assert.equal(attempts,4);
+ let comparisons=0;
+ const preview={target:async()=>two,compare:async()=>{comparisons++;return {status:'ahead',ahead_by:2,files:[{filename:'lib/coaching/x.mjs'}]};}};
+ assert.equal(await observeProtectedBaseDrift(preview,ctx,['lib/coaching/x.mjs'],base),two);
+ assert.equal(await observeProtectedBaseDrift(preview,ctx,['lib/coaching/x.mjs'],two),two);
+ assert.equal(comparisons,1);
+ assert.equal(await observeProtectedBaseDrift({...preview,compare:async()=>{throw Error('unavailable');}},ctx,[],base),base);
 });
