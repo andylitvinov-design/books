@@ -1089,3 +1089,16 @@
   .page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-energywork-slide-kind="milestone"]:has([data-reiki-first-lesson-save]) [data-daybook-part="content"] > div:has(+ [data-reiki-milestone-choices]) strong {font-size:14px;}
   .page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"] [data-energywork-slide-kind="milestone"]:has([data-reiki-first-lesson-save]) [data-daybook-part="content"] > :is(h1,h2)[id] {font-size:23px;}
 }
+
+/* Golden v4 course overview only: keep the existing gated Reiki learner and slide UI. */
+.page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"][data-daybook-welcome-screen] .hero{flex:none;min-height:0}
+.page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"][data-daybook-welcome-screen] .welcomeHero{min-height:0;padding:10px 12px}
+.page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"][data-daybook-welcome-screen] .welcomeHero h1{font-size:clamp(26px,6.7vw,38px)}
+.page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"][data-daybook-welcome-screen] .heroLotus{display:none}
+.page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"][data-daybook-welcome-screen] .weekHeading{padding:9px 12px;border:1px solid #e2bf81;border-radius:15px;background:linear-gradient(90deg,#fff6e5 12%,#fff3dfda 72%,#fff3df66),url('/images/holistic-house/reiki-approved-sunrise-v3.webp') right center/cover}
+.page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"][data-daybook-welcome-screen] .weekHeading>span{color:#07553d}
+.page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"][data-daybook-welcome-screen] .weekHeading h2{color:#392013;font-size:clamp(22px,6vw,30px)}
+.page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"][data-daybook-welcome-screen] .weekProgress{color:#694a2b}
+.page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"][data-daybook-welcome-screen] .weekProgress progress,.page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"][data-daybook-welcome-screen] .weekProgress progress::-webkit-progress-bar{background:#dfc59b;border-color:#dfc59b}
+.page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"][data-daybook-welcome-screen] [data-daybook-part="shell"]>footer button[data-energywork-next]{border-radius:999px}
+@media(max-height:740px){.page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"][data-daybook-welcome-screen] .welcomeHero{padding:7px 10px}.page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"][data-daybook-welcome-screen] .weekHeading{padding:6px 9px}.page[data-reiki-daybook][data-reiki-daybook-design="golden-one-screen-v3"][data-daybook-welcome-screen] .welcomeRibbon{display:none}}
