@@ -93,3 +93,20 @@ test('full Next.js and mobile browser runs remain manual-only, not a PR merge bl
   }
   assert.doesNotMatch(yaml, /continue-on-error:\s*true/);
 });
+
+
+test('Ideas acceptance waits for exact React readiness instead of unrelated page load or fixed delays',()=>{
+  const js=source('scripts/verify-ideas-mobile-browser.mjs');
+  assert.doesNotMatch(js,/waitForLoadState\("load"/);
+  assert.doesNotMatch(js,/waitForTimeout\(/);
+  assert.ok(js.includes('typeof card[key]?.onClick === "function"'));
+  assert.ok(js.includes('document.fonts.status === "loaded"'));
+  assert.ok(js.includes('input[inputKey]?.value === expected'));
+  assert.ok(js.includes('typeof button[buttonKey]?.onClick === "function"'));
+  assert.ok(js.indexOf('typeof card[key]?.onClick') < js.indexOf('await profilePath.tap()'));
+  assert.ok(js.indexOf('input[inputKey]?.value === expected') < js.indexOf('await testAction.tap()'));
+  assert.ok(js.includes('free test chooser did not open'));
+  assert.match(js,/const widths = \[320, 375, 390, 430\]/);
+  assert.match(js,/browserType: webkit/);
+  assert.match(js,/browserType: chromium/);
+});
