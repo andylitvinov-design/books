@@ -1,0 +1,56 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import {readFileSync} from 'node:fs'
+import {geminiSpeechReviewEnabled,geminiSpeechReviewPayload,geminiSpeechReviewText} from '../lib/coaching/gemini-speech-review-provider.mjs'
+import {speechReviewWav} from '../lib/coaching/coach-speech-review.mjs'
+const wav=Buffer.from(speechReviewWav([new Uint8Array(3200)]))
+test('private runtime stays disabled even with every flag; payload helpers remain testable',()=>{
+ const env={HH_MY_COACH_SPEECH_REVIEW_ENABLED:'true',HH_MY_COACH_GEMINI_TRANSCRIBE_ENABLED:'true',HH_MY_COACH_GEMINI_TRANSCRIBE_FREE_CONFIRMED:'true',HH_MY_COACH_GEMINI_TRANSCRIBE_PRIVACY_APPROVED:'true',HH_MY_COACH_GEMINI_TRANSCRIBE_API_KEY:'mock'}
+ assert.equal(geminiSpeechReviewEnabled(env),false)
+ assert.equal(geminiSpeechReviewEnabled({}),false)
+ for(const key of Object.keys(env))assert.equal(geminiSpeechReviewEnabled({...env,[key]:''}),false)
+ const p=geminiSpeechReviewPayload(wav,'ru')
+ assert.equal(p.model,'models/gemini-3.5-transcribe');assert.equal(p.store,false)
+ assert.deepEqual(p.generation_config.transcription_config,{mode:{type:'verbatim'},language_codes:['ru-RU']})
+ assert.throws(()=>geminiSpeechReviewPayload(wav,'xx'))
+ assert.throws(()=>geminiSpeechReviewPayload(Buffer.alloc(3244),'ru'))
+ assert.equal(geminiSpeechReviewText({status:'completed',steps:[{type:'model_output',content:[{type:'text',text:'Уставшим'}]}]}),'Уставшим')
+ assert.equal(geminiSpeechReviewText({status:'in_progress',steps:[]}),'')
+})
+test('separate consent, same quota and cancellation; no runtime fallback',()=>{
+ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
+ const route=read('app/api/coaching/speech-review-gemini/route.js')
+ assert.ok(route.includes("form.get('geminiConsent')!=='yes'"))
+ assert.ok(route.indexOf('if(!geminiSpeechReviewEnabled(process.env))')>=0)
+ assert.ok(route.indexOf('if(!geminiSpeechReviewEnabled(process.env))')<route.indexOf('request.formData()'))
+ assert.ok(route.indexOf('if(!geminiSpeechReviewEnabled(process.env))')<route.indexOf('await fetch('))
+ assert.ok(route.includes('createRequestAuth(request,config).verified()'))
+ assert.ok(route.includes("op:'my-coach-stt-free-global-day'},240,86400"))
+ assert.ok(route.includes('AbortSignal.timeout(10000)'))
+ const live=read('components/my-coach-gemini-live.jsx')
+ assert.ok(live.includes('provider:reviewProvider'))
+ assert.ok(live.includes('[speechReviewConsent,speechReviewProvider]'))
+ const review=read('lib/coaching/coach-speech-review.mjs')
+ assert.ok(review.includes("if(gemini)form.set('geminiConsent','yes')"))
+ const ui=read('components/my-coach-live-dialogue.jsx')
+ assert.ok(ui.includes('data-gemini-transcribe-consent'))
+})
+
+test('dedicated engine capability route preserves exact URL, authentication, rate and default-off provider',()=>{
+ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
+ const route=read('app/api/app/my-coach/engines/route.js')
+ const shared=read('app/api/app/[...path]/route.js')
+ const ui=read('components/my-coach-live-dialogue.jsx')
+ assert.ok(ui.includes("fetch('/api/app/my-coach/engines'"))
+ assert.ok(route.indexOf('await auth.verified()')<route.indexOf("op:'app',actor:actor.id"))
+ assert.ok(route.indexOf("op:'app',actor:actor.id")<route.indexOf('HH_MY_COACH_ENGINES_V1'))
+ assert.ok(route.includes("expectedAccount&&expectedAccount!==actor.id"))
+ assert.ok(route.includes("180,60"))
+ assert.ok(route.includes('auth.apply(NextResponse.json('))
+ assert.ok(route.includes('headers:PRIVATE_HEADERS'))
+ assert.ok(route.includes('speech_review_free:coachSpeechReviewEnabled(process.env)'))
+ assert.ok(route.includes('speech_review_gemini:geminiSpeechReviewEnabled(process.env)'))
+ assert.ok(!shared.includes('speech_review_free:coachSpeechReviewEnabled'))
+ assert.ok(!shared.includes('geminiSpeechReviewEnabled'))
+ assert.equal(geminiSpeechReviewEnabled(),false)
+})

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { verify, requiresCurrentProductionBase, classifyPrState, diagnoseAggregateError, awaitPositiveMergeability, verifiedPriorSpecialistEvidence, reusePriorSpecialistState, revalidateAfterTrustedPolicyAdvance } from '../scripts/ci-specialist-aggregate.mjs';
+import { verify, requiresCurrentProductionBase, classifyPrState, diagnoseAggregateError, awaitPositiveMergeability, verifiedPriorSpecialistEvidence, verifiedEquivalentHeadTrees, reusePriorSpecialistState, revalidateAfterTrustedPolicyAdvance } from '../scripts/ci-specialist-aggregate.mjs';
 import { createRequire } from 'node:module';
 import { verifyStableProtectedBase, observeProtectedBaseDrift, independentPackageOnlyAdvisories, verifiedCoachDispatcherIsolation, independentDispatcherAdvisories, provenNonApplicableWorkflows, withCompletedSpecialistEvidence, mergeReadyReceipt } from '../scripts/ci-specialist-aggregate.mjs';
 import { inspectJobs, trustedRequiredJobs, inspectWorkflowRuns } from '../lib/ci/specialist-aggregate.mjs';
@@ -1356,6 +1356,21 @@ test('prior unified gate reuses every proved same-tree Specialist, not stale or 
  const proof=await check();assert.equal(proof.size,2);
  assert.equal(proof.get(path).run_id,11);
  assert.equal(proof.get(path).prior_run_attempt,1);
+ const incorporated={...commits[head],tree:{sha:mergeTree},parents:[{sha:old},{sha:base}]};
+ const technical=await check({...api,commit:async sha=>sha===head?incorporated:commits[sha]});
+ assert.equal(technical.size,2);
+ assert.equal(technical.get(path).proof_mode,'equivalent_merge_tree');
+ assert.equal(technical.get(path).prior_merge,oldMerge);
+ assert.equal(technical.get(path).tested_merge,merge);
+ assert.equal(technical.get(path).tested_base,base);
+ for(const bad of [
+  {...incorporated,parents:[{sha:base},{sha:old}]},
+  {...incorporated,parents:[{sha:old},{sha:'3'.repeat(40)}]},
+  {...incorporated,parents:[{sha:old},{sha:base},{sha:'3'.repeat(40)}]},
+  {...incorporated,tree:{sha:'3'.repeat(40)}},
+ ])assert.equal((await check({...api,commit:async sha=>sha===head?bad:commits[sha]})).size,0);
+ assert.equal((await check({...api,commit:async sha=>sha===head?incorporated:
+  sha===oldMerge?{...commits[sha],tree:{sha:'3'.repeat(40)}}:commits[sha]})).size,0);
  for(const state of ['failure','cancelled','in_progress']){
   const changed={...specialists[0],id:13,status:state==='in_progress'?'in_progress':'completed',
    conclusion:state==='in_progress'?null:state};
