@@ -1,0 +1,46 @@
+.dialog {
+  position:fixed; inset:0; width:min(94vw,490px); max-width:490px; max-height:min(90dvh,740px);
+  padding:0; border:1px solid #b9ddd9; border-radius:24px;
+  background:#f9f6ec; color:#34443f; box-shadow:0 25px 90px #001f2f88;
+  overflow:auto; overscroll-behavior:contain;
+}
+.dialog::backdrop {background:rgba(2,24,35,.72);backdrop-filter:blur(4px)}
+.sheet {padding:clamp(16px,4vw,28px);display:grid;gap:12px}
+.eyebrow {font-size:11px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:#a1744b}
+.sheet h2,.checkout h3 {margin:0;color:#674d35;font-size:clamp(19px,4vw,25px);line-height:1.25}
+.sheet p,.checkout p {font-size:13px;line-height:1.5;margin:0;color:#50635e}
+.lineItem {display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;line-height:1.4;background:#fff;border:1px solid #d9e3d9;padding:12px;border-radius:13px}
+.lineItem b {font-size:12px;color:#70513a}
+.lineItem span {font-size:13px;color:#365c57;overflow-wrap:anywhere}
+.pricePicker {display:grid;gap:8px}
+.label {font-weight:850;font-size:13px;color:#67533e}
+.prices {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.prices button {min-height:44px;padding:8px 4px;background:#fff;color:#735036;border:1px solid #d3c5b5;border-radius:11px;cursor:pointer;font:inherit;font-size:14px}
+.prices .active,.prices button[aria-pressed=true] {color:#fff;background:#895e3f;border-color:#895e3f;font-weight:800}
+.custom {display:grid;gap:6px;font-size:12px;font-weight:750;color:#5b645e}
+.custom>span {display:flex;align-items:center;gap:7px}
+.custom input {width:100%;min-width:0;max-width:100%;min-height:44px;padding:10px 12px;border-radius:11px;background:white;color:#34473f;border:1px solid #bbcfc7;font:inherit;font-size:16px}
+.custom>span>input {max-width:130px}
+.note {font-size:12px!important;color:#576b66!important}
+.primary,.secondary {display:flex;align-items:center;justify-content:center;min-height:44px;padding:11px 14px;border-radius:13px;font:inherit;font-weight:800;font-size:14px;text-align:center;cursor:pointer;text-decoration:none}
+.primary {border:1px solid #786044;background:#78583c;color:#fff!important}
+.primary:hover:not(:disabled) {background:#5e442e}
+.primary:disabled {opacity:.55;cursor:not-allowed}
+.secondary {background:transparent;border:1px solid #c1d5cd;color:#496f67}
+.checkout {display:grid;gap:12px;margin:12px 0;border:1px solid #97d1d0;border-radius:20px;background:#f6f7f0;color:#2d4c48;padding:clamp(14px,3vw,21px)}
+.checkout .intro {color:#4b6560}
+.total {font-size:24px!important;font-weight:900;color:#5f5037!important}
+.review,.verified {border:1px solid #d9d7a0;border-radius:14px;padding:13px;background:#fff9e6;color:#66552f}
+.review strong,.verified strong {display:block;font-size:15px;margin-bottom:6px}
+.verified {background:#e9f6ec;border-color:#a2d4b0;color:#255d3c}
+.verified p,.review p {color:inherit!important}
+.verified small {font-size:11px}
+.error {color:#9f3746!important;font-size:12px!important}
+.dialog :is(button,input,a):focus-visible,
+.checkout :is(button,input,a):focus-visible {outline:3px solid #17a6a5;outline-offset:2px}
+@media(max-width:380px) {
+ .dialog {width:calc(100vw - 14px)}
+ .sheet {padding:14px}
+ .checkout {padding:12px;border-radius:15px}
+ .lineItem {display:grid}
+}

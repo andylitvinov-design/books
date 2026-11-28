@@ -3,6 +3,7 @@ import { requireAdminRequest } from '@/lib/prescriptions/admin'
 import { getAppConfig, requestOrigin, requireSameOrigin } from '@/lib/app/config'
 import { consumeRate } from '@/lib/app/database'
 import { createReikiLeadInbox } from '@/lib/academy/reiki-course-leads'
+import { createReikiDonationOrders } from '@/lib/academy/reiki-donation-orders'
 import { createReikiReviewModeration } from '@/lib/academy/reiki-public-reviews'
 import { PRIVATE_HEADERS, readBody, safeError } from '@/lib/app/http'
 import { AppError, onlyKeys } from '@/lib/assessments/contracts'
@@ -18,6 +19,7 @@ async function handle(request) {
     requestOrigin(request, config)
     if (request.method !== 'GET') requireSameOrigin(request, config)
     const inbox = createReikiLeadInbox(config)
+    const donations = createReikiDonationOrders(config)
     if (request.method === 'GET') {
       const url = new URL(request.url)
       const photoId = url.searchParams.get('photo')
@@ -31,11 +33,12 @@ async function handle(request) {
       if (url.search) throw new AppError('INVALID_FILTER', 400)
       await consumeRate(config, { op: 'reiki-leads-inbox' }, 60, 60)
       const reviews = createReikiReviewModeration(config)
-      return NextResponse.json({ leads: await inbox.list(), reviews: await reviews.list() }, { headers: PRIVATE_HEADERS })
+      return NextResponse.json({ leads: await inbox.list(), reviews: await reviews.list(), donations: await donations.listOwner() }, { headers: PRIVATE_HEADERS })
     }
     await consumeRate(config, { op: 'reiki-leads-inbox' }, 60, 60)
     const reviews = createReikiReviewModeration(config)
     const body = await readBody(request, 4096)
+    if (body.action === 'verify-donation') return NextResponse.json(await donations.verifyOwner(body), { headers: PRIVATE_HEADERS })
     if (body.action === 'moderate-review') {
       onlyKeys(body,['action','id','status','expectedRevision'])
       return NextResponse.json(await reviews.moderate(body),{headers:PRIVATE_HEADERS})

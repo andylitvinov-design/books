@@ -7,6 +7,7 @@ import { ArrowLeft, ArrowRight, Award, BookOpen, Check, ClipboardCopy, Clock3, C
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { ReikiLessonIntroAudio } from "@/components/reiki-lesson-intro-audio";
 import { ReikiCourseReferralShare } from "@/components/reiki-course-referral-share";
+import { ReikiDonationPreview, ReikiDonationCheckout } from "@/components/reiki-donation-checkout";
 import { ReikiInitiationPhoto, type ReikiPhoto } from "@/components/reiki-initiation-photo";
 import ReikiHintsSlide from "@/components/app/reiki-hints-slide";
 import { appFetch } from "@/lib/app/client-fetch";
@@ -689,10 +690,12 @@ function MeditationVoices({ slide, locale, compact = false }: {
 
 
 /** Lesson 5: all selections serialize into the existing encrypted end-01 answer. */
-function ReikiInitiationRequestForm({ value, locale, onChange }: {
+function ReikiInitiationRequestForm({ value, locale, onChange, amountEur, onAmountChange }: {
   value: string; locale: EnergyworkLocale; onChange: (next: string) => void;
+  amountEur: number; onAmountChange: (amount: number) => void;
 }) {
   const request = readReikiInitiationRequest(value);
+  const [donationCartOpen, setDonationCartOpen] = useState(false);
   const ru = locale === "ru";
   const ready = reikiInitiationRequestValid(value);
   const change = (patch: Partial<ReturnType<typeof readReikiInitiationRequest>>) => {
@@ -728,23 +731,34 @@ function ReikiInitiationRequestForm({ value, locale, onChange }: {
       <fieldset className={styles.initiationChoiceGroup} data-reiki-donation-choices>
         <legend>{ru ? "2. Хотите вторую или третью инициацию за донейшн?" : "2. Add a second or third initiation by donation?"}</legend>
         <p className={styles.initiationHelper}>{ru
-          ? "Необязательно: ещё одна или две системы Рейки в чате за добровольный донейшн. Размер согласуете с Андреем позже, оплаты здесь нет."
-          : "Optional: add one or both other Reiki systems in chat by voluntary donation. Agree the amount later; no payment here."}</p>
+          ? "Необязательно: выберите дополнительную систему. Если онлайн-донейшн доступен, после отправки заявки откроется корзина; деньги не списываются автоматически."
+          : "Optional: choose additional systems. If online donations are enabled, checkout becomes available after submitting your application. No automatic charge."}</p>
         <div className={styles.initiationChoiceGrid}>
           {energyworkPathChoices.filter((choice) => choice.id !== request.freeInitiation).map((choice) => (
             <label key={choice.id} className={styles.initiationChoice + (request.donationInitiations.includes(choice.id) ? " " + styles.initiationChoiceSelected : "")}>
               <input type="checkbox" value={choice.id} checked={request.donationInitiations.includes(choice.id)}
-                onChange={(event) => change({
-                  donationInitiations: event.target.checked
+                onChange={(event) => {
+                  change({ donationInitiations: event.target.checked
                     ? [...request.donationInitiations, choice.id]
-                    : request.donationInitiations.filter((id) => id !== choice.id),
-                })} />
+                    : request.donationInitiations.filter((id) => id !== choice.id) });
+                  if (event.target.checked) setDonationCartOpen(true);
+                }} />
               <span>{choice.title[locale]}</span>
               <small>{ru ? "За донейшн" : "By donation"}</small>
             </label>
           ))}
         </div>
+        {request.donationInitiations.length ? (
+          <button type="button" className={styles.initiationSend}
+            onClick={() => setDonationCartOpen(true)}>
+            {ru ? "Открыть корзину донейшна" : "View optional donation cart"}
+          </button>
+        ) : null}
       </fieldset>
+      <ReikiDonationPreview open={donationCartOpen && request.donationInitiations.length > 0}
+        onClose={() => setDonationCartOpen(false)} locale={locale}
+        traditions={request.donationInitiations} amountEur={amountEur}
+        onAmountChange={onAmountChange} />
       <fieldset className={styles.initiationChoiceGroup} data-reiki-personal-choices>
         <legend>{ru ? "3. Какой формат инициации вам ближе?" : "3. Which initiation format feels right for you?"}</legend>
         <p className={styles.initiationHelper}>{ru
@@ -879,6 +893,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
   const [applicationLead, setApplicationLead] = useState<StoredProgress["applicationLead"]>(null);
   const [applicationConsented, setApplicationConsented] = useState(false);
   const [applicationMessage, setApplicationMessage] = useState("");
+  const [donationAmountEur, setDonationAmountEur] = useState(10);
   const [initiationPhoto, setInitiationPhoto] = useState<ReikiPhoto | null>(null);
   const [busy, setBusy] = useState(false);
   const [dirtyCount, setDirtyCount] = useState(0);
@@ -917,6 +932,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
     setShareConsented(false);
     setApplicationConsented(false);
     setApplicationMessage("");
+    setDonationAmountEur(10);
     setFirstLessonConsent(false);
     setConsented(false);
     setReviewReturn(false);
@@ -1906,7 +1922,8 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
               ) : null}
               {slide.id === "end-01" ? (
                 <ReikiInitiationRequestForm value={answers["end-01"] ?? ""} locale={locale}
-                  onChange={(value) => setAnswer(value, "end-01")} />
+                  onChange={(value) => setAnswer(value, "end-01")}
+                  amountEur={donationAmountEur} onAmountChange={setDonationAmountEur} />
               ) : slide.question ? (
                 <div className={styles.question} data-daybook-question={daybook || undefined}>
                   <span className={styles.questionBadge}><BookOpen size={15} aria-hidden="true" />{slide.id === "welcome-02" ? t.experienceBadge :
@@ -2019,6 +2036,11 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false, layout 
                           <strong>{t.finalAcceptedHeading}</strong>
                           <p>{t.initiationSent}</p>
                         </div>
+                        {sync === "ready" && accountIdRef.current && readReikiInitiationRequest(answers["end-01"] ?? "").donationInitiations.length > 0 ? (
+                          <ReikiDonationCheckout key={accountIdRef.current} locale={locale} accountId={accountIdRef.current}
+                            traditions={readReikiInitiationRequest(answers["end-01"] ?? "").donationInitiations}
+                            initialAmountEur={donationAmountEur} />
+                        ) : null}
                       </div>
                     ) : (
                       <>
