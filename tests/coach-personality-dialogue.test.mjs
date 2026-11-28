@@ -61,3 +61,20 @@ test('the real Director includes the selected personality without changing locke
  assert.ok(coachSessionDirectivePrompt(d).includes('PERSONALITY TURN'))
  assert.equal(d.canOfferAction,false)
 })
+
+
+test('supporting identities use canonical contextual memory without becoming expanded public profiles',()=>{
+ for(const [personaId,latestMessage] of [['lea','approval'],['noah','money'],['iris','changed my mind'],['ray','creative collaboration']]){
+  assert.equal(coachPersonalityProfile(personaId),null)
+  const input={personaId,latestMessage,locale:'en',interventionId:'answer_first'}
+  const turn=coachPersonalityTurn(input)
+  assert.ok(turn?.memoryEntryId,personaId)
+  assert.equal(turn.mode,'answer')
+  assert.deepEqual(turn.affinity,[])
+  assert.equal(coachPersonalityTurn({...input,latestMessage:'ZXQJ unrelated'}),null)
+  assert.equal(coachPersonalityTurn({...input,noAdvice:true}),null)
+  assert.equal(coachPersonalityTurn({...input,memoryBlocked:true}),null)
+  assert.equal(coachPersonalityTurn({...input,empathy:{emotion:'fear',evidence:'explicit_current_self_report',certainty:'explicit'}}),null)
+ }
+ assert.equal(coachPersonalityTurn({personaId:'constructor',latestMessage:'approval',interventionId:'answer_first'}),null)
+})
