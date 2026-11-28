@@ -369,7 +369,7 @@ export function ShamanicaMobile({locale,audience="self"}:{locale:PublicLocale;au
       </select><ChevronDown size={15} aria-hidden="true"/>
      </label>
      <Link className={styles.iconButton} href={"/"+locale+"/explore"} aria-label={t.search} prefetch={false}><Search size={22}/></Link>
-     <button type="button" className={styles.helpButton} data-shamanica-ihelp-trigger={business||undefined} aria-label={t.help} onClick={()=>window.dispatchEvent(new Event("hh:open-ihelp"))}><CircleHelp size={22} aria-hidden="true"/></button>
+     <button type="button" className={styles.helpButton} data-shamanica-ihelp-trigger aria-haspopup="dialog" aria-controls="hh-ihelp-panel" aria-label={t.help} onClick={()=>window.dispatchEvent(new Event("hh:open-ihelp"))}><CircleHelp size={22} aria-hidden="true"/></button>
      <Link className={styles.profileButton} href={"/"+(locale==="es"?"en":locale)+"/app/portrait"} aria-label={locale==="ru"?"Профиль":locale==="es"?"Perfil":"Profile"} prefetch={false}><UserRound size={23}/></Link>
      <details className={styles.menu}><summary className={styles.iconButton} aria-label={t.menu}><Menu size={22}/></summary>
       <nav className={styles.menuPop}><Link href={locale==="en"?"/":"/"+locale}>{t.self}</Link><Link href={"/"+locale+"/shamanica/business"}>{t.work}</Link><Link href={"/"+locale+"/academy"}>{t.services.learning[0]}</Link><Link href={"/"+locale+"/explore"}>{t.search}</Link></nav>
@@ -379,7 +379,7 @@ export function ShamanicaMobile({locale,audience="self"}:{locale:PublicLocale;au
    <nav className={styles.audiences} aria-label="Audience">
     <Link className={!business?styles.audienceActive:undefined} aria-current={!business?"page":undefined} href={"/"+locale+"/shamanica"}><Heart size={18}/>{t.self}</Link>
     <Link className={business?styles.audienceActive:undefined} aria-current={business?"page":undefined} href={"/"+locale+"/shamanica/business"}><BriefcaseBusiness size={18}/>{t.work}</Link>
-    {business?<button type="button" aria-label={t.help} onClick={()=>window.dispatchEvent(new Event("hh:open-ihelp"))}><Sparkles size={18}/>{t.help}</button>:<Link href={"/"+locale+"/holistic-support/mobile"}><Sparkles size={18}/>{t.help}</Link>}
+    <button type="button" aria-label={t.help} onClick={()=>window.dispatchEvent(new Event("hh:open-ihelp"))}><Sparkles size={18}/>{t.help}</button>
    </nav>
    <section className={styles.hero} aria-labelledby="shamanica-hero-title">
     {!business?<div className={styles.artifactHero} data-shamanic-artifact-hero>
