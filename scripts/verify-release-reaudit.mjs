@@ -21,7 +21,7 @@ const results = [];
 const media = new Set();
 const routes = [
   ['/?lang=en', 'en'], ['/?lang=ru', 'ru'], ['/es', 'es'],
-  ...['about', 'services', 'homeopathy', 'books', 'client'].flatMap(section => ['en', 'ru', 'es'].map(locale => [`/${locale}/${section}`, locale])),
+  ...['about', 'services', 'services?assist=quiz', 'homeopathy', 'books', 'client'].flatMap(section => ['en', 'ru', 'es'].map(locale => [`/${locale}/${section}`, locale])),
   ['/books/maya-tradition', 'en'], ['/books/maya-tradition?lang=ru', 'ru'],
 ];
 const volumes = ['maya-egregor-gods', 'maya-calendar', 'maya-exorcism', 'maya-mysteries'];
@@ -321,7 +321,7 @@ async function exercise(engine, browserType, width) {
         // Use document readiness, then the existing full hydration, lifecycle,
         // CSP, image-decoding and pending-request assertions below. No silent pass.
         const response = await page.goto(origin + path, {
-          waitUntil: path.endsWith('/services') ? 'domcontentloaded' : 'networkidle',
+          waitUntil: (path.endsWith('/services') || path.endsWith('/services?assist=quiz')) ? 'domcontentloaded' : 'networkidle',
           timeout: 35000,
         });
         console.info('[release-reaudit] navigated ' + engine + '/' + width + ': ' + path);
@@ -329,8 +329,13 @@ async function exercise(engine, browserType, width) {
         await page.locator('main').first().waitFor();
         await settlePublicDocument('before-assertions');
         if (path.endsWith('/services')) {
-          // Synthetic outage must still be handled by the actual on-screen
-          // component. No mock success and no silently hidden API failure.
+          // The owner-approved default Support entry has only the program screen.
+          await expect(page.locator('main[data-support-programs-only] [data-support-program-screen] [data-profile-space-dashboard]')).toBeVisible();
+          await expect(page.locator('[data-assist-reiki-session]')).toHaveCount(0);
+        }
+        if (path.endsWith('/services?assist=quiz')) {
+          // Keep the actual compatibility route's scoped synthetic outage gate.
+          await expect(page.locator('main[data-support-programs-only]')).toHaveCount(0);
           await page.locator('[data-assist-reiki-session] [role="status"] button')
             .first().waitFor({ state: 'attached', timeout: 10000 });
         }
@@ -812,12 +817,23 @@ async function exercise(engine, browserType, width) {
           await waitForDocument();
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Leaving private must load a new public document');
           await cspPage.evaluate(() => { window.__cspDocumentProbe = 'public-home-before-about'; });
-          // My Coach intentionally has no retired Home About link. Follow
-          // the real Support dock and its public header menu instead.
+          // My Coach and the programs-only Support mobile screen intentionally
+          // have no visible legacy menu. Follow Support's real Diagnostics link,
+          // then the actual public review page's navigation to About.
           await cspPage.locator('[data-hh-unified-dock] [data-unified-dock-item="services"]').click();
           await expect(cspPage).toHaveURL(origin + '/en/services');
           await waitForDocument();
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe),'public-home-before-about','My Coach to Support stays same-policy');
+          const diagnosticsLink = cspPage.locator('[data-express-part="diagnostics"] a[href="/en/services/free-situation-review"]');
+          await expect(diagnosticsLink).toHaveCount(1);
+          await expect(diagnosticsLink).toBeVisible();
+          await diagnosticsLink.click();
+          await expect(cspPage).toHaveURL(origin + '/en/services/free-situation-review');
+          await expect(cspPage.locator('main[data-free-entry-landing="situation"]')).toBeVisible();
+          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
+          await waitForDocument();
+          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe),'public-home-before-about','Support diagnostics stays same-policy');
+          await expect(cspPage.locator('.site-main-menu-trigger')).toBeVisible();
           await cspPage.locator('.site-main-menu-trigger').click();
           const publicAbout = cspPage.locator('.site-main-menu-more [data-nav-item="about"]');
           await expect(publicAbout).toHaveCount(1);
@@ -840,7 +856,10 @@ async function exercise(engine, browserType, width) {
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
           await waitForDocument();
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe),
-            'public-home-before-about', 'Support About preserves same-policy soft navigation');
+            'public-home-before-about', 'Diagnostics About preserves same-policy soft navigation');
+          const actualAboutClick = await cspPage.evaluate(() => window.__hhAboutClickEvidence);
+          assert.equal(actualAboutClick?.href, '/en/about');
+          assert.equal(actualAboutClick?.trusted, true);
           await cspPage.locator('#psychic-alchemy-video button').click();
           await expect(cspPage.frameLocator('#psychic-alchemy-video iframe').locator('[data-csp-probe]')).toBeVisible();
           interruptedDocumentProbe = await cspPage.evaluate(() => window.__cspInitDocumentProbe);
@@ -858,6 +877,11 @@ async function exercise(engine, browserType, width) {
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
           await waitForDocument();
           await expect.poll(() => cspPage.evaluate(() => window.__cspInitDocumentProbe), { message: 'Restored interrupted router must be replaced with a fresh document' }).not.toBe(interruptedDocumentProbe);
+          historyPhase = 'back-to-diagnostics';
+          await cspPage.goBack({ waitUntil: 'domcontentloaded' });
+          await expect(cspPage).toHaveURL(origin + '/en/services/free-situation-review');
+          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
+          await waitForDocument();
           historyPhase = 'back-to-support';
           await cspPage.goBack({ waitUntil: 'domcontentloaded' });
           await expect(cspPage).toHaveURL(origin + '/en/services');
@@ -883,6 +907,11 @@ async function exercise(engine, browserType, width) {
           historyPhase = 'forward-to-support';
           await cspPage.goForward({ waitUntil: 'domcontentloaded' });
           await expect(cspPage).toHaveURL(origin + '/en/services');
+          await waitForDocument();
+          historyPhase = 'forward-to-diagnostics';
+          await cspPage.goForward({ waitUntil: 'domcontentloaded' });
+          await expect(cspPage).toHaveURL(origin + '/en/services/free-situation-review');
+          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
           await waitForDocument();
           historyPhase = 'forward-to-public';
           await cspPage.goForward({ waitUntil: 'domcontentloaded' });

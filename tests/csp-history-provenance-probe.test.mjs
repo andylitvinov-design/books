@@ -2,13 +2,13 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { assertHistoryProvenanceEvidence } from '../scripts/csp-history-provenance-probe.mjs';
-const entry = (key, document = 'original', hash = '', pathname = '/en/about') => ({ key, document, hash, pathname, owned: true });
+const entry = (key, document = 'original', hash = '', pathname = '/en/services') => ({ key, document, hash, pathname, owned: true });
 function evidence() {
-  return { home: entry('home', 'original', '', '/'), about: entry('about'),
+  return { home: entry('home', 'original', '', '/en/about'), about: entry('about'),
     repeated: [entry('home'), entry('about'), entry('home'), entry('about')],
     hashes: [entry('hash', 'original', '#hh-provenance-hash'), entry('about'), entry('hash', 'original', '#hh-provenance-hash')],
-    reloadedHome: entry('home', 'fresh-home', '', '/'), foreignAbout: entry('about', 'fresh-about'),
-    events: [{ type: 'popstate', document: 'fresh-home', owned: false, key: 'about', url: 'https://example.test/en/about' }], errors: [] };
+    reloadedHome: entry('home', 'fresh-home', '', '/en/about'), foreignAbout: entry('about', 'fresh-about'),
+    events: [{ type: 'popstate', document: 'fresh-home', owned: false, key: 'about', url: 'https://example.test/en/services' }], errors: [] };
 }
 test('native owned and foreign history evidence establishes strict acceptance', () => {
   assert.deepEqual(assertHistoryProvenanceEvidence(evidence()), { foreignHistoryReloadVerified: true, ownedHistoryVerified: true, hashHistoryVerified: true });
@@ -26,7 +26,7 @@ for (const [name, mutate] of [
   ['native cross-document replacement only', e => { e.events = []; }],
   ['owned entry attributed as foreign', e => { e.events[0].owned = true; }],
   ['restore observed in a different document', e => { e.events[0].document = 'fresh-about'; }],
-  ['restore to a different URL', e => { e.events[0].url = 'https://example.test/en/services'; }],
+  ['restore to a different URL', e => { e.events[0].url = 'https://example.test/en/about'; }],
   ['restore of a different native entry', e => { e.events[0].key = 'another-entry'; }],
   ['non-persisted pageshow attributed as restore', e => { e.events[0].type = 'pageshow'; e.events[0].persisted = false; }],
   ['hidden browser error', e => { e.errors.push('ChunkLoadError'); }],
@@ -60,7 +60,8 @@ test('CSP browser audit identifies the actual My Coach home and keeps visible he
     assert.match(source,/await verifyMyCoachHome\(/);
     assert.doesNotMatch(source,/main\[data-home-design=|approved-v2/);
   }
-  assert.ok(history.includes("await ready('/en/services'); result.home = await snapshot()"));
+  assert.ok(history.includes("await ready('/en/about'); result.home = await snapshot()"));
+  assert.ok(history.includes("href: '/en/services', trusted: true"));
   assert.ok(history.includes("await aboutLink.click()"));
   assert.ok(history.includes("assertHistoryProvenanceEvidence(result)"));
 });

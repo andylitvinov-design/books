@@ -611,3 +611,27 @@ test('Home and Practitioner protected PR source contracts install only the locke
   assert.ok(practice.includes('tests/remote-support-privacy-contract.test.mjs'));
   assert.ok(practice.includes('tests/practice-google-return-and-services-v5.test.mjs'));
 });
+
+test('dedicated Coach routes avoid unrelated Axis/Practice and metadata-only recording CI while retaining private owners',()=>{
+  const isolated=['app/api/app/my-coach/qa/route.js','app/api/app/my-coach/rating/route.js',
+    'app/api/app/my-coach/protocol/route.js','app/api/app/my-coach/voice/synthesize/route.js'];
+  for(const file of isolated){
+    for(const name of ['hh-profile-axis-matching.yml','practice-google-browser.yml'])
+      assert.equal(matchesTrigger(trigger(name),[file],TARGET),false,name+': unrelated Coach endpoint');
+    for(const name of ['hh-pr-core-release.yml','hh-personal-coaching-session.yml','hh-app-r1.yml','ia-v2.yml'])
+      assert.equal(matchesTrigger(trigger(name),[file],TARGET),true,name+': lost private Coach gate');
+  }
+  for(const file of isolated.slice(0,2))
+    assert.equal(matchesTrigger(trigger('hh-private-audio-e2e.yml'),[file],TARGET),false,'metadata-only Coach endpoints must not invoke recording QA');
+  for(const file of isolated.slice(2))
+    assert.equal(matchesTrigger(trigger('hh-private-audio-e2e.yml'),[file],TARGET),true,'private protocol/voice stays protected');
+  for(const [name,owned] of [
+    ['hh-profile-axis-matching.yml','lib/holistic-support/axis-offer-matcher.mjs'],
+    ['practice-google-browser.yml','components/app/practice-inner-navigation.jsx'],
+    ['hh-private-audio-e2e.yml','lib/app/session.js'],
+  ]){
+    const t=trigger(name);
+    assert.equal(matchesTrigger(t,['app/api/app/[...path]/route.js'],TARGET),true,name+': common dispatcher stays protected');
+    assert.equal(matchesTrigger(t,[isolated[0],owned],TARGET),true,name+': mixed real change must still execute QA');
+  }
+});

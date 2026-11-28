@@ -25,12 +25,12 @@ export function assertHistoryProvenanceEvidence(result) {
   assert.equal(hashes[1].key, about.key);
   assert.notEqual(reloadedHome.document, home.document, 'Reload creates a fresh document');
   assert.notEqual(foreignAbout.document, reloadedHome.document, 'Foreign history entry must load a fresh document');
-  assert.equal(foreignAbout.pathname, '/en/about');
+  assert.equal(foreignAbout.pathname, '/en/services');
   const foreignRestore = events?.find(event =>
     (event.type === 'popstate' || (event.type === 'pageshow' && event.persisted === true))
     && event.document === reloadedHome.document && event.owned === false
-    && event.key === about.key && new URL(event.url).pathname === '/en/about');
-  assert.ok(foreignRestore, 'Guard proof requires an unowned About restore observed inside the reloaded Home document');
+    && event.key === about.key && new URL(event.url).pathname === '/en/services');
+  assert.ok(foreignRestore, 'Guard proof requires an unowned Services restore observed inside the reloaded About document');
   assert.deepEqual(errors, [], 'No browser JavaScript errors in provenance journey');
   return { foreignHistoryReloadVerified: true, ownedHistoryVerified: true, hashHistoryVerified: true };
 }
@@ -61,22 +61,22 @@ export async function verifyHistoryProvenance({ browser, origin, evidencePath })
   const ready = async path => {
     // Support and About retain the same real public router and CSP class.
     await expect(page).toHaveURL(origin + path, { timeout: 20000 });
-    if (path === '/en/services') await expect(page.locator('main.services-shell')).toBeVisible();
+    if (path.split('#')[0] === '/en/services') await expect(page.locator('main.services-shell')).toBeVisible();
     else await expect(page.locator("#psychic-alchemy-video")).toBeVisible();
     await expect.poll(() => page.evaluate(() => history.pushState.toString().includes('__NA'))).toBe(true);
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   };
   try {
-    // Verify the approved root before using the existing Support -> About
-    // link for the native same-policy ownership proof (no synthetic link).
+    // Verify the approved root, then use the existing visible About -> Services
+    // link instead of the intentionally hidden Support menu.
     await page.goto(origin + '/', { waitUntil: 'networkidle' });
     await verifyMyCoachHome(page, 'en');
     await expect(page.locator('body[data-fast-home]')).toHaveCount(0);
-    await page.locator('[data-hh-unified-dock] [data-unified-dock-item="services"]').click();
-    await ready('/en/services'); result.home = await snapshot();
-    result.stage = 'prepare-about';
+    await page.goto(origin + '/en/about', { waitUntil: 'networkidle' });
+    await ready('/en/about'); result.home = await snapshot();
+    result.stage = 'prepare-services';
     await page.locator('.site-main-menu-trigger').click();
-    const aboutLink = page.locator('.site-main-menu-more [data-nav-item="about"]');
+    const aboutLink = page.locator('.site-main-menu-more [data-nav-item="services"]');
     await expect(aboutLink).toHaveCount(1);
     await expect(aboutLink).toBeVisible();
     await aboutLink.evaluate(node => node.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' }));
@@ -84,7 +84,7 @@ export async function verifyHistoryProvenance({ browser, origin, evidencePath })
       const rect = node.getBoundingClientRect();
       const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
       return Boolean(hit && node.contains(hit));
-    }), { message: 'About link center must be hit-testable after opening the Support menu' }).toBe(true);
+    }), { message: 'Services link center must be hit-testable after opening the About menu' }).toBe(true);
     await page.evaluate(() => {
       window.__historyProofAboutClick = null;
       document.addEventListener('click', event => {
@@ -92,16 +92,16 @@ export async function verifyHistoryProvenance({ browser, origin, evidencePath })
         window.__historyProofAboutClick = { href: link?.getAttribute('href') || null, trusted: event.isTrusted };
       }, { capture: true, once: true });
     });
-    result.stage = 'click-about';
+    result.stage = 'click-services';
     await aboutLink.click();
-    await ready('/en/about');
+    await ready('/en/services');
     result.aboutClick = await page.evaluate(() => window.__historyProofAboutClick);
-    assert.deepEqual(result.aboutClick, { href: '/en/about', trusted: true }, 'The same-policy navigation must come from a real click on About');
+    assert.deepEqual(result.aboutClick, { href: '/en/services', trusted: true }, 'The same-policy navigation must come from a real click on Services');
     result.about = await snapshot();
     result.stage = 'owned-back-forward';
     for (let i = 0; i < 2; i++) {
-      await page.goBack({ waitUntil: 'domcontentloaded' }); await ready('/en/services'); result.repeated.push(await snapshot());
-      await page.goForward({ waitUntil: 'domcontentloaded' }); await ready('/en/about'); result.repeated.push(await snapshot());
+      await page.goBack({ waitUntil: 'domcontentloaded' }); await ready('/en/about'); result.repeated.push(await snapshot());
+      await page.goForward({ waitUntil: 'domcontentloaded' }); await ready('/en/services'); result.repeated.push(await snapshot());
     }
     result.stage = 'hash-back-forward';
     // Use a real browser anchor click, not pushState, to exercise hash navigation.
@@ -112,17 +112,17 @@ export async function verifyHistoryProvenance({ browser, origin, evidencePath })
       const target = document.createElement('div'); target.id = 'hh-provenance-hash';
       document.body.append(anchor, target);
     });
-    await page.locator('#hh-provenance-link').click(); await ready('/en/about#hh-provenance-hash'); result.hashes.push(await snapshot());
-    await page.goBack({ waitUntil: 'domcontentloaded' }); await ready('/en/about'); result.hashes.push(await snapshot());
-    await page.goForward({ waitUntil: 'domcontentloaded' }); await ready('/en/about#hh-provenance-hash'); result.hashes.push(await snapshot());
-    await page.goBack({ waitUntil: 'domcontentloaded' }); await ready('/en/about');
+    await page.locator('#hh-provenance-link').click(); await ready('/en/services#hh-provenance-hash'); result.hashes.push(await snapshot());
+    await page.goBack({ waitUntil: 'domcontentloaded' }); await ready('/en/services'); result.hashes.push(await snapshot());
+    await page.goForward({ waitUntil: 'domcontentloaded' }); await ready('/en/services#hh-provenance-hash'); result.hashes.push(await snapshot());
     await page.goBack({ waitUntil: 'domcontentloaded' }); await ready('/en/services');
-    result.stage = 'reload-home';
-    await page.reload({ waitUntil: 'networkidle' }); await ready('/en/services'); result.reloadedHome = await snapshot();
-    result.stage = 'restore-foreign-about';
-    await page.goForward({ waitUntil: 'domcontentloaded' }); await ready('/en/about');
+    await page.goBack({ waitUntil: 'domcontentloaded' }); await ready('/en/about');
+    result.stage = 'reload-about';
+    await page.reload({ waitUntil: 'networkidle' }); await ready('/en/about'); result.reloadedHome = await snapshot();
+    result.stage = 'restore-foreign-services';
+    await page.goForward({ waitUntil: 'domcontentloaded' }); await ready('/en/services');
     await expect.poll(async () => (await snapshot()).document).not.toBe(result.reloadedHome.document);
-    await page.waitForLoadState('networkidle'); await ready('/en/about');
+    await page.waitForLoadState('networkidle'); await ready('/en/services');
     result.foreignAbout = await snapshot();
     result.events = await page.evaluate(() => JSON.parse(sessionStorage.getItem('__historyProofEvents') || '[]'));
     // Authoritative persisted restoration is covered separately by raw CDP.

@@ -724,7 +724,7 @@ async function receiveCommanderCiRoute(req,origin){
   try{
     const result=await db.begin(async tx=>{
       const rows=await tx.unsafe(
-        "select ci_event_id,repository,workflow_run_id,run_attempt,pr_number,head_sha,head_ref,category,classification,association_status,associated_task_id,inbox_owner_id,oidc_workflow_ref,route_receipt from business_brain.commander_ci_event_inbox where ci_event_id=$1::uuid for update",
+        "select ci_event_id,repository,workflow_run_id,run_attempt,pr_number,head_sha,head_ref,category,classification,association_status,associated_task_id,inbox_owner_id,oidc_workflow_ref,route_receipt,assignment_receipt is null as assignment_available from business_brain.commander_ci_event_inbox where ci_event_id=$1::uuid for update",
         [p.inboxId]);
       const e=rows[0];
       if(!e)return {code:404,outcome:"CI_EVENT_NOT_FOUND"};
@@ -793,7 +793,10 @@ async function receiveCommanderCiRoute(req,origin){
       // Zero-price, read-only AI diagnosis is an executor assignment, NOT a
       // source Repair Worker dispatch. One task per verified PR and HEAD.
       let diagnosticQueued=false;
-      if(!prior&&eligibleTriageHead===e.head_sha&&e.category==="TEST_FAILURE"&&
+      // Intake may have already assigned a diagnostic executor (including a
+      // waiting-prior assignment). Respect that durable receipt under the
+      // same row lock; allocating another executor would roll back routing.
+      if(!prior&&e.assignment_available===true&&eligibleTriageHead===e.head_sha&&e.category==="TEST_FAILURE"&&
          p.state==="TASK_ROUTED_TO_REVIEW"&&
          p.reason==="NO_SAFE_AUTOMATIC_WRITER_FOR_CATEGORY"&&
          p.dispatchAcknowledged===false&&p.workerStarted===false&&
@@ -887,10 +890,15 @@ async function receiveCommanderCiRoute(req,origin){
       await tx.unsafe(
         "insert into business_brain.commander_chat_events(event_id,chat_id,owner_id,kind,payload,source_verified) values($1::uuid,$2::uuid,$3::uuid,'github_report',$4::text::jsonb,true) on conflict(event_id) do nothing",
         [chatEventId,chats[0].chat_id,e.inbox_owner_id,jsonbText(event)]);
-      await tx.unsafe(
-        "update business_brain.commander_chats set execution_state=$1,updated_at=now() where chat_id=$2::uuid and owner_id=$3::uuid",
-        [diagnosticQueued?"AWAITING_EXECUTOR_NOT_DISPATCHED":
-          commanderCiChatExecutionState(p.state),chats[0].chat_id,e.inbox_owner_id]);
+      // A review-only receipt is not authority to reset an already assigned
+      // executor or its chat state. A separately verified source dispatch
+      // still retains the existing monotonic dispatch transition.
+      if(e.assignment_available===true||p.dispatchAccepted===1){
+        await tx.unsafe(
+          "update business_brain.commander_chats set execution_state=$1,updated_at=now() where chat_id=$2::uuid and owner_id=$3::uuid",
+          [diagnosticQueued?"AWAITING_EXECUTOR_NOT_DISPATCHED":
+            commanderCiChatExecutionState(p.state),chats[0].chat_id,e.inbox_owner_id]);
+      }
       return {code:202,outcome:prior?"UPGRADED_TO_DISPATCH_ACCEPTED":"RECORDED"};
     });
     return reply(result.code,{recorded:result.code===200||result.code===202,

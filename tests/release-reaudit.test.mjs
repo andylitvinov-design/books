@@ -217,7 +217,7 @@ test('changing paid service choices derives a fresh WhatsApp URL; free choices o
 test('Services re-audit waits for real hydration and decodes even hidden lazy posters', () => {
   const verifier = read('scripts/verify-release-reaudit.mjs');
   const helper = read('scripts/public-poster-readiness.mjs');
-  assert.match(verifier,/path\.endsWith\('\/services'\) \? 'domcontentloaded' : 'networkidle'/);
+  assert.ok(verifier.includes("waitUntil: (path.endsWith('/services') || path.endsWith('/services?assist=quiz')) ? 'domcontentloaded' : 'networkidle'"));
   assert.match(verifier,/await settlePublicDocument\('before-assertions'\)/);
   assert.match(verifier,/await decodeReadyPoster\(image, expect\)/);
   assert.match(helper,/if \(await image\.isVisible\(\)\)/);
@@ -515,4 +515,13 @@ test('release WebKit warning does not bypass browser, local poster, CSP or build
   assert.match(source, /warningCount: warnings\.length/);
   assert.match(source, /assert\.deepEqual\(errors, \[\]/);
   assert.match(source, /assert\.equal\(failed\.length, 0, 'Re-audit failed; inspect evidence'\)/);
+});
+
+test('release audit retains real default Support and compatibility Reiki outage coverage', () => {
+  const s = read('scripts/verify-release-reaudit.mjs');
+  for (const marker of ["'services', 'services?assist=quiz'", "main[data-support-programs-only] [data-support-program-screen] [data-profile-space-dashboard]", "locator('[data-assist-reiki-session]')).toHaveCount(0)", "if (path.endsWith('/services?assist=quiz'))", "locator('[data-assist-reiki-session] [role=\"status\"] button')"]) assert.ok(s.includes(marker), marker);
+});
+test('CSP journey follows real Support diagnostics and About navigation in both history directions', () => {
+  const s = read('scripts/verify-release-reaudit.mjs');
+  for (const marker of ["[data-express-part=\"diagnostics\"] a[href=\"/en/services/free-situation-review\"]", "await diagnosticsLink.click()", "main[data-free-entry-landing=\"situation\"]", "actualAboutClick?.trusted, true", "historyPhase = 'back-to-diagnostics'", "historyPhase = 'forward-to-diagnostics'", "Support diagnostics stays same-policy"]) assert.ok(s.includes(marker), marker);
 });

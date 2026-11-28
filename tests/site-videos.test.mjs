@@ -180,6 +180,8 @@ test('slots, locales and entities have isolated, validated keys and real public 
       assert.equal(videoPagePath(slot, locale), '/' + locale + '/services?assist=quiz#method-videos')
     }
   }
+  // Retain the protected base's Spanish service-video allowlist regression.
+  assert.throws(() => videoPagePath('services-intro', 'es'), codeIs('validation'))
   assert.equal(videoPagePath('remedy-detail', 'ru', 'arsenicum-album'), '/ru/homeopathy/remedies/arsenicum-album')
   assert.equal(videoPagePath('book-detail', 'en', 'example-book'), '/books/example-book?lang=en')
   for (const args of [
