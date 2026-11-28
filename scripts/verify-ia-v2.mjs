@@ -66,15 +66,35 @@ async function redis(command) {
   return JSON.parse(stdout)
 }
 async function startApp() {
-  app = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'start', '-p', '3203', '-H', '127.0.0.1'], { env: { ...process.env, ...environment }, stdio: ['ignore', 'pipe', 'pipe'] })
+  app = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'start', '-p', '3203', '-H', '127.0.0.1'], { env: { ...process.env, ...environment }, stdio: ['ignore', 'pipe', 'pipe'], detached: true })
   app.stdout.on('data', chunk => { logs += chunk }); app.stderr.on('data', chunk => { logs += chunk })
   for (let i = 0; ; i++) {
-    try { if ((await fetch('http://127.0.0.1:3203/en/library')).ok) return } catch { /* starting */ }
+    try { if ((await fetch('http://127.0.0.1:3203/en/library', { signal: AbortSignal.timeout(3000) })).ok) return } catch { /* starting */ }
     assert.ok(i < 90 && app.exitCode === null, 'Local app failed to start')
     await pause(1000)
   }
 }
-async function stopApp() { if (app && app.exitCode === null) { const stopped = once(app, 'exit'); app.kill('SIGTERM'); await stopped } }
+async function stopApp() {
+  const child = app
+  if (!child || child.exitCode !== null || child.signalCode !== null) return
+  const signalGroup = signal => {
+    try { process.kill(-child.pid, signal) }
+    catch (error) { if (error.code !== 'ESRCH') throw error }
+  }
+  const waitForExit = async (signal, ms) => {
+    if (child.exitCode !== null || child.signalCode !== null) return
+    const stopped = once(child, 'exit', { signal: AbortSignal.timeout(ms) })
+    signalGroup(signal)
+    await stopped
+  }
+  try { await waitForExit('SIGTERM', 10000) }
+  catch (error) {
+    if (error.name !== 'AbortError') throw error
+    console.log('IA isolated Next restart: escalating overdue shutdown')
+    await waitForExit('SIGKILL', 5000)
+  }
+  assert.ok(child.exitCode !== null || child.signalCode !== null, 'Isolated Next process did not exit')
+}
 async function authenticateOwner(context) {
   const jar = new Map()
   const client = createServerClient(authOrigin, authKey, {
@@ -99,7 +119,7 @@ async function authenticateOwner(context) {
 
 async function go(page, path) {
   const response = await page.goto(origin + path, { waitUntil: 'domcontentloaded', timeout: 60000 })
-  await page.evaluate(() => document.fonts.ready)
+  await page.waitForFunction(() => document.fonts.status === 'loaded', undefined, { timeout: 15000 })
   return response
 }
 
@@ -722,7 +742,9 @@ try {
   await expect(pa.locator(`a[href="/ru/client/${links.a.selector}"]`)).toBeVisible()
   await pa.locator(`a[href="/ru/client/${links.a.selector}"]`).click(); await expect(pa).toHaveURL(origin + `/ru/client/${links.a.selector}`)
   await go(pa, '/es/client'); await expect(pa).toHaveURL(origin + `/en/client/${links.a.selector}`)
+  console.log('IA isolated Next restart: stopping previous server')
   await stopApp(); await startApp()
+  console.log('IA isolated Next restart: server ready; checking private-link persistence')
   await go(pa, '/en/client'); await expect(pa).toHaveURL(origin + '/en/client')
   await expect(pa.locator(`a[href="/en/client/${links.a.selector}"]`)).toBeHidden()
   await pa.getByText('Already have a private link from Andy?', { exact: true }).click()

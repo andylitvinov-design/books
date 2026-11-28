@@ -11,7 +11,7 @@ import {REACTION_V4_RELEASED,REACTION_V5_CAMERA_GROUPS} from '@/lib/coaching/coa
 import CoachReactionDirectorMedia from './coach-reaction-director-media'
 import CoachPresentationLayers from './coach-presentation-layers'
 import {selectCoachReactionCameraGroup} from '@/lib/coaching/coach-reaction-director.mjs'
-import {qualityScreenedReactionMedia,qualityScreenedPublicPresence} from '@/lib/coaching/coach-reaction-quality.mjs'
+import {qualityScreenedReactionMedia,qualityScreenedPublicPresence,coachPresentationReturn} from '@/lib/coaching/coach-reaction-quality.mjs'
 
 // Samir has a calm, silent cinematic loop. Keep the original six videos and do not connect decorative motion to TTS or client microphone audio.
 // Merlin and Harry have welcoming smiles, with Harry's existing attentive loop retained.
@@ -32,6 +32,7 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
   const [unavailableCamera,setUnavailableCamera]=useState(null)
   const [failedLegacy,setFailedLegacy]=useState([])
   const [openingDone,setOpeningDone]=useState(null)
+  const [returnDone,setReturnDone]=useState(null)
   const supported=PUBLIC_COACH_PERSONA_IDS.includes(personaId)
   const isGenie=personaId==='genie'
   const hasVideo=VIDEO_PERSONAS.has(personaId)
@@ -40,14 +41,16 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
   const presentationActive=isCoachPresentationContext(context,presentationLoop)
   const pinnedPresentation=useMemo(()=>presentationActive?protectedCoachPresence(personaId,REACTION_V4_RELEASED):null,[presentationActive,personaId])
   const presentation=useMemo(()=>qualityScreenedPublicPresence(personaId,REACTION_V4_RELEASED,pinnedPresentation),[pinnedPresentation,personaId])
-  // All four 480x672 originals can visibly soften on Retina and have
-  // unverified opening-to-HD pose seams. Preserve their immutable assets,
-  // but start public portraits directly in the screened HD presence.
-  // Keep approved higher-resolution Merlin/Harry performances unchanged.
-  const originalOpening=presentationActive?coachPresentationOpening(personaId):null
-  const opening=originalOpening&&Math.min(originalOpening.width,originalOpening.height)>=768?originalOpening:null
+  // Owner 2026-11-28: original acting is additive, never replaced by HD.
+  // Play the exact approved opening once, then the current screened HD loop.
+  // Native resolution is not an eligibility criterion for a pinned original.
+  // Existing decoded-layer handoff retains the outgoing frame; media-level
+  // pose/color matching is a separate remaster, not a crossfade of faces.
+  const opening=presentationActive?coachPresentationOpening(personaId):null
   const openingActive=Boolean(opening&&openingDone!==personaId)
-  const activePresentation=openingActive?opening:presentation
+  const returnClip=useMemo(()=>opening&&presentation?coachPresentationReturn(personaId,REACTION_V4_RELEASED,presentation,opening):null,[personaId,presentation,opening])
+  const returnActive=Boolean(!openingActive&&returnClip&&returnDone!==personaId)
+  const activePresentation=openingActive?opening:returnActive?returnClip:presentation
   // Lock the released HD camera for the whole session. Exhaustion holds its
   // verified anchor, never switches camera or falls back to legacy SD.
   const preferredGroup=REACTION_V5_CAMERA_GROUPS[personaId]||'primary'
@@ -120,7 +123,7 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
     return()=>observer.disconnect()
   },[personaId,supported])
   useEffect(()=>{setVideoReady(false)},[mediaIdentity,personaId])
-  useEffect(()=>{setOpeningDone(null);setUnavailableCamera(null)},[personaId,presentationActive])
+  useEffect(()=>{setOpeningDone(null);setReturnDone(null);setUnavailableCamera(null)},[personaId,presentationActive])
   const shouldPlay=supported&&hasVideo&&motionAllowed&&inViewport&&pageVisible&&
     (presentationActive?Boolean(opening||presentation):sessionContext?Boolean(released):(!protectedHold&&(isGenie||Boolean(src))))
   useEffect(()=>{
@@ -136,25 +139,27 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
     })
   },[shouldPlay,src,presentationActive,sessionContext])
   const finishPresentationOpening=useCallback(()=>setOpeningDone(personaId),[personaId])
+  const finishPresentationReturn=useCallback(()=>setReturnDone(personaId),[personaId])
   if(!supported)return null
   return <span ref={containerRef} className={[styles.media,className].filter(Boolean).join(' ')}
     data-coach-motion-media={personaId} data-coach-motion-context={context}
     data-coach-motion-state={state} data-coach-motion-clip={presentationActive?(activePresentation?.id||'still'):released?'reaction-v4':isGenie?samirTake:hasVideo?(greetingSrc||personaId==='merlin'?'greeting-real-v2':personaId==='harry'?harryClip:clip):'still'}
-    data-coach-reaction-mode={presentationActive?(openingActive?'presentation-original':presentation?'presentation-loop':'presentation-still'):sessionContext?(released?'v4':'hd-anchor'):undefined}
+    data-coach-reaction-mode={presentationActive?(openingActive?'presentation-original':returnActive?'presentation-return':presentation?'presentation-loop':'presentation-still'):sessionContext?(released?'v4':'hd-anchor'):undefined}
     data-coach-quality-hold={sessionContext&&unavailableCamera===personaId+':'+cameraGroup?'true':undefined}
     data-coach-presentation-loop={presentation?.id}
     data-coach-presentation-opening={openingActive?opening.id:undefined}
+    data-coach-presentation-return={returnActive?returnClip.sourceId:undefined}
     data-coach-presentation-anchor={presentation?.anchorHash}
     data-coach-reaction-group={released?.group||presentation?.group}
     data-coach-reaction-kind={directorActive?reactionIntent.kind:undefined}
     data-coach-reaction-speaker={directorActive?reactionIntent.speaker:undefined}
-    data-coach-natural-performance={presentationActive?(openingActive?'protected-original':presentation?'reaction-v4-presentation':'still'):released?'reaction-v4':isGenie?'samir-three-state-v1':hasVideo&&(personaId!=='harry'||Boolean(greetingSrc))?'v1':'still'}
+    data-coach-natural-performance={presentationActive?(openingActive?'protected-original':returnActive?'matched-return':presentation?'reaction-v4-presentation':'still'):released?'reaction-v4':isGenie?'samir-three-state-v1':hasVideo&&(personaId!=='harry'||Boolean(greetingSrc))?'v1':'still'}
     data-coach-motion-scene={visualScene} data-coach-motion-ready={videoReady?'true':'false'}
     aria-hidden="true">
     <img src={poster} className={styles.poster} alt="" draggable={false} loading={context==='hero'||context==='greeting'?'eager':'lazy'} decoding="async" fetchPriority={context==='hero'||(isGenie&&context==='greeting')?'high':undefined}
       onError={poster===preferredPoster?()=>setMissingPoster(preferredPoster):undefined} />
-    {presentationActive?<CoachPresentationLayers key={personaId} opening={opening} presence={presentation}
-        openingActive={openingActive} enabled={shouldPlay} onOpeningDone={finishPresentationOpening} onReady={setVideoReady} />:released?<CoachReactionDirectorMedia key={personaId+':'+released.anchorHash} media={released} intent={reactionIntent} enabled={shouldPlay} onReady={value=>{setVideoReady(value);if(value)setUnavailableCamera(null)}} onUnavailable={failCamera} />:!sessionContext&&shouldPlay&&(isGenie
+    {presentationActive?<CoachPresentationLayers key={personaId} opening={opening} returnClip={returnClip} presence={presentation}
+        openingActive={openingActive} returnActive={returnActive} enabled={shouldPlay} onOpeningDone={finishPresentationOpening} onReturnDone={finishPresentationReturn} onReady={setVideoReady} />:released?<CoachReactionDirectorMedia key={personaId+':'+released.anchorHash} media={released} intent={reactionIntent} enabled={shouldPlay} onReady={value=>{setVideoReady(value);if(value)setUnavailableCamera(null)}} onUnavailable={failCamera} />:!sessionContext&&shouldPlay&&(isGenie
       ? <SamirMotionVideos take={samirTake} cycle={!neutralOnly&&(state==='idle'||state==='greeting')} onReady={setVideoReady} />
       : <video key={src} ref={videoRef} className={styles.video}
           src={src} poster={poster} muted loop playsInline autoPlay preload="metadata"

@@ -171,3 +171,17 @@ test('IA seven-link dock waits for real hydration before strict href, focus and 
   assert.match(helper,/await expect\(dock\)\.toBeVisible\(\)/)
   assert.match(helper,/await expect\(dock\)\.toBeHidden\(\)/)
 })
+
+
+test('IA browser harness bounds shutdown, startup probes and font readiness without skipping restart persistence', () => {
+  const source = readFileSync(new URL('../scripts/verify-ia-v2.mjs', import.meta.url), 'utf8')
+  assert.ok(source.includes("detached: true"))
+  assert.ok(source.includes("signal: AbortSignal.timeout(3000)"))
+  assert.ok(source.includes("once(child, 'exit', { signal: AbortSignal.timeout(ms) })"))
+  assert.ok(source.includes("await waitForExit('SIGTERM', 10000)"))
+  assert.ok(source.includes("await waitForExit('SIGKILL', 5000)"))
+  assert.ok(source.includes("child.exitCode !== null || child.signalCode !== null"))
+  assert.ok(source.includes("page.waitForFunction(() => document.fonts.status === 'loaded', undefined, { timeout: 15000 })"))
+  assert.ok(source.includes("await stopApp(); await startApp()"))
+  assert.ok(source.includes("Resume EN/RU/ES, application restart persistence, rotation/revocation invalidation and no private browser storage"))
+})
