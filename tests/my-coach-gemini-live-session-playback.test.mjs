@@ -539,7 +539,6 @@ test('socket rollover drains a completed reply and resumes the original credenti
     pendingAudio:[],inputText:'incomplete fragment',bargeDetector:{userActive:false},
     audioGate:new GeminiLiveBargeGate()}
   const code=section('function audioTranscription(','\n\n')+'\n'+
-    section('  function cancelPrivateRecall(r){','  async function tryReviewedVoiceRecall(')+
     section('  function preserveUnconfirmedInput(','  function commitInput(')+
     section('  function finishAudibleTurn(','  // A local playback fault')+
     section('  function connect(','  async function getToken(')
@@ -1219,27 +1218,36 @@ test('only completed live character text enters the bounded signature observatio
   assert.equal(h.r.characterSeenIds.has(next.id),false)
 })
 
-// Exercise the actual component callbacks, not merely the recall reducer.
-// Both orderings must discard fabricated provider PCM and retain the token,
-// microphone and same socket. Muted output covers the private text fallback.
-test('private archive recall drains an ungrounded reply without ending the session',async()=>{
- for(const order of ['archive-first','boundary-first']){
+// Archive loading, including a never-resolving or failed fetch, is not a voice
+// transport state. Exercise actual input, output and capture callbacks.
+test('private archive read never blocks microphone, playback or next voice turn',async()=>{
+ for(const outcome of ['pending','success','failure']){
   const h=session(),oldToken=h.r.liveToken,oldSocket=h.r.socket
-  let deliver
-  h.propsRef.current.outputMuted=true
-  h.propsRef.current.onInputFinal=text=>{h.events.input.push(text);return {privateRecall:new Promise(resolve=>{deliver=resolve})}}
+  let deliver,fail
+  const lookup=new Promise((resolve,reject)=>{deliver=resolve;fail=reject})
+  h.propsRef.current.onInputFinal=text=>{
+    h.events.input.push(text)
+    if(text==='Remember our previous session')void lookup.catch(()=>{})
+    return false
+  }
   h.receive({input:'Remember our previous session'})
-  h.receive({output:'Fabricated memory',audio:[pcm(.4)]})
-  assert.ok(h.r.privateRecallTurn)
-  assert.equal(h.events.final.length,0)
-  assert.equal(h.clock.heardSamples,0)
-  assert.equal(h.r.history.length,0)
+  h.receive({output:'We can continue talking.',audio:[pcm(.4)],turnComplete:true})
+  assert.equal(h.r.history.at(-1).content,'Remember our previous session')
+  h.clock.advanceTo(1)
+  assert.equal(h.events.final.at(-1).text,'We can continue talking.')
+  assert.ok(h.clock.heardSamples>0,'coach audio plays while archive is pending')
   h.capture(h.r,new Float32Array(1536).fill(.1))
-  assert.equal(h.sent.length,0,'private playback cannot reach the microphone stream')
-  if(order==='archive-first'){deliver('Private owner recap');await settleResume();assert.ok(h.r.privateRecallTurn);h.receive({turnComplete:true})}
-  else{h.receive({turnComplete:true});assert.ok(h.r.privateRecallTurn);deliver('Private owner recap')}
+  assert.ok(h.sent.length>0,'microphone PCM is delivered while archive is pending')
+  // End the synthetic human audio onset before the next provider reply.
+  for(let i=0;i<40;i++)h.capture(h.r,new Float32Array(1536))
+  if(outcome==='success')deliver('Private owner recap')
+  if(outcome==='failure')fail(Error('archive unavailable'))
   await settleResume()
-  assert.equal(h.r.privateRecallTurn,null)
+  h.receive({input:'Here is my next question'})
+  h.receive({output:'Let us explore that.',audio:[pcm(.4)],turnComplete:true})
+  h.clock.advanceTo(3)
+  assert.equal(h.events.final.at(-1).text,'Let us explore that.')
+  assert.deepEqual(h.events.input,['Remember our previous session','Here is my next question'])
   assert.equal(h.r.liveToken,oldToken)
   assert.equal(h.r.socket,oldSocket)
   assert.equal(h.events.phases.at(-1),'listening')

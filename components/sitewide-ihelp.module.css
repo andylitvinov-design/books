@@ -230,3 +230,22 @@
 
 /* Daybook has an explicit in-header action for the same iHelp dialog. */
 :global(body:has([data-daybook-inline-help])) .launcher{display:none!important}
+
+
+/* The same two-row composer and pastel welcome for the first iHelp turn. */
+.panel{background:linear-gradient(150deg,#fffaf3,#f8f0e3)}
+.header{background:#fff9ef;border-color:#eee4d5}
+.chat :global([data-hh-agent-preview][data-page-help]:not([data-has-messages]) [data-hh-ihelp-ask]){
+ min-height:44px;padding:8px 21px;border:1px solid #cde2ca;border-radius:999px;background:#e7f1dc;box-shadow:0 3px 7px #68654b18;font-size:14px
+}
+.chat :global([data-hh-agent-preview][data-page-help]:not([data-has-messages])>form:not([data-gemini-pending="true"]):not([data-voice-onboarding="true"]):not(:has([data-hh-dictation-active="true"]))){
+ display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:4px;min-height:100px;padding:8px 10px;border:1px solid #e7dfd3;border-radius:25px;background:#fffdf9;box-shadow:0 4px 12px #65543a18
+}
+.chat :global([data-hh-agent-preview][data-page-help]:not([data-has-messages])>form:not([data-gemini-pending="true"]):not([data-voice-onboarding="true"])>textarea){
+ flex:none!important;box-sizing:border-box;width:100%!important;height:48px;min-height:48px;max-height:88px;padding:8px 7px;font-size:16px
+}
+.chat :global([data-hh-agent-preview][data-page-help]:not([data-has-messages])>form:not([data-gemini-pending="true"]):not([data-voice-onboarding="true"])>div){
+ justify-content:flex-start;flex-wrap:wrap;gap:6px
+}
+.chat :global([data-hh-agent-preview][data-page-help]:not([data-has-messages])>form:not([data-gemini-pending="true"]):not([data-voice-onboarding="true"])>div>button[type="submit"]){margin-left:auto;width:46px;min-width:46px;height:46px}
+.bottomNav{background:transparent}
