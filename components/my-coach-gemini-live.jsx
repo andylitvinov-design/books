@@ -1,10 +1,13 @@
 'use client'
+import {clarityCourseDay} from '@/lib/coaching/clarity-course.mjs'
+import {connectClarityBrowserRelay} from '@/lib/coaching/clarity-relay-client.mjs'
 
 import {forwardRef,useEffect,useImperativeHandle,useRef,useState} from 'react'
 import {beginPrivateCoachSalutation} from '@/lib/coaching/coach-private-greeting.mjs'
 import {coachExplicitRecall} from '@/lib/coaching/coach-private-recall.mjs'
 import {coachCharacterObservedIds} from '@/lib/coaching/coach-character-signature.mjs'
 import SimliDialoguePilot from './simli-dialogue-pilot'
+import {blocksSyntheticCoachAvatar} from '@/lib/coaching/simli-speech-relay.mjs'
 import {createSpeechReviewBuffer,createSpeechReviewQueue,requestSpeechReview} from '@/lib/coaching/coach-speech-review.mjs'
 import {Mic,Play,Volume2} from 'lucide-react'
 import styles from './my-coach-speech-loop.module.css'
@@ -128,8 +131,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   onInterrupted,onDirectorProgress,onOpeningProgress,onNotice,
   openingPrior=null,allowOpeningPrior=false,
   liveContextAccess='',contextRevision=0,localRecoveryTurns=[],onUnconfirmedInput,
-  privateGreetingText='',onPrivateGreeting,onPrivateRecallRequest,
-  methodSession=null,prepareMethodSession,speechReviewConsent=false,onSpeechReviewCandidate,
+  privateGreetingText='',onPrivateGreeting,onPrivateRecallRequest,clarityOpeningMemoryStageToken='',clarityOpeningMemoryScope=null,
+  methodSession=null,prepareMethodSession,clarityRelaySelection=null,onClarityRelayClock,speechReviewConsent=false,speechReviewProvider='groq',onSpeechReviewCandidate,
 },ref){
   const lang=safeLocale(locale),t=ui[lang]
   const [phase,setPhase]=useState('idle')
@@ -137,12 +140,14 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   const [audioNeedsGesture,setAudioNeedsGesture]=useState(false)
   const runtime=useRef(null),starting=useRef(false),generation=useRef(0)
   const simliPilotRef=useRef(null)
+  const relayClosing=useRef(null)
+  const relayStopUnverified=useRef(false)
   const propsRef=useRef({})
   propsRef.current={locale:lang,personaId,settings,courseSessionId,voiceName,enabled,canStart,
     elapsedSeconds,contactElapsedSeconds,outputMuted,onSessionStart,onVoiceStateChange,onMicLevel,onInputInterim,
     onInputFinal,onOutputInterim,onOutputFinal,onInterrupted,
     onDirectorProgress,onOpeningProgress,onNotice,openingPrior,allowOpeningPrior,
-    liveContextAccess,contextRevision,localRecoveryTurns,onUnconfirmedInput,methodSession,prepareMethodSession,privateGreetingText,onPrivateGreeting,onPrivateRecallRequest,speechReviewConsent,onSpeechReviewCandidate}
+    liveContextAccess,contextRevision,localRecoveryTurns,onUnconfirmedInput,methodSession,prepareMethodSession,privateGreetingText,onPrivateGreeting,onPrivateRecallRequest,clarityRelaySelection,onClarityRelayClock,clarityOpeningMemoryStageToken,clarityOpeningMemoryScope,speechReviewConsent,speechReviewProvider,onSpeechReviewCandidate}
 
   const notify=text=>{
     setNotice(text)
@@ -208,6 +213,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     generation.current++
     starting.current=false
     const r=runtime.current
+    if(r?.claritySelection){stopCourseRelay(r,'idle');return}
     runtime.current=null
     // Keep partial recognition as an editable draft, never as confirmed client evidence.
     // A truncated reply remains visible but is not counted as heard.
@@ -227,6 +233,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   function pauseSession({disconnect=false}={}){
     const r=runtime.current
     if(!r||r.ended)return false
+    if(r.claritySelection)return stopCourseRelay(r,'paused')
     // Parent and transport both observe lifecycle events. A duplicate pause
     // must not repeatedly release hardware or invalidate a stable parked socket.
     if(r.paused&&!r.resumeInFlight&&!disconnect)return true
@@ -447,10 +454,13 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     }
   }
   function sendSocket(r,packet){
+    if(r.claritySelection)return !r.ended&&!r.paused&&r.clarityRelay?.sendAudio(packet)===true
     if(r.ended||!r.socket||r.socket.readyState!==1)return false
     try{r.socket.send(JSON.stringify(packet));return true}catch{return false}
   }
   async function checkpoint(r,message,preceding=null){
+    // Course relay supplies server-owned cues. Never send a parallel browser Director request.
+    if(r.claritySelection)return
     const text=audioTranscription(message).slice(0,1200)
     if(!text||r.ended)return
     const p=propsRef.current
@@ -522,10 +532,11 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     const decision=propsRef.current.onInputFinal?.(value,{source:'speech',reviewAvailable:Boolean(audioParts)&&propsRef.current.speechReviewConsent===true})
     if(decision?.transcriptReview){
       if(propsRef.current.speechReviewConsent===true&&audioParts){
+        const reviewProvider=propsRef.current.speechReviewProvider
         r.speechReviewQueue??=createSpeechReviewQueue({request:requestSpeechReview,onResult:(id,text)=>{
-          if(runtime.current===r&&!r.ended&&propsRef.current.speechReviewConsent===true)propsRef.current.onSpeechReviewCandidate?.(id,r.paused?'':text)
+          if(runtime.current===r&&!r.ended&&propsRef.current.speechReviewConsent===true&&propsRef.current.speechReviewProvider===reviewProvider)propsRef.current.onSpeechReviewCandidate?.(id,r.paused?'':text)
         }})
-        if(!r.speechReviewQueue.offer({id:decision.transcriptReview,parts:audioParts,locale:r.locale}))propsRef.current.onSpeechReviewCandidate?.(decision.transcriptReview,'')
+        if(!r.speechReviewQueue.offer({id:decision.transcriptReview,parts:audioParts,locale:r.locale,provider:reviewProvider}))propsRef.current.onSpeechReviewCandidate?.(decision.transcriptReview,'')
       }else propsRef.current.onSpeechReviewCandidate?.(decision.transcriptReview,'')
       r.lastAssistantTurnFinished=false;r.pendingDirectorHint='';return false
     }
@@ -546,17 +557,17 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(!value||r.ended)return
     // Unheard/partial speech is retained in the private transcript, not fed
     // back to the Director as a completed spoken assistant turn.
-    if(!r.interrupted&&!r.contextSentKey){r.history.push({role:'assistant',content:value});r.history=r.history.slice(-20);for(const id of coachCharacterObservedIds([{role:'assistant',content:value}]))r.characterSeenIds.add(id)}
-    // Once approved memory reaches this socket, treat model replies as possibly
-    // archive-bearing. Never replay them into another model or Director history.
-    propsRef.current.onOutputFinal?.(value,{interrupted:r.interrupted,requestedSavedContext:Boolean(r.contextSentKey)})
+    const requestedSavedContext=Boolean(r.contextSentKey||r.claritySelection?.memorySelection||r.claritySelection?.materialSelection||r.clarityOpeningMemoryStageToken)
+    if(!r.interrupted&&!requestedSavedContext){r.history.push({role:'assistant',content:value});r.history=r.history.slice(-20);for(const id of coachCharacterObservedIds([{role:'assistant',content:value}]))r.characterSeenIds.add(id)}
+    // An archive-bearing reply is not reusable provider history.
+    propsRef.current.onOutputFinal?.(value,{interrupted:r.interrupted,requestedSavedContext})
     r.interrupted=false
   }
   // Deliver server-rechecked references and Director hints ONLY after the
   // previous audible assistant turn ends and the human microphone is idle.
   // clientContent can interrupt a Google model, even with turnComplete:false.
   function canSendSideband(r){
-    return !r.ended&&!r.paused&&r.ready&&r.socket?.readyState===1&&
+    return !r.claritySelection&&!r.ended&&!r.paused&&r.ready&&r.socket?.readyState===1&&
       r.lastAssistantTurnFinished&&!r.speaking&&!r.player?.playing&&
       !r.modelTurnComplete&&!r.pendingAudio?.length&&!r.inputText&&!r.postBarge&&
       !r.bargeDetector.userActive&&!r.reconnectSoon&&
@@ -639,9 +650,11 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     }
     scheduleContextFreshnessCheck(r)
   }
-  async function loadApprovedContext(r){
+  async function loadApprovedContext(r,{beforeOpening=false}={}){
+    // The course relay does not yet accept provider-approved archive sidebands.
+    if(r.claritySelection)return
     const key=propsRef.current.liveContextAccess
-    if(!key||r.ended||!r.ready||r.contextRequestKey===key)return
+    if(!key||r.ended||!r.ready||(!beforeOpening&&r.contextRequestKey===key))return
     if(r.contextSentKey&&r.contextSentKey!==key){
       notify(t.contextRevoked);stop();return
     }
@@ -649,9 +662,10 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     r.pendingContext=''
     const revisionAtRequest=propsRef.current.contextRevision
     try{
+      const signal=beforeOpening?AbortSignal.any([r.abort.signal,AbortSignal.timeout(4500)]):r.abort.signal
       const response=await fetch('/api/app/my-coach/live-context',{
         method:'POST',credentials:'same-origin',cache:'no-store',
-        signal:r.abort.signal,headers:{'Content-Type':'application/json'},body:key,
+        signal,headers:{'Content-Type':'application/json'},body:key,
       })
       const result=response.ok?await response.json().catch(()=>null):null
       if(r.ended||propsRef.current.liveContextAccess!==key||
@@ -661,6 +675,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
          typeof result.note!=='string'||
          (result.note&&!/^[a-f0-9]{64}$/.test(result.fingerprint||'')))
         throw Error('LIVE_CONTEXT_INVALID')
+      if(beforeOpening)return result
       if(r.contextSentKey===key){
         if(result.fingerprint!==r.contextSentFingerprint){notify(t.contextRevoked);stop()}
         return
@@ -719,7 +734,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   // speech, or silently start another conversation. The last checkpoint may
   // precede the missing utterance, so disclose that possible gap on resume.
   function recoverStalledReply(r,missingNotice=t.replyStalled){
-    if(r.ended||r.paused||runtime.current!==r||!r.ready||r.socket?.readyState!==1)return
+    if(r.ended||r.paused||runtime.current!==r||!r.ready)return
+    if(r.claritySelection){notify(missingNotice);phaseChange('listening');return}
+    if(r.socket?.readyState!==1)return
     if(geminiLiveCanResumeStalledReply(r)){
       r.stallRecoveryUsed=true
       r.checkpointCurrent=false
@@ -885,6 +902,35 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     discardAudioTurn(r)
     return 'dropped'
   }
+  async function sendInitialLiveCue(r,setupPacket){
+    const socket=r.socket
+    if(r.openingSocket===socket)return
+    r.openingSocket=socket
+    const key=propsRef.current.liveContextAccess,version=r.contextVersion
+    const result=key?await loadApprovedContext(r,{beforeOpening:true}):null
+    if(r.openingSocket===socket)r.openingSocket=null
+    if(r.ended||r.introSent||r.socket!==socket||!r.ready)return
+    if(r.paused){r.contextRequestKey='';r.deferredSetupPacket=setupPacket;return}
+    // Recheck the grant after the owner-only read. The reference and cue
+    // belong to a single generation request, before any mic or typed input.
+    const note=key===propsRef.current.liveContextAccess&&r.contextVersion===version&&
+      propsRef.current.contextRevision===version?result?.note:''
+    try{
+      const cue=r.continuing?geminiLiveContinueMessage(note):geminiLiveStartMessage(note)
+      if(!sendSocket(r,cue))throw Error('OPENING_SEND_FAILED')
+    }catch{notify(t.failure);stop();return}
+    if(note){
+      r.contextSentKey=key
+      r.contextSentFingerprint=result.fingerprint
+    }
+    r.introSent=true
+    if(r.contextSentKey)scheduleContextFreshnessCheck(r)
+    phaseChange('thinking')
+    r.replyWatch?.touch()
+    r.greetingTimer=setTimeout(()=>{
+      if(!r.ended&&!r.firstAudio)notify(t.greetingLate)
+    },10000)
+  }
   function handleAudio(r,packet){
     if(r.ended)return
     let frame
@@ -904,13 +950,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       // One Play-triggered app control event. It is never a human statement,
       // consent, name or archived memory; do not repeat it on reconnect.
       if(!r.introSent){
-        r.introSent=true
-        if(!sendSocket(r,r.continuing?geminiLiveContinueMessage():geminiLiveStartMessage())){notify(t.failure);stop();return}
-        phaseChange('thinking')
-        r.replyWatch?.touch()
-        r.greetingTimer=setTimeout(()=>{
-          if(!r.ended&&!r.firstAudio)notify(t.greetingLate)
-        },10000)
+        void sendInitialLiveCue(r,packet)
       }else{
         phaseChange('listening')
         notify(r.checkpointCurrent===false?t.resumedEarlier:'')
@@ -918,9 +958,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
         // checkpoint, not archived facts or an artificial new user utterance.
         r.pendingDirectorHint=r.latestDirectorHint||''
         flushSideband(r)
+        if(propsRef.current.liveContextAccess&&!r.claritySelection)void loadApprovedContext(r)
       }
       if(r.context.state!=='running')handleAudioContextState(r)
-      if(propsRef.current.liveContextAccess)void loadApprovedContext(r)
       return
     }
     if(!r.ready)return
@@ -1011,7 +1051,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(r.reconnectSoon)maybeReconnectOnGoAway(r)
   }
   function capture(r,chunk){
-    if(r.ended||r.paused||!r.ready||r.socket?.readyState!==1)return
+    if(r.ended||r.paused||!r.ready||!r.introSent||(r.claritySelection?!r.clarityRelay?.snapshot().canSendAudio:r.socket?.readyState!==1))return
     const audio=chunk instanceof Float32Array?chunk:new Float32Array(chunk)
     if(!audio.length)return
     const level=geminiLiveAudioRms(audio)
@@ -1029,7 +1069,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(event==='duck'&&r.player.playing)r.player.setVolume(.4)
     else if(event==='restore')r.player.setVolume(1)
     else if(event==='interrupt')interrupt()
-    if(r.socket.bufferedAmount>MAX_BUFFERED_SOCKET_BYTES){
+    if(!r.claritySelection&&r.socket.bufferedAmount>MAX_BUFFERED_SOCKET_BYTES){
       r.pendingMic.length=0
       r.speechReviewBuffer?.invalidate()
       r.backpressureChunks=(r.backpressureChunks||0)+1
@@ -1234,7 +1274,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
         voiceConsent:true,trainingUseConsent:true}),
     })}
     catch{throw Error('GEMINI_LIVE_TOKEN_NETWORK')}
-    if(response.status===429)throw Error('GEMINI_LIVE_LIMIT')
+    if(response.status===429||response.status===409)throw Error('GEMINI_LIVE_LIMIT')
     if(response.status===401)throw Error('GEMINI_LIVE_LOGIN')
     if(!response.ok){
       const fault=await response.json().catch(()=>null)
@@ -1267,6 +1307,78 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       },{once:true})
     }
   }
+
+  // Retire local media immediately; retain the server stop ACK separately.
+  // Never reconnect automatically or request another direct provider token.
+  function finishCourseMedia(r,nextPhase){
+    if(runtime.current!==r)return
+    r.paused=true;r.ready=false
+    preserveUnconfirmedInput(r)
+    if(r.outputText){r.interrupted=true;commitOutput(r)}
+    runtime.current=null
+    teardown(r)
+    setAudioNeedsGesture(false)
+    phaseChange(nextPhase)
+  }
+  function stopCourseRelay(r,nextPhase='paused',changeCoach=false){
+    if(!r||r.ended)return false
+    const relay=r.clarityRelay
+    if(relay)relayClosing.current=r
+    finishCourseMedia(r,nextPhase)
+    if(relay){if(changeCoach)relay.changeCoach();else relay.pause()}
+    else r.resolveCourseStop?.(true)
+    return true
+  }
+  function finishCourseSegment(changeCoach=false){
+    const r=runtime.current?.claritySelection?runtime.current:relayClosing.current
+    if(!r)return Promise.resolve(!relayStopUnverified.current)
+    const wait=r.courseStopPromise
+    if(runtime.current===r)stopCourseRelay(r,'paused',changeCoach)
+    return wait||Promise.resolve(false)
+  }
+  function connectCourseRelay(r){
+    const selected=r.claritySelection
+    const body={personaId:r.personaId,locale:r.locale,settings:r.settings,courseSessionId:r.courseSessionId,
+      voiceName:r.voiceName,consent:true,voiceConsent:true,trainingUseConsent:true,
+      ...(r.methodSession?{methodId:r.methodSession.methodId,methodSessionId:r.methodSession.methodSessionId}:{})}
+    const openingMemoryStageToken=propsRef.current.clarityOpeningMemoryStageToken
+    if(openingMemoryStageToken){
+      r.clarityOpeningMemoryStageToken=openingMemoryStageToken
+      body.openingMemoryStageToken=openingMemoryStageToken
+      const scope=propsRef.current.clarityOpeningMemoryScope
+      if(scope?.topicKey)body.openingMemoryTopicKey=scope.topicKey
+      if(scope?.contextSessionToken)body.openingMemoryContextSessionToken=scope.contextSessionToken
+    }
+    r.clarityRelay=connectClarityBrowserRelay({selection:{...selected,body},explicitPlay:true,
+      isForeground:()=>!r.ended&&!r.paused&&runtime.current===r&&document.visibilityState==='visible',
+      onClock:ack=>{
+        // Even a late pause ACK belongs to the same owner/run/protocol.
+        if(propsRef.current.onClarityRelayClock?.(ack,selected)!==true)return false
+        if(ack.status==='active'&&!r.ended&&!r.paused&&runtime.current===r){
+          r.ready=true
+          if(!r.sessionStarted){
+            r.sessionStarted=true;r.introSent=true // server sends the opening, not this browser
+            propsRef.current.onSessionStart?.()
+            phaseChange('thinking');r.replyWatch?.touch()
+          }
+        }else r.ready=false
+        return true
+      },
+      onProvider:packet=>{if(!r.ended&&!r.paused&&runtime.current===r&&r.ready)handleAudio(r,packet)},
+      onClosed:receipt=>{
+        const current=runtime.current===r
+        if(relayClosing.current===r)relayClosing.current=null
+        const verified=receipt.terminalVerified===true||receipt.status==='not_started'
+        if(!verified)relayStopUnverified.current=true
+        r.resolveCourseStop?.(verified)
+        if(current){
+          finishCourseMedia(r,receipt.status==='time_limit'?'idle':'paused')
+          if(!receipt.terminalVerified)notify(receipt.status==='not_started'?t.failure:t.resumeUnavailable)
+        }
+      }
+    })
+  }
+
   async function begin(r,microphone){
     let stage='microphone'
     try{
@@ -1287,20 +1399,27 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       else await installCapture(r)
       if(r.ended)return
       stage='token'
+      if(r.claritySelection){
+        if(r.methodSession&&(!r.prepareMethodSession||!await r.prepareMethodSession()))throw Error('GEMINI_LIVE_UNAVAILABLE')
+        if(r.ended||r.paused)return
+        connectCourseRelay(r);return
+      }
       const token=await getToken(r)
       if(r.ended)return
       connect(r,token)
       r.timer=setTimeout(()=>{
         if(r.ended)return
-        if(r.paused){
+        if(r.paused||clarityCourseDay(r.courseSessionId)){
+          // Credential expiry is not logical course completion or homework proof.
           // The old credential may not be used beyond the configured lifetime.
+          r.paused=true
           // Keep the paused UI and transcript; Play must not silently mint again.
           preserveUnconfirmedInput(r)
           if(r.outputText){r.interrupted=true;commitOutput(r)}
           teardown(r);r.resumeUnavailable=true
           phaseChange('paused');notify(t.resumeUnavailable)
         }else{notify(t.ended);stop()}
-      },MAX_SESSION_MS)
+      },clarityCourseDay(r.courseSessionId)?Math.max(0,Math.min(MAX_SESSION_MS,Date.parse(token.expiresAt)-Date.now())):MAX_SESSION_MS)
     }catch(error){
       if(!r.ended){
         // Only the finite stage is disclosed, never a provider URL, key,
@@ -1318,6 +1437,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   function startSession(){
     const p=propsRef.current
     if(!p.enabled||!p.canStart){notify(t.requires);return false}
+    const clarityDay=clarityCourseDay(p.courseSessionId)
+    if(clarityDay&&(!p.clarityRelaySelection||p.clarityRelaySelection.day!==clarityDay||relayClosing.current||relayStopUnverified.current)){notify(t.requires);return false}
     if(runtime.current?.paused){
       if(runtime.current.ended||runtime.current.resumeUnavailable){notify(t.resumeUnavailable);return false}
       void resumePausedSession(runtime.current);return true
@@ -1348,7 +1469,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     const recovery=geminiLiveLocalRecovery(p.localRecoveryTurns)
     const r={context,stream:null,source:null,processor:null,sink:null,
       socket:null,ready:false,ended:false,history:recovery.history,openingHistory:recovery.openingHistory,characterSeenIds:new Set(coachCharacterObservedIds(p.localRecoveryTurns)),
-      continuing:recovery.continuing,inputText:'',outputText:'',
+      continuing:recovery.continuing,pilotHasRecovery:recovery.continuing,inputText:'',outputText:'',
       speaking:false,interrupted:false,postBarge:false,awaitingBargeReply:false,resumeHandle:null,checkpointCurrent:false,
       paused:false,pauseEpoch:0,resumePending:false,resumeUnavailable:false,resumeInFlight:false,
       modelTurnComplete:false,hadAudio:false,outputWithoutAudio:false,
@@ -1369,16 +1490,18 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       speechReviewBuffer:createSpeechReviewBuffer(),speechReviewQueue:null,
       abort:new AbortController(),timer:null,reconnectTimer:null,
       resampler:new GeminiLivePcmResampler(context.sampleRate),
-      audioGate:new GeminiLiveBargeGate()}
+      audioGate:new GeminiLiveBargeGate(),claritySelection:clarityDay?p.clarityRelaySelection:null}
+    if(r.claritySelection)r.courseStopPromise=new Promise(resolve=>{r.resolveCourseStop=resolve})
     r.replyWatch=new GeminiLiveReplyWatchdog({
-      canFire:()=>!r.ended&&!r.paused&&r.ready&&r.socket?.readyState===1&&
+      canFire:()=>!r.ended&&!r.paused&&r.ready&&(r.claritySelection?r.clarityRelay?.snapshot().canSendAudio:r.socket?.readyState===1)&&
         r.context.state==='running'&&!r.player?.playing&&!r.pendingAudio?.length&&
         !r.bargeDetector.userActive&&Date.now()-(r.lastHumanAudioAt||0)>900&&
         !r.reconnectTimer,
       onStall:()=>recoverStalledReply(r),
     })
+    const canMirrorAudio=()=>runtime.current===r&&!r.ended&&!r.paused&&!blocksSyntheticCoachAvatar(propsRef.current,r)
     r.player=new GeminiLivePcmPlayer(context,{
-      onScheduledPcm:(samples,start,ctx)=>simliPilotRef.current?.schedule(samples,start,ctx),
+      onScheduledPcm:(samples,start,ctx)=>simliPilotRef.current?.schedule(samples,start,ctx,canMirrorAudio),
       onPlaybackClear:()=>simliPilotRef.current?.clear(),
       onError:()=>discardAudioTurn(r),
       onStart:()=>{if(!r.ended)phaseChange('speaking')},
@@ -1413,10 +1536,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   }
   function sendText(text){
     const r=runtime.current,body=String(text||'').trim()
-    if(!r||r.ended||r.paused||!r.ready||!body||body.length>1200)return false
+    if(!r||r.ended||r.paused||!r.ready||!r.introSent||!body||body.length>1200||r.claritySelection)return false
     if(coachExplicitRecall(body)){
       // Owner-only archive lookup is a UI operation, never a voice turn.
-      // No interrupt, new provider message, mic gate or transport timeout.
       if(propsRef.current.onPrivateRecallRequest?.(body)===true)return true
     }
     interrupt()
@@ -1427,7 +1549,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     const previous=r.history.slice(-10)
     r.history.push({role:'user',content:body})
     r.history=r.history.slice(-20)
-    r.speechReviewBuffer?.clear()
+    // A typed turn supersedes pending acoustic review; no late candidate may
+    // attach to the new dialogue or upload after the transport changes input.
+    r.speechReviewBuffer?.clear();r.speechReviewQueue?.cancel();r.speechReviewQueue=null
     if(propsRef.current.onInputFinal?.(body,{source:'typed'})===true){stop();return true}
     r.openingHistory.push(body)
     r.openingHistory=r.openingHistory.slice(0,33)
@@ -1437,12 +1561,13 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     phaseChange('thinking')
     return true
   }
-  useImperativeHandle(ref,()=>({startSession,stop,sendText,interrupt,pauseSession,
+  useImperativeHandle(ref,()=>({startSession,stop,sendText,interrupt,pauseSession,finishCourseSegment,
+    isConnected:()=>Boolean(runtime.current?.ready&&!runtime.current.paused&&!runtime.current.ended&&(runtime.current.claritySelection?runtime.current.clarityRelay?.snapshot().canSendAudio:runtime.current.socket?.readyState===WebSocket.OPEN)),
     hasLiveSession:()=>Boolean(runtime.current?.paused||runtime.current&&!runtime.current.ended),
     isResumeUnavailable:()=>runtime.current?.paused===true&&runtime.current.resumeUnavailable===true}),[startSession])
   useEffect(()=>{
-    if(!speechReviewConsent){const r=runtime.current;r?.speechReviewBuffer?.clear();r?.speechReviewQueue?.cancel();if(r)r.speechReviewQueue=null}
-  },[speechReviewConsent])
+    const r=runtime.current;r?.speechReviewBuffer?.clear();r?.speechReviewQueue?.cancel();if(r)r.speechReviewQueue=null
+  },[speechReviewConsent,speechReviewProvider])
   useEffect(()=>{
     runtime.current?.player?.setMuted(outputMuted)
     if(outputMuted)runtime.current?.privateGreeting?.cancel()
@@ -1464,8 +1589,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     // The Google socket retains previously delivered reference data. A
     // withdrawal, provider/topic/grant revision change MUST retire it; do not
     // pretend that a new context packet can retract an earlier disclosure.
-    if(r.contextSentKey&&(r.contextSentKey!==liveContextAccess||
-       r.contextVersion!==contextRevision)){
+    if((r.contextSentKey&&(r.contextSentKey!==liveContextAccess||r.contextVersion!==contextRevision))||
+       (r.clarityOpeningMemoryStageToken&&(r.clarityOpeningMemoryStageToken!==clarityOpeningMemoryStageToken||r.contextVersion!==contextRevision))){
       notify(t.contextRevoked);stop();return
     }
     const revisionChanged=r.contextVersion!==contextRevision
@@ -1473,9 +1598,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(revisionChanged||r.contextRequestKey!==liveContextAccess){
       r.pendingContext=''
       r.contextRequestKey=''
-      if(r.ready&&liveContextAccess)void loadApprovedContext(r)
+      if(r.ready&&r.introSent&&liveContextAccess&&!r.claritySelection)void loadApprovedContext(r)
     }
-  },[liveContextAccess,contextRevision])
+  },[liveContextAccess,contextRevision,clarityOpeningMemoryStageToken])
   useEffect(()=>{
     // Changing persona, language, voice or consent must never silently keep
     // streaming captured audio under the previous server-locked token.
@@ -1510,7 +1635,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       </span>}
     {notice&&<p className={styles.note} role="status">{notice}</p>}
     {personaId==='caesar'&&process.env.NEXT_PUBLIC_HH_SIMLI_OWNER_DIALOGUE_PILOT==='true'&&<SimliDialoguePilot ref={simliPilotRef} target="coach" locale={lang}
-      phase={phase} blocked={!enabled||Boolean(liveContextAccess)||phase==='paused'}
+      phase={phase} blocked={blocksSyntheticCoachAvatar(propsRef.current,runtime.current)||phase==='paused'}
       revision={personaId+'|'+lang+'|'+voiceName+'|'+contextRevision}/>}
   </div>
 })

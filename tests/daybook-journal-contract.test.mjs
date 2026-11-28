@@ -31,3 +31,9 @@ test('pagination is bounded with explicit UUID cursor, never interpolated SQL',(
  assert.deepEqual(journalPage({limit:50,before:id}),{limit:50,before:id})
  for(const value of [{limit:0},{limit:51},{limit:1.2},{before:'x'},{accountId:id},{search:'private'}]) assert.throws(()=>journalPage(value))
 })
+test('an optional private material reference identifies one existing file without a URL or provider payload',()=>{
+ const valid=[{kind:'video',id},{kind:'avatar',id},{kind:'photo',id:'portrait'},{kind:'photo',id:'a'.repeat(64)}]
+ for(const material of valid)assert.deepEqual(journalWrite({...write,material}).material,material)
+ for(const material of [null,{kind:'photo',id:'../portrait'},{kind:'avatar',id:'portrait'},{kind:'audio',id},{kind:'video',id,url:'https://example.test/file'}])
+  assert.throws(()=>journalWrite({...write,material}))
+})

@@ -9,6 +9,7 @@ import MyCoachDraftArchive from './my-coach-draft-archive'
 import CoachSessionArchiveHeader from './coach-session-archive-header'
 import CourseArchiveReview from './course-archive-review'
 import MyCoachSavedProfileV3 from './my-coach-saved-profile-v3'
+import CoachRatingRadar from '../coach-rating-radar'
 import DaybookDailySettings from './daybook-daily-settings'
 import ReikiHintsSettings from './reiki-hints-settings'
 import CoachMemoryReview from './coach-memory-review'
@@ -179,9 +180,10 @@ function SavedProtocolCheckin({protocol,locale}){
   <MyCoachSavedProfileV3 protocol={protocol} locale={locale}/>
   {rows.length>0&&<div className={styles.reportSection} data-my-coach-saved-meaning-axes>
    <b>{protocol.profileCheckin.version==='hh-coach-profile-intake-v2'?words.updates:words.profile}</b>
+   <CoachRatingRadar axes={rows} title={words.profile} locale={locale} labels={words}/>
    <p>{words.current} / {words.desired}</p>
-   {rows.map(row=><p key={row.id} data-axis-id={row.id} data-rating-status={row.status}>
-    {row.label}: {row.status==='skipped'||row.status==='notCaptured'?words[row.status]:
+   {rows.map((row,index)=><p key={row.id} data-axis-id={row.id} data-rating-status={row.status}>
+    {index+1}. {row.label}: {row.status==='skipped'||row.status==='notCaptured'?words[row.status]:
      <>{row.current??'—'} / {row.desired??'—'}{row.status==='partial'?' · '+words.partial:''}</>}
    </p>)}
   </div>}
@@ -497,7 +499,7 @@ export default function MyCoachingPlan({accountId,locale='en'}){
       <button type="button" className={styles.primaryButton} onClick={()=>{if(window.confirm(({en:'This file contains private conversation text. Keep it secure and share only with explicit permission. Download?',ru:'Файл содержит личный диалог. Храните его безопасно и передавайте только с явного разрешения. Скачать?',es:'El archivo contiene un diálogo privado. Guárdalo de forma segura y compártelo solo con permiso explícito. ¿Descargar?'})[lang]))downloadCoachQualityTranscript(protocol)}}>{({en:'Export private QA transcript (JSON)',ru:'Скачать стенограмму для анализа (JSON)',es:'Exportar transcripción privada (JSON)'})[lang]}</button>
      <button type="button" className={styles.primaryButton} onClick={()=>exportProtocol(protocol,false,'transcript')}><Download size={16}/>{({en:'Download transcript PDF',ru:'Скачать стенограмму PDF',es:'Descargar transcripción PDF'})[lang]}</button>
      {(protocol.turns||[]).map((turn,index)=><div className={styles.reportSection} key={index}>
-      <b>{turn.role==='user'?({en:'You',ru:'Вы',es:'Tú'}[lang]):protocolCopy[lang].coach}</b>
+      <b>{turn.role==='user'?({en:'You',ru:'Вы',es:'Tú'}[lang]):turn.authorPersonaId||protocolCopy[lang].coach}</b>
       <p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{turn.content}</p>
       {turn.interrupted===true&&<small>{lang==='ru'?'Ответ перебит (мог быть услышан не полностью)':lang==='es'?'Respuesta interrumpida':'Reply interrupted; may not have been fully heard'}</small>}
      </div>)}

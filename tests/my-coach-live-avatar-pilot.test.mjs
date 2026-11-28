@@ -125,6 +125,41 @@ test('video mirror converts scheduled assistant PCM and drops pending packets on
   relay.schedule(new Float32Array(2400),1.1,ctx);assert.equal(queue.size,0)
 })
 
+test('Caesar synthetic video is blocked for every private opening source',async()=>{
+  const {blocksSyntheticCoachAvatar}=await import('../lib/coaching/simli-speech-relay.mjs')
+  const session={enabled:true,personaId:'caesar',courseSessionId:'life_direction'}
+  assert.equal(blocksSyntheticCoachAvatar(session),false)
+  for(const change of [
+    {enabled:false},{personaId:'mira'},{courseSessionId:'clarity_day_1'},
+    {liveContextAccess:'approved-ordinary-scope'},{clarityOpeningMemoryStageToken:'approved-clarity-scope'},
+    {allowOpeningPrior:true,openingPrior:{topic:'reviewed synthetic topic'}},
+  ])assert.equal(blocksSyntheticCoachAvatar({...session,...change}),true)
+  for(const playback of [
+    {pilotHasRecovery:true},{openingPrior:{topic:'reviewed synthetic topic'}},
+    {contextSentKey:'already-sent-reference'},{claritySelection:{day:1}},
+  ])assert.equal(blocksSyntheticCoachAvatar(session,playback),true)
+})
+test('Simli relay closes and sends no audio when the owning session changes to private after queuing',async()=>{
+  const {createSimliSpeechRelay}=await import('../lib/coaching/simli-speech-relay.mjs')
+  const pending=[],packets=[]
+  let canSend=true,stops=0
+  const relay=createSimliSpeechRelay({sendPcm16:packet=>packets.push(packet),interrupt(){}},{
+    scheduleTimer:fn=>{pending.push(fn);return pending.length},
+    cancelTimer(){},onFailure:()=>stops++,
+  })
+  const context={state:'running',currentTime:10}
+  const sessionStillPermitsMirror=()=>canSend
+  relay.schedule(new Float32Array(4800).fill(0.25),10,context,sessionStillPermitsMirror)
+  assert.ok(pending.length)
+  canSend=false
+  pending.forEach(fn=>fn())
+  assert.equal(packets.length,0)
+  assert.equal(stops,1)
+  canSend=true
+  const scheduled=pending.length
+  relay.schedule(new Float32Array(4800),10,context,sessionStillPermitsMirror)
+  assert.equal(pending.length,scheduled)
+})
 test('Simli relay ignores a stale callback after clear even if timer cancellation loses a race',async()=>{
   const {createSimliSpeechRelay}=await import('../lib/coaching/simli-speech-relay.mjs')
   const callbacks=[],packets=[]

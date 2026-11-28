@@ -24,13 +24,13 @@ async function handle(request,write){
    if(input.action==='checkpoint'&&Object.keys(input).every(k=>['action','consent','revision','value'].includes(k))){
     await consumeRate(config,{op:'my-coach-draft-checkpoint',actor:actor.id},240,3600)
     result=await saveCoachDraft(config,actor,input)
-   }else if(input.action==='resume'&&Object.keys(input).every(k=>['action','confirmed','id','revision'].includes(k))){
+   }else if(input.action==='resume'&&Object.keys(input).every(k=>['action','confirmed','id','revision','courseRunId','coachId'].includes(k))){
     await consumeRate(config,{op:'my-coach-draft-resume',actor:actor.id},30,3600)
     result={...await resumeCoachDraft(config,actor,input),profileV3Enabled:process.env.HH_MY_COACH_PROFILE_V3_ENABLED==='true',courseGateEnabled:process.env.HH_MY_COACH_COURSE_GATE_ENABLED==='true'}
    }else if(input.action==='discard'&&Object.keys(input).every(k=>['action','confirmed','id'].includes(k))){
     await consumeRate(config,{op:'my-coach-draft-discard',actor:actor.id},30,3600)
     result=await discardCoachDraft(config,actor,input)
-   }else if(['course-gate-start','course-gate-answer','course-gate-correct'].includes(input.action)){
+   }else if(['course-gate-start','course-gate-answer','course-gate-correct','course-gate-continue'].includes(input.action)){
     if(process.env.HH_MY_COACH_COURSE_GATE_ENABLED!=='true')throw new AppError('NOT_FOUND',404)
     await consumeRate(config,{op:'my-coach-course-gate',actor:actor.id},120,3600)
     result=await stepCoachCourseGate(config,actor,input)
@@ -43,12 +43,12 @@ async function handle(request,write){
    }else throw new AppError('MY_COACH_DRAFT_INVALID',400)
   }else{
    const params=new URL(request.url).searchParams
-   if([...params.keys()].some(k=>!['before','beforeId','view','personaId'].includes(k)||params.getAll(k).length!==1))throw new AppError('MY_COACH_DRAFT_INVALID',400)
+   if([...params.keys()].some(k=>!['before','beforeId','view','personaId','courseSessionId','courseRunId'].includes(k)||params.getAll(k).length!==1))throw new AppError('MY_COACH_DRAFT_INVALID',400)
    if(params.get('view')==='capabilities'){
     if([...params.keys()].length!==1)throw new AppError('MY_COACH_DRAFT_INVALID',400)
     // Metadata-only; no draft or personal data read. Same verified owner and origin.
     result={profileV3Enabled:process.env.HH_MY_COACH_PROFILE_V3_ENABLED==='true',courseGateEnabled:process.env.HH_MY_COACH_COURSE_GATE_ENABLED==='true'}
-   }else result=await listCoachDrafts(config,actor,{before:params.get('before'),beforeId:params.get('beforeId'),view:params.get('view'),personaId:params.get('personaId')})
+   }else result=await listCoachDrafts(config,actor,{before:params.get('before'),beforeId:params.get('beforeId'),view:params.get('view'),personaId:params.get('personaId'),courseSessionId:params.get('courseSessionId'),courseRunId:params.get('courseRunId')})
   }
   return auth.apply(NextResponse.json(result,{headers:PRIVATE_HEADERS}))
  }catch(error){
