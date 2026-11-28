@@ -183,7 +183,8 @@ test('workflow retains prebuild, independent build fallback and real browser cov
  assert.ok(y.indexOf('Resolve exact successful Core build or run independent fallback')>y.indexOf('Exercise editor against isolated Redis'));
  const core=readFileSync(new URL('../.github/workflows/hh-pr-core-release.yml',import.meta.url),'utf8');
  assert.match(core,/HH_CORE_BUILD_IDENTITY_V1/);
- assert.match(core,/npm run lint -- --concurrency 2/);
+ assert.doesNotMatch(core,/npm run lint -- --concurrency/);
+ assert.match(core,/npm run lint\s*\n\s*elif/);
  assert.match(core,/run: npm run build -- --no-lint/);
 });
 
