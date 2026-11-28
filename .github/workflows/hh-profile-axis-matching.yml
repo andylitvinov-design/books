@@ -138,6 +138,9 @@ on:
       # Client Live Photo APIs have their own App/IA/billing/video owners.
       # Keep the literal shared catch-all dispatcher and all source/security routes.
       - '!app/api/app/live-photos/**'
+      # Dedicated signed-in Coach endpoints have App/IA and Personal Coaching QA.
+      # They do not change Axis or Practice return; the shared dispatcher remains covered.
+      - '!app/api/app/my-coach/**'
 permissions:
   contents: read
 concurrency:

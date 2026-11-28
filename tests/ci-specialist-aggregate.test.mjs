@@ -6,7 +6,7 @@ import {
   TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, APPROVED_SPECIALIST_REPLACEMENTS, inspectWorkflowRuns, concurrencyOnlyAdvisory, selfTriggerRemovalAdvisory, isConcurrencyAdvisoryRun,
   inspectJobs, trustedConditionalJobs, trustedRequiredJobs, validateParameters,
 } from '../lib/ci/specialist-aggregate.mjs';
-import { verify, githubReader, optionalMandalaMacosSkip, optionalProfileWriterSkip, revalidateAfterTrustedPolicyAdvance, verifiedOptionalOwnerSelectorMigration, trustedAdditiveActionlint, requiresCurrentProductionBase } from '../scripts/ci-specialist-aggregate.mjs';
+import { mapSpecialistEvidence, verify, githubReader, optionalMandalaMacosSkip, optionalProfileWriterSkip, revalidateAfterTrustedPolicyAdvance, verifiedOptionalOwnerSelectorMigration, trustedAdditiveActionlint, requiresCurrentProductionBase } from '../scripts/ci-specialist-aggregate.mjs';
 // Run the focused dependency state/timeout regressions inside the existing
 // Core CI-policy test step; no new hosted workflow or required status.
 import './ci-specialist-wait.test.mjs';
@@ -3381,4 +3381,38 @@ test('required hh-merge-check aggregates BASE-trusted specialists for CORE as we
   assert.match(job||'',/needs: \[scope\]/);
   assert.match(job||'',/Fail closed if mandatory Core failed/);
   assert.match(job||'',/Validate exact-head risk and required specialist workflows/);
+});
+
+
+test('completed specialist jobs use bounded concurrent readback with deterministic evidence order', async () => {
+  const runs = [0,1,2,3,4,5,6];
+  let active=0, maxActive=0;
+  const started=[];
+  const result=await mapSpecialistEvidence(runs, async id => {
+    started.push(id);
+    active++;
+    maxActive=Math.max(maxActive,active);
+    for(let n=0;n<3-id%3;n++) await Promise.resolve();
+    active--;
+    return {id};
+  });
+  assert.equal(maxActive,3);
+  assert.equal(active,0);
+  assert.deepEqual(started,runs);
+  assert.deepEqual(result,runs.map(id=>({id})));
+  assert.deepEqual(await mapSpecialistEvidence([],()=>{throw Error('unexpected');}),[]);
+});
+
+test('a failed specialist readback remains fail closed and prevents the next batch', async () => {
+  const started=[], finished=[];
+  await assert.rejects(mapSpecialistEvidence([0,1,2,3,4], async id => {
+    started.push(id);
+    try {
+      await Promise.resolve();
+      if(id===1)throw Error('SPECIALIST_DEPENDENCY_JOB_CANCELLED');
+      return id;
+    } finally { finished.push(id); }
+  }), /SPECIALIST_DEPENDENCY_JOB_CANCELLED/);
+  assert.deepEqual(started,[0,1,2]);
+  assert.deepEqual(finished.sort(),[0,1,2]);
 });

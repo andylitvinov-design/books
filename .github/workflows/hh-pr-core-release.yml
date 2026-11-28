@@ -47,6 +47,7 @@ jobs:
           EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           GH_TOKEN: ${{ github.token }}
+          HH_PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
           [[ "$EVENT_BASE_SHA" =~ ^[0-9a-f]{40}$ && "$PR_HEAD_SHA" =~ ^[0-9a-f]{40}$ ]] || {
@@ -91,6 +92,9 @@ jobs:
           echo "HH_EVENT_BASE_VERIFIED=$EVENT_BASE_SHA" >> "$GITHUB_ENV"
           echo "HH_TESTED_BASE_VERIFIED=$tested_base" >> "$GITHUB_ENV"
           echo "Bounded shallow scope verified HEAD $tested_head and tested base $tested_base" >> "$GITHUB_STEP_SUMMARY"
+          # Machine-readable checkout identity, emitted before candidate scripts.
+          # Consumers must also independently verify this exact job and its real build step succeeded.
+          printf 'HH_CORE_BUILD_IDENTITY_V1 %s %s %s %s %s %s\n' "$HH_PR_NUMBER" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$(git rev-parse HEAD)" "$tested_head" "$tested_base"
       - name: Verify live PR readiness before costly CI
         if: github.event_name == 'pull_request'
         env:
@@ -181,6 +185,10 @@ jobs:
                   tests/ci-prune-stale-runs.test.mjs|\
                   tests/ci-quick-route.test.mjs|\
                   scripts/ci-specialist-aggregate.mjs|\
+                  lib/ci/coach-only-impact.mjs|\
+                  tests/ci-coach-only-impact.test.mjs|\
+                  scripts/ci-site-video-scope.mjs|\
+                  tests/ci-site-video-scope.test.mjs|\
                   scripts/ci-public-services-plan.mjs|\
                   tests/ci-public-services-plan.test.mjs|\
                   scripts/ci-pr-readiness.mjs|\
@@ -424,7 +432,7 @@ jobs:
         run: node --test tests/ci-deterministic-eslint-repair.test.mjs
       - name: Verify specialist ownership and Messenger isolation on CI-policy changes
         if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT')) && (github.event_name != 'pull_request' || steps.diff.outputs.ci_touched == 'true') }}
-        run: node --test tests/ci-workflow-globs.test.mjs tests/workflow-next-route-filters.test.mjs tests/ci-specialist-aggregate.test.mjs tests/ci-growth-course-core-reuse.test.mjs
+        run: node --test tests/ci-workflow-globs.test.mjs tests/workflow-next-route-filters.test.mjs tests/ci-specialist-aggregate.test.mjs tests/ci-growth-course-core-reuse.test.mjs tests/ci-coach-only-impact.test.mjs tests/ci-site-video-scope.test.mjs
       # Public greeting and motion changes no longer book unrelated private App
       # or storefront E2E. Retain source/persona/media checks in mandatory Core.
       - name: Public Ali greeting + coach motion release contracts
@@ -509,7 +517,13 @@ jobs:
             if [[ "$f" =~ \.(cjs|mjs|js|jsx|ts|tsx)$ && -f "$f" ]]; then files+=("$f"); fi
           done < <(git diff --name-only -z "$BASE_SHA" HEAD)
           if [[ "$full_lint" == true ]]; then
-            npm run lint
+            # Same whole-repository ESLint, two bounded workers on the free runner.
+            # If a manifest changes the CLI/script or downgrades ESLint, retain the original command.
+            if node -e 'const v=require("eslint/package.json").version.split(".").map(Number); process.exit(require("./package.json").scripts.lint==="eslint ."&&v[0]===9&&v[1]>=34?0:1)'; then
+              npm run lint -- --concurrency 2
+            else
+              npm run lint
+            fi
           elif (( ${#files[@]} > 0 )); then
             npx --no-install eslint "${files[@]}"
           else
