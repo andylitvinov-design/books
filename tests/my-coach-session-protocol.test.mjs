@@ -1072,3 +1072,24 @@ test('course protocol panel renders the actual grouped checkpoints, not a compet
  assert.ok(card.includes('data-coach-opening-name'))
  assert.ok(card.includes('data-coach-profile-checklist'))
 })
+
+test('final protocol unlocks only before a request is prepared; ambiguous POST retries remain immutable',async()=>{
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const save=ui.slice(ui.indexOf('  async function saveProtocol(){'),ui.indexOf('  async function closeProtocolToRating(){'))
+ const ref=current=>({current})
+ const snapshot={id:'protocol-1',turns:['original']}
+ let locked=false,saving=false,saved=false,flushCount=0,postCount=0,ready=false,failPost=true,body,revision=7
+ const refs={protocolSaveInFlightRef:ref(false),profileV3BusyRef:ref(false),profileV3FaultRef:ref(false),courseGateBusyRef:ref(false),courseGateAttemptRef:ref(false),protocolOwnerRef:ref('owner'),protocolSaveSnapshotRef:ref(null),restoredProfileProof:ref(null),protocolIdRef:ref('protocol-1'),protocolSaveRequestRef:ref(null),autoSaveRef:ref(true),profileV3Ref:ref(null),courseGateRef:ref(null),turnsRef:ref([]),autoSaveQueueRef:ref({flush:async()=>{flushCount++;return ready?revision:null},stop(){}})}
+ const env={...refs,protocolSaving:false,protocolSaved:false,autoSaveStatus:'active',lang:'en',currentProtocol:()=>({...snapshot}),setProtocolSaveLocked:v=>{locked=v},setProtocolSaving:v=>{saving=v},setProtocolError(){},protocolCopy:{en:{error:'error'}},queuePrivateDraft:()=>true,fetch:async(_url,options)=>{postCount++;if(body)assert.equal(options.body,body);else body=options.body;if(failPost)throw Error('lost response');return {ok:true,status:200,json:async()=>({saved:true,id:snapshot.id})}},setAutoSaveEnabled(){},setProfileV3(){},setProfileV3CanStart(){},setCourseGate(){},setProtocolSaved:v=>{saved=v},setProtocolEditing(){}}
+ const execute=new Function(...Object.keys(env),save+'\nreturn saveProtocol()')
+ assert.equal(await execute(...Object.values(env)),false)
+ assert.equal(locked,false);assert.equal(saving,false);assert.equal(refs.protocolSaveSnapshotRef.current,null);assert.equal(postCount,0)
+ ready=true
+ assert.equal(await execute(...Object.values(env)),false)
+ assert.equal(locked,true);assert.equal(saving,false);assert.equal(postCount,1);assert.equal(flushCount,2)
+ assert.equal(refs.protocolSaveSnapshotRef.current.id,snapshot.id);assert.equal(JSON.parse(body).draftRevision,7)
+ snapshot.turns=['edited'];revision=8;failPost=false
+ assert.equal(await execute(...Object.values(env)),true)
+ assert.equal(saved,true);assert.equal(postCount,2);assert.equal(flushCount,2)
+ assert.equal(JSON.parse(body).protocol.turns[0],'original')
+})
