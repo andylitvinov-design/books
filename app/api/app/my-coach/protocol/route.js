@@ -34,9 +34,10 @@ export async function GET(request){
     }
     if(params.get('view')==='greeting-identity'){
       if(provided!==actor.id)throw new AppError('ACCOUNT_CHANGED',409)
-      if([...params.keys()].length!==1)throw new AppError('MY_COACH_PROTOCOL_CURSOR_INVALID',400)
+      const includeContext=params.get('includeContext')==='true'
+      if([...params.keys()].length!==(includeContext?2:1))throw new AppError('MY_COACH_PROTOCOL_CURSOR_INVALID',400)
       await consumeRate(config,{op:'my-coach-greeting-identity',actor:actor.id},60,3600)
-      return auth.apply(NextResponse.json(await readMyCoachGreetingIdentity(config,actor),{headers:PRIVATE_HEADERS}))
+      return auth.apply(NextResponse.json(await readMyCoachGreetingIdentity(config,actor,{includeContext}),{headers:PRIVATE_HEADERS}))
     }
     for(const key of params.keys())
       if(!['before','beforeId'].includes(key))throw new AppError('MY_COACH_PROTOCOL_CURSOR_INVALID',400)

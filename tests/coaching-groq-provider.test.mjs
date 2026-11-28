@@ -3,10 +3,14 @@ import test from 'node:test'
 import './coach-semantic-evidence.test.mjs'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {coachingGroqConfig,verifiedGroqCoachingReply,coachGroqReasoningEffort,GROQ_COACH_MODEL} from '../lib/coaching/groq-coach-provider.mjs'
+import {coachingGroqConfig,verifiedGroqCoachingReply,coachGroqReasoningEffort,GROQ_COACH_MODEL,validGroqCoachingMessages} from '../lib/coaching/groq-coach-provider.mjs'
 import {normalizeGenerativeCoachInput} from '../lib/coaching/generative-persona.mjs'
 import {parseConversationalCoachReply,conversationalCoachMessages} from '../lib/coaching/conversational-persona.mjs'
 import {coachDialoguePolicy} from '../lib/coaching/unified-coach-policy.mjs'
+import {coachStreamingMessages} from '../lib/coaching/groq-coach-stream.mjs'
+import {PUBLIC_COACH_PERSONA_IDS} from '../lib/coaching/persona-registry.mjs'
+import {coachCourseLiveInstruction,COACH_PROGRAM_SESSIONS,COACH_COURSE_SESSIONS,INTRODUCTORY_COACH_SESSION_ID} from '../lib/coaching/coach-course-journey.mjs'
+import {CLARITY_COURSE_GROUP} from '../lib/coaching/clarity-course.mjs'
 const key='gsk_'+('x'.repeat(38))
 const enabled={HH_COACHING_GROQ_ENABLED:'true',HH_COACHING_GROQ_ZDR_CONFIRMED:'true',
   HH_COACHING_GROQ_FREE_TIER_CONFIRMED:'true',HH_FIRST_VIDEO_GROQ_API_KEY:key}
@@ -298,4 +302,30 @@ test('substantive coaching text and client direct questions still keep model-own
     message:'Я бы не торопилась с выводом. Тут важны ваши границы.',
     planSuggestion:'',evidenceQuote:'',clientEvidence:{kind:'none',quote:''},
   }),question,'grow','explore').mode,'ai')
+})
+
+
+test('every public persona can send its server prompt without raising the client context limit',()=>{
+  const courses=[...COACH_PROGRAM_SESSIONS,...COACH_COURSE_SESSIONS,...CLARITY_COURSE_GROUP.sessions]
+    .map(course=>course.id).concat(INTRODUCTORY_COACH_SESSION_ID,'meaning_axes_inner_growth')
+  const message='I want to organize my work week and make time for breaks.'
+  for(const personaId of PUBLIC_COACH_PERSONA_IDS)for(const locale of ['en','ru','es'])for(const courseSessionId of courses){
+    const scenario={personaId,locale,courseSessionId,consent:true,turns:[],message}
+    const text=normalizeGenerativeCoachInput(scenario)
+    const voice=normalizeGenerativeCoachInput({...scenario,voiceTurn:true})
+    const label=[personaId,locale,courseSessionId].join('/')
+    const prompts=conversationalCoachMessages(text.input,text.persona,'grow','goal')
+    assert.ok(validGroqCoachingMessages(prompts),label+' '+prompts.map(m=>m.role+':'+m.content.length).join(','))
+    const system=prompts.filter(m=>m.role==='system').map(m=>m.content).join('\n')
+    assert.ok(system.includes(text.persona.systemInstructions),label+' persona instructions retained')
+    assert.ok(system.includes(coachCourseLiveInstruction(courseSessionId,locale)),label+' course instructions retained')
+    assert.deepEqual(prompts.at(-1),{role:'user',content:message},label)
+    const streamed=coachStreamingMessages(conversationalCoachMessages(voice.input,voice.persona,'grow','goal'))
+    assert.ok(validGroqCoachingMessages(streamed),label+' streamed bounds')
+    assert.deepEqual(streamed.at(-1),{role:'user',content:message},label)
+    assert.match(streamed[0].content,/STREAMED SPEECH OUTPUT/,label)
+  }
+  assert.equal(validGroqCoachingMessages([{role:'user',content:'x'.repeat(12_001)}]),false)
+  assert.equal(validGroqCoachingMessages([{role:'system',content:'x'.repeat(40_001)}]),false)
+  assert.equal(validGroqCoachingMessages(Array.from({length:3},()=>({role:'system',content:'x'.repeat(21_000)}))),false)
 })

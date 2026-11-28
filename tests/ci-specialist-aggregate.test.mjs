@@ -1227,14 +1227,14 @@ test('base advances fail closed while matching tested checkout retains HEAD chec
   api.target = async () => BASE;
   api.pr = async () => currentPr();
   assert.deepEqual((await verify(api, ctx, sources, { maxWaitMs: 0 })).expected, [path]);
-  // The final target read must be definitive; don't invent a future target
-  // movement from another speculative read while a real specialist is green.
+  // Bracket the same final target proof with two actual protected-ref reads.
+  // A stable target needs no new specialist execution.
   let targetReads = 0;
   api.target = async () => { targetReads++; return BASE; };
   api.compare = async () => ({ status:'diverged' });
   api.pr = async () => currentPr();
   assert.deepEqual((await verify(api, ctx, sources, { maxWaitMs: 0 })).expected,[path]);
-  assert.equal(targetReads,1,'complete specialist evidence precedes one final target scan');
+  assert.equal(targetReads,2,'complete specialist evidence precedes the bracketed final target scan');
   api.target = async () => advanced;
   await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }),
     /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/, 'unsafe production target remains blocking at final review');
@@ -2347,7 +2347,7 @@ test('base movement during Specialist preserves exact-HEAD results only for prov
   const ctx={repo,number:27,head:SHA,base:BASE};
   const good=await verify(api,ctx,files,{maxWaitMs:0});
   assert.deepEqual(good.expected,[path]);
-  assert.equal(liveReads,1,'verified disjoint production drift is reviewed once after real Specialist jobs');
+  assert.equal(liveReads,2,'one disjoint impact proof is bracketed by two final protected-ref reads');
   api.target=async()=>live;
   api.compare=async()=>comparison('.github/workflows/hh-pr-core-release.yml');
   await assert.rejects(()=>verify(api,ctx,files,{maxWaitMs:0}),/PRODUCTION_BASE_CHANGED/);
