@@ -682,28 +682,32 @@ const PACKAGE_ONLY_ADVISORY_OWNERS = new Set([
   '.github/workflows/hh-live-audio-ci.yml',
   '.github/workflows/holistic-house-native.yml',
 ]);
-export function independentPackageOnlyAdvisories(files,changed,expected) {
-  const result=new Set();
-  if(!Array.isArray(changed)||!Array.isArray(expected)||
+export function verifiedIsolatedServerAddition(files,changed) {
+  if(!Array.isArray(changed)||
      !changed.includes('package.json')||!changed.includes('package-lock.json')||
-     !verifiedAdditiveServerPackageEvidence(files,changed)) return result;
+     !verifiedAdditiveServerPackageEvidence(files,changed)) return false;
   try {
     const old=JSON.parse(files.baseLock).packages, next=JSON.parse(files.currentLock).packages;
     const added=new Set(Object.keys(next).filter(p=>!Object.hasOwn(old,p)).map(p=>p.slice('node_modules/'.length)));
-    if(!added.size) return result;
+    if(!added.size) return false;
     // Even an unchanged existing lock row might acquire a formerly absent
     // optional peer. Reject any prior dependency/peer edge into the additions.
     for(const [p,row] of Object.entries(old)) {
       if(!p) continue;
       if(['dependencies','optionalDependencies','peerDependencies'].some(k=>
-         Object.keys(row[k]||{}).some(name=>added.has(name)))) return result;
+         Object.keys(row[k]||{}).some(name=>added.has(name)))) return false;
     }
     for(const name of added) {
       const row=next['node_modules/'+name];
       if(!row||row.hasInstallScript||row.link||row.inBundle||row.bin||
-         !/^https:\/\/registry\.npmjs\.org\//.test(row.resolved||'')) return result;
+         !/^https:\/\/registry\.npmjs\.org\//.test(row.resolved||'')) return false;
     }
-  } catch { return result; }
+  } catch { return false; }
+  return true;
+}
+export function independentPackageOnlyAdvisories(files,changed,expected) {
+  const result=new Set();
+  if(!Array.isArray(expected)||!verifiedIsolatedServerAddition(files,changed))return result;
   const productPaths=changed.filter(p=>p!=='package.json'&&p!=='package-lock.json');
   // A change to global application/CI execution policy stays strict.
   if(productPaths.some(p=>/^(?:\.github\/actions\/|\.github\/workflows\/hh-pr-core-release\.|lib\/ci\/|scripts\/ci-|next\.config\.|middleware\.|tsconfig\.|eslint\.config\.|vercel\.json$|app\/(?:layout|globals)\.)/i.test(p)))return result;
@@ -820,6 +824,16 @@ const DISPATCHER_ADVISORY_OWNERS=new Set([
   '.github/workflows/practice-google-browser.yml',
   '.github/workflows/hh-profile-axis-matching.yml',
 ]);
+// These public browser suites overlap both the catch-all API selector and
+// (for storefront) root-lock routing. Compose both existing independent proofs
+// rather than requiring either alone to cover the entire mixed PR.
+const PUBLIC_COMPOSED_ADVISORY_OWNERS=new Map([
+  ['.github/workflows/hh-public-services-production.yml',[
+    '.github/workflows/hh-app-browser.yml','.github/workflows/hh-billing-isolated.yml']],
+  ['.github/workflows/site-video-browser.yml',[
+    '.github/workflows/hh-app-browser.yml','.github/workflows/hh-private-audio-e2e.yml']],
+]);
+const ROOT_MANIFEST=/^(?:package\.json|package-lock\.json)$/;
 const PRIVATE_COACH_GATE_OWNERS=[
   '.github/workflows/hh-personal-coaching-session.yml',
   '.github/workflows/hh-app-r1.yml',
@@ -843,12 +857,27 @@ export function independentDispatcherAdvisories(files,rows,expected,readSource,t
     const sharedPaths=changed.filter(p=>p===COACH_SHARED_DISPATCHER||COACH_DEDICATED_ROUTE.test(p));
     const remaining=changed.filter(p=>!sharedPaths.includes(p));
     for(const name of expected) {
-      if(!DISPATCHER_ADVISORY_OWNERS.has(name)||changed.includes(name))continue;
+      const composed=PUBLIC_COMPOSED_ADVISORY_OWNERS.get(name);
+      if((!DISPATCHER_ADVISORY_OWNERS.has(name)&&!composed)||changed.includes(name))continue;
+      let unaffected=remaining;
+      if(composed){
+        if(!composed.every(owner=>expected.includes(owner)))continue;
+        // Keep shared payment, booking, identity and media contracts mandatory.
+        // Coach-specific payment remains covered by Billing, App R1 and IA.
+        if(changed.some(p=>/^(?:lib\/(?:billing|payments|commerce|checkout)\/|app\/api\/(?:payments|public|service-enquiries)\/|app\/api\/app\/(?:services|bookings|practitioner)\/|lib\/app\/(?:booking|order|payment|billing|checkout)(?:[./-]|$))/i.test(p)))continue;
+        if(name.endsWith('/site-video-browser.yml')&&remaining.some(p=>
+          /(?:^|[\/._-])(?:photo|photos|video|videos|media|recording|recordings)(?:$|[\/._-])/i.test(p)))continue;
+        const manifestTouched=remaining.some(p=>ROOT_MANIFEST.test(p));
+        if(manifestTouched){
+          if(!verifiedIsolatedServerAddition(files,changed))continue;
+          unaffected=remaining.filter(p=>!ROOT_MANIFEST.test(p));
+        }
+      }
       const old=files.base.get(name);
       if(typeof old!=='string'||old!==files.current.get(name))continue;
       const trigger=parsePrTrigger(old,name);
       if(!trigger?.paths||!matchesTrigger(trigger,sharedPaths,TARGET)||
-         (remaining.length&&matchesTrigger(trigger,remaining,TARGET)))continue;
+         (unaffected.length&&matchesTrigger(trigger,unaffected,TARGET)))continue;
       result.add(name);
     }
   }catch{return new Set();}
