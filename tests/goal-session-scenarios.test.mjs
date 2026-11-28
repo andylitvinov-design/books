@@ -90,3 +90,18 @@ test('Goal detailed questions and six UI segments share the scenario mapping wit
   for(const group of ui.rows)assert.deepEqual(group.coreChildren.map(f=>f.id),s.stages.find(t=>t.id===group.id).fields);
  }
 });
+
+import {sessionBlueprint,sessionBlueprintGuidance} from '../lib/coaching/session-blueprint.mjs';
+import {COACH_COURSE_SESSIONS} from '../lib/coaching/coach-course-journey.mjs';
+test('registered thematic blueprints, schema and grouped UI have the same field identities and stage labels',()=>{
+ for(const item of [...COACH_PROGRAM_GROUPS.flatMap(g=>g.sessions),...COACH_COURSE_SESSIONS])for(const locale of ['en','ru','es']){
+  const b=sessionBlueprint(item.id,locale),schema=coachCourseProtocolSchema(item.id,locale);
+  assert.ok(b,item.id);assert.equal(b.stages.length,6);assert.equal(b.durationSeconds,1200);
+  const fields=b.stages.flatMap(s=>s.fields);assert.equal(new Set(fields).size,fields.length);
+  assert.deepEqual([...fields].sort(),schema.checkpoints.map(f=>f.id).sort(),item.id);
+  const p=groupedSessionPosition(openingStagePosition({current:'invitation'},locale),courseStagePosition(schema.checkpoints.map(f=>({...f,status:'not_explored'}))),{mode:'course',courseId:item.id,locale});
+  assert.deepEqual(p.rows.map(s=>s.label),b.stages.map(s=>s.label));
+  for(const stage of b.stages){assert.deepEqual(p.rows.find(g=>g.id===stage.id).coreChildren.map(f=>f.id),stage.fields);assert.ok(sessionBlueprintGuidance(item.id,locale).includes(stage.label));}
+  assert.ok(p.rows.every(g=>g.tone==='gray'));
+ }
+});
