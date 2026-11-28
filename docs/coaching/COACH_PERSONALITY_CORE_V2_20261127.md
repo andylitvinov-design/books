@@ -1,0 +1,7 @@
+# Personality Core v2 — #5823
+
+Twelve immutable editorial passports, five ordered values and principles each, six illustrative domain lenses, distinct success philosophies, competence, appreciation/objection/revision, speech and voice expression. This supersedes the separate judgment v1 draft. The existing model reasons from the passport in the same inference request; no extra provider calls, storage, or voice-ID changes. Facts and safety precede fictional opinions. Client autonomy, consent, no-advice, distress, Director stage and evidence boundaries remain authoritative.
+
+The shared behavior policy carries the passport for all 12 identities; the public eight receive per-turn guidance. The existing Gemini checkpoint uses an optional compact direct-answer cue only if it fits its existing bound and opening/profile requirements permit it. Existing audio direction adds the shared voice expression for coaching and therapy. Legacy IDs preserve their previous null turn behavior. Text, recorded audio, Gemini and Simli provider parity and actual acoustic behavior require acceptance, not inferred from source.
+
+Tests: coach-personality-core.test.mjs and coach-personality-core-wiring.test.mjs are imported by the existing coach-character-signature suite (already included in the coaching release tests via my-coach-personas). Local pure tests 5/5 passed on byte-identical source; full checkout unavailable locally due to DNS, so native CI and actual provider E2E still required. Preserve production batching; no manual deployment.

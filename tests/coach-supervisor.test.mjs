@@ -54,7 +54,7 @@ const scoped=(courseSessionId,version,mode,fieldId)=>({...input,scenario:{course
 test('version-bound coaching and therapy criteria fail closed for wrong session, version, mode or control field',()=>{
  const cases=[
  ['clarity_day_1','hh-clarity-day-one-v5','coaching',['impact','priority','outer_body_health','outer_meaning_purpose'],['episode','balance_consent','balance_review']],
- ['clarity_day_2','hh-clarity-day-two-support-v1','coaching',['episode','test_status','test_observation','optional_scale_before','inner_self-realization'],['goal','practice_consent','outer_body_health']],
+ ['clarity_day_2','hh-clarity-day-two-support-v1','coaching',['episode','test_status','test_observation','optional_scale_before','inner_self-realization','development_focus','development_reason'],['goal','practice_consent','outer_body_health']],
  ['clarity_day_3','hh-clarity-day-three-goal-v1','coaching',['goal','controllable_scope','dream_image','if_then','confidence'],['episode','goal_status','separate_plan_consent']],
  ['anti_stress_ground','hh-anti-stress-v2-s1','therapy',['resource_images','resource_selected','resource_details','resource_phrase','stress_before'],['goal','meditation_consent','practice_consent','calm_variant']],
  ['anti_stress_calm','hh-anti-stress-v2-s2','therapy',['calm_signal','calm_steps','calm_fallback','meditation_feedback','stress_after'],['resource_images','practice_status','goal']],
@@ -87,6 +87,7 @@ test('Director receives one localized clarification only for an exact validated 
    assert.equal(d.maySave,false);assert.equal(d.mayAdvance,false)
    assert.equal(d.kind,verdict==='MATCH'?'relevant_needs_existing_confirmation_gate':'clarify_same_field')
    assert.equal(typeof d.clarification,verdict==='MATCH'?'object':'string')
+   for(const clarificationIntent of [undefined,'forged',verdict==='MATCH'?'clarify_missing':'confirm_literal'])assert.equal(supervisorDirectorDisposition(i,{...reviewed,clarificationIntent}).kind,'unverified')
    for(const changed of [{...i,revision:i.revision+1},{...i,turnId:'other'},{...i,quote:'another answer'},{...i,quote:i.quote+', но не сейчас'},{...i,question:i.question+' другое уточнение'},{...i,context:[{turnId:'t2',quote:'I want to close the studio later',reviewed:true}]},{...i,scenario:{courseSessionId:'clarity_day_2',version:'hh-clarity-day-two-support-v1'}}])assert.equal(supervisorDirectorDisposition(changed,reviewed).kind,'unverified')
   }
   assert.equal(supervisorDirectorDisposition(i,{...validateSupervisorVerdict(p,answer),evidence:[{turnId:'t1',quote:'invented'}]}).kind,'unverified')
