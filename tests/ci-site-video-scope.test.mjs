@@ -91,3 +91,20 @@ test('strict coach-only dispatcher diff avoids unrelated Site Video Next/WebKit 
   assert.equal(classifyExactSiteVideo(args,tampered).full,true,'shared non-Coach auth/runtime changes retain full browser');
   assert.ok(record.some(args=>args[0]==='show'&&args[1]===base+':app/api/app/[...path]/route.js'));
 });
+
+// All source/contract files in the CI fan-out fix, without any application
+// change, must not trigger the full Site Video Next/Redis/WebKit matrix.
+test('exact CI routing-only edits retain source tests without unrelated runtime browser work',()=>{
+ const paths=["scripts/ci-site-video-scope.mjs","tests/ci-site-video-scope.test.mjs","lib/ci/coach-only-impact.mjs","tests/ci-coach-only-impact.test.mjs","tests/ci-pr-selective-workflows.test.mjs","tests/pr-fast-lane.test.mjs","docs/operations/CI_RELEASE_POLICY.md",".github/workflows/hh-pr-core-release.yml",".github/workflows/site-video-browser.yml",".github/workflows/hh-profile-axis-matching.yml",".github/workflows/practice-google-browser.yml",".github/workflows/hh-private-audio-e2e.yml",".github/workflows/hh-personal-coaching-session.yml"];
+ const rows=paths.map(filename=>({filename,status:'modified'}));
+ assert.equal(needsFullSiteVideoBrowser(rows),false);
+ for (const filename of ['app/api/app/[...path]/route.js','app/api/app/my-coach/engines/route.js','app/admin/videos/page.tsx','lib/app/session.js','lib/site-videos/repository.js','app/api/payments/route.js','middleware.ts','package-lock.json','supabase/migrations/20261128_auth.sql','tests/unknown.test.mjs','.github/workflows/unknown.yml'])
+   assert.equal(needsFullSiteVideoBrowser([...rows,...one(filename)]),true,filename);
+ for(const status of ['added','removed','renamed'])
+   assert.equal(needsFullSiteVideoBrowser([{filename:'lib/ci/coach-only-impact.mjs',status}]),true,status);
+ assert.equal(needsFullSiteVideoBrowser([{...rows[0],previous_filename:'lib/app/session.js'}]),true);
+ assert.equal(needsFullSiteVideoBrowser([rows[0],rows[0]]),true);
+ const head='a'.repeat(40),merge='b'.repeat(40),base='c'.repeat(40),z=String.fromCharCode(0);
+ const git=(_bin,args)=>args[0]==='rev-parse'?({HEAD:merge,'HEAD^1':base,'HEAD^2':head})[args[1]]+'\n':args[0]==='diff'?rows.flatMap(row=>['M',row.filename]).join(z)+z:(()=>{throw Error('unexpected command')})();
+ assert.deepEqual(classifyExactSiteVideo({GITHUB_EVENT_NAME:'pull_request',HH_HEAD_SHA:head,GITHUB_SHA:merge},git),{full:false,reason:'EXACT_CI_ROUTING_POLICY_ONLY'});
+});
