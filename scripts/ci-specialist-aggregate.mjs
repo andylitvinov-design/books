@@ -1549,10 +1549,12 @@ function loadProtectedValidator(liveSha) {
 
 export async function revalidateAfterTrustedPolicyAdvance(api, ctx, files, options={}) {
   const blocked = () => Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
+  let evidenceStarted=false;
+  const decline=()=>{if(options.optional===true&&!evidenceStarted)return null;throw blocked();};
   const changed = files.changedRows?.flatMap(row => row.previous_filename
     ? [row.filename, row.previous_filename] : [row.filename]);
   if (!Array.isArray(changed) || !changed.length ||
-      changed.some(path => typeof path !== 'string')) throw blocked();
+      changed.some(path => typeof path !== 'string')) return decline();
 
   // Always execute policy code from the CURRENT protected production commit,
   // never the PR source or an untrusted checkpoint. The old immutable policy
@@ -1573,15 +1575,16 @@ export async function revalidateAfterTrustedPolicyAdvance(api, ctx, files, optio
     } catch (error) { extracted.cleanup(); throw error; }
   });
   const policyFiles = new Set(REVALIDATABLE_CI_POLICY_FILES);
+  try {
   for (let attempt = 0; attempt < 4; attempt++) {
     const target = await api.target();
-    if (!/^[0-9a-f]{40}$/.test(target || '')) throw blocked();
+    if (!/^[0-9a-f]{40}$/.test(target || '')||target===ctx.base) return decline();
     const diff = await api.compare(ctx.base, target);
     const oldPolicyAccepts = safeTrustedPolicyAdvance(diff, ctx.base, target, changed);
     const possibleNewPolicy = Array.isArray(diff?.files) && diff.files.some(row =>
       policyFiles.has(row?.filename) && !changed.includes(row.filename) &&
       ['added','modified'].includes(row.status) && !row.previous_filename);
-    if (!oldPolicyAccepts && !possibleNewPolicy) throw blocked();
+    if (!oldPolicyAccepts && !possibleNewPolicy) return decline();
 
     // Do not fetch a stale validator if another protected merge already won.
     if (await api.target() !== target) {
@@ -1594,7 +1597,7 @@ export async function revalidateAfterTrustedPolicyAdvance(api, ctx, files, optio
         throw Error('TRUSTED_SPECIALIST_POLICY_NOT_EXECUTABLE');
       const currentImpact = typeof policy.safeTrustedPolicyAdvance === 'function'
         ? policy.safeTrustedPolicyAdvance : safeTrustedPolicyAdvance;
-      if (!currentImpact(diff, ctx.base, target, changed)) throw blocked();
+      if (!currentImpact(diff, ctx.base, target, changed)) return decline();
 
       // Target can move while the new validator reviews successful workflows.
       // Retry only this read-only policy check on a different verified SHA;
@@ -1604,6 +1607,7 @@ export async function revalidateAfterTrustedPolicyAdvance(api, ctx, files, optio
         continue;
       }
       let result;
+      evidenceStarted=true;
       try {
         result = await policy.verify(api, ctx, files,
           {trustedPolicyBaseSha:target});
@@ -1627,7 +1631,14 @@ export async function revalidateAfterTrustedPolicyAdvance(api, ctx, files, optio
     }
   }
   // Never certify a perpetually moving or unproven target as green.
-  throw blocked();
+  return decline();
+  } catch(error) {
+    // The optional early probe is not a release gate. If the trusted policy
+    // cannot even be loaded/approved, run the original strict verifier.
+    // Once actual evidence evaluation starts, never hide any failure.
+    if(options.optional===true&&!evidenceStarted)return null;
+    throw error;
+  }
 }
 
 // Normalize observable symptoms across PRs without claiming identical root causes.
@@ -1723,7 +1734,11 @@ async function main() {
   }
   let result;
   try {
-    result=await verify(api,checkedCtx,files);
+    // Prefer an already protected, independently compatible policy BEFORE
+    // waiting for old-scope specialists. Do not wait for jobs that the
+    // current trusted policy has already proved non-applicable.
+    result=verifiedBase ? await revalidateAfterTrustedPolicyAdvance(api,checkedCtx,files,{optional:true}) : null;
+    if(!result) result=await verify(api,checkedCtx,files);
   } catch (error) {
     // A changed production CI *policy* cannot be ignored by the old policy.
     // Re-execute the new trusted policy against the same exact-HEAD evidence,
