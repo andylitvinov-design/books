@@ -89,6 +89,7 @@ export default function MyPageClient({locale='en',ownerMemorySearch=false,ownerM
        </div>
       </article>
  return <main className={css.page} data-universal-my-page data-cabinet-theme="daybook">
+  <header className={css.myPageBrand}><Link href={'/'+locale} prefetch={false}><span aria-hidden="true">✦</span>Holistic House</Link><button type="button" data-my-page-inline-help onClick={()=>window.dispatchEvent(new Event('hh:open-ihelp'))} aria-label="iHelp"><span aria-hidden="true">?</span> iHelp</button></header>
   <nav className={css.socialModes} data-profile-mode-switch data-profile-mode-active="live" aria-label={locale==='ru'?'Страницы профиля':locale==='es'?'Páginas del perfil':'Profile pages'}>
     <Link href={'/'+locale+'/my-page'} data-profile-mode="live" prefetch={false} aria-current="page">{locale==='ru'?'Моя страничка':locale==='es'?'Mi página':'My Page'}</Link>
     <Link href={'/'+locale+'/practice'} data-profile-mode="work" prefetch={false}>{locale==='ru'?'Профиль мастера':locale==='es'?'Perfil profesional':'Practitioner profile'}</Link>
@@ -102,7 +103,7 @@ export default function MyPageClient({locale='en',ownerMemorySearch=false,ownerM
   {notice?<p role="status" className={notice===t.saved?css.notice:css.error}>{notice}</p>:null}
   {status==='ready'&&data?<>
    <ProfilePersonalSummary locale={locale} profile={profile} data={data} busy={busy}
-       onEdit={()=>setEditingProfile(true)}
+       onEdit={()=>{setEditingProfile(true);requestAnimationFrame(()=>document.getElementById('my-page-name')?.scrollIntoView({block:'center'}))}}
        onAddVideo={video=>void perform({action:'addVideo',videoId:video.id,title:video.theme+' · '+video.duration_seconds+'s'})}/>
    {ownerMemorySearch&&data.accountId?<CoachPersonalMemoryPanel key={data.accountId} accountId={data.accountId} locale={locale} selectionEnabled={ownerMemorySelection}/>:null}
    <p data-my-page-media-library style={{margin:'12px 0'}}>
