@@ -143,3 +143,65 @@ test('published canon and editorial revisions remain intact when memory evolves'
  }
  assert.equal(getCoachPersonalityMemoryHistory('constructor'),null);
 });
+
+
+import {selectCoachMemoryEntry,buildCoachMemoryCue,getCoachMemoryIndexedIds} from '../lib/coaching/coach-personality-memory-retrieval.mjs';
+import {coachPersonalityTurn,coachPersonalityTurnGuidance} from '../lib/coaching/coach-personality-dialogue.mjs';
+import {withCoachLivePersonality} from '../lib/coaching/coach-personality-live.mjs';
+import {normalizeGenerativeCoachInput} from '../lib/coaching/generative-persona.mjs';
+import {coachSessionDirective,coachSessionDirectivePrompt} from '../lib/coaching/coach-session-director.mjs';
+const contextualCases={
+ mira:['judgment-01','caregiving','забота','cuidado'],
+ max:['judgment-02','budget','бюджет','presupuesto'],
+ sofia:['judgment-02','unanswered message','без ответа','sin respuesta'],
+ alex:['judgment-02','priorities','приоритеты','prioridades'],
+ merlin:['judgment-01','purpose','смысл','propósito'],
+ harry:['judgment-02','loyalty','верность','lealtad'],
+ genie:['judgment-02','budget','бюджет','presupuesto'],
+ caesar:['judgment-02','fairness','справедливость','equidad'],
+ lea:['judgment-01','approval','одобрение','aprobación'],
+ noah:['judgment-02','money','деньги','dinero'],
+ iris:['judgment-02','changed my mind','изменил мнение','cambié de opinión'],
+ ray:['judgment-02','creative collaboration','творческое сотрудничество','colaboración creativa']
+};
+test('contextual memory chooses only relevant persona-owned editorial entries in all three languages',()=>{
+ for(const [id,[expected,...messages]] of Object.entries(contextualCases)){
+  const entries=getCoachPersonalityMemory(id,2).entries;
+  assert.deepEqual([...getCoachMemoryIndexedIds(id)].sort(),entries.map(e=>e.id).sort());
+  const selected=entries.find(e=>e.id===expected);
+  for(const [i,locale] of ['en','ru','es'].entries()){
+   const input={message:messages[i],locale,mode:'answer'};
+   assert.equal(selectCoachMemoryEntry(id,input),expected,id+' '+locale);
+   for(const guard of ['blocked','noAdvice','distress'])assert.equal(selectCoachMemoryEntry(id,{...input,[guard]:true}),null);
+   for(const mode of ['close','repair','listen','support','contact'])assert.equal(selectCoachMemoryEntry(id,{...input,mode}),null);
+   assert.equal(selectCoachMemoryEntry(id,{...input,message:'ZXQJ-PRIVATE-TEXT'}),null);
+   assert.ok(buildCoachMemoryCue(id,expected,{mode:'answer'}).includes(selected.text));
+   const turn=coachPersonalityTurn({personaId:id,locale,interventionId:'answer_first',latestMessage:messages[i]+' ZXQJ-PRIVATE-TEXT'});
+   assert.equal(turn.memoryEntryId,expected);
+   assert.ok(coachPersonalityTurnGuidance(turn).includes(selected.text));
+   assert.doesNotMatch(JSON.stringify(turn),/ZXQJ-PRIVATE-TEXT/);
+   const checkpoint={guidance:'Mandatory course instruction.'};
+   const live=withCoachLivePersonality(checkpoint,turn).guidance;
+   assert.ok(live.startsWith(checkpoint.guidance)&&live.length<=620);
+   assert.ok(live.includes(selected.text));
+   assert.ok(!withCoachLivePersonality({...checkpoint,openingProgress:{completed:false}},turn).guidance.includes(selected.text));
+   assert.ok(!withCoachLivePersonality({...checkpoint,profileProgress:{pending:true}},turn).guidance.includes(selected.text));
+   const full='x'.repeat(620);
+   assert.equal(withCoachLivePersonality({guidance:full},turn).guidance,full);
+  }
+ }
+ assert.equal(selectCoachMemoryEntry('noah',{message:'routine',mode:'answer'}),null);
+ assert.equal(selectCoachMemoryEntry('mira',{message:'I feel guilt about saying no',mode:'explore'}),'reaction-01');
+ assert.equal(selectCoachMemoryEntry('max',{message:'Tell me a fictional story about a prototype',mode:'answer',storyRequested:true}),'episode-01');
+ assert.equal(buildCoachMemoryCue('max','episode-01',{mode:'answer'}),'');
+ assert.equal(buildCoachMemoryCue('max','reaction-01',{mode:'answer'}),'');
+ assert.equal(buildCoachMemoryCue('max','ZXQJ-PRIVATE-TEXT',{mode:'answer'}),'');
+ assert.equal(selectCoachMemoryEntry('constructor',{message:'budget',mode:'answer'}),null);
+});
+test('actual Director passes current topic to editorial memory without changing answer-first authority',()=>{
+ const {input,persona}=normalizeGenerativeCoachInput({personaId:'max',locale:'en',message:'What is your opinion about the budget?',consent:true,turns:[],elapsedSeconds:60});
+ const directive=coachSessionDirective(input,persona);
+ assert.equal(directive.interventionId,'answer_first');
+ assert.equal(directive.personality.memoryEntryId,'judgment-02');
+ assert.ok(coachSessionDirectivePrompt(directive).includes(getCoachPersonalityMemory('max',2).entries.find(e=>e.id==='judgment-02').text));
+});
