@@ -54,6 +54,25 @@ test('My Page keeps public navigation available during private API errors withou
  assert.ok(profile.includes("data-my-page-my-video={href==='/'+language+'/holistic-support/mandala'?true:undefined}"))
 })
 
+import {summarizeDiscoveryCoverage} from '../lib/app/my-page-courses.mjs'
+test('Self Discovery catalogue coverage is ongoing, private and based on actual measurements',()=>{
+ assert.equal(summarizeDiscoveryCoverage({done:0,total:100,axes:0,attempts:0}),null)
+ assert.deepEqual(summarizeDiscoveryCoverage({done:4,total:100,axes:8,attempts:7}),{key:'self-discovery',kind:'self-discovery',state:'active',done:4,total:100,axes:8,percent:4})
+ assert.equal(summarizeDiscoveryCoverage({done:0,total:100,axes:1,attempts:0}).percent,0)
+ assert.equal(summarizeDiscoveryCoverage({done:100,total:100,axes:16,attempts:110}).state,'active')
+ assert.equal(summarizeDiscoveryCoverage({done:2,total:1,axes:0,attempts:2}),null)
+ assert.equal(summarizeDiscoveryCoverage({done:0,total:1,axes:17,attempts:0}),null)
+})
+
+test('Self Discovery is an independent expandable cabinet course and shows measured catalogue coverage',()=>{
+ const source=readFileSync(new URL('../components/app/my-page-courses.jsx',import.meta.url),'utf8')
+ assert.ok(source.includes("case 'self-discovery':"))
+ assert.ok(source.includes("key:'new:self-discovery'"))
+ assert.ok(source.includes('Test catalogue coverage'))
+ assert.ok(source.includes("href:root+'/app/daybook/self-discovery?theme=all&view=results'"))
+ assert.ok(source.includes('return expand(c.key,view,c.percent,status,label,content,c.kind)'))
+})
+
 
 test('Spanish public program discovery stays localized without changing private cabinet bookmarks',()=>{
  const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
@@ -63,4 +82,25 @@ test('Spanish public program discovery stays localized without changing private 
  assert.ok(route.includes("englishCabinetTarget(['portrait'], query)"))
  assert.ok(read('components/app/my-page-client.jsx').includes("locale==='es'?'/es/app/portrait?discover=programs'"))
  assert.ok(read('components/app/clarity-program.jsx').includes("lang==='es'?'/es/app/portrait?discover=programs'"))
+})
+
+
+test('approved compact My Page dashboard preserves owner-scoped data and real course disclosures',()=>{
+ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
+ const profile=read('components/app/profile-personal-summary.jsx'),courses=read('components/app/my-page-courses.jsx'),css=read('components/app/profile-personal-summary.module.css'),courseCss=read('components/app/my-page-courses.module.css'),client=read('components/app/my-page-client.jsx'),help=read('components/sitewide-ihelp.tsx')
+ for(const marker of ['data-my-page-dashboard-grid','data-my-page-today','data-my-page-overall-progress','data-my-page-sessions','data-my-page-settings'])assert.ok(profile.includes(marker))
+ assert.ok(profile.includes("currentDaily?.intention?.actionIds"))
+ assert.ok(profile.includes("daily?.owner===accountId"))
+ assert.ok(profile.includes("courseSummary?.owner===accountId"))
+ assert.ok(profile.includes("x?.provenance==='client_reviewed_dialogue'"))
+ assert.ok(courses.includes("c.state==='completed'"))
+ assert.ok(courses.includes("complete&&eligible.length?Math.round(100*done/eligible.length):null"))
+ assert.ok(courses.includes("hidden={!expanded}>{expanded&&content}"))
+ assert.ok(courses.includes("data-course-art={art}"))
+ assert.ok(css.includes(".shortcuts{grid-template-columns:repeat(5,minmax(0,1fr))"))
+ assert.ok(css.includes(".dashboardGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))"))
+ assert.ok(courseCss.includes('min-height:62px'))
+ assert.ok(client.includes('data-my-page-inline-help'))
+ assert.ok(help.includes('[data-my-page-inline-help]'))
+ assert.ok(client.includes('data-my-page-private-feed'))
 })

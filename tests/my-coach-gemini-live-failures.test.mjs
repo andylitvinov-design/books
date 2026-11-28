@@ -479,7 +479,8 @@ test('Clarity credential expiry pauses without claiming trusted time-limit compl
  // server clock readback or validated relay clock receipt can complete the course.
  const restored=ui.slice(ui.indexOf('  async function restorePrivateDraft('),ui.indexOf('  function ',ui.indexOf('  async function restorePrivateDraft(')+1))
  assert.match(restored,/if\(identity\?\.account\?\.id!==owner\)throw Error\('ACCOUNT_CHANGED'\)/)
- assert.match(restored,/result\?\.draft\?\.id!==item\.id/)
+ assert.match(restored,/const restored=result\?\.draft/)
+ assert.match(restored,/if\(!response\.ok\|\|restored\?\.id!==item\.id\|\|/)
  assert.match(restored,/const restoredTime=result\.clarityTime/)
  assert.match(restored,/const timeKnown=isClarity&&Number\.isInteger\(restoredTime\?\.elapsedSeconds\)[^\n]*remainingSeconds===CLARITY_COURSE_SECONDS-restoredTime\.elapsedSeconds/)
  assert.match(restored,/const timedEnd=timeKnown&&restoredTime\.status==='time_limit'&&restoredTime\.elapsedSeconds===CLARITY_COURSE_SECONDS&&restoredTime\.remainingSeconds===0/)

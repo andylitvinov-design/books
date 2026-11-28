@@ -4,6 +4,7 @@ import Link from 'next/link'
 import {appFetch} from '@/lib/app/client-fetch'
 import css from './my-page.module.css'
 import ProfilePersonalSummary from './profile-personal-summary'
+import CoachPersonalMemoryPanel from './coach-personal-memory-panel'
 
 const C={
 en:{title:'My Page',lead:'Your personal space to share videos, achievements and diary notes.',back:'Profile',login:'Continue with Google',guest:'Sign in to create your personal page. You decide what becomes public.',retry:'Try again',loading:'Loading your page…',error:'The action was not completed. Your private data stays private.',saved:'Changes saved.',name:'Public name',handle:'Page address',bio:'About me',saveProfile:'Save page details',publishPage:'Publish my page',unpublish:'Make page private',open:'Open public page',privacy:'Your diary is always private. You can choose whether to share your page, videos or achievements.',stats:'My verified activity',tests:'Completed tests',practices:'Completed practices',videos:'Saved videos',shareStats:'Choose the counts visitors may see',shareTests:'Show test count',sharePractices:'Show practice count',shareVideos:'Show saved-video count',saveStats:'Save shared statistics',milestone:'Add achievement',videoTitle:'My videos',noVideos:'No completed videos saved in My Videos yet.',library:'Open My Videos',addVideo:'Add to page privately',feed:'My private feed',feedPrivacy:'🔒 This is your personal, confidential space. Your notes and plans are visible only to you and are never shown on your public page.',write:'Write a plan, note or reflection…',post:'Publish',posted:'Published to your private feed.',publishing:'Publishing…',otherFeed:'My videos and achievements',noPosts:'There are no diary entries yet.',public:'Public',private:'Private',show:'Publish',hide:'Hide',remove:'Delete',edit:'Edit',saveEdit:'Save edit privately',cancel:'Cancel',achievement:'Achievement',video:'Video',postType:'Diary',signingIn:'Connecting to Google…',handleHelp:'3–30 lowercase Latin letters, numbers or hyphens. Changing it changes your page link.'},
@@ -11,7 +12,7 @@ ru:{title:'Моя страница',lead:'Личная страница с ви�
 es:{title:'Mi página',lead:'Tu espacio personal para compartir vídeos, logros y notas.',back:'Perfil',login:'Continuar con Google',guest:'Inicia sesión para crear tu página. Tú decides qué publicar.',retry:'Reintentar',loading:'Cargando…',error:'No se completó la acción. Tus datos privados siguen protegidos.',saved:'Cambios guardados.',name:'Nombre público',handle:'Dirección de página',bio:'Sobre mí',saveProfile:'Guardar perfil',publishPage:'Publicar mi página',unpublish:'Hacer privada',open:'Abrir mi página',privacy:'El diario siempre es privado. Puedes elegir si compartes tu página, vídeos o logros.',stats:'Mi actividad verificada',tests:'Tests completados',practices:'Prácticas terminadas',videos:'Vídeos guardados',shareStats:'Elige las estadísticas visibles',shareTests:'Mostrar tests',sharePractices:'Mostrar prácticas',shareVideos:'Mostrar vídeos',saveStats:'Guardar visibilidad',milestone:'Añadir logro',videoTitle:'Mis vídeos',noVideos:'Aún no hay vídeos guardados y verificados.',library:'Abrir Mis vídeos',addVideo:'Añadir a página en privado',feed:'Mi diario privado',feedPrivacy:'🔒 Este es tu espacio personal y confidencial. Solo tú puedes ver tus notas y planes; nunca aparecen en tu página pública.',write:'Escribe un plan, una nota o una reflexión…',post:'Publicar',posted:'Publicación guardada en tu diario privado.',publishing:'Publicando…',otherFeed:'Mis vídeos y logros',noPosts:'No hay publicaciones todavía.',public:'Público',private:'Privado',show:'Publicar',hide:'Ocultar',remove:'Eliminar',edit:'Editar',saveEdit:'Guardar edición privada',cancel:'Cancelar',achievement:'Logro',video:'Vídeo',postType:'Diario',signingIn:'Conectando con Google…',handleHelp:'3–30 letras latinas minúsculas, números o guiones. Si cambias la dirección, cambia el enlace.'}
 }
 function dateOf(value,locale){try{return new Intl.DateTimeFormat(locale==='ru'?'ru-RU':locale==='es'?'es-ES':'en-CA',{dateStyle:'medium'}).format(new Date(value))}catch{return ''}}
-export default function MyPageClient({locale='en'}){
+export default function MyPageClient({locale='en',ownerMemorySearch=false,ownerMemorySelection=false}){
  const t=C[locale]||C.en
  const cabinetLocale=locale==='es'?'en':locale
  const [status,setStatus]=useState('loading')
@@ -88,6 +89,7 @@ export default function MyPageClient({locale='en'}){
        </div>
       </article>
  return <main className={css.page} data-universal-my-page data-cabinet-theme="daybook">
+  <header className={css.myPageBrand}><Link href={'/'+locale} prefetch={false}><span aria-hidden="true">✦</span>Holistic House</Link><button type="button" data-my-page-inline-help onClick={()=>window.dispatchEvent(new Event('hh:open-ihelp'))} aria-label="iHelp"><span aria-hidden="true">?</span> iHelp</button></header>
   <nav className={css.socialModes} data-profile-mode-switch data-profile-mode-active="live" aria-label={locale==='ru'?'Страницы профиля':locale==='es'?'Páginas del perfil':'Profile pages'}>
     <Link href={'/'+locale+'/my-page'} data-profile-mode="live" prefetch={false} aria-current="page">{locale==='ru'?'Моя страничка':locale==='es'?'Mi página':'My Page'}</Link>
     <Link href={'/'+locale+'/practice'} data-profile-mode="work" prefetch={false}>{locale==='ru'?'Профиль мастера':locale==='es'?'Perfil profesional':'Practitioner profile'}</Link>
@@ -101,8 +103,9 @@ export default function MyPageClient({locale='en'}){
   {notice?<p role="status" className={notice===t.saved?css.notice:css.error}>{notice}</p>:null}
   {status==='ready'&&data?<>
    <ProfilePersonalSummary locale={locale} profile={profile} data={data} busy={busy}
-       onEdit={()=>setEditingProfile(true)}
+       onEdit={()=>{setEditingProfile(true);requestAnimationFrame(()=>document.getElementById('my-page-name')?.scrollIntoView({block:'center'}))}}
        onAddVideo={video=>void perform({action:'addVideo',videoId:video.id,title:video.theme+' · '+video.duration_seconds+'s'})}/>
+   {ownerMemorySearch&&data.accountId?<CoachPersonalMemoryPanel key={data.accountId} accountId={data.accountId} locale={locale} selectionEnabled={ownerMemorySelection}/>:null}
    <p data-my-page-media-library style={{margin:'12px 0'}}>
      <Link href={'/'+locale+'/app/videos?tab=avatars'} className={css.secondary} prefetch={false}>
        {locale==='ru'?'Мои материалы · AI-аватары, видео, фотографии':

@@ -380,6 +380,6 @@ test('committed relay visits preserve authorship across the same protocol and re
  const store=readFileSync(new URL('../lib/app/my-coach-protocol-drafts.js',import.meta.url),'utf8')
  assert.match(ui,/protocolOriginPersonaRef\.current=p\.personaId/)
  assert.match(ui,/personaId:protocolOriginPersonaRef\.current\|\|personaId/)
- assert.match(ui,/item\.relayHandoff===true&&result\.relayHandoff===true/)
+ assert.match(ui,/item\.relayHandoff===true&&result\?\.relayHandoff===true/)
  assert.match(store,/clarityRelayArchiveMatches\(relayBinding,value\.protocol,\{from:old\.protocol\.turns\.length\}\)/)
 })

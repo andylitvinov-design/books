@@ -64,8 +64,8 @@ import {coachDraftListSummary,draftTranscriptPrefix,coachDraftMatchesResume,coac
 import {CLARITY_DAY_ONE_VERSION} from '../lib/coaching/clarity-day-one-scenario.mjs'
 test('greeting list summary never returns a transcript or private profile',()=>{
  const item={id:'draft',revision:3,updatedAt:'2026-11-25T12:00:00Z',courseSessionId:'introductory',protocol:{personaId:'mira',locale:'ru',turns:[{role:'user',content:'private text'}],opening:{name:'private name'}}}
- assert.deepEqual(coachDraftListSummary(item),{id:'draft',revision:3,updatedAt:item.updatedAt,courseSessionId:'introductory',personaId:'mira',locale:'ru',turnCount:1,durationSeconds:null})
- assert.ok(!JSON.stringify(coachDraftListSummary(item)).includes('private'))
+ assert.deepEqual(coachDraftListSummary(item),{id:'draft',revision:3,updatedAt:item.updatedAt,courseSessionId:'introductory',personaId:'mira',locale:'ru',turnCount:1,durationSeconds:null,privateHandoff:true,activeCoachId:'mira'})
+ assert.doesNotMatch(JSON.stringify(coachDraftListSummary(item)),/private text|private name/)
  const route=readFileSync(new URL('../app/api/app/my-coach/draft/route.js',import.meta.url),'utf8')
  const store=readFileSync(new URL('../lib/app/my-coach-protocol-drafts.js',import.meta.url),'utf8')
  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
@@ -211,7 +211,7 @@ test('a bound but unstarted course cannot inherit the legacy clock',()=>{
  assert.equal(result.clarityTime,undefined)
  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
  assert.ok(ui.includes('(result.courseRunId||null)!==(item.courseRunId||null)'))
- assert.ok(ui.includes('result.draft.courseSessionId!==item.courseSessionId'))
+ assert.ok(ui.includes('restored.courseSessionId!==item.courseSessionId'))
 })
 
 
@@ -261,4 +261,26 @@ test('chronological draft recovery preserves an early name without inventing con
  assert.deepEqual(coachOpeningProtocolSnapshot(coachOpeningProgress({turns,locale:'ru',personaId:'mira',...recovered})),opening)
  const damaged=turns.map((row,index)=>index===0?{...row,interrupted:true}:row)
  assert.equal(recoverPrivateOpeningScope({turns:damaged,opening,locale:'ru',personaId:'mira'}).matched,false)
+})
+
+test('ordinary private drafts can move to a different coach without changing archive origin or prior authors',async()=>{
+ const domain=await import('../lib/personal-coaching/protocol-draft.mjs')
+ const original={courseSessionId:'life_direction',protocol:{id:'id',personaId:'mira',startedAt:'start',
+  turns:[{role:'assistant',content:'Original reply',coachId:'mira'}]}}
+ assert.equal(domain.coachDraftListSummary(original).privateHandoff,true)
+ const transferred={...original,privateCoachId:'harry'}
+ assert.equal(domain.coachDraftListSummary(transferred).activeCoachId,'harry')
+ const next={...original.protocol,turns:[...original.protocol.turns,
+  {role:'user',content:'Continue'},{role:'assistant',content:'Follow-up',coachId:'harry'}]}
+ assert.equal(domain.coachPrivateHandoffExtends(transferred,next),true)
+ assert.equal(domain.coachPrivateHandoffExtends(transferred,{...next,turns:[...next.turns.slice(0,-1),{...next.turns.at(-1),coachId:'mira'}]}),false)
+ assert.equal(domain.draftTranscriptPrefix(original.protocol,{...next,personaId:'harry'}),false)
+ assert.equal(domain.coachDraftListSummary({...original,courseSessionId:'clarity_day_1'}).privateHandoff,undefined)
+})
+
+test('thematic non-Clarity gates hand off through the existing server continuation action',async()=>{
+ const {coachCourseHandoffEligible}=await import('../lib/coaching/coach-course-continuity.mjs')
+ assert.equal(coachCourseHandoffEligible('life_direction',{gate:{courseSessionId:'life_direction'}}),true)
+ assert.equal(coachCourseHandoffEligible('life_direction',{gate:{courseSessionId:'other'}}),false)
+ assert.equal(coachCourseHandoffEligible('life_direction',{gate:{courseSessionId:'life_direction'},paused:true}),false)
 })

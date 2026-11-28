@@ -77,7 +77,7 @@ assert.equal(structured.record,null)
 for(const locale of ['ru','en','es']){assert.ok(coachReturningSalutation('Hello Ada.',true,locale).startsWith('Hello Ada. '));assert.equal(coachReturningSalutation('Hello Ada.',false,locale),'Hello Ada.')}
 assert.equal(projectPrivateCoachRecall(null,{...draft,protocol:{...draft.protocol,turns:[{role:'user',content:'I want to rest today'},{role:'user',content:'Remember our previous session'}]}}).lastWords,'I want to rest today')
 assert.ok(storage.includes('hasPreviousProtocol:Boolean(record||draft)'))
-assert.ok(ui.includes('if(saveToAccount&&greetingIdentity.hasPreviousProtocol)'))
+assert.ok(ui.includes('view=greeting-identity&includeContext=true'))
 assert.ok(ui.includes('const livePriorApproved=Boolean(memorySharePrior&&'))
 assert.ok(transport.includes("'X-HH-Account-ID':turn.owner"))
 assert.ok(transport.includes('coachApprovedRecallMatches(data,turn.record)'))

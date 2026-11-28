@@ -1,4 +1,5 @@
 import './coach-private-recall.test.mjs'
+import './my-coach-private-entry-context.test.mjs'
 import './goal-session-scenarios.test.mjs'
 import './my-coach-session-stage-view.test.mjs'
 import {coachCourseProtocolSchema,coachCourseCheckpointGuidance,coachCourseProtocolGuidance,coachCourseProtocolRows,appendCoachCourseFieldReview,normalizeCoachCourseFieldReview} from '../lib/coaching/coach-course-protocol-schema.mjs'
@@ -628,7 +629,7 @@ test('voice Director checkpoint keeps the runtime course preference without trea
  assert.ok(server.includes('geminiLiveThematicCheckpointGuidance(namePrefix,directive,courseHint)'))
  const output=ui.slice(ui.indexOf('  function commitOutput('),ui.indexOf('  function canSendSideband('))
  assert.ok(output.includes("if(!r.interrupted&&!r.contextSentKey){r.history.push({role:'assistant',content:value})"))
- assert.ok(output.includes('onOutputFinal?.(value,{interrupted:r.interrupted,requestedSavedContext:Boolean(r.contextSentKey)})'))
+ assert.ok(output.includes('onOutputFinal?.(value,{interrupted:r.interrupted,requestedSavedContext:Boolean(r.contextSentKey)||Boolean(r.clarityOpeningMemoryStageToken)})'))
 })
 test('review dropdown distinguishes unreviewed and explicitly reopened checkpoints',()=>{
  const ui=readFileSync(new URL('../components/my-coach-course-field-review.jsx',import.meta.url),'utf8')

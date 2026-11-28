@@ -24,7 +24,7 @@ async function handle(request,write){
    if(input.action==='checkpoint'&&Object.keys(input).every(k=>['action','consent','revision','value'].includes(k))){
     await consumeRate(config,{op:'my-coach-draft-checkpoint',actor:actor.id},240,3600)
     result=await saveCoachDraft(config,actor,input)
-   }else if(input.action==='resume'&&Object.keys(input).every(k=>['action','confirmed','id','revision','courseRunId'].includes(k))){
+   }else if(input.action==='resume'&&Object.keys(input).every(k=>['action','confirmed','id','revision','courseRunId','coachId'].includes(k))){
     await consumeRate(config,{op:'my-coach-draft-resume',actor:actor.id},30,3600)
     result={...await resumeCoachDraft(config,actor,input),profileV3Enabled:process.env.HH_MY_COACH_PROFILE_V3_ENABLED==='true',courseGateEnabled:process.env.HH_MY_COACH_COURSE_GATE_ENABLED==='true'}
    }else if(input.action==='discard'&&Object.keys(input).every(k=>['action','confirmed','id'].includes(k))){

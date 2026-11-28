@@ -1133,7 +1133,7 @@ async function handle(request, { params }) {
     }
     if (joined === 'development-goals') {
       if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED', 409)
-      if (method === 'GET') return json(await readDevelopmentGoals(config, actor))
+      if (method === 'GET') return json(await readDevelopmentGoals(config, actor, {includeHistory:new URL(request.url).searchParams.get('history')==='1'}))
       if (method === 'POST') return json(await saveDevelopmentGoals(config, actor, await readBody(request, 8192)))
       throw new AppError('NOT_FOUND', 404)
     }
@@ -1602,7 +1602,7 @@ async function handle(request, { params }) {
         }
         exported.savedSessions=exportedSessions
       }
-      exported.developmentGoals = await readDevelopmentGoals(config, actor)
+      exported.developmentGoals = await readDevelopmentGoals(config, actor, {includeHistory:true})
       exported.labReports = (await listLabReports(config, actor)).reports
       exported.businessCoaching = await readBusinessCoaching(config, actor)
       exported.personalCoaching = await readPersonalCoaching(config, actor)

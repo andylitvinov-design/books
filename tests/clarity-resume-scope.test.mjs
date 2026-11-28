@@ -20,7 +20,7 @@ test('scope is owner-filtered before pagination, exact on resume and passed thro
  assert.ok(store.includes('clarityResumeMatches(binding,input.courseRunId)'))
  assert.ok(route.includes("courseRunId:params.get('courseRunId')"))
  assert.ok(ui.includes('item.courseRunId?{courseRunId:item.courseRunId}'))
- assert.ok(ui.includes("greetingIdentity.status==='loading'||courseRunId"))
+ assert.ok(ui.includes("if(greetingIdentity.status==='loading'||entryMemoryGrant?.status==='loading'||courseRunId)return"))
  assert.ok(read('components/app/clarity-run-catalog.jsx').includes("clarityCoachHref('/'+locale+'/my-coach',day.day,run.id)"))
 })
 
@@ -59,7 +59,8 @@ test('each My Page Express card opens its own saved run and logical day',()=>{
 test('restored server-ended session opens results without restarting or silently approving a report',()=>{
  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
  const restore=ui.slice(ui.indexOf('async function restorePrivateDraft('),ui.indexOf('function beginRestoredConversation('))
- assert.ok(restore.includes('result?.draft?.id!==item.id'))
+ assert.ok(restore.includes('const restored=result?.draft'))
+ assert.ok(restore.includes('if(!response.ok||restored?.id!==item.id||'))
  assert.ok(restore.includes('(result.courseRunId||null)!==(item.courseRunId||null)'))
  assert.match(restore,/if\(timedEnd\)\{\s*clarityTimeLimit\.current=true\s*setResumePending\(false\);setPaused\(true\)\s*setProtocolFinishedAt\(new Date\(\)\.toISOString\(\)\);setProtocolEditing\(false\);setProtocolOpen\(true\)/)
  assert.ok(restore.includes('if(!timedEnd&&thematic?.step.crossCoach&&!thematic.step.paused)toggleComposer()'))

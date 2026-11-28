@@ -11,6 +11,7 @@ import {
   GeminiLiveReplyWatchdog,geminiLiveCanResumeStalledReply,
   GeminiLivePcmResampler,geminiLiveAudioRms,geminiLivePcmMessage,base64ToPcmFloats,
   geminiLiveSetupMessage,geminiLiveSetupForToken,geminiLiveSocketUrl,
+  geminiLiveContextMessage,geminiLiveStartMessage,geminiLiveContinueMessage,
   readGeminiLiveServerMessage,appendGeminiLiveTranscript,
 } from '../lib/coaching/gemini-live-transport.mjs'
 
@@ -521,6 +522,52 @@ test('after an abrupt drop outside a checkpoint, a resumed connection surfaces t
   assert.equal(h.events.notices.at(-1),'resumed from previous checkpoint')
   assert.equal(h.events.phases.at(-1),'listening')
   h.assertLive()
+})
+
+test('approved context precedes the first provider cue and early microphone audio',async()=>{
+  let resolve
+  const context=new Promise(r=>{resolve=r})
+  const h=session(48000,{loadApprovedContext:()=>context,
+    geminiLiveContextMessage,geminiLiveStartMessage,geminiLiveContinueMessage,
+    scheduleContextFreshnessCheck:()=>{}})
+  h.r.introSent=false
+  h.propsRef.current.liveContextAccess='signed-synthetic-grant'
+  h.handleAudio(h.r,JSON.stringify({setupComplete:{}}))
+  h.handleAudio(h.r,JSON.stringify({setupComplete:{}}))
+  h.capture(h.r,new Float32Array(1536).fill(.2))
+  assert.equal(h.sent.length,0)
+  const note='CLIENT-APPROVED REFERENCE DATA (synthetic)'
+  resolve({note,fingerprint:'a'.repeat(64)})
+  await settleResume()
+  assert.deepEqual(h.sent,[geminiLiveStartMessage(note)])
+  assert.equal(h.sent[0].clientContent.turns[0].parts[0].text,note)
+  assert.equal(h.sent[0].clientContent.turnComplete,true)
+  assert.equal(h.r.contextSentFingerprint,'a'.repeat(64))
+})
+
+test('changing the approved key while it loads discards the old context and opens neutrally',async()=>{
+  let resolve
+  const h=session(48000,{loadApprovedContext:()=>new Promise(r=>{resolve=r}),
+    geminiLiveContextMessage,geminiLiveStartMessage,geminiLiveContinueMessage,
+    scheduleContextFreshnessCheck:()=>assert.fail('discarded context has no freshness timer')})
+  h.r.introSent=false
+  h.propsRef.current.liveContextAccess='previous-grant'
+  h.handleAudio(h.r,JSON.stringify({setupComplete:{}}))
+  h.propsRef.current.liveContextAccess=''
+  resolve({note:'CLIENT-APPROVED REFERENCE DATA (revoked)',fingerprint:'a'.repeat(64)})
+  await settleResume()
+  assert.deepEqual(h.sent,[geminiLiveStartMessage()])
+})
+
+test('an unavailable approved snapshot produces only a neutral first cue',async()=>{
+  const h=session(48000,{loadApprovedContext:async()=>undefined,
+    geminiLiveContextMessage,geminiLiveStartMessage,geminiLiveContinueMessage,
+    scheduleContextFreshnessCheck:()=>assert.fail('no snapshot was sent')})
+  h.r.introSent=false
+  h.propsRef.current.liveContextAccess='signed-synthetic-grant'
+  h.handleAudio(h.r,JSON.stringify({setupComplete:{}}))
+  await settleResume()
+  assert.deepEqual(h.sent,[geminiLiveStartMessage()])
 })
 
 test('socket rollover drains a completed reply and resumes the original credential and handle',()=>{
