@@ -64,3 +64,13 @@ test('optional review has independent default-off server gate',()=>{
  assert.equal(isCoachSpeechReviewRequest({purpose:'my_coach',filename:'dictation.wav'}),false)
  assert.equal(isCoachSpeechReviewRequest({purpose:'ali_chat',filename:'coach-review.wav',review:'yes'}),false)
 })
+
+import {readFileSync} from 'node:fs'
+test('typed input retires the review queue before committing the new turn',()=>{
+ const live=readFileSync(new URL('../components/my-coach-gemini-live.jsx',import.meta.url),'utf8')
+ const start=live.indexOf('r.inputText=\'\'\n    const previous=r.history.slice(-10)')
+ assert.ok(start>=0)
+ const end=live.indexOf("onInputFinal?.(body,{source:'typed'})",start)
+ assert.ok(end>start)
+ assert.match(live.slice(start,end),/speechReviewBuffer\?\.clear\(\);r\.speechReviewQueue\?\.cancel\(\);r\.speechReviewQueue=null/)
+})

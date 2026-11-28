@@ -1427,7 +1427,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     const previous=r.history.slice(-10)
     r.history.push({role:'user',content:body})
     r.history=r.history.slice(-20)
-    r.speechReviewBuffer?.clear()
+    // A typed turn supersedes pending acoustic review; no late candidate may
+    // attach to the new dialogue or upload after the transport changes input.
+    r.speechReviewBuffer?.clear();r.speechReviewQueue?.cancel();r.speechReviewQueue=null
     if(propsRef.current.onInputFinal?.(body,{source:'typed'})===true){stop();return true}
     r.openingHistory.push(body)
     r.openingHistory=r.openingHistory.slice(0,33)
