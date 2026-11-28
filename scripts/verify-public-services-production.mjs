@@ -143,6 +143,18 @@ try {
   if(width===390) await checkInlineHelp(page,"[data-shamanica-ihelp-trigger]");
   const shelves=section.locator("[data-business-cabinet-shelves]");
   await expect(shelves).toHaveAttribute("data-expanded","false");
+  // The six classic service cards now sit inside a native disclosure.
+  // Exercise the real user interaction before checking artwork and geometry.
+  const openServiceShelves = async () => {
+    const drawer = shelves.locator("details").filter({has: page.locator("[data-business-shelf]")});
+    await expect(drawer).toHaveCount(1);
+    await expect(drawer).not.toHaveAttribute("open", "");
+    await expect(drawer.locator("[data-business-shelf]:visible")).toHaveCount(0);
+    await drawer.locator(":scope > summary").click();
+    await expect(drawer).toHaveAttribute("open", "");
+    await expect(drawer.locator("[data-business-shelf]:visible")).toHaveCount(6);
+  };
+  await openServiceShelves();
   await expect(shelves.locator("[data-business-shelf]")).toHaveCount(6);
   const artwork = shelves.locator('[data-business-shelf] > span[aria-hidden="true"]');
   await expect(artwork).toHaveCount(6);
@@ -198,6 +210,7 @@ try {
   }
   await shelves.locator("[data-business-back-to-shelves]").click();
   await expect(shelves).toHaveAttribute("data-expanded","false");
+  await openServiceShelves();
   await shelves.locator('[data-business-shelf="strategy"]').click();
   await expect(shelves.locator('[data-business-second-level="strategy"] [data-business-subservice]')).toHaveCount(4);
   await expect(shelves.locator('[data-business-get-details="strategy"]')).toHaveCount(1);
