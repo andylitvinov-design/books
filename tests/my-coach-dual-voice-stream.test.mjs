@@ -1,12 +1,18 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {coachingGroqConfig,GROQ_COACH_MODEL} from '../lib/coaching/groq-coach-provider.mjs'
+import {coachingGroqConfig,frameGroqCoachMessages,GROQ_COACH_MODEL} from '../lib/coaching/groq-coach-provider.mjs'
 import {coachStreamingMessages,verifiedGroqCoachingStream,
   readGroqTextStream,COACH_GROQ_STREAM_MAX} from '../lib/coaching/groq-coach-stream.mjs'
 import {readCoachTurnStream} from '../lib/coaching/coach-stream-client.mjs'
 import {geminiCoachLiveConfig,createGeminiCoachEphemeralToken,
   resolveCoachVoiceEngine} from '../lib/coaching/gemini-live-provider.mjs'
+
+import { COACH_PERSONAS, COACH_LOCALES } from '../lib/coaching/persona-registry.mjs'
+import { COACH_COURSE_SESSIONS, COACH_PROGRAM_SESSIONS, INTRODUCTORY_COACH_SESSION_ID } from '../lib/coaching/coach-course-journey.mjs'
+import { normalizeGenerativeCoachInput } from '../lib/coaching/generative-persona.mjs'
+import { conversationalCoachMessages } from '../lib/coaching/conversational-persona.mjs'
+import { coachSessionDirective } from '../lib/coaching/coach-session-director.mjs'
 
 const groqKey='gsk_'+('x'.repeat(38))
 const approved={
@@ -50,6 +56,63 @@ test('Groq streaming changes format ONLY; server persona/Director context is sti
   assert.equal(prepared[2].content,roleMessages[2].content)
   assert.deepEqual(roleMessages[0].content.includes('Return ONLY JSON'),true)
   assert.throws(()=>coachStreamingMessages([{role:'user',content:'bypass'}]),{message:'GROQ_COACH_REQUEST_INVALID'})
+})
+
+test('oversized server instructions retain their text and order inside the existing Groq bounds', () => {
+  const persona = 'First coaching instruction.\n'.repeat(450)
+  const director = 'Director must use the reviewed stage.\n'.repeat(400)
+  const user = { role: 'user', content: 'Quiero aclarar mi objetivo.' }
+  const messages = [
+    { role: 'system', content: persona + 'Return ONLY JSON with message, planSuggestion, evidenceQuote and clientEvidence.' },
+    { role: 'system', content: director },
+    user,
+  ]
+  const prepared = coachStreamingMessages(messages)
+  assert.equal(prepared.at(-1), user)
+  assert.ok(prepared.length <= 16 && prepared.every(message => message.content.length <= 12000))
+  const systemText = prepared.slice(0, -1).map(message => message.content).join('')
+  assert.ok(systemText.startsWith(persona))
+  assert.ok(systemText.endsWith(director))
+  assert.match(systemText, /STREAMED SPEECH OUTPUT/)
+  assert.doesNotMatch(systemText, /Return ONLY JSON/)
+  assert.throws(() => coachStreamingMessages([...messages.slice(0, -1), {
+    ...user, content: 'x'.repeat(12001),
+  }]), /GROQ_COACH_REQUEST_INVALID/)
+  assert.throws(() => coachStreamingMessages([...messages, ...Array(13).fill(user)]), /GROQ_COACH_REQUEST_INVALID/)
+})
+
+test('registered coaches and course prompts fit the existing Groq text and stream framing', () => {
+  const clientTurns = {
+    en: 'I want to organize my work week and make time for breaks.',
+    ru: 'Я хочу спланировать рабочую неделю и найти время для отдыха.',
+    es: 'Quiero organizar mi semana laboral y tener tiempo para descansar.',
+  }
+  const sessions = [undefined, INTRODUCTORY_COACH_SESSION_ID,
+    ...[...COACH_COURSE_SESSIONS, ...COACH_PROGRAM_SESSIONS].map(session => session.id)]
+  for (const { id: personaId } of COACH_PERSONAS) {
+    for (const locale of COACH_LOCALES) {
+      for (const courseSessionId of sessions) {
+        const { input, persona } = normalizeGenerativeCoachInput({
+          personaId, locale, courseSessionId, consent: true, turns: [],
+          message: clientTurns[locale], voiceTurn: true,
+        })
+        const directive = coachSessionDirective(input, persona)
+        const messages = conversationalCoachMessages(input, persona, directive.methodId, directive.stage)
+        const text = frameGroqCoachMessages(messages)
+        const stream = coachStreamingMessages(messages)
+        for (const packet of [text, stream]) {
+          assert.ok(packet.length <= 16)
+          assert.ok(packet.every(message => message.content.length <= 12000))
+          assert.equal(packet.at(-1).content, clientTurns[locale])
+        }
+        assert.equal(text.map(message => message.content).join(''), messages.map(message => message.content).join(''))
+        const streamPolicy = stream.slice(0, -1).map(message => message.content).join('')
+        assert.ok(streamPolicy.includes(messages[1].content))
+        assert.match(streamPolicy, /STREAMED SPEECH OUTPUT/)
+        assert.doesNotMatch(streamPolicy, /Return ONLY JSON with message, planSuggestion/)
+      }
+    }
+  }
 })
 
 test('one model call emits RU/EN progressive tokens, no JSON schema, no tool calls, no second billing',async()=>{
