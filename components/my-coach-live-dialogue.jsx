@@ -1298,7 +1298,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       // Explicit discard tombstones the old ID. A later voluntary manual
       // report is a new save decision, never a retry of the erased record.
       protocolSaveSnapshotRef.current=null
-      restoreSpeechAmendments([]);setSpeechReviews([])
+      restoreSpeechAmendments([]);setSpeechReviews([]);setLastSpeechReviewModel('')
       setProtocolSaveLocked(false)
       courseGateRef.current=null;courseGateAttemptRef.current=null;setCourseGate(null);setCourseGateError(false);setCourseFieldReview(null)
       setAutoSaveStatus('discarded')
@@ -2218,7 +2218,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       if(!Number.isInteger(result.draft.revision)||result.draft.revision<1||result.draft.revision>9999)throw Error('RESUME_CONFLICT')
       recallRequestRef.current?.abort();setPrivateRecall(null)
       protocolIdRef.current=p.id;protocolStartedRef.current=p.startedAt
-      restoreSpeechAmendments(p.speechAmendments);setSpeechReviews([])
+      restoreSpeechAmendments(p.speechAmendments);setSpeechReviews([]);setLastSpeechReviewModel('')
       initialDraftRevision.current=result.draft.revision
       restoredOpeningScope.current=recoverPrivateOpeningScope(p)
       restoredMethod.current=p.methodId
@@ -2452,7 +2452,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             onPrivateGreeting={capturePrivateLiveSalutation}
             onPrivateRecallRequest={handlePrivateLiveRecall}
             onUnconfirmedInput={text=>setDraft(previous=>previous.trim()?previous:text)}
-            onSessionStart={()=>{setGeminiLiveConsent(true);setSessionClockStarted(true);setIntroComplete(true)}}
+            onSessionStart={()=>{setLastSpeechReviewModel('');setGeminiLiveConsent(true);setSessionClockStarted(true);setIntroComplete(true)}}
             onVoiceStateChange={handleVoiceStateChange}
             onMicLevel={level=>{
               reactionActivity.observe(level)
