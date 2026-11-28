@@ -162,3 +162,24 @@ test('Basic implementation fences output and uses same-mic handoff and reviewed 
  const held=ui.slice(ui.indexOf('function holdRecognizedDraft(value)'),ui.indexOf('function startListening(){'))
  assert.ok(held.includes('uncertainSpeechDraftRef.current={visible:candidate,prior:draftAtStartRef.current}'))
 })
+
+import {useCoachLargeV3} from '../lib/coaching/coach-stt-model.mjs'
+test('Large V3 is independently free-gated and cannot change Ali or Studio',()=>{
+  const review={purpose:'my_coach',textOnly:true,fileName:'coach-review.wav'}
+  const basic={...review,fileName:'coach-turn.wav'}
+  assert.equal(useCoachLargeV3(review),false)
+  assert.equal(useCoachLargeV3({...review,freeConfirmed:true}),false)
+  assert.equal(useCoachLargeV3({...review,freeConfirmed:'true'}),true)
+  assert.equal(useCoachLargeV3({...basic,freeConfirmed:'true'}),false)
+  assert.equal(useCoachLargeV3({...basic,basicEnabled:'true'}),false)
+  assert.equal(useCoachLargeV3({...basic,freeConfirmed:'true',basicEnabled:'true'}),true)
+  assert.equal(useCoachLargeV3({...review,purpose:'ali_chat',freeConfirmed:'true',basicEnabled:'true'}),false)
+  assert.equal(useCoachLargeV3({...review,purpose:null,freeConfirmed:'true',basicEnabled:'true'}),false)
+  assert.equal(useCoachLargeV3({...review,textOnly:false,freeConfirmed:'true'}),false)
+  const api=read('app/api/holistic-support/audio-storyboard/route.js')
+  assert.ok(api.indexOf('HH_AUDIO_STT_FREE_CONFIRMED')<api.indexOf('if(useCoachLargeV3('))
+  assert.ok(api.indexOf('createRequestAuth(request,config).verified()')<api.indexOf('if(useCoachLargeV3('))
+  assert.ok(api.includes('multipart.set("model","whisper-large-v3")'))
+  assert.ok(api.includes('freeConfirmed:process.env.HH_MY_COACH_STT_LARGE_V3_FREE_CONFIRMED'))
+  assert.ok(api.includes('basicEnabled:process.env.HH_MY_COACH_STT_LARGE_V3_BASIC_ENABLED'))
+})
