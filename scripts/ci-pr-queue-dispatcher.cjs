@@ -10,6 +10,7 @@ const {WORKFLOWS,admission,snapshot,verifiedGhostRepairCapacity,
  =require('./ci-pr-capacity.cjs');
 const {repairMode,safeFiles,hasVerifiedSourceHandoff,verifiedCoreCodeFailure}=require('./ci-pr-repair-worker.cjs');
 const {trustedWorkerWake,trustedControlPush}=require('./ci-pr-commander-pr-completion.cjs');
+const {trustedEvent:trustedCoreSlotWake}=require('./ci-pr-slot-wakeup.cjs');
 const {eligibleMachineTruncation}=require('./ci-pr-manual-resume.cjs');
 const {sourceRepairBudget}=require('./ci-pr-autonomous-repair-budget.cjs');
 const {safeSourcePath: safeFreeSourcePath,
@@ -142,7 +143,7 @@ function trustedContext(context){
   const trustedWorker=w?.name!=='HH PR core release gate' &&
     ['workflow_dispatch','schedule'].includes(w?.event);
   return !!(w&&RELEVANT.has(w.name)&&w.status==='completed'&&
-    (verifiedCoreFailure||verifiedQualityFailure||trustedWorker)&&
+    (verifiedCoreFailure||verifiedQualityFailure||trustedWorker||trustedCoreSlotWake(context))&&
     w.repository?.full_name===REPO&&
     (!w.head_repository?.full_name||w.head_repository.full_name===REPO));
  }
@@ -454,6 +455,12 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    .addHeading('HH Control Tower 2.0 — queue dispatch')
    .addCodeBlock(JSON.stringify(summary,null,2)).write();return summary;};
  if(!trustedContext(context)){summary.reason='UNTRUSTED_EVENT';return finish();}
+ // Green Core is only a global capacity signal; it must never provide
+ // source-specific evidence or act as a signed owner command.
+ if(trustedCoreSlotWake(context)&&(focusPrNumber!==null||focusPrSnapshot!==null||
+    inventorySnapshot!==null||watchdogEvidence!==null||manualTarget!==null||ownerProof!==null)){
+  summary.reason='CORE_SUCCESS_REFILL_MUST_USE_LIVE_QUEUE';return finish();
+ }
  if(manualTarget!==null&&!validOwnerRepairTarget(context,manualTarget,ownerProof)){
   summary.reason='UNTRUSTED_OWNER_TARGET';return finish();
  }
