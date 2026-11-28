@@ -142,6 +142,41 @@ function nativeCronEvidence(source,at){
  return {observed_at:at,watchdog:out.watchdog,ci:out.ci,
    watchdog_last:last('watchdog'),ci_last:last('ci')};
 }
+// Preserve the current dispatcher's bounded census in the existing public
+// receipt. Missing counts are unknown, not zero. This is diagnostic evidence,
+// never authority to start a worker; exact task leases and admission still apply.
+function capacityObservation(report){
+ const raw=report.capacity;
+ const reason=/^CAPACITY_UNVERIFIED: ([A-Z][A-Z0-9_]{0,79})$/.exec(report.capacityReason||'')?.[1]||null;
+ const count=value=>Number.isSafeInteger(value)&&value>=0?value:null;
+ const allowed=new Set(['VERIFIED','BOUNDED_PARTIAL','GHOST_409_ONE_REPAIR',
+  'GHOST_STALE_MERGED_ONE_REPAIR','COUNT_ONLY_OVER_PAGE_LIMIT',
+  'COUNT_SATURATED_WITH_BOUNDED_GHOST_HINTS','SATURATED_UNVERIFIED']);
+ const confidence=allowed.has(raw?.inventoryConfidence)?raw.inventoryConfidence:null;
+ const observed=raw?.known===true&&['VERIFIED','BOUNDED_PARTIAL',
+  'GHOST_409_ONE_REPAIR','GHOST_STALE_MERGED_ONE_REPAIR'].includes(confidence);
+ const saturated=raw?.known===false&&reason==='RUN_CAPACITY_SATURATED';
+ const statuses=new Set(['ACTIVE','QUEUED','BOTH','CAPACITY_LIMIT']);
+ const active=count(raw?.activeRuns),queued=count(raw?.queuedRuns);
+ if(!(observed||saturated)||active===null||queued===null)
+  return {observed_at:report.checkedAt,status:'UNVERIFIED',reason_code:reason,
+   inventory_confidence:null,active_runs:null,queued_runs:null,running_jobs:null,
+   queued_jobs:null,core_queued_runs:null,core_queued_jobs:null,
+   unknown_active_runs:null,unknown_queued_runs:null,verified_terminal_overhang_runs:null,
+   conservative_job_pressure:null,saturated_by:null};
+ return {observed_at:report.checkedAt,status:saturated?'SATURATED':'OBSERVED',
+  reason_code:reason,inventory_confidence:confidence,
+  active_runs:active,queued_runs:queued,
+  running_jobs:observed?count(raw.runningJobs):null,
+  queued_jobs:observed?count(raw.queuedJobs):null,
+  core_queued_runs:observed?count(raw.coreQueuedRuns):null,
+  core_queued_jobs:observed?count(raw.coreQueuedJobs):null,
+  unknown_active_runs:observed?count(raw.unknownActiveRuns):null,
+  unknown_queued_runs:observed?count(raw.unknownQueuedRuns):null,
+  verified_terminal_overhang_runs:observed?count(raw.verifiedTerminalOverhangRuns):null,
+  conservative_job_pressure:observed?count(raw.conservativeJobPressure):null,
+  saturated_by:saturated&&statuses.has(raw.saturatedBy)?raw.saturatedBy:null};
+}
 function buildMonitorSnapshot(report,context,watchdogLiveness=null){
   if(report?.schema!=='HH_CONTROL_DISPATCH_V1'||report.dryRun!==false||
      !Number.isFinite(Date.parse(report.checkedAt||''))||
@@ -259,6 +294,7 @@ function buildMonitorSnapshot(report,context,watchdogLiveness=null){
     watchdog_sample_status:watchdogSampleStatus,watchdog_sample:watchdogSample,
     api_budget:apiBudget,ci_wake_handoff:ciWakeHandoff,
     native_cron:nativeCronEvidence(watchdogLiveness,report.checkedAt),
+    capacity_observation:capacityObservation(report),
     blocked_reasons:blocked,
     blocked_examples:blockedExamples,
     reason:typeof report.reason==='string'?report.reason.slice(0,100):null
@@ -280,6 +316,7 @@ function renderSnapshot(snapshot){
   return [MARKER,'## Watchdog direct handoff — public snapshot',
     'CI wake timing comes from authenticated exact-task receipt timestamps in the bounded inspected CI sample, not a global PR cohort. Missing duration is null, not zero; a wake receipt does not prove Core runner execution.',
     'HTTP dispatch acceptance is NOT execution. worker_dispatches counts only trusted exact-task RUNNER_STARTED receipts started within the preceding 15 minutes and observed in the sampled sweep; it is not HTTP dispatch acceptance nor historical all-time starts. NO_ACTIONABLE_PR only means no eligible automated dispatch, NOT no blocked PRs. watchdog_sample is bounded deep-inspection evidence with overlapping categories; verified_blocked_lower_bound uses MAX, never SUM. blocker_progress tracks only exact-HEAD Watchdog cases sampled on prior verified sweeps: uninspected is NOT resolved, head change is NOT a fix, CI failure is NOT all required checks, absent LIVE proof is never success. backlog_label_hints are overlapping label-only evidence, NOT verified root causes. api_budget.tracked_requests covers instrumented calls in this run, NOT total user-hour requests. Source publication and LIVE require separate proof.',
+    'capacity_observation is the bounded dispatcher census for this run only. Missing or uninspected counts are null; observed capacity is not permission to dispatch. Saturated counts are not job counts.',
     // Compact serialization preserves all exact PR timestamps within the existing
     // 58k public issue body budget; pretty JSON previously evicted the census.
     '',fence+'json',JSON.stringify(snapshot),fence,'',

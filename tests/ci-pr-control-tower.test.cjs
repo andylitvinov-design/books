@@ -2935,3 +2935,43 @@ test('only real PR work or a core-control change launches extra orchestrator Act
  assert.match(watchdog,/^  reactivate-schedules:/m,
   'trusted schedule repair remains reachable from source push');
 });
+
+test('public monitor preserves verified capacity and distinguishes count-only saturation from jobs',()=>{
+ const {buildMonitorSnapshot,parseExisting,renderSnapshot}=require('../scripts/ci-pr-monitor-feed.cjs');
+ const base={schema:'HH_CONTROL_DISPATCH_V1',dryRun:false,checkedAt:new Date(NOW).toISOString(),
+  discovered:117,production:109,actionable:55,candidates:7,inspected:7,
+  dispatchAccepted:0,runnerStartedConfirmed:0,blocked:{ALREADY_HANDLED:6},
+  reason:'CAPACITY_UNVERIFIED: RUN_CAPACITY_SATURATED'};
+ const ctx={repo:{owner:'andylitvinov-design',repo:'books'},
+  ref:'refs/heads/codex/bootstrap-books',runId:12345,sha:SHA,eventName:'workflow_dispatch'};
+ const saturated=buildMonitorSnapshot({...base,capacityReason:base.reason,capacity:{
+  known:false,activeRuns:23,queuedRuns:111,inventoryConfidence:'COUNT_ONLY_OVER_PAGE_LIMIT',
+  saturatedBy:'QUEUED',safeToDispatch:false,runningJobs:0}},ctx);
+ const c=saturated.capacity_observation;
+ assert.equal(c.status,'SATURATED');assert.equal(c.active_runs,23);
+ assert.equal(c.queued_runs,111);assert.equal(c.running_jobs,null);
+ assert.equal(c.core_queued_runs,null);assert.equal(c.saturated_by,'QUEUED');
+ assert.equal(c.reason_code,'RUN_CAPACITY_SATURATED');
+ assert.deepEqual(parseExisting(renderSnapshot(saturated)).capacity_observation,c);
+ const observed=buildMonitorSnapshot({...base,capacity:{
+  known:true,activeRuns:9,queuedRuns:0,runningJobs:7,queuedJobs:0,
+  coreQueuedRuns:0,coreQueuedJobs:0,verifiedTerminalOverhangRuns:2,
+  inventoryConfidence:'VERIFIED',unknownActiveRuns:0,unknownQueuedRuns:0,
+  conservativeJobPressure:7}},ctx).capacity_observation;
+ assert.equal(observed.status,'OBSERVED');assert.equal(observed.queued_runs,0);
+ assert.equal(observed.running_jobs,7);assert.equal(observed.verified_terminal_overhang_runs,2);
+ assert.equal(observed.core_queued_runs,0);assert.equal(observed.unknown_queued_runs,0);
+ const partial=buildMonitorSnapshot({...base,capacity:{known:true,activeRuns:9,queuedRuns:0,
+  inventoryConfidence:'BOUNDED_PARTIAL'}},ctx).capacity_observation;
+ assert.equal(partial.inventory_confidence,'BOUNDED_PARTIAL');assert.equal(partial.running_jobs,null);
+ const absent=buildMonitorSnapshot(base,ctx).capacity_observation;
+ assert.equal(absent.status,'UNVERIFIED');assert.equal(absent.active_runs,null);
+ const malformed=buildMonitorSnapshot({...base,capacity:{known:true,activeRuns:-1,
+  queuedRuns:0,inventoryConfidence:'VERIFIED'}},ctx).capacity_observation;
+ assert.equal(malformed.status,'UNVERIFIED');assert.equal(malformed.queued_runs,null);
+ const untrusted=buildMonitorSnapshot({...base,capacityReason:'CAPACITY_UNVERIFIED: arbitrary error detail',
+  capacity:{known:true,activeRuns:1,queuedRuns:2,inventoryConfidence:'unknown'}},ctx).capacity_observation;
+ assert.equal(untrusted.status,'UNVERIFIED');assert.equal(untrusted.reason_code,null);
+ assert.equal(untrusted.inventory_confidence,null);
+ assert.ok(!Object.hasOwn(observed,'safe_to_dispatch'),'diagnostics grant no admission authority');
+});

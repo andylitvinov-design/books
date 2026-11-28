@@ -702,11 +702,14 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
  if(quota.state.paused){summary.reason='API_PAUSED_CAPACITY';return finish();}
  if(!capacity?.known)capacityReason||='CAPACITY_UNVERIFIED: '+(capacity?.reason||'unknown');
  summary.capacityReason=capacityReason;
- if(capacity?.known)summary.capacity={activeRuns:capacity.activeRuns,queuedRuns:capacity.queuedRuns,
+ if(capacity?.known)summary.capacity={known:true,activeRuns:capacity.activeRuns,queuedRuns:capacity.queuedRuns,
   runningJobs:capacity.runningJobs,queuedJobs:capacity.queuedJobs,
+  coreQueuedRuns:capacity.coreQueuedRuns??null,
+  coreQueuedJobs:capacity.coreQueuedJobs??null,
   inventoryConfidence:capacity.inventoryConfidence||'VERIFIED',
-  unknownActiveRuns:capacity.unknownActiveRuns||0,
-  unknownQueuedRuns:capacity.unknownQueuedRuns||0,
+  unknownActiveRuns:capacity.unknownActiveRuns??null,
+  unknownQueuedRuns:capacity.unknownQueuedRuns??null,
+  verifiedTerminalOverhangRuns:capacity.verifiedTerminalOverhangRuns??null,
   conservativeJobPressure:capacity.conservativeJobPressure??null};
  else if(capacity?.reason==='RUN_CAPACITY_SATURATED'){
   // Preserve exact GitHub counts for the current Monitor snapshot. An
