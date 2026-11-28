@@ -14,6 +14,9 @@ async function handle(request,{params}) {
     const access=await authorizeCabinetRequest(selector)
     if(!access) return privateJson({error:'SESSION_UNAVAILABLE'},404)
     const session=await getPublishedClientSession(config,store,access.client.id,sessionId)
+    // Original PDF reports are only available through the verified saved account.
+    // A legacy full-cabinet capability must not authorize any report asset.
+    if(session.reportFormat==='pdf')return privateJson({error:'SESSION_UNAVAILABLE'},404)
     const library=session.plan?.materials?.some(
       item=>item.id===assetId&&['image','video'].includes(item.kind))
     if(library){

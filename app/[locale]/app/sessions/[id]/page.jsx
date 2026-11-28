@@ -6,7 +6,7 @@ import {getAppConfig} from '@/lib/app/config'
 import {createRequestAuth} from '@/lib/app/session'
 import {getPrescriptionStore} from '@/lib/prescriptions/store'
 import {readSavedSession} from '@/lib/app/client-session-save-flow'
-import {getPublishedSessionReport} from '@/lib/clients/session-delivery-service'
+import {getPublishedSessionReport,getPublishedClientSession} from '@/lib/clients/session-delivery-service'
 import {getClientPrescription} from '@/lib/prescriptions/service'
 import {getClientPaymentDocument} from '@/lib/documents/payment'
 import {PaymentDocument} from '@/components/payment-document'
@@ -28,7 +28,7 @@ const valid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f
 export default async function SavedSessionPage({params}){
   const {locale,id}=await params
   if(!['en','ru'].includes(locale)||!valid.test(id||''))notFound()
-  let saved,record=null,clientName='',verifiedGoalId=null
+  let saved,record=null,clientName='',verifiedGoalId=null,pdfPlacement=null
   try{
     const config=getAppConfig()
     const actor=await createRequestAuth({cookies:await cookies()},config).verified()
@@ -38,7 +38,11 @@ export default async function SavedSessionPage({params}){
       record=await getPublishedSessionReport(config,store,saved.source.clientId,saved.source.sessionId,{expectedSource:saved.expectedSource})
       if(record?.clientId!==saved.source.clientId||record?.status!=='active')record=null
     }
-    const assigned=normalizeReportPlacement(record?.programPlacement)
+    if(saved.session.reportFormat==='pdf'){
+      const pdfSession=await getPublishedClientSession(config,store,saved.source.clientId,saved.source.sessionId,{expectedSource:saved.expectedSource})
+      pdfPlacement=pdfSession.reportFormat==='pdf'?pdfSession.programPlacement:null
+    }
+    const assigned=normalizeReportPlacement(record?.programPlacement??pdfPlacement)
     if(assigned?.program==='goal'&&assigned.goalId)verifiedGoalId=await verifyReportGoal(config,actor,assigned.goalId)
     const client=await store?.findClientById(saved.source.clientId)
     clientName=client?.fullName||''
@@ -56,7 +60,7 @@ export default async function SavedSessionPage({params}){
     }
     throw error
   }
-  const placement=normalizeReportPlacement(record?.programPlacement)
+  const placement=normalizeReportPlacement(record?.programPlacement??pdfPlacement)
   const payment=record?.kind==='payment'
   const doc=record ? payment?getClientPaymentDocument(record,locale):getClientPrescription(record,locale):null
   return <>

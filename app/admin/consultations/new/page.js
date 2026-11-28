@@ -12,7 +12,8 @@ import { ConsultationForm } from '@/components/consultation-form'
 import { NewReportMaterials } from '@/components/new-report-materials'
 import { getRecommendedTestOptions } from '@/lib/consultations/recommended-tests'
 import { PrescriptionAdminHeader } from '@/components/prescription-admin-header'
-import { createConsultationAction } from '../actions'
+import { createConsultationAction, createPdfReportSessionAction } from '../actions'
+import { PdfReportStartForm } from '@/components/pdf-report-start-form'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'New consultation', robots: { index: false, follow: false } }
@@ -38,6 +39,23 @@ export default async function NewConsultation({ searchParams }) {
     : undefined
   const ru = (await cookies()).get(uiLocaleCookie)?.value === 'ru'
 
+  const pdf = params?.format === 'pdf' && deliveryEnabled()
+  const typeHref = format => '/admin/consultations/new?' + new URLSearchParams({
+    ...(selectedClientId && options.some(c=>c.id===selectedClientId)?{clientId:selectedClientId}:{}), format,
+  }).toString()
+  const formatSwitch = deliveryEnabled() && <nav aria-label={ru?'Тип отчёта':'Report type'} style={{display:'flex',gap:10,flexWrap:'wrap',margin:'16px 0'}}>
+    {[['homeopathy',ru?'Гомеопатический отчёт':'Homeopathic report'],['pdf',ru?'Готовый PDF-отчёт':'Upload a PDF report']].map(([key,label])=>
+      <Link key={key} href={typeHref(key)} prefetch={false} aria-current={(pdf?'pdf':'homeopathy')===key?'page':undefined}
+        style={{flex:'1 1 200px',padding:'14px 16px',borderRadius:12,border:'1px solid #cbd9d8',textAlign:'center',fontWeight:700,
+          background:(pdf?'pdf':'homeopathy')===key?'#204d51':'#fff',color:(pdf?'pdf':'homeopathy')===key?'#fff':'#204d51'}}>{label}</Link>)}
+  </nav>
+  if(pdf) return <main className="prescription-admin-shell consultation-new-shell consultation-studio-shell">
+    <PrescriptionAdminHeader title={{ru:'Новый отчёт',en:'New report'}}
+      description={{ru:'Выберите клиента и приложите готовый PDF без изменения его оформления.',en:'Select a client and attach the original PDF without changing its layout.'}}/>
+    {formatSwitch}
+    <PdfReportStartForm clients={options} selectedClientId={selectedClientId} locale={ru?'ru':'en'}
+      requestId={randomUUID()} action={createPdfReportSessionAction}/>
+  </main>
   return <main className="prescription-admin-shell consultation-new-shell consultation-studio-shell">
     <PrescriptionAdminHeader
       title={{ ru: 'Новая консультация', en: 'New consultation' }}
@@ -46,6 +64,7 @@ export default async function NewConsultation({ searchParams }) {
         en: 'Client → remedies and recommendations → documents in the client history.',
       }}
     />
+    {formatSwitch}
     {createdClient && <section className="consultation-client-created-banner" role="status">
       <div className="consultation-client-created-identity">
         <span className="consultation-client-created-avatar" aria-hidden="true">{createdClient.fullName.slice(0, 1).toUpperCase()}</span>

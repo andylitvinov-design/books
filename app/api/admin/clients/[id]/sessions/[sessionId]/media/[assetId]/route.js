@@ -25,7 +25,7 @@ async function handle(request,{params},play=false) {
     if(!asset||!referenced||!['image','audio','video','pdf'].includes(asset.kind))
       return new Response(null,{status:404,headers:{'Cache-Control':'private, no-store','X-Robots-Tag':'noindex'}})
     if(play) return privateJson({url:new URL(request.url).pathname,expiresIn:300})
-    return privateMediaStream(config,id,sessionId,assetId,request)
+    return privateMediaStream(config,id,sessionId,assetId,request,{inlinePdf:session.draft?.reportFormat==='pdf'&&session.draft.primaryPdfAssetId===assetId&&new URL(request.url).searchParams.get('view')==='inline'})
   },{body:play})
 }
 export const GET=(request,context)=>handle(request,context)

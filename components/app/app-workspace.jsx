@@ -1117,6 +1117,8 @@ function SaveContinuation({ data, locale, reload, onComplete }) {
           ? ru
             ? 'Время подтверждения истекло. Вернитесь к исходному документу и повторите сохранение.'
             : 'This confirmation expired. Return to the original item and save again.'
+          : e?.code === 'REPORT_RECIPIENT_MISMATCH' || e?.code === 'GOOGLE_IDENTITY_REQUIRED'
+            ? (ru ? 'Войдите через Google с адресом, указанным специалистом. Если адрес другой или не указан, попросите специалиста подтвердить его в вашей карточке клиента.' : 'Use the Google email your practitioner recorded. If it differs or is missing, ask your practitioner to confirm it in your client record.')
           : e?.code === 'CLIENT_ACCOUNT_ALREADY_LINKED'
             ? ru
               ? 'Эта карточка клиента уже связана с другим Google-аккаунтом. Свяжитесь с Andy, чтобы проверить привязку.'
@@ -1226,8 +1228,8 @@ function SaveContinuation({ data, locale, reload, onComplete }) {
           <p className="hh-muted">
             {intent?.sourceKind === 'client_session'
               ? (ru
-                  ? 'Вы подтверждаете сохранение только этой консультации в показанный Google-аккаунт. Остальные записи клиента не будут привязаны или открыты автоматически.'
-                  : 'You are confirming this one consultation for the Google Account shown above. No other client records will be linked or unlocked automatically.')
+                  ? 'Вы сохраняете эту консультацию в показанный Google-аккаунт. При получении приглашения аккаунт связывается с подтверждённой карточкой клиента у специалиста. Другие консультации не сохраняются автоматически. Подписка на рассылку не оформляется.'
+                  : 'You are saving this consultation to the Google Account shown above. Claiming an invitation links the account to the verified client record held by your practitioner. Other consultations are not automatically saved. No marketing subscription is created.')
               : intent?.sourceKind === 'guest_result'
               ? (ru
                   ? 'Будет сохранён только этот выбранный результат.'

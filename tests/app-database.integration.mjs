@@ -28,7 +28,7 @@ import { MONITORING_CATALOG } from '../data/assessments/catalog.js'
 import { APP_SERVICES } from '../data/app-services.js'
 import { createPractitionerRepository } from '../lib/practitioners/repository.js'
 import { createArticleRepository } from '../lib/practitioners/article-repository.js'
-import { bindLegacyClientToAccount } from '../lib/app/client-account-binding.js'
+import { bindLegacyClientToAccount,listLegacyClientIdsForAccount } from '../lib/app/client-account-binding.js'
 import { commitLegacyDocumentSaveIntent, readSavedDocument } from '../lib/app/legacy-document-flow.js'
 import { createMemoryPrescriptionStore } from '../lib/prescriptions/store.js'
 import { createPaymentDocument } from '../lib/documents/payment.js'
@@ -2383,19 +2383,38 @@ test('private session share grants enforce per-consultation ownership under real
 
 
 
-test('an explicitly selected Session is saved to exactly one Google Account, with pinned version and no Client binding', async()=>{
+test('verified Google report claim atomically links one client/CRM contact and pins the saved publication', async()=>{
   const {readFile}=await import('node:fs/promises')
   const admin=await adminClient()
   const clientId=randomUUID(),sessionId=randomUUID(),grantId=randomUUID(),selector='save'+randomUUID().replaceAll('-','').slice(0,18)
-  const store={findClientById:async id=>id===clientId?{id,status:'active'}:null}
+  const recipient=actor(randomUUID(),randomUUID()),accountB=actor(randomUUID(),randomUUID()),owner=actor(randomUUID(),randomUUID())
+  const googleEmail='report-'+recipient.id+'@example.invalid'
+  const store={findClientById:async id=>id===clientId?{id,status:'active',fullName:'Synthetic report client',email:googleEmail,locale:'en'}:null}
+  const practitionerId='246aa1a3-a371-5a83-9f4b-cd23ff027a76'
+  const previous=(await admin.query('select trusted_auth_user_id,active,status,public_profile from app.practitioners where id=$1',[practitionerId])).rows[0]
+  const oldCrm=process.env.HH_CRM_ENABLED
   try{
-    const accountB=actor(randomUUID(),randomUUID())
-    await admin.query('insert into auth.users(id,email) values($1,$2)',[accountB.id,'test-'+randomUUID()+'@example.invalid'])
-    await admin.query('insert into auth.sessions(id,user_id) values($1,$2)',[accountB.claims.session_id,accountB.id])
-    await repo.ensureAccount(accountB)
-    await repo.onboarding(accountB,{adult:true,necessary:true,marketing:false,displayName:'Second Account',uiLocale:'en',timezone:'America/Toronto',goal:'explore'})
+    process.env.HH_CRM_ENABLED='true'
+    for(const who of [recipient,accountB,owner]){
+      await admin.query('insert into auth.users(id,email) values($1,$2)',[who.id,who===recipient?googleEmail:who.id+'@example.invalid'])
+      await admin.query('insert into auth.sessions(id,user_id) values($1,$2)',[who.claims.session_id,who.id])
+      await repo.ensureAccount(who)
+      await repo.onboarding(who,{adult:true,necessary:true,marketing:false,displayName:'Synthetic report account',uiLocale:'en',timezone:'America/Toronto',goal:'explore'})
+    }
+    assert.ok(previous,'seeded primary practitioner exists')
+    await admin.query("update app.practitioners set trusted_auth_user_id=$2,active=true,status='approved',public_profile=$3 where id=$1",[practitionerId,owner.id,JSON.stringify({name:'Synthetic practitioner'})])
+    // Apply only the actual prerequisite migrations and proposed SQL in the
+    // guarded loopback fixture, never production. No mock schema or RLS bypass.
+    for(const file of [
+      '20261018122353_hh_crm_owner_contacts_secure_activation_20261018.sql',
+      '20261018123830_hh_crm_contact_lifecycle.sql',
+      '20261018183403_hh_crm_followups_activity_sources_20261018.sql',
+      '20261018184529_hh_crm_phone_first_contacts_20261018.sql',
+      '20261020165000_hh_public_service_crm_contact_intake_20261020.sql',
+    ])await admin.query(await readFile(new URL('../supabase/migrations/'+file,import.meta.url),'utf8'))
     const sql=await readFile(new URL('../sql/client-session-google-save-20261015.sql',import.meta.url),'utf8')
     await admin.query(sql)
+    await admin.query(await readFile(new URL('../supabase/migrations/20261126153747_hh_client_report_google_crm_claim_20261126.sql',import.meta.url),'utf8'))
     const payload=(version)=>seal({title:'Private session v'+version,summary:'Approved synthetic content',
       reportDocumentId:null,media:[],plan:{}},{accountId:clientId,recordId:sessionId,field:'session.published'},config)
     await admin.query(
@@ -2410,34 +2429,115 @@ test('an explicitly selected Session is saved to exactly one Google Account, wit
     assert.equal(intent.sourceKind,'client_session')
     const proof=(await admin.query('select browser_secret_hash from app_private.save_intents where id=$1',[intent.id])).rows[0].browser_secret_hash
     // The user explicitly confirms the destination Account after sign-in.
-    const resource=await commitSessionSaveIntent(config,store,a,intent.id,proof)
+    await assert.rejects(commitSessionSaveIntent(config,store,recipient,intent.id,proof),e=>e.code==='REPORT_RECIPIENT_MISMATCH')
+    await assert.rejects(commitSessionSaveIntent(config,store,accountB,intent.id,proof,{googleEmail:'foreign@example.invalid'}),e=>e.code==='REPORT_RECIPIENT_MISMATCH')
+    assert.equal((await admin.query('select count(*)::int as n from app_private.client_report_crm_links where legacy_client_id=$1',[clientId])).rows[0].n,0)
+    const resource=await commitSessionSaveIntent(config,store,recipient,intent.id,proof,{googleEmail})
     assert.ok(resource.id)
-    assert.equal((await commitSessionSaveIntent(config,store,a,intent.id,proof)).id,resource.id)
-    const saved=await readSavedSession(config,store,a,resource.id)
+    assert.equal((await commitSessionSaveIntent(config,store,recipient,intent.id,proof,{googleEmail})).id,resource.id)
+    const saved=await readSavedSession(config,store,recipient,resource.id)
     assert.equal(saved.session.title,'Private session v1')
     assert.equal(saved.session.clientId,undefined)
     await assert.rejects(readSavedSession(config,store,accountB,resource.id),e=>e.code==='SESSION_UNAVAILABLE')
     const bind=(await admin.query('select account_id from app_private.client_account_bindings where legacy_client_id=$1',[clientId])).rows
-    assert.equal(bind.length,0)
+    assert.deepEqual(bind,[{account_id:recipient.id}])
+    assert.ok(!(await listLegacyClientIdsForAccount(config,recipient)).includes(clientId),'single report claim must not unlock unrelated study links')
+    const links=(await admin.query('select account_id,owner_id,contact_id from app_private.client_report_crm_links where legacy_client_id=$1',[clientId])).rows
+    assert.equal(links.length,1)
+    assert.equal(links[0].account_id,recipient.id)
+    assert.equal(links[0].owner_id,owner.id)
+    const contact=(await admin.query('select lifecycle,email_verified,suppressed from app.crm_contacts where id=$1',[links[0].contact_id])).rows[0]
+    assert.deepEqual(contact,{lifecycle:'client',email_verified:false,suppressed:false})
+    assert.equal((await admin.query('select count(*)::int as n from app.crm_consent_ledger where contact_id=$1',[links[0].contact_id])).rows[0].n,0)
+    assert.equal((await rawAs(accountB,'hh_app_backend',database=>database.query('select legacy_client_id from app_private.client_report_crm_links where legacy_client_id=$1',[clientId]))).rowCount,0)
+    await assert.rejects(rawAs(recipient,'authenticated',database=>database.query('select * from app_private.client_report_crm_links')),e=>e.code==='42501')
+    await assert.rejects(rawAs(recipient,'hh_app_backend',database=>database.query('select contact_ciphertext from app.crm_contacts')),e=>e.code==='42501')
     const second=await createSessionSaveIntent(config,store,{clientId,sessionId,grantId,grantVersion:1},randomUUID())
     const secondProof=(await admin.query('select browser_secret_hash from app_private.save_intents where id=$1',[second.id])).rows[0].browser_secret_hash
-    await assert.rejects(commitSessionSaveIntent(config,store,accountB,second.id,secondProof),e=>e.code==='SAVE_UNAVAILABLE')
+    await assert.rejects(commitSessionSaveIntent(config,store,accountB,second.id,secondProof,{googleEmail:'foreign@example.invalid'}),e=>e.code==='REPORT_RECIPIENT_MISMATCH')
     await admin.query("update app_private.client_delivery_sessions set published_payload=$2,published_revision=2,draft_revision=2 where id=$1",
       [sessionId,payload(2)])
-    await assert.rejects(readSavedSession(config,store,a,resource.id),e=>e.code==='SESSION_CHANGED')
+    await assert.rejects(readSavedSession(config,store,recipient,resource.id),e=>e.code==='SESSION_CHANGED')
     const newIntent=await createSessionSaveIntent(config,store,{clientId,sessionId,grantId,grantVersion:1},randomUUID())
     const newProof=(await admin.query('select browser_secret_hash from app_private.save_intents where id=$1',[newIntent.id])).rows[0].browser_secret_hash
-    assert.equal((await commitSessionSaveIntent(config,store,a,newIntent.id,newProof)).id,resource.id)
-    assert.equal((await readSavedSession(config,store,a,resource.id)).session.title,'Private session v2')
+    assert.equal((await commitSessionSaveIntent(config,store,recipient,newIntent.id,newProof,{googleEmail})).id,resource.id)
+    assert.equal((await readSavedSession(config,store,recipient,resource.id)).session.title,'Private session v2')
+    assert.equal((await admin.query('select count(*)::int as n from app_private.client_report_crm_links where legacy_client_id=$1',[clientId])).rows[0].n,1)
     const oldFlag=process.env.HH_CLIENT_DELIVERY_ENABLED
     try{
       process.env.HH_CLIENT_DELIVERY_ENABLED='true'
-      assert.equal((await repo.bootstrap(a)).savedSessions.filter(row=>row.id===resource.id).length,1)
+      assert.equal((await repo.bootstrap(recipient)).savedSessions.filter(row=>row.id===resource.id).length,1)
     }finally{if(oldFlag===undefined)delete process.env.HH_CLIENT_DELIVERY_ENABLED
       else process.env.HH_CLIENT_DELIVERY_ENABLED=oldFlag}
-    await removeSavedSession(config,a,resource.id)
-    await assert.rejects(readSavedSession(config,store,a,resource.id),e=>e.code==='SESSION_UNAVAILABLE')
-  }finally{await admin.end()}
+    await removeSavedSession(config,recipient,resource.id)
+    await assert.rejects(readSavedSession(config,store,recipient,resource.id),e=>e.code==='SESSION_UNAVAILABLE')
+
+    // Exercise the actual owner draft, primary attachment, sealed publication,
+    // invitation exchange, Google/CRM claim and Daybook index. The database
+    // fixture is loopback-only; no real storage uploads or provider calls.
+    const {createClientSession,getOwnerSession,attachSessionAsset,publishClientSession,getPublishedClientSession,saveOwnerDraft}=await import('../lib/clients/session-delivery-service.js')
+    const {changeSessionGrant,exchangeSessionGuest,authorizeSessionInvitation,authorizeSessionGuest}=await import('../lib/clients/session-delivery-access.js')
+    const {listSavedProgramReports}=await import('../lib/app/daybook-report-index.js')
+    await admin.query('create schema if not exists storage')
+    await admin.query('create table if not exists storage.buckets (id text primary key,name text not null,public boolean,file_size_limit bigint,allowed_mime_types text[])')
+    const kindConstraint=(await admin.query("select pg_get_constraintdef(oid) as definition from pg_constraint where conname='client_delivery_assets_asset_kind_check'")).rows[0].definition
+    if(!kindConstraint.includes('pdf'))await admin.query(await readFile(new URL('../sql/client-delivery-session-private-pdfs-20261015.sql',import.meta.url),'utf8'))
+    const pdfId=randomUUID(),assetId=randomUUID(),replacementId=randomUUID()
+    const pdfOptions={occurredOn:'2026-11-25',title:'Synthetic original PDF',reportFormat:'pdf',requestId:pdfId,reportLocale:'en',programPlacement:{program:'business',week:8}}
+    assert.equal((await createClientSession(config,store,clientId,pdfOptions)).id,pdfId)
+    assert.equal((await createClientSession(config,store,clientId,pdfOptions)).existing,true)
+    const oldPdfFlag=process.env.HH_PDF_REPORT_GOOGLE_CRM_READY
+    const review=async()=>{
+      const ownerDraft=await getOwnerSession(config,store,clientId,pdfId)
+      return {expectedRevision:ownerDraft.draftRevision,expectedReportDocumentId:null,expectedReportFingerprint:null}
+    }
+    try{
+      process.env.HH_PDF_REPORT_GOOGLE_CRM_READY='false'
+      await assert.rejects(publishClientSession(config,store,clientId,pdfId,await review()),e=>e.code==='PDF_REPORT_GOOGLE_GATE_REQUIRED')
+      process.env.HH_PDF_REPORT_GOOGLE_CRM_READY='true'
+      await assert.rejects(publishClientSession(config,store,clientId,pdfId,await review()),e=>e.code==='PRIMARY_PDF_REQUIRED')
+      for(const id of [assetId,replacementId])await admin.query(
+        "insert into app_private.client_delivery_assets(id,legacy_client_id,session_id,asset_kind,scope,object_key,mime,max_bytes,bytes,status,ready_at) values($1,$2,$3,'pdf','client',$4,'application/pdf',15000000,512,'ready',now())",
+        [id,clientId,pdfId,'synthetic-pdf-'+id])
+      await attachSessionAsset(config,store,clientId,pdfId,assetId)
+      assert.equal((await getOwnerSession(config,store,clientId,pdfId)).draft.primaryPdfAssetId,assetId)
+      await publishClientSession(config,store,clientId,pdfId,await review())
+      const invite=await changeSessionGrant(config,store,clientId,pdfId,'copy')
+      const viewer=await exchangeSessionGuest(config,store,invite.selector,invite.secret)
+      const credential={id:viewer.id,secretHash:createHash('sha256').update('hh-session-access-v1:'+viewer.secret).digest('hex')}
+      await assert.rejects(authorizeSessionGuest(config,store,invite.selector,credential),e=>e.code==='SESSION_UNAVAILABLE')
+      const access=await authorizeSessionInvitation(config,store,invite.selector,credential)
+      assert.equal(access.session,undefined)
+      await assert.rejects(createSessionSaveIntent(config,store,{clientId,sessionId:pdfId,cabinetSelector:'a'.repeat(22)},randomUUID()),e=>e.code==='SESSION_UNAVAILABLE')
+      const pdfIntent=await createSessionSaveIntent(config,store,access,randomUUID())
+      const pdfProof=(await admin.query('select browser_secret_hash from app_private.save_intents where id=$1',[pdfIntent.id])).rows[0].browser_secret_hash
+      await assert.rejects(commitSessionSaveIntent(config,store,accountB,pdfIntent.id,pdfProof,{googleEmail:'foreign@example.invalid'}),e=>e.code==='REPORT_RECIPIENT_MISMATCH')
+      const pdfResource=await commitSessionSaveIntent(config,store,recipient,pdfIntent.id,pdfProof,{googleEmail})
+      assert.equal((await readSavedSession(config,store,recipient,pdfResource.id)).session.primaryPdfAssetId,assetId)
+      await assert.rejects(readSavedSession(config,store,accountB,pdfResource.id),e=>e.code==='SESSION_UNAVAILABLE')
+      assert.deepEqual((await listSavedProgramReports(config,store,recipient,'business')).reports,[{id:pdfResource.id,occurredOn:'2026-11-25',week:8}])
+      assert.deepEqual((await listSavedProgramReports(config,store,accountB,'business')).reports,[])
+      assert.equal((await admin.query('select count(*)::int as n from app_private.client_report_crm_links where legacy_client_id=$1',[clientId])).rows[0].n,1)
+      await attachSessionAsset(config,store,clientId,pdfId,replacementId)
+      const replacement=await getOwnerSession(config,store,clientId,pdfId)
+      await saveOwnerDraft(config,store,clientId,pdfId,{expectedRevision:replacement.draftRevision,draft:{...replacement.draft,primaryPdfAssetId:replacementId,media:replacement.draft.media.filter(m=>m.assetId!==assetId)}})
+      assert.equal((await getPublishedClientSession(config,store,clientId,pdfId)).primaryPdfAssetId,assetId,'draft replacement does not mutate approved report')
+      await publishClientSession(config,store,clientId,pdfId,await review())
+      assert.equal((await getPublishedClientSession(config,store,clientId,pdfId)).primaryPdfAssetId,replacementId)
+      await assert.rejects(readSavedSession(config,store,recipient,pdfResource.id),e=>e.code==='SESSION_CHANGED')
+      const pending=await createSessionSaveIntent(config,store,access,randomUUID())
+      const pendingProof=(await admin.query('select browser_secret_hash from app_private.save_intents where id=$1',[pending.id])).rows[0].browser_secret_hash
+      await changeSessionGrant(config,store,clientId,pdfId,'revoke')
+      await assert.rejects(commitSessionSaveIntent(config,store,recipient,pending.id,pendingProof,{googleEmail}),e=>e.code==='SESSION_UNAVAILABLE')
+      process.env.HH_PDF_REPORT_GOOGLE_CRM_READY='false'
+      await assert.rejects(getPublishedClientSession(config,store,clientId,pdfId),e=>e.code==='SESSION_UNAVAILABLE')
+    }finally{if(oldPdfFlag===undefined)delete process.env.HH_PDF_REPORT_GOOGLE_CRM_READY;else process.env.HH_PDF_REPORT_GOOGLE_CRM_READY=oldPdfFlag}
+
+  }finally{
+    if(oldCrm===undefined)delete process.env.HH_CRM_ENABLED;else process.env.HH_CRM_ENABLED=oldCrm
+    if(previous)await admin.query('update app.practitioners set trusted_auth_user_id=$2,active=$3,status=$4,public_profile=$5 where id=$1',[practitionerId,previous.trusted_auth_user_id,previous.active,previous.status,JSON.stringify(previous.public_profile)])
+    await admin.end()
+  }
 })
 
 test('saved session table is account-scoped and the raw recipient cannot write',async()=>{

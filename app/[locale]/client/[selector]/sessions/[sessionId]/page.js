@@ -19,6 +19,9 @@ export default async function CabinetSession({params}) {
   let session
   try{session=await getPublishedClientSession(getAppConfig(),access.store,access.client.id,sessionId)}
   catch{notFound()}
+  if(session.reportFormat==='pdf')return <main role="status" lang={locale}>
+    <p>{locale==='ru'?'Откройте оригинальный PDF через личный кабинет Google по персональному приглашению специалиста.':'Open the original PDF in your Google account using your practitioner’s individual invitation.'}</p>
+  </main>
   let reportContent=null, recommendation=null
   if(session.report) {
     const record=await getPublishedSessionReport(getAppConfig(),access.store,access.client.id,sessionId).catch(()=>null)

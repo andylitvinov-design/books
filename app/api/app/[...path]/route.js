@@ -107,7 +107,8 @@ import {
 } from '@/lib/app/legacy-document-flow'
 import {createSessionSaveIntent,commitSessionSaveIntent,readSavedSession,removeSavedSession} from '@/lib/app/client-session-save-flow'
 import {deliveryEnabled} from '@/lib/clients/delivery-model'
-import {readSessionViewerCookie,authorizeSessionGuest} from '@/lib/clients/session-delivery-access'
+import {readSessionViewerCookie,authorizeSessionInvitation} from '@/lib/clients/session-delivery-access'
+import {verifiedGoogleEmailForReport} from '@/lib/app/report-google-identity.mjs'
 import {getPublishedClientSession} from '@/lib/clients/session-delivery-service'
 import {listPractitionerMaterials,streamReadyMaterial} from '@/lib/clients/material-library'
 // Only a button on the public practitioner showroom may request one of these
@@ -812,7 +813,7 @@ async function handle(request, { params }) {
           await getPublishedClientSession(config,store,owner.client.id,body.sourceId)
           access={clientId:owner.client.id,sessionId:body.sourceId,cabinetSelector:body.selector}
         }else{
-          const opened=await authorizeSessionGuest(config,store,body.selector,
+          const opened=await authorizeSessionInvitation(config,store,body.selector,
             readSessionViewerCookie(request.cookies,body.selector))
           access={clientId:opened.clientId,sessionId:opened.sessionId,
             grantId:opened.grantId,grantVersion:opened.grantVersion}
@@ -969,7 +970,10 @@ async function handle(request, { params }) {
         if(!deliveryEnabled())throw new AppError('SESSION_UNAVAILABLE',503)
         const store=getPrescriptionStore()
         if(!store?.findClientById)throw new AppError('SESSION_UNAVAILABLE',404)
-        resource=await commitSessionSaveIntent(config,store,actor,path[1],proof)
+        const {data:identities,error:identityError}=await auth.client.auth.getUserIdentities()
+        const googleEmail=identityError?null:verifiedGoogleEmailForReport(identities?.identities,actor.email)
+        if(!googleEmail)throw new AppError('GOOGLE_IDENTITY_REQUIRED',403)
+        resource=await commitSessionSaveIntent(config,store,actor,path[1],proof,{googleEmail})
       } else if (intent.sourceKind === 'legacy_document') {
         const store = getPrescriptionStore()
         if (!store?.findById) throw new AppError('DOCUMENT_UNAVAILABLE', 404)
