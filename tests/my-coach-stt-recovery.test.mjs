@@ -162,3 +162,18 @@ test('Basic implementation fences output and uses same-mic handoff and reviewed 
  const held=ui.slice(ui.indexOf('function holdRecognizedDraft(value)'),ui.indexOf('function startListening(){'))
  assert.ok(held.includes('uncertainSpeechDraftRef.current={visible:candidate,prior:draftAtStartRef.current}'))
 })
+
+import {coachSpeechReviewGlossary} from '../lib/coaching/coach-speech-review-glossary.mjs'
+test('public speech review glossary is gated, localized and never passed to other lanes',()=>{
+ const options={purpose:'my_coach',textOnly:true,filename:'coach-review.wav',language:'ru',enabled:true}
+ assert.match(coachSpeechReviewGlossary(options),/психосоматика/)
+ assert.match(coachSpeechReviewGlossary({...options,language:'en'}),/psychosomatic/)
+ assert.match(coachSpeechReviewGlossary({...options,language:'es'}),/psicosomática/)
+ for(const patch of [{enabled:false},{purpose:'ali_chat'},{purpose:null},{textOnly:false},{filename:'dictation.wav'},{language:'auto'},{language:'toString'}])assert.equal(coachSpeechReviewGlossary({...options,...patch}),'')
+ for(const language of ['ru','en','es'])assert.ok(coachSpeechReviewGlossary({...options,language}).length<250)
+ const route=read('app/api/holistic-support/audio-storyboard/route.js')
+ assert.match(route,/enabled:process.env.HH_MY_COACH_STT_GLOSSARY_ENABLED==="true"/)
+ assert.match(route,/if\(glossary\)multipart.set\("prompt",glossary\)/)
+ assert.doesNotMatch(route,/form.get\("prompt"\)/)
+ assert.ok(route.indexOf('createRequestAuth(request,config).verified()')<route.indexOf('const glossary=coachSpeechReviewGlossary'))
+})

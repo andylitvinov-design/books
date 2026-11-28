@@ -11,6 +11,7 @@ import {consumeRate} from "@/lib/app/database";
 import {PRIVATE_HEADERS,safeError} from "@/lib/app/http";
 import {normalizeTimedTranscript} from "@/lib/mandala/audio-visual-storyboard.mjs";
 import {isSpeechTranscriptLanguageMismatch} from "@/lib/mandala/audio-speech-language.mjs";
+import {coachSpeechReviewGlossary} from "@/lib/coaching/coach-speech-review-glossary.mjs";
 
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
@@ -88,6 +89,11 @@ export async function POST(request){
     multipart.set("response_format",textOnly?"json":"verbose_json");
     if(!textOnly)multipart.set("timestamp_granularities[]","segment");
     if(language!=="auto")multipart.set("language",language);
+    // Editorial spelling hints are opt-in at rollout and used only for review.
+    // Never forward a client-provided prompt, prior dialogue or profile.
+    const glossary=coachSpeechReviewGlossary({purpose,textOnly,filename:file.name,language,
+      enabled:process.env.HH_MY_COACH_STT_GLOSSARY_ENABLED==="true"});
+    if(glossary)multipart.set("prompt",glossary);
     const provider=await fetch(GROQ_TRANSCRIPT_URL,{
       method:"POST",cache:"no-store",redirect:"error",
       signal:purpose==="my_coach"&&textOnly?AbortSignal.any([request.signal,AbortSignal.timeout(12000)]):AbortSignal.timeout(18000),
