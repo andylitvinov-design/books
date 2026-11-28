@@ -176,8 +176,10 @@ export function verifiedCompletedCoreBuild(identity, read) {
 
 
 // A SHA change alone is not a source change. Reuse only an actual previous
-// successful build of the SAME source and proposed merge trees on the SAME
-// protected base. Current lint, tests, Specialist and native merge still run.
+// successful build of the SAME proposed merge tree on the SAME protected
+// base. A pure incorporation of that base into the previous HEAD may change
+// the source tree without changing the proposed checkout. Current lint,
+// tests, Specialist and native merge still run.
 // Never chain reused/skipped builds or trust PR-authored proof.
 export function verifiedEquivalentPriorCoreBuild(identity, previousHead, read) {
   if(!identity||!SHA.test(previousHead||'')||previousHead===identity.head||
@@ -192,10 +194,14 @@ export function verifiedEquivalentPriorCoreBuild(identity, previousHead, read) {
       return c;
     };
     const source=getCommit(identity.head), previous=getCommit(previousHead);
-    if(source.tree.sha!==previous.tree.sha)return null;
+    const sameSource=source.tree.sha===previous.tree.sha;
+    const incorporatedBase=source.parents?.length===2&&
+      source.parents[0]?.sha===previousHead&&source.parents[1]?.sha===identity.base;
+    if(!sameSource&&!incorporatedBase)return null;
     const currentMerge=getCommit(identity.merge);
     if(currentMerge.parents?.length!==2||currentMerge.parents[0]?.sha!==identity.base||
-       currentMerge.parents[1]?.sha!==identity.head)return null;
+       currentMerge.parents[1]?.sha!==identity.head||
+       (!sameSource&&source.tree.sha!==currentMerge.tree.sha))return null;
     const listed=read(prefix+'/workflows/hh-pr-core-release.yml/runs?event=pull_request&head_sha='+previousHead+'&per_page=10');
     if(!Array.isArray(listed?.workflow_runs)||listed.workflow_runs.length>10)return null;
     const candidates=listed.workflow_runs.filter(run=>positiveId(run.id)&&positiveId(run.run_attempt)&&
@@ -251,7 +257,7 @@ if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href===import.met
     if(proof){
       console.log('HH_EQUIVALENT_HEAD_CORE_BUILD_REUSED: '+JSON.stringify(proof));
       if(process.env.GITHUB_STEP_SUMMARY)appendFileSync(process.env.GITHUB_STEP_SUMMARY,
-        'Prior real Core build reused on identical source and merge trees: run '+proof.runId+'\n');
+        'Prior real Core build reused on an identical proposed merge tree: run '+proof.runId+'\n');
     }else process.exitCode=1;
   } else if(process.argv[2]==='--core-plan'){
     console.log(exactCoreBuildIdentity()?'REUSE_CANDIDATE':'INDEPENDENT_BUILD');

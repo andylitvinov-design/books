@@ -2213,7 +2213,15 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       setProtocolSaved(true)
       setProtocolEditing(false)
       return true
-    }catch{setProtocolError(protocolCopy[lang].error);return false}
+    }catch{
+      // Before a final POST is prepared there can be no ambiguous archive commit.
+      // Release the UI so the client can edit or retry after checkpoint failure.
+      // Once prepared, retain the exact request and snapshot for an idempotent retry.
+      if(!protocolSaveRequestRef.current){
+        protocolSaveSnapshotRef.current=null;setProtocolSaveLocked(false)
+      }
+      setProtocolError(protocolCopy[lang].error);return false
+    }
     finally{protocolSaveInFlightRef.current=false;setProtocolSaving(false)}
   }
 
