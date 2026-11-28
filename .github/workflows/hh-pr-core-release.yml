@@ -432,7 +432,7 @@ jobs:
         run: node --test tests/ci-deterministic-eslint-repair.test.mjs
       - name: Verify specialist ownership and Messenger isolation on CI-policy changes
         if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT')) && (github.event_name != 'pull_request' || steps.diff.outputs.ci_touched == 'true') }}
-        run: node --test tests/ci-workflow-globs.test.mjs tests/workflow-next-route-filters.test.mjs tests/ci-specialist-aggregate.test.mjs tests/ci-growth-course-core-reuse.test.mjs tests/ci-coach-only-impact.test.mjs
+        run: node --test tests/ci-workflow-globs.test.mjs tests/workflow-next-route-filters.test.mjs tests/ci-specialist-aggregate.test.mjs tests/ci-growth-course-core-reuse.test.mjs tests/ci-coach-only-impact.test.mjs tests/ci-site-video-scope.test.mjs
       # Public greeting and motion changes no longer book unrelated private App
       # or storefront E2E. Retain source/persona/media checks in mandatory Core.
       - name: Public Ali greeting + coach motion release contracts
