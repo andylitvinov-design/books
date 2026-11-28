@@ -8,11 +8,11 @@ import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance, safeIndependentDomainTestAdvance, safeComposedIndependentAdvance, safeScopedDisjointProductionAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeNonOverlappingProductAdvance, normalizeIdenticalProtectedOverlap, REVALIDATABLE_CI_POLICY_FILES } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance, safeIndependentDomainTestAdvance, safeComposedIndependentAdvance, safeScopedDisjointProductionAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeNonOverlappingProductAdvance, normalizeIdenticalProtectedOverlap, verifiedAdditiveServerPackageEvidence, REVALIDATABLE_CI_POLICY_FILES } from '../lib/ci/production-base-impact.mjs';
 import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import { requiresRealMediaWebKit } from '../lib/ci/merge-check-light.mjs';
 import {
-  TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
+  TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists, parsePrTrigger, matchesTrigger,
   inspectWorkflowRuns, inspectJobs, trustedConditionalJobs, trustedRequiredJobs, trustedConditionallyInapplicableJobs, validateParameters, classifyReleaseRisk, concurrencyOnlyAdvisory, selfTriggerRemovalAdvisory, isConcurrencyAdvisoryRun,
 } from '../lib/ci/specialist-aggregate.mjs';
 
@@ -669,6 +669,57 @@ export function reusePriorSpecialistState(state,prior) {
     reused:[...reusable].map(name=>prior.get(name))};
 }
 
+
+// These are independently owned optional product specialists, not mandatory
+// Core, security, data, billing, CI/Guard or provider-coaching owners. Their
+// root-manifest selector alone does not require a merge to wait when a reviewed
+// additive server dependency closure leaves every existing resolution intact.
+// No job is declared successful by this rule; its original outcome is advisory.
+const PACKAGE_ONLY_ADVISORY_OWNERS = new Set([
+  '.github/workflows/hh-static-image-cost-guard.yml',
+  '.github/workflows/opora-module-ci.yml',
+  '.github/workflows/hh-owner-telegram-video.yml',
+  '.github/workflows/hh-live-audio-ci.yml',
+]);
+export function independentPackageOnlyAdvisories(files,changed,expected) {
+  const result=new Set();
+  if(!Array.isArray(changed)||!Array.isArray(expected)||
+     !changed.includes('package.json')||!changed.includes('package-lock.json')||
+     !verifiedAdditiveServerPackageEvidence(files,changed)) return result;
+  try {
+    const old=JSON.parse(files.baseLock).packages, next=JSON.parse(files.currentLock).packages;
+    const added=new Set(Object.keys(next).filter(p=>!Object.hasOwn(old,p)).map(p=>p.slice('node_modules/'.length)));
+    if(!added.size) return result;
+    // Even an unchanged existing lock row might acquire a formerly absent
+    // optional peer. Reject any prior dependency/peer edge into the additions.
+    for(const [p,row] of Object.entries(old)) {
+      if(!p) continue;
+      if(['dependencies','optionalDependencies','peerDependencies'].some(k=>
+         Object.keys(row[k]||{}).some(name=>added.has(name)))) return result;
+    }
+    for(const name of added) {
+      const row=next['node_modules/'+name];
+      if(!row||row.hasInstallScript||row.link||row.inBundle||row.bin||
+         !/^https:\/\/registry\.npmjs\.org\//.test(row.resolved||'')) return result;
+    }
+  } catch { return result; }
+  const productPaths=changed.filter(p=>p!=='package.json'&&p!=='package-lock.json');
+  // A change to global application/CI execution policy stays strict.
+  if(productPaths.some(p=>/^(?:\.github\/actions\/|\.github\/workflows\/hh-pr-core-release\.|lib\/ci\/|scripts\/ci-|next\.config\.|middleware\.|tsconfig\.|eslint\.config\.|vercel\.json$|app\/(?:layout|globals)\.)/i.test(p)))return result;
+  for(const path of expected) {
+    if(!PACKAGE_ONLY_ADVISORY_OWNERS.has(path)||changed.includes(path))continue;
+    const old=files.base.get(path), current=files.current.get(path);
+    if(typeof old!=='string'||old!==current)continue;
+    try {
+      const trigger=parsePrTrigger(old,path);
+      if(!trigger?.paths||!matchesTrigger(trigger,['package.json','package-lock.json'],TARGET))continue;
+      if(productPaths.length&&matchesTrigger(trigger,productPaths,TARGET))continue;
+      result.add(path);
+    } catch { /* unknown trigger stays mandatory */ }
+  }
+  return result;
+}
+
 export async function verify(api,ctx,files,options={}) {
   // Distinguish an absent workflow from a queued run and genuine execution.
   // Running checks use the long deadline; registered queued checks get a separate,
@@ -999,7 +1050,10 @@ export async function verify(api,ctx,files,options={}) {
   // release workflow, regardless of filename or route classification.
   const mandala = WORKFLOW_PREFIX + 'holistic-support-mandala.yml';
   if (routed.expected.includes(mandala)) advisoryPaths.delete(mandala);
-  const expected=routed.expected.filter(name=>!advisoryPaths.has(name) && !concurrencyAdvisory.has(name) && !selfTriggerAdvisory.has(name));
+  const packageOnlyAdvisory=pinnedChangeRows ? independentPackageOnlyAdvisories(files,changed,routed.expected) : new Set();
+  for(const replacement of replacements) packageOnlyAdvisory.delete(replacement);
+  const expected=routed.expected.filter(name=>!advisoryPaths.has(name) && !concurrencyAdvisory.has(name) && !selfTriggerAdvisory.has(name) && !packageOnlyAdvisory.has(name));
+  if(packageOnlyAdvisory.size) console.log('CI_PACKAGE_ONLY_ADVISORY:'+JSON.stringify([...packageOnlyAdvisory].sort()));
   // A moving production SHA is not itself a failing PR. Wait for required
   // exact-HEAD specialist evidence before considering any base-sync recovery.
   // Earlier BASE_ADVANCED errors cancelled still-running browser/macOS work;
@@ -1067,10 +1121,11 @@ export async function verify(api,ctx,files,options={}) {
       }
     }
     const allRuns=[...indexed,...recovered.values()];
-    fastDiagnostics=allRuns.filter(run=>advisoryPaths.has(String(run.path || '').split('@')[0]) &&
+    fastDiagnostics=allRuns.filter(run=>(advisoryPaths.has(String(run.path || '').split('@')[0]) || packageOnlyAdvisory.has(String(run.path || '').split('@')[0])) &&
       (run.status !== 'completed' || run.conclusion !== 'success')).map(run=>String(run.path).split('@')[0]+':'+(run.conclusion || run.status || 'unknown'));
     const eligibleRuns = rows => rows.filter(run =>
       !advisoryPaths.has(String(run.path || '').split('@')[0]) &&
+      !packageOnlyAdvisory.has(String(run.path || '').split('@')[0]) &&
       !isConcurrencyAdvisoryRun(run,pr,concurrencyAdvisory) &&
       !isConcurrencyAdvisoryRun(run,pr,selfTriggerAdvisory));
     state=inspectWorkflowRuns({expected,runs:eligibleRuns(allRuns),pr});
@@ -1288,6 +1343,7 @@ export async function verify(api,ctx,files,options={}) {
       ...state.orphanFailures.map(item => 'orphan:'+item),...fastDiagnostics],
     concurrencyOnly:[...concurrencyAdvisory].sort(),
     selfTriggerOnly:[...selfTriggerAdvisory].sort(),
+    packageOnly:[...packageOnlyAdvisory].sort(),
   };
   return {risk,expected,delegated,executed,reused,advisory,packageImpact,head:ctx.head,base:ctx.base};
 }
