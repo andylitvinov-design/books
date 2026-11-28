@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {getCoachCourseLaunch,coachCourseLaunchHref,normalizeLaunchCoach,courseLaunchNeighbor,courseLaunchPresentation} from '../lib/coach-course-launch.mjs'
-import {projectCourseSession} from '../lib/coach-course-session-progress.mjs'
+import {projectCourseSession,resolveSavedCoachSession} from '../lib/coach-course-session-progress.mjs'
 import {courseCoachChoice,verifyCourseCoachChoice} from '../lib/app/coach-course-choice.mjs'
 import {isUnifiedMobileDockAppPath,unifiedMobileDockActive} from '../lib/unified-mobile-dock.mjs'
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
@@ -138,4 +138,20 @@ test('old personal review ribbon is excluded from program launch and greeting ro
    assert.ok(rules.some(rule=>rule.test('/'+lang+'/'+suffix)),lang+'/'+suffix)
   }
  }
+})
+
+test('saved session entry never restarts on unknown, partial or ambiguous history',()=>{
+ const item={id:'saved',courseSessionId:'intro',personaId:'genie',durationSeconds:420}
+ const input={accountSaving:true,ready:true,topic:'intro',personaId:'genie',items:[item]}
+ assert.deepEqual(resolveSavedCoachSession(input),{kind:'resume',item})
+ assert.equal(resolveSavedCoachSession({...input,personaId:'mira'}).kind,'choose')
+ assert.equal(resolveSavedCoachSession({...input,cursor:{next:'x'}}).kind,'choose')
+ assert.equal(resolveSavedCoachSession({...input,items:[item,{...item,id:'other'}]}).kind,'choose')
+ for(const patch of [{ready:false},{busy:true},{error:true}])assert.equal(resolveSavedCoachSession({...input,...patch}).kind,'lookup')
+ assert.equal(resolveSavedCoachSession({...input,items:[]}).kind,'new')
+ assert.equal(resolveSavedCoachSession({...input,accountSaving:false,ready:false}).kind,'new')
+ const gate=read('components/my-coach-greeting-gate.jsx')
+ assert.doesNotMatch(gate,/window\.confirm/)
+ assert.match(gate,/onResumeSession\(entry.item\)/)
+ assert.ok(gate.indexOf("if(entry.kind!=='new')")<gate.indexOf('onStart?.(id,options)'))
 })
