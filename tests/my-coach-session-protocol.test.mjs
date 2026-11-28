@@ -1,3 +1,4 @@
+import './my-coach-speech-amendments.test.mjs'
 import './my-coach-speech-evidence.test.mjs'
 import './my-coach-speech-review.test.mjs'
 import './coach-private-recall.test.mjs'
