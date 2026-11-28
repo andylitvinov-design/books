@@ -77,3 +77,4 @@ test('visual identity is honest and existing owner video pilot is Caesar-only',(
 import './coach-caesar-static-video.test.mjs'
 import './caesar-webrtc-capture.test.mjs'
 import './caesar-capture-ui.test.mjs'
+import './caesar-capture-archive.test.mjs'
