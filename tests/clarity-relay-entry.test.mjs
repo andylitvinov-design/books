@@ -321,7 +321,7 @@ test('existing voice panel routes Clarity through the trusted relay and binds th
  assert.match(page,/finishCourseSegment\(choice==='switch'\)/)
 })
 
-test('exact paused restored course can continue by voice only with fresh Play; other drafts remain private text',async()=>{
+test('exact paused restored course can continue by voice only with fresh Play and an exact trusted binding',async()=>{
  const {restoredClarityRelayBinding}=await import('../lib/coaching/clarity-relay-client.mjs')
  const protocol={id:id(11),personaId:'mira',courseSessionId:'clarity_day_1',turns:[{role:'user',content:'PRIVATE'}]}
  const input={owner,runId:id(10),protocol,courseSessionId:protocol.courseSessionId,time:{status:'paused',elapsedSeconds:7,remainingSeconds:1193},personaId:'mira'}
