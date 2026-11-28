@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance, safeIndependentDomainTestAdvance, safeComposedIndependentAdvance, safeScopedDisjointProductionAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeNonOverlappingProductAdvance, REVALIDATABLE_CI_POLICY_FILES } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance, safeIndependentDomainTestAdvance, safeComposedIndependentAdvance, safeScopedDisjointProductionAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeNonOverlappingProductAdvance, normalizeIdenticalProtectedOverlap, REVALIDATABLE_CI_POLICY_FILES } from '../lib/ci/production-base-impact.mjs';
 import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import { requiresRealMediaWebKit } from '../lib/ci/merge-check-light.mjs';
 import {
@@ -192,6 +192,28 @@ export function githubReader(repo, token, transport = fetch, options = {}) {
         ref?.ref === 'refs/heads/' + TARGET && /^[0-9a-f]{40}$/.test(ref.object?.sha || '')) : [];
       if (exact.length !== 1) throw Error('PRODUCTION_TARGET_REF_UNAVAILABLE');
       return exact[0].object.sha;
+    },
+    // Resolve a bounded path in the immutable protected Git tree. No recursive
+    // inventory, content download, or reliance on a mutable branch name.
+    entry: async (commit,path) => {
+      const sha=/^[0-9a-f]{40}$/i;
+      const parts=typeof path==='string'?path.split('/'):[];
+      if(!sha.test(commit)||!parts.length||parts.length>12||
+         parts.some(p=>!p||p==='.'||p==='..'||p.includes('\0')||p.includes('\n')))return null;
+      const root=await get('/git/commits/'+commit);
+      if(root?.sha!==commit||!sha.test(root?.tree?.sha||''))return null;
+      let tree=root.tree.sha;
+      for(let i=0;i<parts.length;i++){
+        const page=await get('/git/trees/'+tree);
+        if(page?.sha!==tree||page.truncated!==false||!Array.isArray(page.tree))return null;
+        const matches=page.tree.filter(row=>row.path===parts[i]);
+        if(matches.length!==1||!sha.test(matches[0].sha||''))return null;
+        const row=matches[0];
+        if(i===parts.length-1)return {type:row.type,mode:row.mode,sha:row.sha};
+        if(row.type!=='tree'||row.mode!=='040000')return null;
+        tree=row.sha;
+      }
+      return null;
     },
     compare: (base, head) => get('/compare/' + base + '...' + head + '?per_page=100'),
   };
@@ -675,7 +697,24 @@ export async function verify(api,ctx,files,options={}) {
     if (!approvedBaseChanges.has(liveBaseSha)) {
       // Only a complete, ancestry-proven, documentation-only target advance
       // may pass. Security, runtime, CI, unknown and incomplete diffs stay blocked.
-      const diff = await api.compare(ctx.base, liveBaseSha);
+      const originalDiff = await api.compare(ctx.base, liveBaseSha);
+      const localEntry = options.readTestedEntry ?? (files.testedMergeSha &&
+        /^[0-9a-f]{40}$/.test(files.testedMergeSha) ? path => {
+          const git=(...args)=>execFileSync('git',args,{encoding:'utf8',maxBuffer:65536,stdio:['ignore','pipe','pipe']});
+          if(git('rev-parse','HEAD').trim()!==files.testedMergeSha||
+             git('rev-parse','HEAD^1').trim()!==ctx.base||
+             git('rev-parse','HEAD^2').trim()!==ctx.head)return null;
+          const raw=git('ls-tree','-z',files.testedMergeSha,'--',path);
+          const match=/^(\d{6}) (blob) ([0-9a-f]{40})\t([^\0]+)\0$/.exec(raw);
+          return match&&match[4]===path?{mode:match[1],type:match[2],sha:match[3]}:null;
+        } : null);
+      const normalized=live.mergeable===true&&typeof api.entry==='function'
+        ? await normalizeIdenticalProtectedOverlap(originalDiff,ctx.base,liveBaseSha,changedRows,localEntry,api.entry)
+        : {compare:originalDiff,identical:[]};
+      const diff=normalized.compare;
+      const identicalOnly=normalized.identical.length>0&&diff.files.length===0;
+      if(normalized.identical.length)
+        console.log('CI_BASE_IDENTICAL_BLOBS:'+JSON.stringify(normalized.identical));
       const documentationOnly = safeDocumentationAdvance(diff, ctx.base, liveBaseSha, changed);
       // This option is set ONLY after loading the validator, dependencies and
       // helper from this exact protected production commit (never the PR HEAD).
@@ -770,7 +809,7 @@ export async function verify(api,ctx,files,options={}) {
       // Preserve the actual tested HEAD and all required specialist outcomes.
       const nonOverlappingProduct = pinnedChangeRows && live.mergeable === true &&
         safeNonOverlappingProductAdvance(diff, ctx.base, liveBaseSha, changed, files);
-      if (!documentationOnly && !independentlyRevalidated &&
+      if (!identicalOnly && !documentationOnly && !independentlyRevalidated &&
           !isolatedCiPolicy && !unrelatedCiMaintenance && !inertPublicImages &&
           !independentPresentation && !disjointPublicSource && !independentQa &&
           !independentDomainTest && !composedIndependent && !scopedDisjoint && !mixedProtected && !detachedCi && !isolatedFeature && !unrelatedPublicLeaves && !nonOverlappingProduct) {
@@ -805,6 +844,10 @@ export async function verify(api,ctx,files,options={}) {
           proof:'NOT_ACCEPTED',
         }));
         throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
+      }
+      if (identicalOnly) {
+        approvedDisjointBases.add(liveBaseSha);
+        console.log('CI_BASE_ADVANCE_REUSED: every protected change is already present byte-for-byte in the tested proposed tree');
       }
       if (nonOverlappingProduct) {
         approvedDisjointBases.add(liveBaseSha);
@@ -1374,7 +1417,10 @@ async function main() {
   const verifiedBase = verifiedCheckoutBase(env, ctx);
   const testedBase = verifiedBase || ctx.base;
   const files=worktreeSources(testedBase);
-  if (verifiedBase) files.changedRows=checkoutChangedRows(verifiedBase);
+  if (verifiedBase) {
+    files.changedRows=checkoutChangedRows(verifiedBase);
+    files.testedMergeSha=env.GITHUB_SHA;
+  }
   // The verified merge parent is always the trusted tested BASE. Only
   // non-sensitive ordinary paths permit a newer live production BASE; security,
   // payment, privacy, auth, policy and unknown paths still require freshness.
