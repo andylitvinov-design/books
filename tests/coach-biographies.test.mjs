@@ -167,7 +167,7 @@ const contextualCases={
 test('contextual memory chooses only relevant persona-owned editorial entries in all three languages',()=>{
  for(const [id,[expected,...messages]] of Object.entries(contextualCases)){
   const entries=getCoachPersonalityMemory(id,2).entries;
-  assert.deepEqual([...getCoachMemoryIndexedIds(id)].sort(),entries.map(e=>e.id).sort());
+  assert.deepEqual([...getCoachMemoryIndexedIds(id)].sort(),getCoachPersonalityMemory(id).entries.map(e=>e.id).sort());
   const selected=entries.find(e=>e.id===expected);
   for(const [i,locale] of ['en','ru','es'].entries()){
    const input={message:messages[i],locale,mode:'answer'};
