@@ -767,7 +767,7 @@ test('thematic gate handoff is restricted to enabled consented authenticated cor
  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
  const native=readFileSync(new URL('../components/my-coach-gemini-live.jsx',import.meta.url),'utf8')
  assert.match(ui,/if\(courseGateRequired\|\|courseGateRef.current/)
- assert.match(native,/const decision=propsRef.current.onInputFinal\?\.\(value\)/)
+ assert.match(native,/const decision=propsRef.current.onInputFinal\?\.\(value,\{source:'speech',reviewAvailable:Boolean\(audioParts\)&&propsRef.current.speechReviewConsent===true\}\)/)
   assert.match(native,/if\(decision===true\)\{stop\(\);return true\}/)
  assert.equal((native.match(/if\(r.inputText&&commitInput\(r,frame.turnComplete\)\)return/g)||[]).length,3)
 })

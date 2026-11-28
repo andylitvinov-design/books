@@ -6,7 +6,7 @@ import {initialCoachMicActivity,stepCoachMicActivity,classifyClientReactionText,
 import {createReactionPlayback} from '../lib/coaching/coach-reaction-playback.mjs'
 import {REACTION_V4_ANCHORS,REACTION_V4_BLOCKS,REACTION_V4_ROOT,REACTION_V5_ALL_BLOCKS,reactionCameraGroup,MAX_COACH_REACTION_FRAMES,coachReactionDurationAllowed,reactionV4File,reactionV4Poster,releasedReactionMedia,COACH_PRESENTATION_LOOPS,isCoachPresentationContext,releasedCoachPresentationLoop,coachPresentationMetadataMatches,coachPresentationOpening,HARRY_PRESENTATION_OPENING,COACH_ORIGINAL_OPENINGS,COACH_PROTECTED_PRESENCE,protectedCoachPresence} from '../lib/coaching/coach-reaction-v4-registry.mjs'
 import {REACTION_V4_RELEASED,REACTION_V5_CAMERA_GROUPS} from '../lib/coaching/coach-reaction-v4-release.mjs'
-import {COACH_REACTION_QUALITY_AUDIT,coachReactionQualityEligible,qualityScreenedReactionMedia,qualityScreenedPresentation} from '../lib/coaching/coach-reaction-quality.mjs'
+import {COACH_REACTION_QUALITY_AUDIT,coachReactionQualityEligible,qualityScreenedReactionMedia,qualityScreenedPresentation,qualityScreenedPublicPresence} from '../lib/coaching/coach-reaction-quality.mjs'
 
 test('speech activity: open microphone alone is not a client turn; hysteresis and expiry',()=>{
  let s=initialCoachMicActivity()
@@ -488,7 +488,7 @@ test('quality hold retains the HD camera and does not return to legacy video',()
  const src=read('components/my-coach-motion-media.jsx')
  const pres=read('components/coach-presentation-layers.jsx')
  assert.ok(src.includes('qualityScreenedReactionMedia(releasedReactionMedia('))
- assert.ok(src.includes('qualityScreenedPresentation(pinnedPresentation,'))
+ assert.ok(src.includes('qualityScreenedPublicPresence(personaId,REACTION_V4_RELEASED,pinnedPresentation)'))
  assert.ok(src.includes(':!sessionContext&&shouldPlay&&'))
  assert.ok(src.includes('if(presentationActive||sessionContext)return'))
  assert.doesNotMatch(src,/setFailedCameras|failedCameras\[personaId\]/)
@@ -539,4 +539,20 @@ test('presentation waits for current playback progress and cannot reveal a faile
  assert.doesNotMatch(src,/else reveal\(video,clip\)/)
  assert.ok(src.includes('if(visibleRef.current===clip.src){'))
  assert.doesNotMatch(src,/visibleRef.current===clip.src\|\|clip.src===presence/)
+})
+
+
+test('public presentation selects a stable reviewed neutral camera without changing session policy',()=>{
+ const expected={mira:'MIR-A01',max:'MAX-A01',alex:'ALX-A01',sofia:'SOF-02',merlin:'MER-A01',harry:'HAR-01',genie:'SAM-01'}
+ for(const [coach,id] of Object.entries(expected)){
+  const pinned=protectedCoachPresence(coach,REACTION_V4_RELEASED)
+  const clip=qualityScreenedPublicPresence(coach,REACTION_V4_RELEASED,pinned)
+  assert.equal(clip.id,id)
+  assert.ok(coachReactionQualityEligible(clip))
+  assert.equal(clip.poster,releasedReactionMedia(coach,REACTION_V4_RELEASED,clip.group).poster)
+ }
+ assert.equal(qualityScreenedPublicPresence('mira',['primary:mira'],protectedCoachPresence('mira',['primary:mira'])).id,'MIR-01')
+ assert.equal(qualityScreenedPublicPresence('caesar',REACTION_V4_RELEASED,null),null)
+ assert.equal(REACTION_V5_CAMERA_GROUPS.merlin,'alternate')
+ assert.equal(protectedCoachPresence('mira',REACTION_V4_RELEASED).id,'MIR-02')
 })
