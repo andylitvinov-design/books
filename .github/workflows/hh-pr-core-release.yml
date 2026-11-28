@@ -517,13 +517,10 @@ jobs:
             if [[ "$f" =~ \.(cjs|mjs|js|jsx|ts|tsx)$ && -f "$f" ]]; then files+=("$f"); fi
           done < <(git diff --name-only -z "$BASE_SHA" HEAD)
           if [[ "$full_lint" == true ]]; then
-            # Same whole-repository ESLint, two bounded workers on the free runner.
-            # If a manifest changes the CLI/script or downgrades ESLint, retain the original command.
-            if node -e 'const v=require("eslint/package.json").version.split(".").map(Number); process.exit(require("./package.json").scripts.lint==="eslint ."&&v[0]===9&&v[1]>=34?0:1)'; then
-              npm run lint -- --concurrency 2
-            else
-              npm run lint
-            fi
+            # Next 15 FlatCompat uses @rushstack/eslint-patch. ESLint 9 worker
+            # loading fails before linting with "calling module was not recognized".
+            # Keep full serial lint for manifest/config changes; no test waiver.
+            npm run lint
           elif (( ${#files[@]} > 0 )); then
             npx --no-install eslint "${files[@]}"
           else
