@@ -2547,7 +2547,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       selectedMethod={selectedMethod} onMethodSelect={setSelectedMethod}
       methodSelectionEnabled={protocolOwnerReady}
       privateProfileEnabled={protocolOwnerReady&&profileV3Enabled}
-      draftCourses={resumeList?.owner===protocolOwnerRef.current?resumeList.items.filter(canResumeWithSelectedCoach).map(item=>item.courseSessionId):[]}
+      draftCourses={resumeList?.owner===protocolOwnerRef.current?resumeList.items.map(item=>item.courseSessionId):[]}
+      savedSessions={resumeList?.owner===protocolOwnerRef.current?resumeList.items:[]}
+      resumeLookupReady={Boolean(resumeList&&resumeList.owner===protocolOwnerRef.current)} resumeBusy={resumeBusy} resumeError={resumeError}
+      resumeCursor={resumeList?.owner===protocolOwnerRef.current?resumeList.cursor:null} onResumeSession={restorePrivateDraft} onReloadSessions={()=>loadPrivateResume()} canResume={canResumeWithSelectedCoach}
       resumeControl={protocolOwnerReady&&<div data-coach-resume-choices style={{padding:12}}>
         {greetingIdentity.entryMemoryEnabled&&<>
           <label>
