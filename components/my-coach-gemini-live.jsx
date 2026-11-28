@@ -523,8 +523,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(decision?.transcriptReview){
       if(propsRef.current.speechReviewConsent===true&&audioParts&&(decision.observationOnly!==true||propsRef.current.speechReviewAll===true)){
         const reviewProvider=propsRef.current.speechReviewProvider
-        r.speechReviewQueue??=createSpeechReviewQueue({request:requestSpeechReview,onResult:(id,text)=>{
-          if(runtime.current===r&&!r.ended&&propsRef.current.speechReviewConsent===true&&propsRef.current.speechReviewProvider===reviewProvider)propsRef.current.onSpeechReviewCandidate?.(id,r.paused?'':text)
+        r.speechReviewQueue??=createSpeechReviewQueue({request:requestSpeechReview,onResult:(id,text,model)=>{
+          if(runtime.current===r&&!r.ended&&propsRef.current.speechReviewConsent===true&&propsRef.current.speechReviewProvider===reviewProvider)propsRef.current.onSpeechReviewCandidate?.(id,r.paused?'':text,r.paused?'':model)
         }})
         if(!r.speechReviewQueue.offer({id:decision.transcriptReview,parts:audioParts,capturedAt:audioClip.capturedAt,locale:r.locale,provider:reviewProvider,observationOnly:decision.observationOnly===true,long:process.env.NEXT_PUBLIC_HH_MY_COACH_STT_LONG_REVIEW_ENABLED==='true'&&reviewProvider!=='gemini'}))propsRef.current.onSpeechReviewCandidate?.(decision.transcriptReview,'')
       }else propsRef.current.onSpeechReviewCandidate?.(decision.transcriptReview,'')

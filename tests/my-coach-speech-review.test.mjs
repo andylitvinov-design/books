@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {createSpeechReviewBuffer,speechReviewWav,createSpeechReviewQueue} from '../lib/coaching/coach-speech-review.mjs'
+import {createSpeechReviewBuffer,speechReviewWav,createSpeechReviewQueue,normalizeSpeechReviewResult} from '../lib/coaching/coach-speech-review.mjs'
 test('WAV uses 16k mono PCM and preserves bounded onset',()=>{
  const b=createSpeechReviewBuffer();b.append(new Uint8Array(3200),false);b.append(new Uint8Array(6400).fill(7),true)
  const wav=speechReviewWav(b.take()),v=new DataView(wav.buffer)
@@ -177,4 +177,19 @@ test('archive speech dictionary uses short confirmed owner records and never gue
  assert.equal(archivedSpeechSuggestion({...options,current:[conflicting]}),'')
  assert.equal(archivedSpeechSuggestion({...options,archive:[]}), '')
  assert.equal(archivedSpeechSuggestion({...options,archive:[],current:[event]}),'Уставшим')
+})
+
+test('observed model metadata only follows a completed accepted review',async()=>{
+ assert.deepEqual(normalizeSpeechReviewResult({text:' да ',model:'whisper-large-v3'}),{text:'да',model:'whisper-large-v3'})
+ assert.deepEqual(normalizeSpeechReviewResult({text:'да',model:'unknown'}),{text:'да',model:''})
+ assert.deepEqual(normalizeSpeechReviewResult({text:'',model:'whisper-large-v3'}),{text:'',model:''})
+ const clock=fakeReviewClock(),results=[]
+ const q=createSpeechReviewQueue({...clock,request:async()=>({text:'да',model:'whisper-large-v3-turbo'}),onResult:(...x)=>results.push(x)})
+ assert.equal(q.offer({id:1,parts:[new Uint8Array(3200)]}),true);clock.advance(0);await Promise.resolve()
+ assert.deepEqual(results,[[1,'да','whisper-large-v3-turbo']]);q.cancel()
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const route=readFileSync(new URL('../app/api/holistic-support/audio-storyboard/route.js',import.meta.url),'utf8')
+ assert.ok(route.includes('model:multipart.get("model")'))
+ assert.ok(ui.includes('data-coach-stt-observed-model={lastSpeechReviewModel}'))
+ assert.ok(ui.includes('&&text&&actualModel)setLastSpeechReviewModel(actualModel)'))
 })

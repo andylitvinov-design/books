@@ -128,7 +128,8 @@ export async function POST(request){
       if(!text)throw new AppError("AUDIO_STT_EMPTY",422);
       if(purpose==="my_coach"&&isSpeechTranscriptLanguageMismatch({requested:language,detected:result.language,text}))
         throw new AppError("AUDIO_STT_LANGUAGE_MISMATCH",422);
-      return NextResponse.json({version:"hh-audio-dictation-v1",text,provider:"groq_free_confirmed",charged:false,locallyStored:false},{headers:PRIVATE_HEADERS});
+      return NextResponse.json({version:"hh-audio-dictation-v1",text,provider:"groq_free_confirmed",charged:false,locallyStored:false,
+        ...(purpose==="my_coach"?{model:multipart.get("model")}:{})},{headers:PRIVATE_HEADERS});
     }
     const transcript=normalizeTimedTranscript(result);
     if(!transcript)throw new AppError("AUDIO_STT_TIMECODES_UNAVAILABLE",502);
