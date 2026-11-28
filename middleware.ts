@@ -4,6 +4,7 @@ import { canonicalRedirectTarget, privateMigrationBridge } from './lib/canonical
 import { refreshAdminAuth } from './lib/app/admin-auth-refresh'
 import { personalVideoStorageCsp } from './lib/app/personal-video-storage-csp.mjs'
 import { instantHomeLocale } from './lib/instant-home-policy.mjs'
+import { publicHomeDocumentLocale, publicHomeEncoding } from './lib/public-home-document-request.mjs'
 
 // Separate static-only CSP. Never weaken Next's nonce policy on private/API/RSC.
 const INSTANT_PUBLIC_HOME_CSP = [
@@ -72,6 +73,19 @@ export async function middleware(request: NextRequest) {
     response.headers.set('Referrer-Policy','strict-origin-when-cross-origin')
     return response
   }
+  // Relative beforeFiles rewrites reach this route after middleware. An
+  // external request cannot select a representation or bypass its canonical URL.
+  if (/^\/hh-public-document(?:\/|$)/.test(request.nextUrl.pathname)) {
+    return new NextResponse(null, { status: 404, headers: { 'Cache-Control': 'private, no-store' } })
+  }
+  if (process.env.HH_HAVE_PUBLIC_HOME_DOCUMENTS === '1' && publicHomeDocumentLocale({
+    pathname: request.nextUrl.pathname, method: request.method,
+    search: request.nextUrl.search, headers: request.headers,
+  })) {
+    const candidateHeaders = new Headers(request.headers)
+    candidateHeaders.set('x-hh-public-home-encoding', publicHomeEncoding(request.headers.get('accept-encoding')))
+    return NextResponse.next({ request: { headers: candidateHeaders } })
+  }
   // Plain My Practice entry is the new, public practitioner dashboard. Do this
   // before streaming the old Account layout: an in-page redirect can return
   // HTTP 200 + delayed meta refresh and reveal the old personal login on iOS.
@@ -106,6 +120,7 @@ export async function middleware(request: NextRequest) {
   } })
   const authCookieChanges = await refreshAdminAuth(request)
   const requestHeaders = new Headers(request.headers)
+  requestHeaders.delete('x-hh-public-home-encoding')
   // Derive the public document language only from the URL. Private locale gates
   // and all security headers below remain unchanged.
   const pathname = request.nextUrl.pathname
@@ -364,6 +379,11 @@ export async function middleware(request: NextRequest) {
     : NextResponse.next({ request: { headers: requestHeaders } })
   for (const { name, value, options } of authCookieChanges) response.cookies.set(name, value, options)
   response.headers.set('Content-Security-Policy', csp)
+  // Canonical Home requests rejected by the guest-document gate must never
+  // share nonce-bound HTML or Flight data. Keep ordinary Home SEO unchanged.
+  if (['/', '/ru', '/es'].includes(pathname)) {
+    response.headers.set('Cache-Control', 'private, no-store, max-age=0, must-revalidate')
+  }
   if (privatePath(request.nextUrl.pathname) || authCookieChanges.length) {
     response.headers.set('Cache-Control', 'private, no-store, max-age=0, must-revalidate')
     response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive')

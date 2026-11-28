@@ -1,19 +1,40 @@
 import assert from "node:assert/strict";
 import { pathToFileURL } from "node:url";
+import { requestHomeDocument } from "./public-home-http.mjs";
 const paths=["/","/ru","/es"];
 export function snapshot(html) {
-  const links=[...html.matchAll(/<link\b[^>]*\brel=["']stylesheet["'][^>]*>/gi)]
-    .map(x=>x[0].match(/\bhref=["']([^"']+)/i)?.[1]).filter(Boolean);
+  const sheets=[...html.replace(/<noscript\b[^>]*>[\s\S]*?<\/noscript>/gi,"").matchAll(/<link\b[^>]*\brel=["']stylesheet["'][^>]*>/gi)].map(x=>x[0]);
+  const href=tag=>tag.match(/\bhref=["']([^"']+)/i)?.[1];
+  const links=sheets.map(href).filter(Boolean);
+  const blockingCssLinks=sheets.filter(tag=>!/\bmedia\s*=\s*["']print["']/i.test(tag)&&!/(?:^|\s)disabled(?:\s|=|\/?>)/i.test(tag)).map(href).filter(Boolean);
   const preloads=[...html.matchAll(/<link\b[^>]*\brel=["']preload["'][^>]*>/gi)].map(x=>x[0]);
-  return {decodedHtmlBytes:Buffer.byteLength(html),cssLinks:links,
+  // The approved guide can change: validate the ACTUAL first SSR hero image
+  // rather than accepting any preloaded asset or the old Max-only directory.
+  const heroMatch=html.match(/<div\b[^>]*\bdata-home-ali-persona=(["'])([^"']+)\1[^>]*>\s*(?:<!--[\s\S]*?-->\s*)*(<img\b[^>]*>)/i);
+  const heroTag=heroMatch?.[3];
+  const attr=(tag,name)=>tag?.match(new RegExp("(?:^|\\s)"+name+"\\s*=\\s*([\"'])(.*?)\\1","i"))?.[2]??null;
+  const heroImage=heroTag?{persona:heroMatch[2],src:attr(heroTag,"src"),loading:attr(heroTag,"loading"),fetchPriority:attr(heroTag,"fetchpriority")}:null;
+  return {decodedHtmlBytes:Buffer.byteLength(html),cssLinks:links,blockingCssLinks,heroImage,
     highPriorityImages:preloads.filter(x=>/\bas=["']image["']/i.test(x)&&/fetchpriority=["']high["']/i.test(x))
       .map(x=>x.match(/\bhref=["']([^"']+)/i)?.[1]).filter(Boolean)};
+}
+export function assertHeroPreload(data,path="/"){
+  // The current Home scene is hidden by the approved hero CSS. A pine
+  // preload is no longer required; it cannot substitute for the real portrait.
+  const hero=data.heroImage;
+  assert.ok(hero,"Approved SSR persona image missing: "+path);
+  assert.equal(hero.loading,"eager","Hero image must load eagerly: "+path);
+  assert.equal(hero.fetchPriority,"high","Hero image priority missing: "+path);
+  // Keep the LCP portrait an independent, cacheable high-priority request.
+  // The inline-data experiment regressed matched mobile Lighthouse LCP.
+  assert.ok(/^\/images\/holistic-house\/(?:ali-inner-alchemist-hero\.webp|my-coach-motion\/[a-z0-9_-]+\.webp)$/i.test(hero.src??""),"Approved cacheable SSR persona image missing: "+path);
+  assert.ok(data.highPriorityImages.includes(hero.src),"Actual SSR hero image preload missing: "+path);
 }
 async function main(){
   const origin=new URL(process.argv[2]||"http://127.0.0.1:3000");
   const list=[];
   for(const path of paths){
-    const response=await fetch(new URL(path,origin),{signal:AbortSignal.timeout(20000)});
+    const response=await requestHomeDocument(new URL(path,origin));
     assert.equal(response.status,200,path);
     const data=snapshot(await response.text());
     const unique=[...new Set(data.cssLinks)];
@@ -24,14 +45,13 @@ async function main(){
       cssBytes+=Buffer.byteLength(await s.text());
     }
     assert.ok(data.decodedHtmlBytes<300000,"HTML payload regression >300 KB: "+path);
-    assert.ok(data.highPriorityImages.some(href=>/ideas-pine-reference\.webp/.test(href)),
-      "Scenic hero background preload missing: "+path);
-    assert.ok(data.highPriorityImages.some(href=>/my-coach-motion\//.test(href)),
-      "Persona first-screen image preload missing: "+path);
-    list.push({path,htmlBytes:data.decodedHtmlBytes,cssFiles:unique.length,cssBytes,
+    assertHeroPreload(data,path);
+    list.push({path,htmlBytes:data.decodedHtmlBytes,wireHtmlBytes:response.wireBytes,deliveryPolicy:response.headers.get('content-security-policy')?.includes("'sha256-")?'hash':'nonce-or-other',cssFiles:unique.length,cssBytes,
+      blockingCssFiles:new Set(data.blockingCssLinks).size,
+      heroImage:data.heroImage,
       highPriorityImages:data.highPriorityImages});
   }
-  console.log(JSON.stringify({origin:origin.origin,source:"built-Next-local",note:"CSS and HTML decoded bytes are uncompressed; these are not Lighthouse times",pages:list},null,2));
+  console.log(JSON.stringify({origin:origin.origin,source:"built-Next-local",note:"CSS and HTML decoded bytes are uncompressed; blockingCssFiles excludes disabled, print-media sheets and noscript fallbacks; these are not Lighthouse times",pages:list},null,2));
 }
 if(process.argv[1] && import.meta.url===pathToFileURL(process.argv[1]).href)
   main().catch(e=>{console.error(e);process.exitCode=1});

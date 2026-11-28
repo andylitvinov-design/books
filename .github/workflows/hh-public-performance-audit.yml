@@ -41,6 +41,13 @@ on:
       - 'scripts/measure-home-css-network.mjs'
       - 'scripts/report-home-mobile-compare.mjs'
       - 'tests/home-mobile-compare.test.mjs'
+      - 'scripts/verify-home-browser-parity.mjs'
+      - 'scripts/home-audit-http2-proxy.mjs'
+      - 'scripts/build-public-home-documents.mjs'
+      - 'scripts/home-deferred-css.mjs'
+      - 'tests/public-home-document-build.test.mjs'
+      - 'tests/public-home-document-delivery.test.mjs'
+      - '.github/workflows/hh-public-performance-audit.yml'
   workflow_dispatch:
 permissions:
   contents: read
@@ -76,6 +83,9 @@ jobs:
         uses: ./.github/actions/ci-ffmpeg-static
         with:
           stage: materialize
+      - name: Validate compiled anonymous home delivery and strict CSP contract
+        if: ${{ github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, 'perf(home):') }}
+        run: node --test tests/public-home-document-build.test.mjs tests/public-home-document-delivery.test.mjs
       - name: Check full production build of Draft performance PR
         if: ${{ github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, 'perf(home):') }}
         run: |
@@ -96,25 +106,45 @@ jobs:
             sleep 1
           done
           node scripts/measure-home-css-network.mjs http://127.0.0.1:3399 | tee /tmp/hh-home-css-metrics.json
+          HH_PUBLIC_HOME_TEST_ORIGIN=http://127.0.0.1:3399 node --test tests/public-home-document-delivery.test.mjs
           { echo '## Homepage network first paint (uncompressed)'; echo '```json'; cat /tmp/hh-home-css-metrics.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
       - name: Build exact protected PR BASE in isolated local worktree for fair Lighthouse comparison
         if: ${{ github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, 'perf(home):') }}
         timeout-minutes: 16
         shell: bash
         env:
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           NEXT_TELEMETRY_DISABLED: '1'
         run: |
           set -euo pipefail
+          # The event payload can retain the old stacked base after a retarget.
+          # Use the first parent of the exact checkout merge commit instead.
+          mapfile -t parents < <(git cat-file -p HEAD | sed -n 's/^parent //p')
+          [[ "${#parents[@]}" -eq 2 ]] || { echo 'Expected checked-out PR merge commit'; exit 1; }
+          PR_BASE_SHA="${parents[0]}"
           [[ "$PR_BASE_SHA" =~ ^[0-9a-f]{40}$ ]] || exit 1
+          if [[ "$EVENT_BASE_SHA" != "$PR_BASE_SHA" ]]; then
+            echo "::warning::Event base $EVENT_BASE_SHA differs from actual checkout parent $PR_BASE_SHA"
+          fi
+          printf 'Actual baseline %s; candidate merge %s; PR head %s\n' "$PR_BASE_SHA" "$(git rev-parse HEAD)" "${parents[1]}"
+          mkdir -p artifacts/home-perf
+          printf '{"baseline":"%s","candidateMerge":"%s","candidateHead":"%s","eventBase":"%s"}\n' "$PR_BASE_SHA" "$(git rev-parse HEAD)" "${parents[1]}" "$EVENT_BASE_SHA" > artifacts/home-perf/source-shas.json
           git fetch --no-tags --depth=1 origin "$PR_BASE_SHA"
           baseline_dir="$RUNNER_TEMP/hh-home-baseline"
           git worktree add --detach "$baseline_dir" "$PR_BASE_SHA"
-          # Reuse EXACT same pinned dependencies, no extra package installs,
-          # env secrets, Vercel builds or external publishing. Fail closed if
-          # baseline lockfile differs.
-          cmp package-lock.json "$baseline_dir/package-lock.json"
-          ln -s "$GITHUB_WORKSPACE/node_modules" "$baseline_dir/node_modules"
+          # Share node_modules only for identical lockfiles. Otherwise install
+          # BASE's own dependency tree from the existing npm cache offline.
+          # The FFmpeg binary remains the exact checksum-verified CI binary.
+          if cmp -s package-lock.json "$baseline_dir/package-lock.json"; then
+            ln -s "$GITHUB_WORKSPACE/node_modules" "$baseline_dir/node_modules"
+          else
+            binary="$GITHUB_WORKSPACE/node_modules/ffmpeg-static/ffmpeg"
+            echo "e7e7fb30477f717e6f55f9180a70386c62677ef8a4d4d1a5d948f4098aa3eb99  $binary" | sha256sum --check --status
+            (cd "$baseline_dir" && FFMPEG_BIN="$binary" npm ci --offline --no-audit --no-fund)
+            [[ "$(node -p "require('$baseline_dir/node_modules/ffmpeg-static/package.json').version")" == '5.3.0' ]]
+            install -m 755 "$binary" "$baseline_dir/node_modules/ffmpeg-static/ffmpeg"
+            echo "e7e7fb30477f717e6f55f9180a70386c62677ef8a4d4d1a5d948f4098aa3eb99  $baseline_dir/node_modules/ffmpeg-static/ffmpeg" | sha256sum --check --status
+          fi
           (cd "$baseline_dir" && npm run build)
       - name: Compare protected BASE vs current PR on same local transport (mobile Lighthouse 13.6)
         if: ${{ github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, 'perf(home):') }}
@@ -125,16 +155,16 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p artifacts/home-perf
-          # Both versions are now Next production builds on the SAME runner,
-          # same http/1.1, same uncompressed response headers, same Chrome.
-          # The previous LIVE-CDN-vs-local comparison mixed HTTP/2 and HTTP/1.1.
+          # Same production-mode builds, runner, TLS/HTTP2 transport and Chrome.
+          # This removes HTTP/1.1 connection scheduling as a local-only confound.
           baseline_dir="$RUNNER_TEMP/hh-home-baseline"
           [[ -d "$baseline_dir/.next" ]] || { echo 'Exact BASE build missing'; exit 1; }
           PORT=3398 HOSTNAME=127.0.0.1 npm start --prefix "$baseline_dir" >/tmp/hh-home-base-server.log 2>&1 &
           baseline_pid=$!
           PORT=3399 HOSTNAME=127.0.0.1 npm start >/tmp/hh-home-lh-server.log 2>&1 &
           app_pid=$!
-          trap 'kill "$app_pid" "$baseline_pid" 2>/dev/null || true' EXIT
+          proxy_pid=''
+          trap 'kill "$app_pid" "$baseline_pid" ${proxy_pid:+"$proxy_pid"} 2>/dev/null || true' EXIT
           for target in 3398 3399; do
             ready=false
             for attempt in {1..35}; do
@@ -146,6 +176,19 @@ jobs:
               tail -60 /tmp/hh-home-base-server.log /tmp/hh-home-lh-server.log
               exit 1
             fi
+          done
+          tls_dir="$(mktemp -d)"
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj '/CN=127.0.0.1' \
+            -addext 'subjectAltName=IP:127.0.0.1' -keyout "$tls_dir/key.pem" -out "$tls_dir/cert.pem" >/dev/null 2>&1
+          node scripts/home-audit-http2-proxy.mjs "$tls_dir/key.pem" "$tls_dir/cert.pem" >/tmp/hh-home-h2.log 2>&1 &
+          proxy_pid=$!
+          for target in 3498 3499; do
+            ready=false
+            for attempt in {1..20}; do
+              if [[ "$(curl -kfsS --http2 -o /dev/null -w '%{http_version}' "https://127.0.0.1:$target/")" == 2 ]]; then ready=true; break; fi
+              sleep 1
+            done
+            if [[ "$ready" != true ]]; then cat /tmp/hh-home-h2.log; exit 1; fi
           done
           # Github's system Chrome can exit before chrome-launcher discovers the
           # dynamic debugging port. Validate CDP up front, before 12 audit runs.
@@ -188,23 +231,27 @@ jobs:
               path="/"
               if [[ "$lang" != en ]]; then path="/$lang"; fi
               for candidate in before after; do
-                origin="http://127.0.0.1:3398"
-                if [[ "$candidate" == after ]]; then origin="http://127.0.0.1:3399"; fi
+                origin="https://127.0.0.1:3498"
+                if [[ "$candidate" == after ]]; then origin="https://127.0.0.1:3499"; fi
                 echo "Lighthouse 13.6: $candidate $lang pass=$pass (mobile simulated slow 4G)"
                 timeout 135s npx --yes lighthouse@13.6.0 "$origin$path" \
-                  --quiet --port=9222 --chrome-flags="--headless=new --no-sandbox --disable-dev-shm-usage --disable-gpu" \
+                  --quiet --port=9222 --chrome-flags="--headless=new --no-sandbox --disable-dev-shm-usage --disable-gpu --ignore-certificate-errors" \
                   --only-categories=performance --throttling-method=simulate \
                   --output=json --output-path="artifacts/home-perf/$candidate-$lang-$pass.json"
               done
             done
           done
-          node scripts/report-home-mobile-compare.mjs artifacts/home-perf
+          HH_HOME_AUDIT_TRANSPORT=h2 node scripts/report-home-mobile-compare.mjs artifacts/home-perf
+          # Separate applied network/CPU throttling, not a replacement for PSI.
+          npm install --prefix "$RUNNER_TEMP/hh-home-browser" --no-save --package-lock=false --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          HH_PLAYWRIGHT_MODULE="$RUNNER_TEMP/hh-home-browser/node_modules/playwright/index.mjs" \
+            node scripts/verify-home-browser-parity.mjs artifacts/home-perf
       - name: Save matched slow-4G evidence for first-screen release review
         if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, 'perf(home):')
         uses: actions/upload-artifact@v4
         with:
           name: hh-home-lighthouse-${{ github.run_id }}
-          path: artifacts/home-perf/*.json
+          path: artifacts/home-perf/
           if-no-files-found: ignore
           retention-days: 7
       - name: Measure public TTFB and HTML/RSC size (no login, no private routes)

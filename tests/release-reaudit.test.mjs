@@ -337,7 +337,7 @@ test('release audit preserves all four browser lanes while isolating CI process 
 });
 
 
-test('release re-audit follows current My Space Today guest Profile and explicit CSP transitions', () => {
+test('release re-audit follows My Page and private guest Cabinet with explicit CSP transitions', () => {
   const source = read('scripts/verify-release-reaudit.mjs');
   const navigation = read('lib/site-navigation-model.js');
   const route = read('app/[locale]/app/portrait/page.jsx');
@@ -345,7 +345,12 @@ test('release re-audit follows current My Space Today guest Profile and explicit
   const guest = read('components/app/cabinet-guest-overview.jsx');
   const hub = read('components/app/profile-hub-tabs.jsx');
   const builder = read('components/personality-profiles-builder.tsx');
-  assert.ok(navigation.includes("profile: 'app/portrait'"), 'Profile dock keeps canonical route');
+  assert.ok(navigation.includes("profile: 'app/portrait'"), 'Legacy Cabinet navigation remains available');
+  const dock = read('lib/unified-mobile-dock.mjs');
+  assert.ok(dock.includes('case "profile": return prefix+"/my-page";'), 'Unified Profile dock opens My Page');
+  const myPage = read('components/app/my-page-client.jsx');
+  assert.ok(myPage.includes('data-my-page-public-fallback'));
+  assert.ok(myPage.includes("'/app/portrait'"), 'My Page keeps the real Cabinet discovery link');
   assert.ok(route.includes("return <AppWorkspaceNavigator locale={locale} path={['portrait']} />"), 'My Space Today is the real entry');
   assert.ok(!route.includes('ProfileTestEntry') && !route.includes('hasPrivateIntent'), 'No obsolete test-first route');
   assert.ok(workspace.includes("state !== 'ready' && page === 'portrait'"), 'Signed-out visitors need a guest view');
@@ -356,11 +361,24 @@ test('release re-audit follows current My Space Today guest Profile and explicit
   assert.ok(!guest.includes('appFetch('), 'Guest overview does not fetch private client data');
   assert.ok(hub.includes('publicEntry = false') && hub.includes('data-profile-hub-tabs'));
   assert.ok(builder.includes('data-profile-direct-tests'), 'Public builder still exposes tests');
-  const start = source.indexOf('// The unified Profile dock now opens the PRIVATE Cabinet first.');
+  const start = source.indexOf('// The unified Profile dock opens My Page. A guest must see the');
   const finish = source.indexOf('const discoveryBottom = cspPage.locator(');
   assert.ok(start > 0 && finish > start + 1000, 'Real CSP browser journey is preserved');
   const flow = source.slice(start, finish);
   for (const required of [
+    "toHaveURL(origin + '/en/my-page')",
+    "locator('[data-universal-my-page]')",
+    "locator('[data-my-page-public-fallback=\"guest\"]')",
+    "locator('[data-my-page-google]')",
+    "accountResponse.status() === 503 && accountError.error === 'APP_UNAVAILABLE'",
+    "locator('[data-my-page-public-fallback=\"error\"]')",
+    "label === 'local' && ['127.0.0.1', 'localhost'].includes(url.hostname)",
+    "assert.equal(route.request().method(), 'GET')",
+    "assert.equal(accountResponse.status(), 401",
+    "await cspPage.unroute(myPageApi, guestFixture)",
+    "locator('[data-my-page-anti-stress-practices], [data-my-page-media-library]')).toHaveCount(0)",
+    "discover).toHaveAttribute('href', '/en/app/portrait')",
+    "await discover.click()",
     "toHaveURL(origin + '/en/app/portrait')",
     "toHaveAttribute('data-csp-class', 'private')",
     "locator('[data-cabinet-guest-overview]')",
@@ -376,7 +394,7 @@ test('release re-audit follows current My Space Today guest Profile and explicit
   ]) assert.ok(flow.includes(required), 'Missing My Space/CSP regression: ' + required);
   assert.ok(!flow.includes("locator('[data-profile-hub-tabs] [data-profile-tab=\"today\"]')"),
     'Anonymous My Space no longer relies on signed-in Today navigation');
-  assert.ok(source.includes("toHaveAttribute('href', '/en/app/portrait')"), 'Private test navigation returns to Profile');
+  assert.ok(source.includes("toHaveAttribute('href', '/en/my-page')"), 'Private test navigation returns to My Page');
   assert.ok(!source.includes('Public profile discovery must retain same-policy soft navigation'));
 });
 
@@ -456,7 +474,7 @@ test('private public-test discovery keeps the current unified seven-destination 
   for (const scope of [first, back]) {
     assert.ok(scope.includes("locator('[data-hh-unified-dock]')"), 'The real single shared dock must mount on private test discovery');
     assert.ok(scope.includes("locator('[data-unified-dock-item]')).toHaveCount(7)"), 'All seven real dock links must remain present');
-    assert.ok(scope.includes("locator('[data-unified-dock-item=\"profile\"]')).toHaveAttribute('href', '/en/app/portrait')"), 'Profile still leads to the actual Cabinet');
+    assert.ok(scope.includes("locator('[data-unified-dock-item=\"profile\"]')).toHaveAttribute('href', '/en/my-page')"), 'Profile leads to My Page');
     assert.ok(scope.includes("locator('.mobile-bottom-navigation')).toHaveCount(0)"), 'No duplicate retired mobile bar');
     assert.ok(!scope.includes("locator('.mobile-bottom-navigation')).toBeVisible()"), 'A retired bar cannot be required as the release condition');
   }
