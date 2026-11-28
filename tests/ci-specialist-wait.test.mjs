@@ -4,7 +4,7 @@ import { verify, requiresCurrentProductionBase, classifyPrState, diagnoseAggrega
 import { createRequire } from 'node:module';
 import { verifyStableProtectedBase, observeProtectedBaseDrift, independentPackageOnlyAdvisories, verifiedCoachDispatcherIsolation, independentDispatcherAdvisories, provenNonApplicableWorkflows } from '../scripts/ci-specialist-aggregate.mjs';
 import { inspectJobs, trustedRequiredJobs, inspectWorkflowRuns } from '../lib/ci/specialist-aggregate.mjs';
-import { safeComposedIndependentAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeIndependentRouterPolicyAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeStandaloneVideoAfterSpecialistScopeAdvance, safeNonOverlappingProductAdvance, safeIndependentMixedCandidateAdvance, normalizeIdenticalProtectedOverlap } from '../lib/ci/production-base-impact.mjs';
+import { safeComposedIndependentAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeIndependentRouterPolicyAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeStandaloneVideoAfterSpecialistScopeAdvance, safeNonOverlappingProductAdvance, safeIndependentMixedCandidateAdvance, normalizeIdenticalProtectedOverlap, safeDetachedBenchmarkAdvance, safeTrustedPolicyAdvance } from '../lib/ci/production-base-impact.mjs';
 
 const repo = 'andylitvinov-design/books', head = 'a'.repeat(40), base = 'b'.repeat(40);
 const path = '.github/workflows/mobile.yml';
@@ -1524,4 +1524,38 @@ test('known untouched nonapplicable workflow with orphan run is advisory; unknow
  assert.deepEqual(good.expected,[path]);assert.ok(good.advisory.nonApplicable.includes(other+':failure'));
  await assert.rejects(()=>verify({...api,runs:async()=>[normal,make('.github/workflows/unknown.yml',83,'failure',[])]},ctx,files,{maxWaitMs:0}),/SPECIALIST_FAILED/);
  await assert.rejects(()=>verify({...api,runs:async()=>[normal,make(path,84,'failure',[])]},ctx,files,{maxWaitMs:0}),/SPECIALIST_FAILED/);
+});
+
+test('protected additive benchmark tools and registrations do not invalidate unrelated green exact-HEAD CI',()=>{
+ const target='c'.repeat(40);
+ const make=(filename,lines)=>({filename,status:'added',additions:lines.length,deletions:0,changes:lines.length,
+   patch:'@@ -0,0 +1,'+lines.length+' @@\n'+lines.map(l=>'+'+l).join('\n')});
+ const rows=[
+  make('lib/coaching/local-stt-benchmark.mjs',["import {readFileSync} from 'node:fs'","export const sample=1"]),
+  make('scripts/local-stt-benchmark.mjs',["import {sample} from '../lib/coaching/local-stt-benchmark.mjs'"]),
+  make('tests/local-stt-benchmark.test.mjs',["import test from 'node:test'","import {sample} from '../lib/coaching/local-stt-benchmark.mjs'"]),
+  make('docs/local-stt-benchmark.md',['# Local synthetic benchmark']),
+  {filename:'tests/coaching-release.test.mjs',status:'modified',additions:1,deletions:0,changes:1,
+   patch:"@@ -1 +1,2 @@\n+import './local-stt-benchmark.test.mjs'\n import './old.test.mjs'"}
+ ];
+ const diff={status:'ahead',ahead_by:1,behind_by:0,total_commits:1,base_commit:{sha:base},
+   merge_base_commit:{sha:base},commits:[{sha:target}],files:rows};
+ const candidate=['lib/coaching/live-provider.mjs','package.json','tests/my-coach-personas.test.mjs'];
+ const yes=(files=rows,paths=candidate)=>safeDetachedBenchmarkAdvance({...diff,files},base,target,paths);
+ assert.equal(yes(),true);
+ assert.equal(safeNonOverlappingProductAdvance(diff,base,target,candidate),true);
+ assert.equal(safeTrustedPolicyAdvance({...diff,files:[...rows,{filename:'scripts/ci-specialist-aggregate.mjs',status:'modified'}]},base,target,candidate),true);
+ assert.equal(yes(rows,[...candidate,rows[0].filename]),false);
+ for(const bad of [
+  rows.slice(0,4),
+  [...rows,{filename:'lib/coaching/live-provider.mjs',status:'modified'}],
+  [...rows,{filename:'package.json',status:'modified'}],
+  [...rows,{filename:'app/api/voice/route.js',status:'added'}],
+  rows.map((r,i)=>i===0?{...r,patch:null}:r),
+  rows.map((r,i)=>i===0?make(r.filename,["import {x} from './live-provider.mjs'"]):r),
+  rows.map((r,i)=>i===2?make(r.filename,["import {x} from '../lib/coaching/live-provider.mjs'"]):r),
+  rows.map((r,i)=>i===4?{...r,patch:"@@ -1 +1,2 @@\n+process.exit(0)\n import './old.test.mjs'"}:r),
+  rows.map((r,i)=>i===4?{...r,deletions:1,changes:2}:r)
+ ])assert.equal(yes(bad),false);
+ assert.equal(safeTrustedPolicyAdvance({...diff,files:rows},base,target,candidate),false);
 });
