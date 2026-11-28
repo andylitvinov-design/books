@@ -31,14 +31,20 @@ function validReadOnlyConflict(pr){
 // Only after a terminally handled hourly candidate: bounded alternative PR
 // checks, not additional worker executions or source authorisations.
 const MAX_LEGACY_BACKUPS=4, MAX_LEGACY_HOURLY_HISTORY=20;
-// The first fixed fallback block can become entirely terminal. Rotate four
-// read-only fallback candidates per already existing 10-minute observation;
-// no additional Worker slot, CI wake or schedule is created. Ownership and
-// exact task receipt remain mandatory on EVERY selected candidate.
-function legacyFallbackStart(total,now){
+// Match the actual :13/:33/:53 Watchdog cadence. A 10-minute stride
+// advances two windows per real scheduled observation and can permanently
+// skip half of a stable backlog (e.g. 56 candidates and width 4).
+// Event wakes within the same recovery window reuse the bounded sample;
+// they do not add worker slots or authorize any source mutation.
+const WATCHDOG_ROTATION_MS=20*60_000;
+function watchdogRotationStart(total,width,now){
  if(!Number.isSafeInteger(total)||total<=0||
+    !Number.isSafeInteger(width)||width<=0||
     !Number.isFinite(now)||now<0)return 0;
- return (Math.floor(now/600_000)*MAX_LEGACY_BACKUPS)%total;
+ return ((Math.floor(now/WATCHDOG_ROTATION_MS)%total)*Math.min(width,total))%total;
+}
+function legacyFallbackStart(total,now){
+ return watchdogRotationStart(total,MAX_LEGACY_BACKUPS,now);
 }
 const RELEVANT=new Set(['HH PR 10-minute watchdog','HH PR source Repair Worker','HH zero-cost PR CI worker','HH PR core release gate',...Object.keys(QUALITY_EVENT_PATHS)]);
 // Two independent routes: owner-authored manual workflow dispatch, OR a
@@ -202,14 +208,21 @@ function planCandidates(prs,now){
  const manualConflictHints=legacy.filter(pr=>
   (pr.labels||[]).some(label=>label.name==='hh:conflict-repair-needed'));
  const manualConflictProbes=slots=>{
-  const pool=manualConflictHints.filter(pr=>
-   !oldCandidates.some(old=>old.number===pr.number));
-  const count=Math.min(2,Math.max(0,slots),pool.length);
-  const start=pool.length?(Math.floor(now/600000)*Math.max(1,count))%pool.length:0;
-  return Array.from({length:count},(_,i)=>pool[(start+i)%pool.length]);
+  // Keep the stable hint population as the rotation denominator. Removing
+  // the hourly candidate before computing the offset shifts all positions.
+  const pool=manualConflictHints;
+  const excluded=new Set(oldCandidates.map(pr=>pr.number));
+  const count=Math.min(2,Math.max(0,slots),pool.filter(pr=>!excluded.has(pr.number)).length);
+  const start=watchdogRotationStart(pool.length,2,now);
+  const probes=[];
+  for(let i=0;i<pool.length&&probes.length<count;i++){
+   const pr=pool[(start+i)%pool.length];
+   if(!excluded.has(pr.number))probes.push(pr);
+  }
+  return probes;
  };
  // During conflict-only backlogs, rotate a bounded window rather than reread
- // the same 16 already handed-off exact HEADs on each ten-minute cycle.
+ // the same 16 already handed-off exact HEADs on each actual recovery window.
  if(!source.length&&!ci){
   const conflicts=ranked.filter(pr=>laneOf(pr)==='conflict');
   const room=Math.min(MAX_CONFLICT_ONLY_INSPECT,conflicts.length);
@@ -221,7 +234,7 @@ function planCandidates(prs,now){
   const tail=conflicts.slice(fast.length);
   const rotating=Math.max(0,Math.min(tail.length,
    MAX_CONFLICT_ONLY_INSPECT-fast.length-oldCandidates.length-probes.length));
-  const offset=tail.length?(Math.floor(now/600000)*Math.max(1,rotating))%tail.length:0;
+  const offset=watchdogRotationStart(tail.length,rotating,now);
   const hintNumbers=new Set(probes.map(pr=>pr.number));
   return [...fast,...oldCandidates,...probes,
    ...Array.from({length:rotating},(_,i)=>tail[(offset+i)%tail.length])]
@@ -249,7 +262,7 @@ function planCandidates(prs,now){
  for(const pr of probes)add(pr);
  const sourceRoom=Math.max(0,MAX_INSPECT-picked.length-(conflict&&!chosen.has(conflict.number)?1:0));
  const tail=source.filter(pr=>!chosen.has(pr.number));
- const offset=tail.length?(Math.floor(now/600000)*Math.max(1,sourceRoom))%tail.length:0;
+ const offset=watchdogRotationStart(tail.length,sourceRoom,now);
  for(let i=0;i<tail.length&&picked.length<MAX_INSPECT-(conflict&&!chosen.has(conflict.number)?1:0);i++)add(tail[(offset+i)%tail.length]);
  add(conflict);
  // Legacy is a read-only hourly lane; never let the generic refill loop
@@ -257,7 +270,7 @@ function planCandidates(prs,now){
  const rest=ranked.filter(pr=>!chosen.has(pr.number)&&laneOf(pr)!=='legacy')
   .sort((a,b)=>a.number-b.number);
  const room=Math.min(MAX_INSPECT-picked.length,rest.length);
- const start=rest.length?(Math.floor(now/600000)*Math.max(1,room))%rest.length:0;
+ const start=watchdogRotationStart(rest.length,room,now);
  for(let i=0;i<room;i++)add(rest[(start+i)%rest.length]);
  const hintNumbers=new Set(probes.map(pr=>pr.number));
  return picked.map(pr=>{
