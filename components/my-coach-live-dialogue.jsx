@@ -36,7 +36,8 @@ import {coachCompletionDestination,coachEarlyExitDestination,coachShouldOfferEar
 import MyCoachSpeechLoop from './my-coach-speech-loop'
 import MyCoachGeminiLive from './my-coach-gemini-live'
 import {shouldReviewSpeech,observeSpeechCandidate,canObserveOrdinarySpeech,visibleSpeechReview} from '@/lib/coaching/coach-speech-evidence.mjs'
-import {addSpeechAmendment,speechPersonalCorrection} from '@/lib/personal-coaching/speech-amendments.mjs'
+import {addSpeechAmendment} from '@/lib/personal-coaching/speech-amendments.mjs'
+import {archivedSpeechSuggestion} from '@/lib/personal-coaching/speech-dictionary.mjs'
 import MyCoachStagedMemoryControls from './my-coach-staged-memory-controls'
 import {coachExplicitRecall,privateCoachRecallText,coachReturningSalutation} from '@/lib/coaching/coach-private-recall.mjs'
 import MyCoachSessionStateCard from './my-coach-session-state-card'
@@ -274,6 +275,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [speechReviews,setSpeechReviews]=useState([])
   const visibleSpeechReviews=speechReviews.filter(visibleSpeechReview)
   const speechReviewSerial=useRef(0)
+  const speechDictionaryRef=useRef(null),speechDictionaryRequest=useRef(null)
+  const [speechDictionaryState,setSpeechDictionaryState]=useState('off')
   const speechAmendmentsRef=useRef([])
   const [speechAmendments,setSpeechAmendments]=useState([])
   function restoreSpeechAmendments(value){const rows=value||[];speechAmendmentsRef.current=rows;setSpeechAmendments(rows)}
@@ -314,6 +317,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [speechLocale,setSpeechLocale]=useState(lang)
   useEffect(()=>{setSpeechLocale(lang)},[lang])
   const conversationLang=['en','ru','es'].includes(speechLocale)?speechLocale:lang
+  useEffect(()=>{
+    speechDictionaryRequest.current?.abort();speechDictionaryRequest.current=null;speechDictionaryRef.current=null;setSpeechDictionaryState('off')
+    setSpeechReviews(rows=>rows.map(row=>({...row,previous:''})))
+    return()=>{speechDictionaryRequest.current?.abort();speechDictionaryRequest.current=null;speechDictionaryRef.current=null}
+  },[personaId,conversationLang])
   const [showCaptions,setShowCaptions]=useState(false)
   const [turns,setTurns]=useState([])
   const turnsRef=useRef(turns)
@@ -1376,6 +1384,23 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const next=[{role:'assistant',content,locale:conversationLang,coachId:personaId,capturedAt:new Date().toISOString(),mode:'offline',stage:'opening',privateGreetingPrefix:true,requestedSavedContext:true}]
     if(!coachProtocolCanAppend([],next))return
     turnsRef.current=next;setTurns(next);queuePrivateDraft(next)
+  }
+  async function toggleSpeechDictionary(enabled){
+    speechDictionaryRequest.current?.abort();speechDictionaryRequest.current=null;speechDictionaryRef.current=null
+    setSpeechReviews(rows=>rows.map(row=>({...row,previous:''})))
+    if(!enabled){setSpeechDictionaryState('off');return}
+    const owner=protocolOwnerRef.current
+    if(!owner){setSpeechDictionaryState('error');return}
+    const controller=new AbortController(),locale=conversationLang
+    speechDictionaryRequest.current=controller;setSpeechDictionaryState('loading')
+    try{
+      const response=await fetch('/api/app/my-coach/protocol',{method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,headers:{'Content-Type':'application/json','X-HH-Account-ID':owner},body:JSON.stringify({action:'speech-dictionary',consent:true,locale})})
+      if(!response.ok)throw Error('DICTIONARY_UNAVAILABLE')
+      const data=await response.json()
+      if(controller.signal.aborted||speechDictionaryRequest.current!==controller||protocolOwnerRef.current!==owner)return
+      if(data.locale!==locale||!Array.isArray(data.terms)||data.terms.length>32)throw Error('DICTIONARY_UNAVAILABLE')
+      speechDictionaryRef.current={owner,locale,terms:data.terms};setSpeechDictionaryState('ready')
+    }catch{if(!controller.signal.aborted&&speechDictionaryRequest.current===controller)setSpeechDictionaryState('error')}
   }
   function confirmSpeechAmendment(row){
     if(protocolSaved||protocolSaving||protocolSaveSnapshotRef.current||protocolSaveLocked||courseGateRef.current||courseGateAttemptRef.current||courseGateBusyRef.current||profileV3BusyRef.current||profileV3FaultRef.current||(profileV3Ref.current&&!profileV3Ref.current.step.closed)||row.pending||row.sessionId!==protocolIdRef.current||!turnsRef.current.length)return
@@ -2454,7 +2479,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
                 const id=++speechReviewSerial.current
                 if(!protocolIdRef.current)protocolIdRef.current=crypto.randomUUID()
                 const amendmentId=crypto.randomUUID(),sessionId=protocolIdRef.current,afterTurnCount=turnsRef.current.length
-                const previous=speechPersonalCorrection(speechAmendmentsRef.current,turnsRef.current,sessionId,text,conversationLang)
+                const dictionary=speechDictionaryRef.current
+                const previous=archivedSpeechSuggestion({current:speechAmendmentsRef.current,turns:turnsRef.current,sessionId,raw:text,locale:conversationLang,archive:dictionary?.owner===protocolOwnerRef.current&&dictionary?.locale===conversationLang?dictionary.terms:[]})
                 setSpeechReviews(rows=>[...rows,{id,amendmentId,sessionId,afterTurnCount,locale:conversationLang,provider:speechReviewProvider,raw:text,candidate:'',previous,edited:null,pending:details.reviewAvailable===true}])
                 setSpeechPreview('')
                 return {transcriptReview:id}
@@ -2960,6 +2986,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             <input type="checkbox" checked={activeSpeechReviewConsent&&speechReviewProvider==='groq'} disabled={(!(geminiCapabilities.speech_review_free===true)&&!(speechReviewConsent&&speechReviewProvider==='groq'))||speechReviewConsent&&speechReviewProvider==='gemini'||(!speechReviewConsent&&voiceState.phase!=='idle')} onChange={event=>{setSpeechReviewProvider('groq');setSpeechReviewConsent(event.target.checked&&(geminiCapabilities.speech_review_free===true));if(!event.target.checked){setSpeechReviewAll(false);setSpeechReviews(rows=>rows.filter(row=>!row.observationOnly).map(row=>({...row,pending:false,candidate:''})))}}}/>
             <span>{({ru:'Дополнительное распознавание (Groq Whisper Free): сомнительные фрагменты речи отправляются Groq. Условия обработки данных: ',en:'Optional speech review (Groq Whisper Free): suspect speech clips are sent to Groq. Data terms: ',es:'Revisión opcional (Groq Whisper Free): se envían fragmentos dudosos a Groq. Condiciones: '})[lang]}<a href="https://groq.com/privacy-policy/" target="_blank" rel="noreferrer">Groq</a></span>
           </label>
+          {protocolOwnerReady&&<label className={styles.coachEnginePicker} data-coach-archive-speech-dictionary>
+            <input type="checkbox" checked={speechDictionaryState==='ready'||speechDictionaryState==='loading'} onChange={event=>void toggleSpeechDictionary(event.target.checked)}/>
+            <span>{({ru:'Использовать подтверждённые исправления из предыдущих сессий только как подсказки в этом разговоре. Данные не передаются транскриберу.',en:'Use confirmed corrections from previous sessions only as suggestions in this conversation. These terms are not sent to the transcriber.',es:'Usar correcciones confirmadas de sesiones anteriores solo como sugerencias en esta conversación. No se envían al transcriptor.'})[lang]}</span>
+          </label>}
+          {speechDictionaryState==='loading'&&<small role="status">{({ru:'Загружаем подсказки…',en:'Loading suggestions…',es:'Cargando sugerencias…'})[lang]}</small>}
+          {speechDictionaryState==='error'&&<small role="status">{({ru:'Словарь недоступен. Диалог продолжается.',en:'Dictionary unavailable. The conversation continues.',es:'Diccionario no disponible. La conversación continúa.'})[lang]}</small>}
           {geminiCapabilities.speech_review_ordinary===true&&<label className={styles.coachEnginePicker} data-coach-ordinary-review-consent>
             <input type="checkbox" checked={activeOrdinaryReview} disabled={!activeSpeechReviewConsent||speechReviewProvider!=='groq'||(!speechReviewAll&&voiceState.phase!=='idle')} onChange={event=>{setSpeechReviewAll(event.target.checked);if(!event.target.checked)setSpeechReviews(rows=>rows.filter(row=>!row.observationOnly))}}/>
             <span>{({ru:'Проверять также обычные реплики (до 30 за сессию, при доступной квоте): аудио отправляется Groq, совпадения скрываются; исправления только по подтверждению.',en:'Also review ordinary speech (up to 30 per session, within quota): audio is sent to Groq; matching text stays hidden; corrections require confirmation.',es:'Revisar también las frases normales (hasta 30 por sesión, según cuota): se envía audio a Groq; las coincidencias se ocultan; los cambios requieren confirmación.'})[lang]}</span>

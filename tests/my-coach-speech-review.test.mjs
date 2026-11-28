@@ -159,3 +159,22 @@ test('ordinary review preserves original live history and Director checkpoint',(
  assert.ok(effect.includes('speechReviewQueue?.cancel()'))
  assert.ok(effect.includes('r.speechReviewBuffer=createSpeechReviewBuffer'))
 })
+
+import {projectSpeechDictionary,archivedSpeechSuggestion} from '../lib/personal-coaching/speech-dictionary.mjs'
+test('archive speech dictionary uses short confirmed owner records and never guesses conflicts',()=>{
+ const id='8afbf841-49a0-46e1-b5c1-124a116efa28',event={id:'8afbf841-49a0-46e1-b5c1-124a116efa29',sessionId:id,afterTurnCount:1,raw:'postawszym',text:'Уставшим',source:'client_confirmed',locale:'ru',confirmedAt:'2026-11-27T20:00:00.000Z'},turns=[{role:'assistant',content:'question'}]
+ const record={id,turns,provenance:'client_reviewed_dialogue',speechAmendments:[event]}
+ const archive=projectSpeechDictionary([record],'ru')
+ assert.deepEqual(archive,[{raw:'postawszym',text:'Уставшим'}])
+ assert.deepEqual(projectSpeechDictionary([record],'en'),[])
+ assert.deepEqual(projectSpeechDictionary([{...record,provenance:'client_autosaved_unreviewed_draft'}],'ru'),[])
+ assert.deepEqual(projectSpeechDictionary([{...record,speechAmendments:[{...event,text:'x'.repeat(81)}]}],'ru'),[])
+ const conflicting={...event,id:'8afbf841-49a0-46e1-b5c1-124a116efa30',text:'Другим'}
+ assert.deepEqual(projectSpeechDictionary([{...record,speechAmendments:[event,conflicting]}],'ru'),[])
+ const options={current:[],turns,sessionId:id,raw:'POSTAWSZYM',locale:'ru',archive}
+ assert.equal(archivedSpeechSuggestion(options),'Уставшим')
+ assert.equal(archivedSpeechSuggestion({...options,raw:'different'}),'')
+ assert.equal(archivedSpeechSuggestion({...options,current:[conflicting]}),'')
+ assert.equal(archivedSpeechSuggestion({...options,archive:[]}), '')
+ assert.equal(archivedSpeechSuggestion({...options,archive:[],current:[event]}),'Уставшим')
+})
