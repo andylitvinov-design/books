@@ -104,3 +104,19 @@ test('approved compact My Page dashboard preserves owner-scoped data and real co
  assert.ok(help.includes('[data-my-page-inline-help]'))
  assert.ok(client.includes('data-my-page-private-feed'))
 })
+
+import {selectLastCoachSession} from '../lib/app/my-page-session-history.mjs'
+test('Last Session includes active saved drafts without claiming review or leaking transcript',()=>{
+ const reviewed={id:'a',personaId:'mira',completedAt:'2026-11-25T10:00:00Z',provenance:'client_reviewed_dialogue',turns:[{content:'PRIVATE'}]}
+ const draft={id:'b',personaId:'max',updatedAt:'2026-11-26T10:00:00Z',turnCount:3,durationSeconds:120,courseSessionId:'life_direction'}
+ assert.equal(selectLastCoachSession([], [draft]).status,'draft')
+ assert.equal(selectLastCoachSession([reviewed], [draft]).id,'b')
+ assert.equal(selectLastCoachSession([reviewed], [{...draft,id:'a'}]).status,'reviewed')
+ assert.equal(selectLastCoachSession(null, [{...draft,turnCount:0}]),null)
+ assert.equal(selectLastCoachSession([], [{...draft,updatedAt:'invalid'}]),null)
+ assert.equal(JSON.stringify(selectLastCoachSession([reviewed],[])).includes('PRIVATE'),false)
+ const source=readFileSync(new URL('../components/app/profile-personal-summary.jsx',import.meta.url),'utf8')
+ assert.ok(source.includes('/api/app/my-coach/draft?view=summary'))
+ assert.ok(source.includes('selectLastCoachSession(reviewed,drafts)'))
+ assert.ok(source.includes('daily?.owner===accountId'))
+})
