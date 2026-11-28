@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {getCoachCourseLaunch,coachCourseLaunchHref,normalizeLaunchCoach,courseLaunchNeighbor,courseLaunchPresentation} from '../lib/coach-course-launch.mjs'
-import {projectCourseSession,resolveSavedCoachSession} from '../lib/coach-course-session-progress.mjs'
+import {projectCourseSession,resolveSavedCoachSession,validBoundClarityStart} from '../lib/coach-course-session-progress.mjs'
 import {courseCoachChoice,verifyCourseCoachChoice} from '../lib/app/coach-course-choice.mjs'
 import {isUnifiedMobileDockAppPath,unifiedMobileDockActive} from '../lib/unified-mobile-dock.mjs'
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
@@ -140,6 +140,22 @@ test('old personal review ribbon is excluded from program launch and greeting ro
  }
 })
 
+test('exact course-run CTA restores only its verified matching saved session',()=>{
+ const item={id:'saved',courseSessionId:'day1',courseRunId:'runA',personaId:'genie'}
+ const input={accountSaving:true,ready:true,topic:'day1',personaId:'mira',courseRunId:'runA',items:[item,{...item,id:'other',courseRunId:'runB'}]}
+ assert.equal(resolveSavedCoachSession(input).kind,'choose')
+ assert.deepEqual(resolveSavedCoachSession({...input,canResume:()=>true}),{kind:'resume',item})
+ assert.equal(resolveSavedCoachSession({...input,courseRunId:'missing'}).kind,'choose')
+ assert.equal(resolveSavedCoachSession({...input,accountSaving:false}).kind,'lookup')
+ assert.equal(resolveSavedCoachSession({...input,cursor:{next:'x'}}).kind,'choose')
+ assert.equal(resolveSavedCoachSession({...input,error:true}).kind,'lookup')
+ assert.equal(resolveSavedCoachSession({...input,courseRunId:null,items:[]}).kind,'new')
+ assert.equal(resolveSavedCoachSession({...input,courseRunId:null,canResume:()=>true}).kind,'choose')
+ const gate=read('components/my-coach-greeting-gate.jsx')
+ assert.doesNotMatch(gate,/window\.confirm/)
+ assert.match(gate,/onResumeSession\(entry.item\)/)
+ assert.ok(gate.indexOf('if(courseRunId&&!entry.boundStart)return',gate.indexOf('function chooseSession'))<gate.indexOf('onStart?.(id,options)'))
+})
 test('saved session entry never restarts on unknown, partial or ambiguous history',()=>{
  const item={id:'saved',courseSessionId:'intro',personaId:'genie',durationSeconds:420}
  const input={accountSaving:true,ready:true,topic:'intro',personaId:'genie',items:[item]}
@@ -154,4 +170,28 @@ test('saved session entry never restarts on unknown, partial or ambiguous histor
  assert.doesNotMatch(gate,/window\.confirm/)
  assert.match(gate,/onResumeSession\(entry.item\)/)
  assert.ok(gate.indexOf("if(entry.kind!=='new')")<gate.indexOf('onStart?.(id,options)'))
+})
+
+
+test('only exact owner-verified untouched bound day can start without a saved draft',()=>{
+ const run='00000000-0000-4000-8000-000000000091',protocolId='00000000-0000-4000-8000-000000000092'
+ const boundStart={courseRunId:run,day:2,protocolId}
+ const input={accountSaving:true,ready:true,topic:'clarity_day_2',courseRunId:run,personaId:'mira',items:[],boundStart}
+ assert.equal(validBoundClarityStart(boundStart,run,input.topic),true)
+ assert.deepEqual(resolveSavedCoachSession(input),{kind:'new',boundStart})
+ for(const patch of [{boundStart:null},{boundStart:{...boundStart,day:3}},{boundStart:{...boundStart,protocolId:run}},{courseRunId:protocolId},{topic:'clarity_day_1'},{items:[{courseSessionId:'clarity_day_3',courseRunId:run}]}]){
+  assert.equal(resolveSavedCoachSession({...input,...patch}).kind,'choose')
+ }
+ for(const patch of [{ready:false},{busy:true},{error:true},{accountSaving:false}]){
+  assert.equal(resolveSavedCoachSession({...input,...patch}).kind,'lookup')
+ }
+ assert.equal(resolveSavedCoachSession({...input,cursor:{next:'x'}}).kind,'choose')
+ const item={id:protocolId,courseSessionId:input.topic,courseRunId:run,personaId:'mira'}
+ assert.deepEqual(resolveSavedCoachSession({...input,items:[item]}),{kind:'resume',item})
+ const panel=read('components/my-coach-live-dialogue.jsx'),gate=read('components/my-coach-greeting-gate.jsx')
+ assert.match(panel,/validBoundClarityStart\(result.boundStart,courseRunId,clarityCourseId\(clarityDay\)\)/)
+ assert.match(panel,/validBoundClarityStart\(resumeList.boundStart,courseRunId,id\)/)
+ assert.match(gate,/if\(courseRunId&&!entry.boundStart\)return/)
+ const catalog=read('components/app/clarity-run-catalog.jsx')
+ assert.match(catalog,/day.status==='not_started'&&day.elapsedMs===0&&run.currentDay===day.day&&<Link[^>]*data-clarity-start-bound-day/)
 })
