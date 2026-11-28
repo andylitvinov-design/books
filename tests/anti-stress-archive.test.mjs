@@ -60,3 +60,21 @@ test('owner-requested meditation is a separate revision-bound private action, no
  assert.match(ui,/expectedReviewRevision:availability\.reviewRevision/)
  assert.doesNotMatch(route,/safeClosureVerified:true/)
 })
+
+
+test('lost therapy connection recovery is an explicit owner action with exact scope and server time',()=>{
+ const route=read('app/api/app/anti-stress/session/route.js'),store=read('lib/app/anti-stress-runs.js'),ui=read('components/app/anti-stress-archive.jsx')
+ const edit=route.slice(route.indexOf('export async function PATCH'))
+ assert.match(edit,/body\.type==='recover_connection'/)
+ assert.match(edit,/\['runId','protocolId','sessionId','type'\]/)
+ assert.match(edit,/recoverExpiredAntiStressRun\(config,actor,body\.runId,\{sessionId:body\.sessionId,protocolId:body\.protocolId\}\)/)
+ const recovery=store.slice(store.indexOf('export async function recoverExpiredAntiStressRun'),store.indexOf('export async function retireAntiStressCredential'))
+ assert.match(recovery,/await lockCourseOwner\(db,actor\)/)
+ assert.match(recovery,/antiStressRunBinding\(before,sessionId,protocolId\)/)
+ assert.match(recovery,/active\.day!==binding\.number/)
+ assert.match(recovery,/expireAntiStressRunObservation\(before,await stamp\(db\)\)/)
+ assert.doesNotMatch(recovery,/provider_closed_at_ms|claimTrustedFreeCoachingDays/)
+ assert.match(ui,/type:'recover_connection',runId:run\.id,sessionId:day\.sessionId,protocolId:day\.protocolId/)
+ assert.match(ui,/receipt\.run\.days\[day\.day-1\]\?\.protocolId!==day\.protocolId/)
+ assert.match(ui,/updated\.revision>=r\.revision/)
+})

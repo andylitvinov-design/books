@@ -63,7 +63,22 @@ function MeditationRequest({accountId,locale,run,day,availability,onSaved,t}){
  }
  return <div data-anti-stress-meditation-request><h4>{words[0]}</h4><label><input type="checkbox" checked={confirmed} disabled={busy} onChange={e=>setConfirmed(e.target.checked)}/>{words[1]}</label><button type="button" disabled={!confirmed||busy} onClick={create}>{words[2]}</button>{error&&<p role="alert">{t.error}</p>}</div>
 }
-function SessionView({accountId,locale,run,day,t}){
+function SessionView({accountId,locale,run,day,t,onRunUpdate}){
+ const recovery=useRef(null)
+ const [recovering,setRecovering]=useState(false),[recoveryError,setRecoveryError]=useState(false)
+ useEffect(()=>()=>recovery.current?.abort(),[])
+ async function recover(){
+  if(recovery.current)return
+  const c=new AbortController();recovery.current=c;setRecovering(true);setRecoveryError(false)
+  try{
+   const receipt=await appFetch('anti-stress/session',{type:'recover_connection',runId:run.id,sessionId:day.sessionId,protocolId:day.protocolId},'PATCH',{accountId,signal:c.signal})
+   if(c.signal.aborted)return
+   if(!validRun(receipt?.run)||receipt.run.id!==run.id||receipt.run.days[day.day-1]?.protocolId!==day.protocolId)throw Error('binding')
+   onRunUpdate(receipt.run)
+   setRetry(n=>n+1)
+  }catch{if(!c.signal.aborted)setRecoveryError(true)}
+  finally{if(!c.signal.aborted){recovery.current=null;setRecovering(false)}}
+ }
  const [view,setView]=useState('result'),[retry,setRetry]=useState(0),[state,setState]=useState(null)
  useEffect(()=>{
   const c=new AbortController();let live=true
@@ -80,6 +95,11 @@ function SessionView({accountId,locale,run,day,t}){
  return <div className={styles.session}>
   <AntiStressMemoryPanel key={accountId+':'+day.protocolId} accountId={accountId} exclude={day.protocolId} locale={locale}/>
   {process.env.NEXT_PUBLIC_HH_ANTI_STRESS_LIVE_ENABLED==='true'&&data&&data.run.currentDay===day.day&&data.run.access==='free'&&['paused','not_started'].includes(data.run.days[day.day-1]?.status)&&<AntiStressLivePanel key={accountId+':'+day.protocolId+':'+retry} accountId={accountId} locale={locale} run={data.run} day={data.run.days[day.day-1]} onRefresh={()=>setRetry(n=>n+1)}/>}
+  {data?.run?.currentDay===day.day&&data.run.days[day.day-1]?.status==='active'&&<div data-anti-stress-recover>
+   <p>{({en:'If the connection was lost, check the saved session. Only verified time is retained; a still-active connection is not stopped.',ru:'Если связь прервалась, проверьте сохранённую сессию. Сохраняется только подтверждённое время; действующее соединение не прерывается.',es:'Si se perdió la conexión, comprueba la sesión guardada. Solo se conserva el tiempo verificado; una conexión activa no se interrumpe.'})[locale]}</p>
+   <button type="button" disabled={recovering} onClick={recover}>{recovering?t.loading:({en:'Check connection',ru:'Проверить соединение',es:'Comprobar conexión'})[locale]}</button>
+   {recoveryError&&<p role="alert">{t.error}</p>}
+  </div>}
   <div className={styles.tabs}>{['result','protocol','log'].map(v=><button type="button" key={v} aria-pressed={view===v} onClick={()=>{setState(null);setView(v);if(view===v)setRetry(n=>n+1)}}>{t[v]}</button>)}</div>
   {state?.view===view&&state.error?<p role="alert">{t.error} <button type="button" onClick={()=>setRetry(n=>n+1)}>{t.retry}</button></p>:!data?<p>{t.loading}</p>:view==='result'?<><AntiStressResult result={data.result} locale={locale} hideMeditation/>{!data.result?.meditation&&data.result?.meditationAvailability?.eligible===true&&<MeditationRequest key={data.result.meditationAvailability.reviewRevision} accountId={accountId} locale={locale} run={run} day={day} availability={data.result.meditationAvailability} onSaved={()=>setRetry(n=>n+1)} t={t}/>} {data.result?.meditation&&<MeditationEditor key={data.result.meditation.revision} accountId={accountId} locale={locale} run={run} day={day} meditation={data.result.meditation} onSaved={()=>setRetry(n=>n+1)} t={t}/>}</>:view==='protocol'?<AntiStressProgress selection={{runId:run.id,protocolId:day.protocolId,sessionId:day.sessionId}} locale={locale} elapsedMs={data.run.days[day.day-1].elapsedMs} data={data} expanded/>:data.log?.turns?.length?<div>{data.log.turns.map(turn=><p key={turn.turnId}><strong>{turn.role==='client'?t.client:(turn.coachId||t.coach)}</strong> — {turn.text}</p>)}</div>:<p>{t.missing}</p>}
  </div>
@@ -123,7 +143,7 @@ export default function AntiStressArchive({accountId,locale='en',runId=null}){
   {state.error&&<p role="alert">{t.error} <button type="button" onClick={()=>setRetry(n=>n+1)}>{t.retry}</button></p>}
   {state.runs?.map(run=><article key={run.id} className={styles.run}><h3>{ANTI_STRESS_COURSE.title[lang]}</h3><p>Therapy · {Math.floor(run.totalElapsedMs/60000)}/45 {t.minutes}</p><progress max={2700000} value={run.totalElapsedMs} aria-label={t.title}/>{run.days.map((day,i)=>{
    const k=run.id+':'+day.sessionId
-   return <div key={k}><button className={styles.day} type="button" aria-expanded={open===k} onClick={()=>setOpen(x=>x===k?null:k)}><strong>{i+1}. {ANTI_STRESS_COURSE.sessions[i].title[lang]}</strong><span>{t.states[day.status]||t.missing} · {Math.floor(day.elapsedMs/60000)}/15 {t.minutes}</span></button>{open===k&&<SessionView key={accountId+':'+k} accountId={accountId} locale={lang} run={run} day={day} t={t}/>}</div>
+   return <div key={k}><button className={styles.day} type="button" aria-expanded={open===k} onClick={()=>setOpen(x=>x===k?null:k)}><strong>{i+1}. {ANTI_STRESS_COURSE.sessions[i].title[lang]}</strong><span>{t.states[day.status]||t.missing} · {Math.floor(day.elapsedMs/60000)}/15 {t.minutes}</span></button>{open===k&&<SessionView key={accountId+':'+k} accountId={accountId} locale={lang} run={run} day={day} t={t} onRunUpdate={updated=>{if(activeOwner.current===accountId)setState(old=>old?.accountId===accountId?{...old,runs:old.runs.map(r=>r.id===updated.id&&updated.revision>=r.revision?updated:r)}:old)}}/>}</div>
   })}</article>)}
   {state.nextCursor&&<button type="button" disabled={state.loading} onClick={more}>{state.loading?t.loading:t.more}</button>}
  </section>

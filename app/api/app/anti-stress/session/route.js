@@ -4,7 +4,7 @@ import {createRequestAuth} from '@/lib/app/session'
 import {consumeRate} from '@/lib/app/database'
 import {PRIVATE_HEADERS,safeError,readBody} from '@/lib/app/http'
 import {AppError} from '@/lib/assessments/contracts'
-import {readAntiStressSession,antiStressStorageEnabled,listAntiStressRuns,readAntiStressRunSummary,editOwnedAntiStressMeditation} from '@/lib/app/anti-stress-runs'
+import {readAntiStressSession,antiStressStorageEnabled,listAntiStressRuns,readAntiStressRunSummary,editOwnedAntiStressMeditation,recoverExpiredAntiStressRun} from '@/lib/app/anti-stress-runs'
 import {readOwnedCrossModeMemory,ownerCrossModeShareOptions} from '@/lib/app/anti-stress-private-memory'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
@@ -53,9 +53,14 @@ export async function PATCH(request){
   const actor=await auth.verified()
   if(request.headers.get('x-hh-account-id')!==actor.id)throw new AppError('ACCOUNT_CHANGED',409)
   if(!antiStressStorageEnabled())throw new AppError('ANTI_STRESS_UNAVAILABLE',503)
-  await consumeRate(config,{op:'anti-stress-meditation-edit',actor:actor.id},20,3600)
+  await consumeRate(config,{op:'anti-stress-session-owner-action',actor:actor.id},20,3600)
   const body=await readBody(request,65536)
   const ids=typeof body.runId==='string'&&typeof body.protocolId==='string'
+  if(body.type==='recover_connection'){
+   if(!ids||typeof body.sessionId!=='string'||Object.keys(body).some(k=>!['runId','protocolId','sessionId','type'].includes(k)))throw new AppError('ANTI_STRESS_INVALID',400)
+   const run=await recoverExpiredAntiStressRun(config,actor,body.runId,{sessionId:body.sessionId,protocolId:body.protocolId})
+   return auth.apply(NextResponse.json({run},{headers:PRIVATE_HEADERS}))
+  }
   if(body.type==='owner_request'){
    if(!ids||Object.keys(body).some(k=>!['runId','protocolId','type','expectedRevision','expectedReviewRevision','locale','ownerConfirmed','storageConsent','readyToRead'].includes(k))||body.expectedRevision!==0||!Number.isSafeInteger(body.expectedReviewRevision)||body.expectedReviewRevision<1||!['en','ru','es'].includes(body.locale)||body.ownerConfirmed!==true||body.storageConsent!==true||body.readyToRead!==true)throw new AppError('ANTI_STRESS_INVALID',400)
   }else if(!ids||!['save','decline'].includes(body.type)||Object.keys(body).some(k=>!['runId','protocolId','type','expectedRevision','body'].includes(k))||!Number.isSafeInteger(body.expectedRevision)||body.expectedRevision<1||(body.type==='save'&&(typeof body.body!=='string'||body.body.length>12000||!body.body.trim()))||(body.type==='decline'&&body.body!==undefined))throw new AppError('ANTI_STRESS_INVALID',400)
