@@ -14,3 +14,36 @@
 .kinds{display:flex;gap:5px;flex-wrap:wrap;margin:8px 0}.kinds button{min-height:44px;border:1px solid #d2b583;border-radius:12px;background:#fffaf0;color:#51371c;padding:5px 9px;font-weight:700;font-size:12px}.kinds button[aria-pressed=true]{background:#075b3d;color:#fff;border-color:#075b3d}.nav button{overflow-wrap:normal;hyphens:auto}
 
 .dateFilters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.dateFilters label,.snapshot{display:grid;gap:4px;min-width:0;font-size:.85rem}.dateFilters input,.snapshot select{min-width:0;width:100%;min-height:44px;border:1px solid #b79b6e;border-radius:9px;background:#fffaf0;color:#392313;font:inherit;padding:5px}.axisHistory{border-bottom:1px solid #dcc9a5;margin:6px 0}.trend{display:block;width:100%;max-height:120px}.snapshot{margin:12px 0}
+
+/* Golden v4: compact theme overview, expanded learning tools retain normal scrolling. */
+.page{gap:6px;padding-top:8px}
+.hero{min-height:0;padding:9px 12px}
+.hero h1{font-size:clamp(25px,6.3vw,36px)}
+.hero p{font-size:12px;margin:3px 0}
+.motto{padding:3px 8px;font-size:11px}
+.choose{min-height:44px;padding:4px 9px;border-radius:15px;background:linear-gradient(145deg,#fffaf0,#f6e4c1);box-shadow:0 2px 7px #ab7c3a66}
+.choosePhoto{width:34px;height:34px;flex-basis:34px}
+.chooseText strong{font-size:18px}
+.chooseText small{font-size:11px}
+.nav button{min-height:52px;padding:4px 2px}
+.nav button svg{width:17px;height:17px}
+.overviewCard{display:grid;gap:7px;padding:8px}
+.overviewCard .banner{border:0;background:linear-gradient(90deg,#fff6e5 10%,#fff3dfd9 70%,#fff3df40),url('/images/holistic-house/reiki-approved-sunrise-v3.webp') right center/cover;color:#392313;padding:7px}
+.overviewCard .banner small{color:#075238}
+.overviewCard .banner h2{font-size:clamp(23px,6vw,32px)}
+.overviewCard .progressRow progress{height:7px;accent-color:#087652}
+.overviewCard .task{min-height:48px;border-radius:13px;padding:5px 8px}
+.overviewCard .taskText small{font-size:10px}
+.overviewCard .taskText strong{font-size:18px}
+.overviewCard .taskIcon{width:29px}
+.overviewCard .taskIcon svg{width:22px;height:22px}
+.overviewCard .nextAction{min-height:52px;background:linear-gradient(145deg,#0a8057,#00482f);border:2px solid #f3d295;border-radius:999px;color:#fff4df}
+.overviewCard .nextAction .taskText,.overviewCard .nextAction .taskText small{color:#fff4df}
+.overviewCard .nextAction .taskIcon{border:0}
+.resourceDisclosure{border:1px solid #d1ad70;border-radius:13px;background:linear-gradient(135deg,#795333,#3b2518);padding:0 8px 0}
+.panel .resourceDisclosure summary{color:#fff3d9;gap:8px;font:700 17px Georgia,serif;list-style:none}
+.resourceDisclosure summary::-webkit-details-marker{display:none}
+.resourceDisclosure summary svg:last-child{margin-left:auto}
+.resourceDisclosure[open] summary svg:last-child{transform:rotate(90deg)}
+.resourceDisclosure .resources{margin:0 0 8px}
+@media(max-height:740px){.hero{padding:7px 10px}.motto{display:none}.overviewCard{gap:5px}.nav button{min-height:48px}.overviewCard .task{min-height:44px}.overviewCard .nextAction{min-height:48px}}
