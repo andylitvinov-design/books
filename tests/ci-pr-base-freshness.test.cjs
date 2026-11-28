@@ -793,6 +793,36 @@ test('V3 readiness fast path is bound to authenticated exact run, merge parents,
   policyDelta=bad;assert.equal(await verifiedMergeReadyV3({...args,github:unchanged}),null);
  }
  value=x;
+ // A later protected commit must not invalidate the earlier accepted range.
+ // The incremental compare must start at accepted_base, not tested_base.
+ const next='e'.repeat(40),nextDelta={status:'ahead',behind_by:0,ahead_by:1,total_commits:1,
+  base_commit:{sha:target},merge_base_commit:{sha:target},commits:[{sha:next}],
+  files:[{filename:'components/tarot-detail.jsx',status:'modified'}]};
+ let compared=[],safeDelta=nextDelta;
+ const incremented={...github,rest:{...github.rest,repos:{...github.rest.repos,
+  getBranch:async()=>({data:{protected:true,commit:{sha:next}}}),
+  compareCommits:async({base,head})=>{compared.push([base,head]);return {data:safeDelta};}},
+  pulls:{listFiles:async()=>({data:[{filename:'components/my-coach-intro.jsx',status:'modified'}]})}}};
+ const incArgs={...args,github:incremented,target:next};
+ assert.deepEqual(await verifiedMergeReadyV3(incArgs),{...x,verified_incremental_target:next});
+ const required={safeDocumentationAdvance:()=>false,safeIndependentCiMaintenanceAdvance:()=>false,
+  verifiedIndependentPublicRasterAdvance:()=>false,
+  safeNonOverlappingProductAdvance:(d,from,to,paths)=>from===target&&to===next&&
+   d.files.every(f=>f.filename==='components/tarot-detail.jsx')&&paths[0]==='components/my-coach-intro.jsx'};
+ compared=[];
+ const evaluate=()=>assess({github:incremented,owner,repo,pr:{...p,changed_files:1},
+   classifierBase:next,decideRoute:()=> 'CORE',baseAdvancePolicy:required,
+   verifiedRunBase:()=>{throw Error('old range must not be re-read');},
+   readReadyReceipt:()=>verifiedMergeReadyV3(incArgs)});
+ assert.equal((await evaluate()).ok,true);
+ assert.equal(compared.every(([from,to])=>from===target&&to===next),true);
+ safeDelta={...nextDelta,files:[{filename:'components/my-coach-intro.jsx',status:'modified'}]};
+ assert.equal((await evaluate()).reason,'SENSITIVE_COMPARE_UNSAFE');
+ safeDelta={...nextDelta,files:[{filename:'scripts/ci-specialist-aggregate.mjs',status:'modified'}]};
+ assert.equal(await verifiedMergeReadyV3(incArgs),null);
+ safeDelta={...nextDelta,status:'diverged'};
+ assert.equal(await verifiedMergeReadyV3(incArgs),null);
+ safeDelta=nextDelta;value=x;
  for(const bad of [{...x,head:old},{...x,accepted_base:old},{...x,policy_base:old},
    {...x,run_attempt:1},{...x,required:[workflow]},{...x,run_id:99}]){
   value=bad;assert.equal(await verifiedMergeReadyV3(args),null);

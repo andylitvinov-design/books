@@ -135,12 +135,16 @@ function parseMergeReadyV3(log){
 const READY_V3_POLICY_INPUT=/^(?:\.github\/|lib\/ci\/|scripts\/(?:ci-|pr-sweep-|lab-|vercel-)|tests\/(?:ci-|pr-fast-lane|required-gate-|workflow-)|docs\/(?:operations|security)\/|(?:package(?:-lock)?\.json|pnpm-lock\.yaml|yarn\.lock|next\.config\.[^/]+|tsconfig(?:\.[^/]+)?\.json|vercel\.json|eslint\.config\.[^/]+|middleware\.[^/]+)$)/i;
 async function verifiedUnchangedReceiptPolicy(github,owner,repo,x,target){
  if(x.policy_base===target)return true;
- if(x.policy_base!==x.tested_base||x.accepted_base!==target||
+ if(x.policy_base!==x.tested_base||x.accepted_base!==target)return false;
+ return unchangedPolicyAdvance(github,owner,repo,x.policy_base,target);
+}
+async function unchangedPolicyAdvance(github,owner,repo,from,target){
+ if(!SHA.test(from||'')||!SHA.test(target||'')||from===target||
     typeof github.rest.repos.compareCommits!=='function')return false;
  try{
-  const d=(await github.rest.repos.compareCommits({owner,repo,base:x.policy_base,head:target,per_page:100})).data;
-  if(d?.status!=='ahead'||d.base_commit?.sha!==x.policy_base||
-     d.merge_base_commit?.sha!==x.policy_base||d.behind_by!==0||
+  const d=(await github.rest.repos.compareCommits({owner,repo,base:from,head:target,per_page:100})).data;
+  if(d?.status!=='ahead'||d.base_commit?.sha!==from||
+     d.merge_base_commit?.sha!==from||d.behind_by!==0||
      !Number.isSafeInteger(d.ahead_by)||d.ahead_by<1||d.ahead_by>100||
      d.total_commits!==d.ahead_by||!Array.isArray(d.commits)||
      d.commits.length!==d.ahead_by||d.commits.at(-1)?.sha!==target||
@@ -193,20 +197,25 @@ async function verifiedMergeReadyV3({github,owner,repo,pr,run,jobs,target}){
    (Buffer.isBuffer(reply)||reply instanceof ArrayBuffer)?Buffer.from(reply).toString('utf8'):'';
   const x=parseMergeReadyV3(log);
   if(!x||x.repo!==full||x.pr!==pr.number||x.head!==pr.head.sha||
-     x.run_id!==run.id||x.run_attempt!==run.run_attempt||
-     x.accepted_base!==target)return null;
-  if(!await verifiedUnchangedReceiptPolicy(github,owner,repo,x,target))return null;
+     x.run_id!==run.id||x.run_attempt!==run.run_attempt)return null;
+  // Authenticate the original accepted target first. If it advanced again,
+  // retain that accepted checkpoint only across complete unchanged-policy
+  // ancestry. assessBaseFreshness still proves every NEW changed product row.
+  if(!await verifiedUnchangedReceiptPolicy(github,owner,repo,x,x.accepted_base))return null;
+  const advanced=x.accepted_base!==target;
+  if(advanced&&!await unchangedPolicyAdvance(github,owner,repo,x.accepted_base,target))return null;
   const workflow=async ref=>{
     const f=(await github.rest.repos.getContent({owner,repo,path:READY_V3_WORKFLOW,ref})).data;
     return f?.type==='file'&&f.path===READY_V3_WORKFLOW&&SHA.test(f.sha||'')?f.sha:null;
   };
-  const refs=[...new Set([x.tested_base,x.tested_merge,target])];
+  const refs=[...new Set([x.tested_base,x.tested_merge,x.accepted_base,target])];
   const [commit,...blobs]=await Promise.all([
     github.rest.git.getCommit({owner,repo,commit_sha:x.tested_merge}).then(z=>z.data),
     ...refs.map(workflow)]);
   if(commit?.sha!==x.tested_merge||!Array.isArray(commit.parents)||commit.parents.length!==2||
      commit.parents[0]?.sha!==x.tested_base||commit.parents[1]?.sha!==x.head||
      !blobs[0]||blobs.some(sha=>sha!==blobs[0]))return null;
+  if(advanced)return {...x,verified_incremental_target:target};
   return x.policy_base===target?x:{...x,verified_policy_equivalent:true};
  }catch{return null;}
 }
@@ -219,6 +228,7 @@ async function assessBaseFreshness({github,owner,repo,pr,verifiedRunBase,classif
   const branch=(await github.rest.repos.getBranch({owner,repo,branch:'codex/public-book-library'})).data;
   const actual=branch?.commit?.sha;if(!SHA.test(actual||''))return fail('CURRENT_BASE_UNAVAILABLE');
   if(classifierBase!==actual||typeof decideRoute!=='function')return fail('CLASSIFIER_BASE_STALE');
+  let incrementalReceipt=null;
   if(branch.protected===true&&typeof readReadyReceipt==='function'){
    let receipt=null;
    try{receipt=await readReadyReceipt(actual);}catch{/* legacy path */}
@@ -228,6 +238,11 @@ async function assessBaseFreshness({github,owner,repo,pr,verifiedRunBase,classif
     const final=(await github.rest.repos.getBranch({owner,repo,branch:'codex/public-book-library'})).data;
     if(final?.protected!==true||final?.commit?.sha!==actual)return fail('BASE_MOVED_DURING_CHECK');
     return {ok:true,reason:'MERGE_READY_V3_VERIFIED',base:actual};
+   }
+   if(receipt?.verified_incremental_target===actual&&receipt?.head===pr.head?.sha&&
+      receipt?.pr===pr.number&&receipt?.repo===owner+'/'+repo&&SHA.test(receipt.accepted_base||'')&&
+      SHA.test(receipt.tested_base||'')&&receipt.accepted_base!==actual){
+    incrementalReceipt=receipt;
    }
   }
   const files=[];
@@ -247,10 +262,14 @@ async function assessBaseFreshness({github,owner,repo,pr,verifiedRunBase,classif
   }
   const route=decideRoute(rows,null,null);
   if(!['FULL','CORE','ASSETS','TEXT'].includes(route))return fail('CLASSIFIER_RESULT_UNVERIFIED');
-  const sensitive=route==='FULL';
+  // A stale but authenticated receipt does not authorize a new target by
+  // itself. Revalidate only the incremental delta under the current policy,
+  // even on a formerly lightweight route.
+  const sensitive=route==='FULL'||incrementalReceipt!==null;
   let revalidatedReason=null;
   if(sensitive){
-   if(typeof verifiedRunBase==='function')verifiedRunBase=await verifiedRunBase(rows);
+   if(incrementalReceipt)verifiedRunBase=incrementalReceipt.accepted_base;
+   else if(typeof verifiedRunBase==='function')verifiedRunBase=await verifiedRunBase(rows);
    if(!SHA.test(verifiedRunBase||'')){
     return fail(actual===pr.base.sha?'SENSITIVE_CI_BASE_UNVERIFIED':'SENSITIVE_BASE_STALE');
    }
@@ -278,7 +297,7 @@ async function assessBaseFreshness({github,owner,repo,pr,verifiedRunBase,classif
         typeof baseAdvancePolicy[name]!=='function'))
       return fail('TRUSTED_BASE_ADVANCE_POLICY_INCOMPLETE');
     const packageEvidence=pr.mergeable===true && typeof baseAdvancePolicy?.safeNonOverlappingProductAdvance==='function' ?
-      await readPinnedPackageEvidence({github,owner,repo,pr,testedBase:verifiedRunBase,paths}):undefined;
+      await readPinnedPackageEvidence({github,owner,repo,pr,testedBase:incrementalReceipt?.tested_base||verifiedRunBase,paths}):undefined;
     const approved=(name,...extra)=>{
       if(!baseAdvancePolicy)return false; // legacy direct callers are narrow
       try{
