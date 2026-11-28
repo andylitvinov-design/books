@@ -184,6 +184,76 @@ function verifiedLiveReceipt(comments,pr){
  return found[0]||null;
 }
 
+function traceIdentity(s){
+ if(typeof s!=='string'||s.length>100000)return null;
+ const a=[...s.matchAll(/^HH-Automation: ([a-z0-9-]+)[ \t]*\r?$/gm)],b=[...s.matchAll(/^HH-Run: ([A-Za-z0-9:._-]+)[ \t]*\r?$/gm)];
+ if(a.length!==1||b.length!==1)return null;
+ const actor=a[0][1],run=b[0][1];
+ if(!/^(mycoach-(00|10|20|30|40|50)|triage-15|repair-45|merge-35|live-05|manual-chat)$/.test(actor)||!run.startsWith(actor+'-')||run.length>100)return null;
+ const suffix=run.slice(actor.length+1);
+ if(actor==='manual-chat'?!/^[A-Za-z0-9._-]{6,80}$/.test(suffix):!/^(?:\d{8}T\d{6}(?:\.\d+)?Z|\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z)$/.test(suffix))return null;
+ return {actor,run};
+}
+function automationAudit({pr,comments=[],timeline=null,headProof={},live=null,now=Date.now()}={}){
+ const sha=s=>typeof s==='string'&&/^[a-f0-9]{40}$/i.test(s)?s.toLowerCase():null;
+ const time=s=>typeof s==='string'&&Number.isFinite(Date.parse(s))?Date.parse(s):null;
+ const owner=u=>u?.login==='andylitvinov-design'&&u.id===274943885;
+ if(!Number.isSafeInteger(pr?.number)||!sha(pr.head?.sha))return null;
+ const head=sha(pr.head.sha),base=sha(pr.base?.sha),merge=pr.merged_at?sha(pr.merge_commit_sha):null;
+ const origin=owner(pr.user)?traceIdentity(pr.body):null,commits=new Map(),events=new Map(),credits=new Map();
+ const add=(metric,key,actor)=>{let k=metric+':'+key;if(!credits.has(k))credits.set(k,{metric,key,actors:new Set()});credits.get(k).actors.add(actor||'UNKNOWN');};
+ add('created',String(pr.number),origin?.actor);
+ for(const r of Array.isArray(timeline)?timeline:[]){
+  if(r?.event!=='committed'||!sha(r.sha))continue;
+  const id=traceIdentity(r.message);commits.set(sha(r.sha),id);add('commits',sha(r.sha),id?.actor);
+ }
+ const validStage=new Set(['PR','DIAGNOSIS','ASSIGNMENT','REPAIR','HEAD','CI','MERGE','RELEASE','LIVE']);
+ const validEvent=new Set(['PR_CREATED','COMMIT_WRITTEN','ERROR_DETECTED','REPAIR_ASSIGNED','REPAIR_BLOCKED','CI_RESTORED','MERGE_ARMED','MERGED','DEPLOYED','LIVE_VERIFIED','STAGE_BLOCKED','STAGE_OBSERVED']);
+ const block=new Set(['WAIT','HOLD','FAILED']);
+ for(const c of Array.isArray(comments)?comments:[]){
+  if(!owner(c?.user)||!Number.isSafeInteger(c.id)||typeof c.body!=='string'||c.body.length>60000||time(c.created_at)===null)continue;
+  const lines=c.body.split(/\r?\n/);
+  for(let i=0;i+1<lines.length;i++){
+   if(lines[i].trim()!=='<!-- HH_PR_TRACE_V1 -->'||lines[i+1].length>3000)continue;
+   let e;try{e=JSON.parse(lines[i+1])}catch{continue}
+   if(e?.schema!=='HH_PR_TRACE_V1'||e.pr!==pr.number||!validStage.has(e.stage)||!validEvent.has(e.event)||!['DONE','OBSERVED','WAIT','HOLD','FAILED'].includes(e.outcome)||!sha(e.head_sha))continue;
+   const id=traceIdentity('HH-Automation: '+e.automation_id+'\nHH-Run: '+e.run_id),at=time(e.at);
+   if(!id||at===null||at>now||at>time(c.created_at)+60000)continue;
+   const reason=typeof e.reason_code==='string'&&/^[A-Z0-9][A-Z0-9_.:-]{0,119}$/.test(e.reason_code)?e.reason_code:null;
+   if(block.has(e.outcome)&&(!reason||typeof e.next_action!=='string'||!e.next_action.trim()||e.next_action.length>240))continue;
+   if(e.event==='COMMIT_WRITTEN'&&e.outcome==='DONE'&&!sha(e.commit_sha))continue;
+   if(['MERGED','DEPLOYED','LIVE_VERIFIED'].includes(e.event)&&e.outcome==='DONE'&&!sha(e.merge_sha))continue;
+   if(['DEPLOYED','LIVE_VERIFIED'].includes(e.event)&&e.outcome==='DONE'&&!sha(e.served_sha))continue;
+   const r={...id,stage:e.stage,event:e.event,outcome:e.outcome,at:e.at,head:sha(e.head_sha),base:sha(e.base_sha),commit:sha(e.commit_sha),merge:sha(e.merge_sha),reason,url:'https://github.com/andylitvinov-design/books/pull/'+pr.number+'#issuecomment-'+c.id};
+   const k=JSON.stringify([r.actor,r.event,r.stage,r.outcome,r.head,r.base,r.commit,r.merge,r.reason]);
+   if(!events.has(k)||at<time(events.get(k).at))events.set(k,r);
+  }
+ }
+ const all=[...events.values()].sort((a,b)=>time(b.at)-time(a.at));
+ const latest=all.find(e=>merge?!live&&['RELEASE','LIVE'].includes(e.stage)&&e.merge===merge:
+   pr.state==='open'&&base&&e.head===head&&e.base===base&&!['RELEASE','LIVE'].includes(e.stage)&&
+   !(headProof.green_exact_head===true&&['DIAGNOSIS','ASSIGNMENT','REPAIR','HEAD','CI'].includes(e.stage)));
+ const current=latest&&block.has(latest.outcome)?latest:null;
+ if(current)add('blocked',String(pr.number),current.actor);
+ let mc=0,lc=0,cc=0;
+ for(const e of all){
+  if(e.outcome==='OBSERVED'){add('observed',pr.number+':'+e.actor+':'+e.event+':'+e.head+':'+(e.merge||''),e.actor);continue}
+  if(e.outcome!=='DONE')continue;
+  if(e.event==='ERROR_DETECTED')add('diagnosed',pr.number+':'+e.head+':'+(e.reason||'UNKNOWN'),e.actor);
+  if(e.event==='MERGE_ARMED')add('armed',pr.number+':'+e.head,e.actor);
+  if(e.event==='CI_RESTORED'&&e.head===head&&headProof.green_exact_head===true){add('ci',pr.number+':'+head,e.actor);cc++}
+  if(e.event==='MERGED'&&merge&&e.merge===merge){add('merged',String(pr.number),e.actor);mc++}
+  if(e.event==='LIVE_VERIFIED'&&live&&merge&&e.merge===merge){add('live',String(pr.number),e.actor);lc++}
+ }
+ if(merge&&!mc)add('merged',String(pr.number),'UNKNOWN');
+ if(live&&!lc)add('live',String(pr.number),'UNKNOWN');
+ if(headProof.green_exact_head===true&&!cc)add('ci',pr.number+':'+head,'UNKNOWN');
+ return {schema:'HH_PR_MONITOR_AUTOMATION_V1',origin,commits:[...commits].map(([sha,id])=>({sha,actor:id?.actor||'UNKNOWN',run:id?.run||null})),events:all.slice(0,60),current,
+  credits:[...credits.values()].map(c=>({metric:c.metric,key:c.key,actor:c.actors.size===1?[...c.actors][0]:'UNKNOWN'})),
+  coverage:{comment_page_complete:comments.length<100,timeline_available:Array.isArray(timeline),commits_observed:commits.size,expected_commits:Number.isSafeInteger(pr.commits)?pr.commits:null,events_truncated:all.length>60},
+  evidence_level:'DECLARED_AGENT_ID_NOT_SIGNED_ACTOR'};
+}
+
 async function loadPr(number,{request=fetch,token=TOKEN,now=Date.now()}={}){
  let remaining=null,used=0,partial=false;
  const reserve=token?80:12;
@@ -388,7 +458,8 @@ async function loadPr(number,{request=fetch,token=TOKEN,now=Date.now()}={}){
   merge_to_live_ms:live?.merge_to_live_ms??null,
   created_to_live_ms:live?.created_to_live_ms??null,
   end_to_end_complete:!!live&&mergedAt!==null};
- return {...timeline,repair_cycles:repairCycles,task_outcomes:taskOutcomes,live_evidence:live,journey,source:{kind:'GITHUB_READ_ONLY_ON_DEMAND',reads:used,
+ const automation_trace=automationAudit({pr,comments,timeline:prTimelineEvents,headProof,live,now});
+ return {...timeline,automation_trace,repair_cycles:repairCycles,task_outcomes:taskOutcomes,live_evidence:live,journey,source:{kind:'GITHUB_READ_ONLY_ON_DEMAND',reads:used,
   exact_head_no_pr_ref_matches:headMatchFallbacks,
   history_partial:partial,remaining_api_quota:remaining,
   known_limitations:[
@@ -421,6 +492,7 @@ async function handler(req,res){
  }
 }
 handler.loadPr=loadPr;
+handler.automationAudit=automationAudit;
 handler.extractStageReceipts=extractStageReceipts;
 handler.extractTaskOutcomes=extractTaskOutcomes;
 handler.verifiedLiveReceipt=verifiedLiveReceipt;

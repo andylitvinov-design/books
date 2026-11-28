@@ -449,3 +449,22 @@ test('green checks for an earlier HEAD do not promote a published outcome to VER
  assert.equal(row.current_head,false);
  assert.equal(row.verification_evidence,'SOURCE_PUBLISHED_WAITING_EXACT_HEAD_REQUIRED_CI');
 });
+
+
+test('6+4 attribution reuses existing requests, separates actual commit markers from observations and rejects stale blockers',async()=>{
+ const user={login:'andylitvinov-design',id:274943885},label='HH-Automation: mycoach-20\nHH-Run: mycoach-20-20261128T120000Z';
+ const p={...pr,state:'open',merged:false,merged_at:null,closed_at:null,base:{ref:base,sha:C},user,body:label,commits:1};
+ const e={schema:'HH_PR_TRACE_V1',automation_id:'mycoach-20',run_id:'mycoach-20-20261128T120000Z',pr:3390,stage:'REPAIR',event:'STAGE_BLOCKED',outcome:'HOLD',at:at(45),head_sha:B,base_sha:C,reason_code:'NO_SOURCE_WRITE_AUTHORIZATION',next_action:'Verify permitted writer'};
+ const make=(r,id=42,u=user)=>({id,user:u,created_at:at(45),body:'<!-- HH_PR_TRACE_V1 -->\n'+JSON.stringify(r)});
+ const timeline=[{event:'committed',sha:B,message:label}];
+ const build=(over={})=>api.automationAudit({pr:p,comments:[make(e)],timeline,now:Date.parse(at(100)),...over});
+ assert.equal(build().origin.actor,'mycoach-20');assert.equal(build().current.reason,'NO_SOURCE_WRITE_AUTHORIZATION');
+ assert.equal(build().credits.find(x=>x.metric==='commits').actor,'mycoach-20');
+ assert.equal(build({comments:[make({...e,base_sha:A})]}).current,null);
+ assert.equal(build({comments:[make(e,42,{...user,id:99})]}).events.length,0);
+ assert.equal(build({headProof:{green_exact_head:true}}).current,null);
+ assert.equal(build({comments:[make(e),make(e,43)]}).events.length,1);
+ assert.equal(build({comments:[make({...e,event:'COMMIT_WRITTEN',stage:'HEAD',outcome:'DONE',commit_sha:A})],timeline:[]}).credits.some(c=>c.metric==='commits'),false);
+ const m=makeRequest({prValue:p,commentRows:[make(e)],timelineRows:timeline});
+ const out=await api.loadPr(3390,{request:m.request,now:Date.parse(at(100))});assert.equal(out.source.reads,6);assert.equal(out.automation_trace.origin.actor,'mycoach-20');
+});
