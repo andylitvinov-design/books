@@ -1033,7 +1033,7 @@ export async function verify(api,ctx,files,options={}) {
       // The new BASE must contain CI-only policy/test changes: no workflows or
       // application source may have advanced without new proposed-merge CI.
       const independentlyRevalidated = options.trustedPolicyBaseSha === liveBaseSha &&
-        safeTrustedPolicyAdvance(diff, ctx.base, liveBaseSha, changed);
+        safeTrustedPolicyAdvance(diff, ctx.base, liveBaseSha, changed, files);
       // Independently tested public media source advances cannot change a
       // candidate that edits ONLY detached Specialist policy code/tests. The
       // immutable PR HEAD, actual successful Core and every Specialist job
@@ -1120,6 +1120,7 @@ export async function verify(api,ctx,files,options={}) {
       // One general loose-base rule for complete non-overlapping ordinary product changes.
       // Preserve the actual tested HEAD and all required specialist outcomes.
       const nonOverlappingProduct = pinnedChangeRows && live.mergeable === true &&
+        !diff.files?.some(row=>REVALIDATABLE_CI_POLICY_FILES.includes(row?.filename)) &&
         safeNonOverlappingProductAdvance(diff, ctx.base, liveBaseSha, changed, files);
       if (!identicalOnly && !documentationOnly && !independentlyRevalidated &&
           !isolatedCiPolicy && !unrelatedCiMaintenance && !inertPublicImages &&
@@ -1652,7 +1653,7 @@ export async function revalidateAfterTrustedPolicyAdvance(api, ctx, files, optio
     const target = await api.target();
     if (!/^[0-9a-f]{40}$/.test(target || '')||target===ctx.base) return decline();
     const diff = await api.compare(ctx.base, target);
-    const oldPolicyAccepts = safeTrustedPolicyAdvance(diff, ctx.base, target, changed);
+    const oldPolicyAccepts = safeTrustedPolicyAdvance(diff, ctx.base, target, changed, files);
     const possibleNewPolicy = Array.isArray(diff?.files) && diff.files.some(row =>
       policyFiles.has(row?.filename) && !changed.includes(row.filename) &&
       ['added','modified'].includes(row.status) && !row.previous_filename);
@@ -1669,7 +1670,7 @@ export async function revalidateAfterTrustedPolicyAdvance(api, ctx, files, optio
         throw Error('TRUSTED_SPECIALIST_POLICY_NOT_EXECUTABLE');
       const currentImpact = typeof policy.safeTrustedPolicyAdvance === 'function'
         ? policy.safeTrustedPolicyAdvance : safeTrustedPolicyAdvance;
-      if (!currentImpact(diff, ctx.base, target, changed)) return decline();
+      if (!currentImpact(diff, ctx.base, target, changed, files)) return decline();
 
       // Target can move while the new validator reviews successful workflows.
       // Retry only this read-only policy check on a different verified SHA;
