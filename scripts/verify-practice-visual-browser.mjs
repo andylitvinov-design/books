@@ -19,7 +19,7 @@ const practitioner = {
   practitioner:{profile:{displayName:''},draftProfile:{displayName:''}},
   services:[],requests:[],
 }
-const title={en:'My Work',ru:'Моя работа',es:'Mi trabajo'}
+const title={en:'Practitioner Profile',ru:'Профиль мастера',es:'Perfil profesional'}
 const reply=(route,status,data)=>route.fulfill({
   status,contentType:'application/json',body:JSON.stringify(data),
 })
@@ -100,7 +100,7 @@ for(const browserType of [chromium,webkit]){
           assert.equal(await root.locator('[data-profile-mode="work"]').getAttribute('aria-current'),
             'page',label+' Work active')
           assert.equal(await root.locator('[data-profile-mode="live"]').getAttribute('href'),
-            '/'+(locale==='es'?'en':locale)+'/app/portrait',label+' reversible Life')
+            '/'+(locale==='es'?'en':locale)+'/my-page',label+' reversible My Page')
           assert.equal(await root.locator('[data-work-home-link]').getAttribute('href'),
             '/'+locale,label+' public Holistic House wordmark')
           assert.equal(await root.locator('[data-work-primary-grid] button').count(),4,

@@ -67,3 +67,28 @@ test('approved reference landmarks refer to correct existing dashboard, not serv
   assert.ok(sample.landmarksCssPx.heroY.value>sample.landmarksCssPx.gridY.value)
   assert.ok(sample.landmarksCssPx.offersY.value>sample.landmarksCssPx.heroY.value)
 })
+
+// The actual Work surface changed; prevent resurrecting retired header/tile
+// selectors or duplicated screenshot geometry in the dedicated OAuth suite.
+test('Practice visual and post-Google contracts follow the current Work profile and retain separate OAuth cases',()=>{
+ const oauth=read('scripts/verify-practice-post-google-browser.mjs');
+ const work=read('components/practice-work-profile-intro.jsx');
+ const showcase=read('components/practice-showcase.jsx');
+ for(const title of ['Practitioner Profile','Профиль мастера','Perfil profesional']){
+  assert.ok(work.includes(title),title);assert.ok(browser.includes(title),title);assert.ok(oauth.includes(title),title);
+ }
+ for(const selector of ['data-work-profile-scenic-hero','data-work-primary-grid','data-work-create-buttons','data-work-create-tools','data-practice-after-google']){
+  assert.ok(oauth.includes(selector),selector);
+ }
+ for(const selector of ['data-work-create-button','data-practice-after-google'])assert.ok(showcase.includes(selector),selector);
+ assert.doesNotMatch(oauth,/header h1|quickGrid|async function snapshot\(/);
+ assert.match(oauth,/practice\?ready=create/);
+ assert.match(oauth,/url\.searchParams\.get\('starter'\)==='session'/);
+ assert.match(oauth,/payload\?\.continueTo,'practice-preview'/);
+ assert.match(oauth,/payload\?\.profi,undefined/);
+ assert.match(oauth,/legacy-auth/);
+ assert.match(browser,/\[320,354,390,430\]/);
+ assert.match(browser,/getBoundingClientRect/);
+ assert.match(browser,/data-hh-unified-dock/);
+ assert.match(browser,/\+\s*'\/my-page'/);
+});

@@ -9,7 +9,7 @@ if (!/^http:\/\/(?:127\.0\.0\.1|localhost):\d+$/.test(origin)) throw Error('Loop
 const out='artifacts/practice-after-google'
 await mkdir(out,{recursive:true})
 const results=[]
-const headings={ru:'Кабинет практика',en:'Practitioner workspace',es:'Espacio profesional'}
+const headings={ru:'Профиль мастера',en:'Practitioner Profile',es:'Perfil profesional'}
 const bootstrap={account:{id:'synthetic-qa',onboardingState:'complete'},results:[],runs:[],requests:[],consents:[],services:[]}
 const practice={practitioner:{profile:{displayName:''},draftProfile:{displayName:''}},services:[],requests:[]}
 function respond(route,status,body){return route.fulfill({status,contentType:'application/json',body:JSON.stringify(body)})}
@@ -23,88 +23,50 @@ async function api(page,signed){
     return respond(route,401,{error:'SYNTHETIC_FIXTURE_ONLY'})
   })
 }
-async function snapshot(page){
-  return page.evaluate(()=>{
-    const root=document.querySelector('[data-practice-showcase]')
-    const pick=s=>root.querySelector(s)
-    const rect=e=>{const r=e.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height,right:r.right,bottom:r.bottom}}
-    const grid=pick('[class*="quickGrid"]'),offers=pick('[class*="offerRail"]'),nav=pick('nav')
-    return {url:location.pathname+location.search,width:document.documentElement.clientWidth,
-      scroll:document.documentElement.scrollWidth,
-      identity:rect(pick('[class*="identity"]')),grid:rect(grid),hero:rect(pick('[class*="hero"]')),
-      offers:rect(pick('[class*="offers"]')),nav:rect(nav),
-      tiles:[...grid.querySelectorAll('button')].map(rect),
-      cover:[...offers.querySelectorAll('button')].map(rect),
-      navPosition:getComputedStyle(nav).position,
-      heroBackground:getComputedStyle(pick('[class*="hero"]')).backgroundImage}
-  })
+// The canonical Practice visual verifier owns full geometry, 320/354/390/430px
+// coverage and screenshots. Here exercise the distinct OAuth lifecycle only.
+async function verifySignedWork(page,locale,label){
+  const root=page.locator('[data-practice-showcase]')
+  await root.waitFor({state:'visible',timeout:30000})
+  await page.waitForFunction(()=>document.querySelector('[data-practice-showcase]')?.dataset.authState==='signed',null,{timeout:30000})
+  const hero=root.locator('[data-work-profile-scenic-hero] h1')
+  assert.equal(await hero.innerText(),headings[locale],label+' current localized practitioner heading')
+  assert.equal(await root.locator('[data-profile-mode="work"]').getAttribute('aria-current'),'page',label+' Work selected')
+  assert.equal(await root.locator('[data-work-primary-grid] [data-work-card]').count(),4,label+' four core tools')
+  assert.equal(await root.locator('[data-work-create-buttons] > button').count(),4,label+' four creation shortcuts')
+  assert.equal(await root.locator('[data-work-create-tools] > button').count(),3,label+' further creation choices remain')
+  assert.equal(await root.locator('[data-practice-after-google]').count(),0,label+' no injected Continue panel')
+  assert.equal(await root.locator('[data-work-create-tools]').isVisible(),false,label+' no unsolicited editor')
+  return root
 }
 for(const engine of [chromium,webkit]){
   const browser=await engine.launch({headless:true})
   try{
-    for(const locale of ['ru','en','es'])for(const width of [320,390,430]){
-      const label=engine.name()+'-'+locale+'-'+width
-      const page=await browser.newPage({viewport:{width,height:844},deviceScaleFactor:1,
+    // One signed-in lifecycle per language/browser replaces two overlapping
+    // signed-in matrices. Verify clean return, stale OAuth URL cleanup and the
+    // real user-initiated editor transition on the CURRENT Work surface.
+    for(const locale of ['ru','en','es']){
+      const label=engine.name()+'-'+locale+'-signed-oauth-return'
+      const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1,
         hasTouch:true,isMobile:true,reducedMotion:'reduce',serviceWorkers:'block'})
       await api(page,true)
       const errors=[]
       page.on('pageerror',e=>errors.push(e.message))
       try{
-        const response=await page.goto(origin+'/'+locale+'/practice',{waitUntil:'domcontentloaded',timeout:90000})
-        assert.equal(response?.status(),200,label+' page HTTP')
-        const root=page.locator('[data-practice-showcase]')
-        await root.waitFor({state:'visible',timeout:30000})
-        await page.waitForFunction(()=>document.querySelector('[data-practice-showcase]')?.dataset.authState==='signed',
-          null,{timeout:30000})
-        await page.evaluate(async()=>{await document.fonts.ready})
-        await page.waitForTimeout(250)
-        assert.equal(await root.locator('header h1').innerText(),headings[locale])
-        assert.equal(await root.locator('[class*="quickGrid"] > button').count(),6)
-        assert.equal(await root.locator('[class*="offerRail"] > button').count(),6)
-        assert.equal(await root.locator('nav button').count(),5)
-        assert.equal(await root.locator('[data-practice-after-google]').count(),0,label+' unexpected Continue panel')
-        const g=await snapshot(page)
-        assert.equal(g.url,'/'+locale+'/practice',label+' no ?ready or editor')
-        assert.ok(g.scroll<=g.width+3,label+' horizontal overflow '+JSON.stringify(g))
-        assert.ok(g.identity.bottom<=g.grid.y+3&&g.grid.bottom<=g.hero.y+3&&g.hero.bottom<=g.offers.y+3,
-          label+' approved section order')
-        assert.ok(g.identity.h<155&&g.grid.h<180&&g.hero.h>=180&&g.hero.h<320,
-          label+' approved iPhone proportions '+JSON.stringify(g))
-        assert.equal(g.navPosition,'fixed',label+' fixed bottom navigation')
-        assert.ok(g.nav.bottom<=845&&g.nav.bottom>=805,label+' bottom tab bar')
-        assert.ok(g.tiles.every(r=>r.x>=-3&&r.right<=g.width+3),label+' six tiles fit')
-        assert.ok(g.cover.every(r=>r.x>=-3&&r.right<=g.width+3),label+' six covers fit')
-        assert.ok(g.heroBackground.includes('url('),label+' real scenic hero asset')
-        if(width===390)await page.screenshot({path:out+'/'+label+'.png',fullPage:false})
-        if(locale==='ru'&&width===390){
-          await root.locator('[class*="quickGrid"] > button').first().click()
-          await page.waitForURL(u=>u.pathname==='/ru/app/practice'&&
-            u.searchParams.get('panel')==='services'&&u.searchParams.get('create')==='1',
-            {timeout:30000})
-        }
+        const response=await page.goto(origin+'/'+locale+'/practice?ready=create',{waitUntil:'domcontentloaded',timeout:90000})
+        assert.equal(response?.status(),200,label+' HTTP')
+        const root=await verifySignedWork(page,locale,label)
+        await page.waitForURL(url=>url.pathname==='/'+locale+'/practice'&&!url.search,{timeout:30000})
+        assert.equal(await root.locator('[data-practice-after-google]').count(),0,label+' stale URL did not create a panel')
+        await page.screenshot({path:out+'/'+label+'.png',fullPage:false})
+        await root.locator('[data-work-create-button="service"]').click()
+        await page.waitForURL(url=>url.pathname==='/'+(locale==='es'?'en':locale)+'/app/practice'&&
+          url.searchParams.get('panel')==='services'&&url.searchParams.get('create')==='1'&&url.searchParams.get('starter')==='session',{timeout:30000})
         assert.deepEqual(errors,[],label+' browser exceptions')
-        results.push({label,ok:true,mode:'synthetic signed-in browser render'})
+        results.push({label,ok:true,mode:'synthetic signed-in OAuth return and explicit editor'})
       }catch(e){
         await page.screenshot({path:out+'/failure-'+label+'.png',fullPage:false}).catch(()=>{})
         throw new Error(label+': '+e.message,{cause:e})
-      }finally{await page.close()}
-    }
-
-    // Historical bookmarked OAuth links must never recreate the large
-    // "Continue: Create" panel in the approved practitioner screenshot.
-    for(const locale of ['ru','en','es']){
-      const label=engine.name()+'-'+locale+'-stale-ready'
-      const page=await browser.newPage({viewport:{width:390,height:844},
-        hasTouch:true,isMobile:true,reducedMotion:'reduce',serviceWorkers:'block'})
-      await api(page,true)
-      try{
-        const response=await page.goto(origin+'/'+locale+'/practice?ready=create',{waitUntil:'domcontentloaded'})
-        assert.equal(response?.status(),200,label+' HTTP')
-        await page.waitForFunction(()=>document.querySelector('[data-practice-showcase]')?.dataset.authState==='signed')
-        await page.waitForFunction(()=>!location.search)
-        assert.equal(await page.locator('[data-practice-after-google]').count(),0,label+' no continuation banner')
-        assert.equal(await page.locator('[class*="quickGrid"] > button').count(),6,label+' six first-screen creation tiles')
-        results.push({label,ok:true,mode:'synthetic legacy OAuth URL cleanup'})
       }finally{await page.close()}
     }
 
@@ -125,8 +87,10 @@ for(const engine of [chromium,webkit]){
       try{
         await page.goto(origin+'/'+locale+'/practice',{waitUntil:'domcontentloaded'})
         await page.waitForFunction(()=>document.querySelector('[data-practice-showcase]')?.dataset.authState==='guest')
-        await page.locator('[class*="quickGrid"] > button').first().click()
-        await page.locator('button[class*="modalPrimary"]').click()
+        await page.locator('[data-work-create-button="service"]').click()
+        const dialog=page.locator('[data-practice-showcase]').getByRole('dialog')
+        await dialog.waitFor({state:'visible',timeout:10000})
+        await dialog.locator('button[class*="modalPrimary"]').click()
         await page.waitForURL(url=>url.hostname==='accounts.google.com')
         assert.equal(payload?.continueTo,'practice-preview',label+' same dashboard after login')
         assert.equal(payload?.profi,undefined,label+' no extra Continue banner')
