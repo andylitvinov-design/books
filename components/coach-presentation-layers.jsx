@@ -10,6 +10,9 @@ export default function CoachPresentationLayers({opening,presence,openingActive,
   const presenceRef=useRef(null)
   const activeSrcRef=useRef(null)
   const visibleRef=useRef(null)
+  const failedRef=useRef({})
+  const playbackEpoch=useRef(0)
+  const progressRef=useRef(null)
   const [mounted,setMounted]=useState(false)
   const [failed,setFailed]=useState({})
   const [visibleSrc,setVisibleSrc]=useState(null)
@@ -21,8 +24,9 @@ export default function CoachPresentationLayers({opening,presence,openingActive,
   const fail=useCallback((clip,video)=>{
     if(!clip||!video||(openingRef.current!==video&&presenceRef.current!==video))return
     video.pause()
+    failedRef.current={...failedRef.current,[clip.src]:true}
     setFailed(previous=>previous[clip.src]?previous:{...previous,[clip.src]:true})
-    if(visibleRef.current===clip.src||clip.src===presence?.src&&activeSrcRef.current===clip.src){
+    if(visibleRef.current===clip.src){
       // Never fall back to a previously shown lower-resolution greeting.
       // Parent holds the same-camera HD anchor after the opening.
       visibleRef.current=null
@@ -38,7 +42,9 @@ export default function CoachPresentationLayers({opening,presence,openingActive,
     const openingVideo=openingRef.current
     const presenceVideo=presenceRef.current
     const target=targetSrc===opening?.src?openingVideo:targetSrc===presence?.src?presenceVideo:null
+    const epoch=++playbackEpoch.current
     activeSrcRef.current=enabled?targetSrc:null
+    progressRef.current=target?{video:target,epoch,start:target.currentTime}:null
     if(!openingActive&&(!presence||failed[presence.src])&&visibleRef.current===opening?.src){
       visibleRef.current=null;setVisibleSrc(null);onReady(false)
     }
@@ -54,9 +60,9 @@ export default function CoachPresentationLayers({opening,presence,openingActive,
         // AbortError and Safari autoplay policy are not evidence of a broken file.
         // Keep the last rendered frame/poster and retry on visibility change.
       })
-      return()=>{cancelled=true;activeSrcRef.current=null;target.pause()}
+      return()=>{cancelled=true;playbackEpoch.current++;activeSrcRef.current=null;progressRef.current=null;target.pause()}
     }
-    return()=>{activeSrcRef.current=null}
+    return()=>{playbackEpoch.current++;activeSrcRef.current=null;progressRef.current=null}
   },[enabled,renderLayers,targetSrc,opening,presence,openingActive,failed,fail,onReady])
 
   function valid(video,clip){
@@ -64,7 +70,8 @@ export default function CoachPresentationLayers({opening,presence,openingActive,
     fail(clip,video)
     return false
   }
-  function reveal(video,clip){
+  function reveal(video,clip,epoch=playbackEpoch.current){
+    if(epoch!==playbackEpoch.current||failedRef.current[clip.src])return
     if(activeSrcRef.current!==clip.src||video.paused||video.ended||video.readyState<2)return
     if(openingRef.current!==video&&presenceRef.current!==video)return
     if(!valid(video,clip))return
@@ -76,8 +83,10 @@ export default function CoachPresentationLayers({opening,presence,openingActive,
   function playing(video,clip){
     if(!valid(video,clip))return
     if(typeof video.requestVideoFrameCallback==='function'){
-      video.requestVideoFrameCallback(()=>reveal(video,clip))
-    }else reveal(video,clip)
+      const epoch=playbackEpoch.current
+      video.requestVideoFrameCallback(()=>reveal(video,clip,epoch))
+    }
+    // Without frame callbacks, wait for actual progress in onTimeUpdate.
   }
   function layer(clip,role,ref){
     if(!clip)return null
@@ -91,7 +100,8 @@ export default function CoachPresentationLayers({opening,presence,openingActive,
       onTimeUpdate={event=>{const video=event.currentTarget
         // Safari can delay a hidden layer's frame callback. Only advance once
         // playback demonstrably progressed with current decoded frame data.
-        if(video.currentTime>=.12)reveal(video,clip)
+        const progress=progressRef.current
+        if(progress?.video===video&&video.currentTime-progress.start>=.12)reveal(video,clip,progress.epoch)
       }}
       onEnded={role==='opening'?onOpeningDone:undefined}
       onError={event=>fail(clip,event.currentTarget)} />
