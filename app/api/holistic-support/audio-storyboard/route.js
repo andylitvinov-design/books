@@ -58,6 +58,9 @@ export async function POST(request){
     // The coach lane is authenticated so a public caller cannot claim its quota.
     const purpose=form.get("purpose");
     const textOnly=output==="text";
+    const review=form.get("speech_review");
+    if(review!==null&&(review!=="yes"||purpose!=="my_coach"||!textOnly||process.env.HH_COACH_SPEECH_REVIEW_FREE_CONFIRMED!=="true"))
+      throw new AppError("AUDIO_STT_REVIEW_UNAVAILABLE",503);
     if(textOnly&&purpose!==null&&purpose!=="ali_chat"&&purpose!=="my_coach")throw new AppError("AUDIO_STT_PURPOSE_INVALID",400);
     if(purpose==="my_coach"){
       const actor=await createRequestAuth(request,config).verified();

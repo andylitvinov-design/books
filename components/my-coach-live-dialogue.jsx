@@ -35,6 +35,7 @@ import MyCoachEarlyExit from './my-coach-early-exit'
 import {coachCompletionDestination,coachEarlyExitDestination,coachShouldOfferEarlyExit} from '@/lib/coaching/coach-early-exit.mjs'
 import MyCoachSpeechLoop from './my-coach-speech-loop'
 import MyCoachGeminiLive from './my-coach-gemini-live'
+import {isSuspectShortRussianSpeech} from '@/lib/coaching/coach-speech-evidence.mjs'
 import MyCoachStagedMemoryControls from './my-coach-staged-memory-controls'
 import {coachExplicitRecall,privateCoachRecallText,coachReturningSalutation} from '@/lib/coaching/coach-private-recall.mjs'
 import MyCoachSessionStateCard from './my-coach-session-state-card'
@@ -2391,7 +2392,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
               wave.dataset.voiceDetected=rms>0.025?'true':'false'
             }}
             onInputInterim={setSpeechPreview}
-            onInputFinal={text=>{
+            onInputFinal={(text,details)=>{
               // A recognized explicit correction stops the current transport before
               // its next reply is accepted. Confirmation is a local text turn;
               // never mint another grant automatically or let a model save a name.
@@ -2400,6 +2401,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
               const recallRequested=handlePrivateLiveRecall(text)
               // The spoken question already reached the live provider. Capture
               // normally, without suppressing PCM or awaiting the archive.
+              if(details?.spoken===true&&!candidate&&!recallRequested&&isSuspectShortRussianSpeech(text,conversationLang)&&
+                !coachingBrainSafety(guard)&&!coachingBrainBoundary(guard)){
+                setDraft(previous=>previous.trim()?previous:text)
+                setSpeechPreview('')
+                return {transcriptReview:true}
+              }
               if(candidate&&!coachingBrainSafety(guard)&&!coachingBrainBoundary(guard)){
                 if(!appendLiveTranscript('user',text))return true
                 const question=coachNameCorrectionQuestion(candidate,conversationLang)

@@ -5,6 +5,7 @@ import {beginPrivateCoachSalutation} from '@/lib/coaching/coach-private-greeting
 import {coachExplicitRecall} from '@/lib/coaching/coach-private-recall.mjs'
 import {coachCharacterObservedIds} from '@/lib/coaching/coach-character-signature.mjs'
 import SimliDialoguePilot from './simli-dialogue-pilot'
+import {createSpeechReviewBuffer,createSpeechReviewRequest} from '@/lib/coaching/coach-speech-review.mjs'
 import {Mic,Play,Volume2} from 'lucide-react'
 import styles from './my-coach-speech-loop.module.css'
 import {
@@ -134,6 +135,10 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   const [phase,setPhase]=useState('idle')
   const [notice,setNotice]=useState('')
   const [audioNeedsGesture,setAudioNeedsGesture]=useState(false)
+  const [reviewOptIn,setReviewOptIn]=useState(false)
+  const [reviewCandidate,setReviewCandidate]=useState(null)
+  const reviewEnabled=process.env.NEXT_PUBLIC_HH_COACH_SPEECH_REVIEW==='true'
+  const reviewCopy=({ru:{consent:'Дополнительная проверка речи через Groq (необязательно). Аудиофрагменты отправляются Groq; см. политику приватности.',candidate:'Возможная расшифровка — проверьте текст:',dismiss:'Закрыть'},en:{consent:'Optional speech review via Groq. Audio snippets are sent to Groq; see its privacy policy.',candidate:'Possible transcription — review the text:',dismiss:'Dismiss'},es:{consent:'Revisión de voz opcional con Groq. Se envían fragmentos de audio a Groq; consulta su política de privacidad.',candidate:'Posible transcripción — revisa el texto:',dismiss:'Cerrar'}})[lang]
   const runtime=useRef(null),starting=useRef(false),generation=useRef(0)
   const simliPilotRef=useRef(null)
   const propsRef=useRef({})
@@ -180,6 +185,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   function teardown(r){
     if(!r||r.ended)return
     r.ended=true
+    r.speechReview?.close();r.reviewBuffer?.reset()
     r.privateGreeting?.cancel()
     r.replyWatch?.clear()
     try{r.abort?.abort()}catch{}
@@ -207,6 +213,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     starting.current=false
     const r=runtime.current
     runtime.current=null
+    setReviewCandidate(null)
+    setReviewOptIn(false)
     // Keep partial recognition as an editable draft, never as confirmed client evidence.
     // A truncated reply remains visible but is not counted as heard.
     if(r&&!r.ended){
@@ -228,6 +236,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     // Parent and transport both observe lifecycle events. A duplicate pause
     // must not repeatedly release hardware or invalidate a stable parked socket.
     if(r.paused&&!r.resumeInFlight&&!disconnect)return true
+    r.speechReview?.cancel();r.reviewBuffer?.reset();setReviewCandidate(null)
     r.pauseEpoch=(r.pauseEpoch||0)+1
     // Invalidate an outstanding Play even when iOS delays its permission promise.
     r.resumeInFlight=false
@@ -512,7 +521,15 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     propsRef.current.onInputInterim?.('')
     if(!value||r.ended)return
     const preceding=r.history.slice(-10)
-    const decision=propsRef.current.onInputFinal?.(value)
+    const decision=propsRef.current.onInputFinal?.(value,{spoken:true})
+    const reviewFrames=r.reviewBuffer?.take()
+    if(decision?.transcriptReview===true){
+      r.lastAssistantTurnFinished=false;r.pendingDirectorHint=''
+      if(reviewFrames&&r.speechReview)r.speechReview.submit(reviewFrames,r.locale,text=>{
+        if(text&&runtime.current===r&&!r.ended&&!r.paused)setReviewCandidate({raw:value,text})
+      })
+      return false
+    }
     if(decision===true){stop();return true}
     r.history.push({role:'user',content:value})
     r.history=r.history.slice(-20)
@@ -1015,6 +1032,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     else if(event==='interrupt')interrupt()
     if(r.socket.bufferedAmount>MAX_BUFFERED_SOCKET_BYTES){
       r.pendingMic.length=0
+      r.reviewBuffer?.reset()
       r.backpressureChunks=(r.backpressureChunks||0)+1
       if(r.backpressureChunks===6)notify(t.networkSlow)
       // An explicit text fallback is safer than silent lost microphone seconds.
@@ -1061,6 +1079,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
         pending.length=0
         if(protectedPlayback&&!confirmed)pcm.fill(0)
         sendSocket(r,geminiLivePcmMessage(pcm))
+        // Only unambiguous non-playback PCM enters the optional review buffer.
+        // Barge-in is not uploaded in this conservative first implementation.
+        r.reviewBuffer?.append(pcm,micLevel>=speechThreshold,protectedPlayback)
       }
     }
     if(r.reconnectSoon)maybeReconnectOnGoAway(r)
@@ -1346,7 +1367,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       openingPrior:p.allowOpeningPrior===true?p.openingPrior:null,
       abort:new AbortController(),timer:null,reconnectTimer:null,
       resampler:new GeminiLivePcmResampler(context.sampleRate),
-      audioGate:new GeminiLiveBargeGate()}
+      audioGate:new GeminiLiveBargeGate(),
+      ...(reviewEnabled&&reviewOptIn?{speechReview:createSpeechReviewRequest(),reviewBuffer:createSpeechReviewBuffer()}:{})}
     r.replyWatch=new GeminiLiveReplyWatchdog({
       canFire:()=>!r.ended&&!r.paused&&r.ready&&r.socket?.readyState===1&&
         r.context.state==='running'&&!r.player?.playing&&!r.pendingAudio?.length&&
@@ -1396,6 +1418,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       // No interrupt, new provider message, mic gate or transport timeout.
       if(propsRef.current.onPrivateRecallRequest?.(body)===true)return true
     }
+    r.reviewBuffer?.reset();r.speechReview?.cancel();setReviewCandidate(null)
     interrupt()
     if(!sendSocket(r,geminiLiveTextMessage(body)))return false
     if(r.postBarge)r.awaitingBargeReply=true
@@ -1482,6 +1505,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
           phase==='listening'?t.listening:phase==='speaking'?t.speaking:t.thinking}
       </span>}
     {notice&&<p className={styles.note} role="status">{notice}</p>}
+    {reviewEnabled&&phase==='idle'&&<label className={styles.note}><input type="checkbox" checked={reviewOptIn} onChange={e=>setReviewOptIn(e.target.checked)}/> {reviewCopy.consent} <a href="https://groq.com/privacy-policy/" target="_blank" rel="noreferrer">Groq</a></label>}
+    {reviewCandidate&&<div className={styles.note} role="status"><span>{reviewCopy.candidate} {reviewCandidate.text}</span> <button type="button" onClick={()=>setReviewCandidate(null)}>{reviewCopy.dismiss}</button></div>}
     {personaId==='caesar'&&process.env.NEXT_PUBLIC_HH_SIMLI_OWNER_DIALOGUE_PILOT==='true'&&<SimliDialoguePilot ref={simliPilotRef} target="coach" locale={lang}
       phase={phase} blocked={!enabled||Boolean(liveContextAccess)||phase==='paused'}
       revision={personaId+'|'+lang+'|'+voiceName+'|'+contextRevision}/>}
