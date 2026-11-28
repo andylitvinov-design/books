@@ -120,3 +120,32 @@ test('all eight Goal sessions have a real final evidence checkpoint without chan
   }
  }
 });
+
+import {thematicScenarioVersion,THEMATIC_EXPANDED_VERSION,THEMATIC_EXPANDED_REVIEW_VERSION} from '../lib/coaching/session-blueprint.mjs';
+import {coachCourseProtocolRows,normalizeCoachCourseFieldReview,coachReviewScenarioVersion} from '../lib/coaching/coach-course-protocol-schema.mjs';
+import {checkpointConfirmation} from '../lib/coaching/coach-course-question-binding.mjs';
+test('expanded thematic scenario binds every non-contact stage to individual questions; historical reviews stay versionless',()=>{
+ for(const item of [...COACH_PROGRAM_GROUPS.flatMap(g=>g.sessions),...COACH_COURSE_SESSIONS].filter(x=>thematicScenarioVersion(x.id)))for(const locale of ['en','ru','es']){
+  const id=item.id,version=THEMATIC_EXPANDED_VERSION,b=sessionBlueprint(id,locale,{expanded:true});
+  const old=coachCourseProtocolSchema(id,locale),schema=coachCourseProtocolSchema(id,locale,{scenarioVersion:version});
+  assert.equal(b.stages.length,6);assert.ok(b.stages.slice(1).every(s=>s.fields.length>0));
+  assert.deepEqual(b.stages.flatMap(s=>s.fields),schema.checkpoints.map(f=>f.id));
+  assert.deepEqual(schema.checkpoints.filter(f=>old.checkpoints.some(o=>o.id===f.id)).map(f=>f.id),old.checkpoints.map(f=>f.id));
+  assert.ok(schema.checkpoints.every(f=>f.scenarioVersion===version&&f.question));
+  const review={version:THEMATIC_EXPANDED_REVIEW_VERSION,courseSessionId:id,events:[]};
+  assert.equal(coachReviewScenarioVersion(normalizeCoachCourseFieldReview(review,id,[])),version);
+  const rows=coachCourseProtocolRows(id,[],review,locale);assert.equal(rows.length,schema.checkpoints.length);
+  const p=groupedSessionPosition(openingStagePosition({current:'invitation'},locale),courseStagePosition(rows),{mode:'course',courseId:id,locale});
+  for(const stage of b.stages)assert.deepEqual(p.rows.find(g=>g.id===stage.id).coreChildren.map(f=>f.id),stage.fields);
+  assert.ok(p.rows.every(g=>g.tone==='gray'));
+  const field=b.additionalCheckpoints[0];assert.ok(field);const quote=({en:'A specific resource is available.',ru:'У меня есть конкретная поддержка.',es:'Tengo un apoyo concreto.'})[locale];
+  const turns=[{role:'assistant',content:field.question},{role:'user',content:quote},{role:'assistant',content:checkpointConfirmation(field.question,quote,locale)},{role:'user',content:({en:'yes',ru:'да',es:'sí'})[locale]}];
+  const event={fieldId:field.id,status:'confirmed',turnIndex:1,quote,revision:1,binding:{questionTurnIndex:0,confirmationTurnIndex:3}};
+  const verified=normalizeCoachCourseFieldReview({...review,events:[event]},id,turns);
+  assert.equal(coachCourseProtocolRows(id,turns,verified,locale).find(f=>f.id===field.id).quote,quote);
+  assert.throws(()=>normalizeCoachCourseFieldReview({...review,events:[{...event,binding:undefined}]},id,turns));
+  assert.throws(()=>normalizeCoachCourseFieldReview({...review,events:[event]},id,turns.map((t,i)=>i===3?{...t,unanswered:true}:t)));
+  assert.throws(()=>coachCourseProtocolRows(id,turns,verified,locale,{scenarioVersion:null}));
+  assert.equal(coachCourseProtocolRows(id,[],null,locale).length,old.checkpoints.length);
+ }
+});
