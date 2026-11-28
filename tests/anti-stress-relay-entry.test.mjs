@@ -160,3 +160,34 @@ test('Therapy carries one scoped material selection without note text or unrelat
   assert.throws(()=>normalizeAntiStressRelayEntry(wire({materialSelection:bad}),owner),/INVALID/)
  assert.throws(()=>normalizeAntiStressRelayEntry(wire({runId:id(1),materialSelection,memorySelection}),owner),/INVALID/)
 })
+
+
+test('AntiStress browser relay stops capture after missing trusted clock observations, not a fake completion',async()=>{
+ const {connectAntiStressBrowserRelay}=await import('../lib/coaching/anti-stress-relay-client.mjs')
+ let socket;const tasks=new Map(),closed=[];let seq=0
+ class BrowserSocket{
+  constructor(){socket=this;this.readyState=0;this.bufferedAmount=0;this.sent=[]}
+  send(raw){this.sent.push(JSON.parse(raw))}
+  close(){this.readyState=3;this.onclose?.()}
+  receive(value){this.onmessage({data:JSON.stringify(value)})}
+ }
+ const accountId='00000000-0000-4000-8000-000000000100',runId='00000000-0000-4000-8000-000000000101',protocolId='00000000-0000-4000-8000-000000000102',visitId='00000000-0000-4000-8000-000000000103'
+ const selection={accountId,runId,protocolId,sessionId:'anti_stress_ground',body:{courseSessionId:'anti_stress_ground',personaId:'mira',consent:true,voiceConsent:true,trainingUseConsent:true}}
+ const h=connectAntiStressBrowserRelay({selection,explicitPlay:true,isForeground:()=>true,onClock:()=>true,onProvider:()=>{},onClosed:x=>closed.push(x),origin:'https://holistichouse.vercel.app',WebSocketImpl:BrowserSocket,schedule:(fn,ms)=>{tasks.set(++seq,{fn,ms});return seq},cancel:k=>tasks.delete(k)})
+ const initial=tasks.get(seq)
+ socket.readyState=1;socket.onopen()
+ socket.receive({type:'hh_anti_stress_selection',runId,protocolId,sessionId:'anti_stress_ground',day:1})
+ socket.receive({type:'hh_anti_stress_ready',decision:'start'})
+ const receipt=elapsedMs=>({type:'hh_anti_stress_clock',day:1,elapsedMs,status:'active',visitId,coachId:'mira'})
+ socket.receive(receipt(0));assert.equal(h.snapshot().canSendAudio,true)
+ const first=tasks.get(seq);assert.equal(first.ms,20000)
+ initial.fn();assert.equal(closed.length,0)
+ socket.receive(receipt(5000));const latest=tasks.get(seq)
+ assert.notEqual(first,latest);first.fn();assert.equal(closed.length,0)
+ latest.fn();assert.equal(h.snapshot().canSendAudio,false)
+ assert.equal(socket.readyState,3);assert.equal(closed.length,1)
+ assert.equal(closed[0].reason,'observation_unverified');assert.equal(closed[0].terminalVerified,false)
+ assert.equal(closed[0].status,'unverified');assert.equal(closed[0].elapsedMs,5000)
+ assert.equal(closed[0].binding.protocolId,protocolId)
+ assert.equal(h.sendAudio({realtimeInput:{audio:{data:'AAAAAA==',mimeType:'audio/pcm;rate=16000'}}}),false)
+})
