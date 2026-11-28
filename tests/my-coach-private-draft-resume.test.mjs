@@ -7,14 +7,19 @@ test('restored revision continues, never resets',async()=>{
  queue.offer({courseSessionId:'introductory',protocol:{id:'test',turns:[{role:'user',content:'First'}]}})
  assert.equal(await queue.flush(),9);assert.deepEqual(calls,[9])
 })
-test('owner/revision guard and private text-only resume',()=>{
+test('Send prevents focus loss after mouse press and synthesized touch press',()=>{
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const composer=ui.slice(ui.indexOf('data-coach-composer-field'))
+ assert.match(composer,/type="submit"\s+onMouseDown=\{event=>\{if\(event\.button===0&&document\.activeElement===composerRef\.current\)event\.preventDefault\(\)\}\}/)
+})
+test('owner and revision guards preserve the first-party restored session',()=>{
  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
  const server=readFileSync(new URL('../lib/app/my-coach-protocol-drafts.js',import.meta.url),'utf8')
  assert.match(ui,/initialDraftRevision.current=result.draft.revision/)
  // Both restored and fresh private sessions must bypass the provider path.
- assert.match(ui,/const privateTextOnly=restoredDraft\|\|freshPrivateProfile/)
- assert.match(ui,/if\(privateTextOnly\)return await sendMessage\(draft.trim\(\),\{forceLocal:true\}\)/)
- assert.match(ui,/if\(privateTextOnly&&voiceTurn\)return null/)
+ assert.match(ui,/const privateTextOnly=\(restoredDraft&&!restoredRelay\)\|\|freshPrivateProfile/)
+ assert.match(ui,/if\(privateTextOnly&&!privateResumeVoice\)return await sendMessage\(draft.trim\(\),\{forceLocal:true\}\)/)
+ assert.match(ui,/if\(privateTextOnly&&voiceTurn&&!privateResumeVoice\)return null/)
  assert.match(ui,/if\(restoredDraft\)forceLocal=true/)
  assert.match(ui,/if\(freshPrivateProfile\)forceLocal=true/)
  assert.match(server,/row.state!=='active'\|\|row.revision!==input.revision/)
@@ -60,17 +65,33 @@ test('explicit course marker cannot conflict with the enclosing draft',()=>{
 })
 
 
-import {coachDraftListSummary,draftTranscriptPrefix,coachDraftDurationExtends,coachDraftMinuteLabel} from '../lib/personal-coaching/protocol-draft.mjs'
+import {coachDraftListSummary,draftTranscriptPrefix,coachDraftMatchesResume,coachDraftDurationExtends,coachDraftMinuteLabel} from '../lib/personal-coaching/protocol-draft.mjs'
+import {CLARITY_DAY_ONE_VERSION} from '../lib/coaching/clarity-day-one-scenario.mjs'
 test('greeting list summary never returns a transcript or private profile',()=>{
  const item={id:'draft',revision:3,updatedAt:'2026-11-25T12:00:00Z',courseSessionId:'introductory',protocol:{personaId:'mira',locale:'ru',startedAt:'2026-11-25T11:50:00Z',turns:[{role:'user',content:'private text'}],opening:{name:'private name'}}}
- assert.deepEqual(coachDraftListSummary(item),{id:'draft',revision:3,updatedAt:item.updatedAt,courseSessionId:'introductory',personaId:'mira',locale:'ru',startedAt:'2026-11-25T11:50:00Z',turnCount:1,durationSeconds:null})
- assert.ok(!JSON.stringify(coachDraftListSummary(item)).includes('private'))
+ assert.deepEqual(coachDraftListSummary(item),{id:'draft',revision:3,updatedAt:item.updatedAt,courseSessionId:'introductory',personaId:'mira',locale:'ru',startedAt:'2026-11-25T11:50:00Z',turnCount:1,durationSeconds:null,privateHandoff:true,activeCoachId:'mira'})
+ assert.doesNotMatch(JSON.stringify(coachDraftListSummary(item)),/private text|private name/)
  const route=readFileSync(new URL('../app/api/app/my-coach/draft/route.js',import.meta.url),'utf8')
  const store=readFileSync(new URL('../lib/app/my-coach-protocol-drafts.js',import.meta.url),'utf8')
  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
  assert.ok(route.includes("view:params.get('view')"))
- assert.ok(store.includes("view==='summary'?selected.map(coachDraftListSummary):selected"))
+ assert.ok(store.includes("view==='summary'?selected.map(item=>coachDraftListSummary(item,clock,bindings.get(item.id.toLowerCase()))):selected"))
+ // Normal resume remains persona-scoped; a course query is explicitly
+ // constrained by both coach and course on the owner-scoped server page.
+ assert.ok(ui.includes("new URLSearchParams({view:'summary',personaId,...(clarityDay?{courseSessionId:clarityCourseId(clarityDay)}:{}),...(courseRunId?{courseRunId}:{}),...(cursor||{})})"))
+  assert.ok(route.includes("courseRunId:params.get('courseRunId')"))
+  assert.ok(ui.includes('(!courseRunId||row.courseRunId===courseRunId)'))
+  assert.ok(store.includes('!clarityResumeMatches(bindings.get(item.id.toLowerCase()),courseRunId)'))
  assert.ok(ui.includes("new URLSearchParams({view:'summary',...(cursor||{})})"))
+ assert.ok(route.includes("courseSessionId:params.get('courseSessionId')"))
+ assert.ok(store.includes("coachDraftMatchesResume(item,personaId,courseSessionId)"))
+ assert.ok(store.includes("!clarityCourseDay(courseSessionId)"))
+ assert.ok(ui.includes("row?.personaId===personaId||(clarityDay&&(row?.crossCoach===true||row?.relayHandoff===true))"))
+ assert.ok(ui.includes("row.courseSessionId===clarityCourseId(clarityDay)"))
+ assert.ok(ui.includes("headers:{'X-HH-Account-ID':owner}"))
+ assert.ok(route.includes("auth.verified()"))
+ assert.ok(route.includes("request.headers.get('x-hh-account-id')!==actor.id"))
+ assert.ok(store.includes("where account_id=$1 and state='active'"))
  assert.ok(ui.includes("action:'resume',id:item.id,revision:item.revision,confirmed:true"))
 })
 test('checkpoint cannot erase a known interruption but may append an answer or record a new interruption',()=>{
@@ -79,6 +100,63 @@ test('checkpoint cannot erase a known interruption but may append an answer or r
  assert.equal(draftTranscriptPrefix(a,b),false)
  assert.equal(draftTranscriptPrefix(b,a),true)
  assert.equal(draftTranscriptPrefix(a,{...a,turns:[...a.turns,{role:'user',content:'Next'}]}),true)
+})
+
+test('cross-coach greeting metadata excludes ledger and transcript, and safety-paused drafts cannot hand off',()=>{
+ const item={id:'draft',revision:4,updatedAt:'2026-11-26T12:00:00Z',courseSessionId:'clarity_day_1',protocol:{personaId:'mira',locale:'ru',turns:[{role:'user',content:'private text'}],opening:{name:'private name'}},courseGate:{scenarioVersion:CLARITY_DAY_ONE_VERSION,activeCoachId:'genie',paused:false,gate:{private:'secret'},review:{private:'secret'}}}
+ const common={id:item.id,revision:item.revision,updatedAt:item.updatedAt,courseSessionId:item.courseSessionId,personaId:'mira',locale:'ru',turnCount:1}
+ assert.deepEqual(coachDraftListSummary(item),{...common,crossCoach:true,activeCoachId:'genie'})
+ assert.deepEqual(coachDraftListSummary({...item,courseGate:{...item.courseGate,paused:true}}),common)
+ assert.deepEqual(coachDraftListSummary({...item,courseGate:{...item.courseGate,scenarioVersion:'legacy'}}),common)
+ assert.ok(!JSON.stringify(coachDraftListSummary(item)).includes('secret'))
+ assert.ok(!JSON.stringify(coachDraftListSummary(item)).includes('private'))
+})
+
+test('course resume discovery is exact-course and permits cross-coach for eligible persisted Clarity gates',()=>{
+ const item={courseSessionId:'clarity_day_1',protocol:{personaId:'mira'},courseGate:{scenarioVersion:CLARITY_DAY_ONE_VERSION,paused:false}}
+ assert.equal(coachDraftMatchesResume(item,'mira'),true)
+ assert.equal(coachDraftMatchesResume(item,'genie'),false)
+ assert.equal(coachDraftMatchesResume(item,'genie','clarity_day_1'),true)
+ assert.equal(coachDraftMatchesResume(item,'mira','clarity_day_2'),false)
+ assert.equal(coachDraftMatchesResume(item,'genie','clarity_day_2'),false)
+ assert.equal(coachDraftMatchesResume(item,'mira','introductory'),false)
+ assert.equal(coachDraftMatchesResume({...item,courseGate:null},'genie','clarity_day_1'),false)
+ assert.equal(coachDraftMatchesResume({...item,courseGate:{...item.courseGate,paused:true}},'genie','clarity_day_1'),false)
+ assert.equal(coachDraftMatchesResume({...item,courseGate:{...item.courseGate,scenarioVersion:'legacy'}},'genie','clarity_day_1'),false)
+ assert.equal(coachDraftMatchesResume({...item,courseSessionId:'clarity_day_2'},'genie','clarity_day_2'),false)
+ assert.equal(coachDraftMatchesResume({...item,courseSessionId:'clarity_day_2'},'mira','clarity_day_2'),true)
+ for(const day of ['clarity_day_2','clarity_day_3']){
+  const draft={...item,courseSessionId:day,courseGate:{paused:false}}
+  assert.equal(coachDraftMatchesResume(draft,'genie',day),true)
+  assert.equal(coachDraftMatchesResume({...draft,courseGate:{paused:true}},'genie',day),false)
+  assert.equal(coachDraftMatchesResume({...draft,courseGate:null},'genie',day),false)
+  assert.equal(coachDraftListSummary({...draft,protocol:{...draft.protocol,turns:[]}}).crossCoach,true)
+ }
+})
+
+test('Clarity resume does not promote a browser duration into verified minutes',()=>{
+ const item={id:'draft',courseSessionId:'clarity_day_1',protocol:{id:'11111111-1111-4111-8111-111111111111',personaId:'mira',locale:'ru',turns:[],durationSeconds:1199}}
+ const summary=coachDraftListSummary(item)
+ assert.equal(summary.clarityTime,undefined)
+ assert.equal(summary.durationSeconds,undefined)
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const store=readFileSync(new URL('../lib/app/my-coach-protocol-drafts.js',import.meta.url),'utf8')
+ assert.match(store,/clarityClockResumeTime\(clock,day,value\.protocol\.id\)/)
+ assert.match(ui,/data-clarity-resume-time/)
+ assert.match(ui,/clarityTimeUnknown\?timeUnverifiedText/)
+})
+
+
+test('private draft archive preserves the locked server review and per-turn author',()=>{
+ const store=readFileSync(new URL('../lib/app/my-coach-protocol-drafts.js',import.meta.url),'utf8')
+ const archive=readFileSync(new URL('../components/app/my-coach-draft-archive.jsx',import.meta.url),'utf8')
+ const profile=readFileSync(new URL('../components/app/my-coaching-plan.jsx',import.meta.url),'utf8')
+ assert.ok(store.includes('courseGateArchive:{review:courseGate.review||null'))
+ assert.ok(archive.includes('lockedGate?lockedGate.review:courseFieldReview'))
+ assert.ok(archive.includes('lockedGate&&opening?{opening}'))
+ assert.ok(archive.includes('disabled={busy||Boolean(lockedGate)}'))
+ assert.ok(archive.includes('row.authorPersonaId||t.coach'))
+ assert.ok(profile.includes('turn.authorPersonaId||protocolCopy[lang].coach'))
 })
 
 test('time-only progress is persisted, timestamps alone are deduplicated, revisions continue',async()=>{
@@ -103,7 +181,7 @@ test('explicit continuation after private restore freezes the active clock and k
  const gate=readFileSync(new URL('../components/my-coach-greeting-gate.jsx',import.meta.url),'utf8')
  assert.ok(ui.includes('setResumePending(true);setPaused(true)'))
  assert.ok(ui.includes('!resumePending&&document.visibilityState'))
- assert.ok(ui.includes('setResumePending(false);setPaused(false);toggleComposer()'))
+ assert.match(ui,/setResumePending\(false\);setPaused\(false\)\s+if\(!restoredRelay\)toggleComposer\(\)/)
  assert.ok(ui.includes('window.setInterval(heartbeat,30000)'))
  assert.ok(ui.includes('data-coach-resume-minutes'))
  assert.doesNotMatch(gate,/Начать заново|window\.confirm/)
@@ -130,4 +208,138 @@ test('chronological draft recovery preserves an early name without inventing con
  assert.deepEqual(coachOpeningProtocolSnapshot(coachOpeningProgress({turns,locale:'ru',personaId:'mira',...recovered})),opening)
  const damaged=turns.map((row,index)=>index===0?{...row,interrupted:true}:row)
  assert.equal(recoverPrivateOpeningScope({turns:damaged,opening,locale:'ru',personaId:'mira'}).matched,false)
+})
+
+test('a bound but unstarted course cannot inherit the legacy clock',()=>{
+ const item={id:'draft',courseSessionId:'clarity_day_1',protocol:{id:'11111111-1111-4111-8111-111111111111',personaId:'mira',locale:'en',turns:[]}}
+ const binding={courseRunId:'22222222-2222-4222-8222-222222222222',courseOrdinal:2,day:1,clarityTime:null}
+ const result=coachDraftListSummary(item,null,binding)
+ assert.equal(result.courseRunId,binding.courseRunId)
+ assert.equal(result.courseOrdinal,2)
+ assert.equal(result.clarityTime,undefined)
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ assert.ok(ui.includes('(result.courseRunId||null)!==(item.courseRunId||null)'))
+ assert.ok(ui.includes('restored.courseSessionId!==item.courseSessionId'))
+})
+
+
+import {deriveCoachDraftReview} from '../lib/personal-coaching/protocol-draft.mjs'
+import {coachCourseProtocolSchema} from '../lib/coaching/coach-course-protocol-schema.mjs'
+import {checkpointConfirmation} from '../lib/coaching/coach-course-question-binding.mjs'
+test('unfinished thematic draft recovers verified answers without erasing them on a later interrupted question',()=>{
+ const scope={locale:'en',personaId:'mira',allowPrior:true,priorSession:{name:'Mary',topic:'Work'}}
+ const messages=['Yes','Correct','Continue','goal','I feel calm','Yes']
+ const opening=coachOpeningProtocolSnapshot(coachOpeningProgress({...scope,turns:messages}))
+ assert.equal(opening.completed,true)
+ const course='life_direction',question=coachCourseProtocolSchema(course,'en').checkpoints.find(f=>f.id==='situation').question
+ const answer='I am looking for stable income'
+ const history=messages.flatMap(content=>[{role:'user',content},{role:'assistant',content:'next'}])
+ const confirmed=[{role:'assistant',content:question},{role:'user',content:answer},{role:'assistant',content:checkpointConfirmation(question,answer,'en')},{role:'user',content:'Yes'},{role:'assistant',content:'Next'}]
+ const protocol={locale:'en',personaId:'mira',opening,turns:[...history,...confirmed,{role:'assistant',content:question},{role:'user',content:'A different answer',unanswered:true}]}
+ const review=deriveCoachDraftReview(protocol,course)
+ assert.equal(review.events.length,1)
+ assert.equal(review.events[0].quote,answer)
+ assert.equal(review.events[0].fieldId,'situation')
+ assert.equal(deriveCoachDraftReview({...protocol,turns:[...history,...confirmed.slice(0,2)]},course),null)
+ assert.equal(deriveCoachDraftReview({...protocol,opening:{...opening,completed:false}},course),null)
+ assert.equal(deriveCoachDraftReview(protocol,'clarity_day_1'),null)
+ const store=readFileSync(new URL('../lib/app/my-coach-protocol-drafts.js',import.meta.url),'utf8')
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const archive=readFileSync(new URL('../components/app/my-coach-draft-archive.jsx',import.meta.url),'utf8')
+ assert.ok(store.includes('seal(checkpoint,context(actor,id),config)'))
+ assert.ok(ui.includes('result.draft.draftCourseReview'))
+ assert.ok(archive.includes('useState(item.draftCourseReview||null)'))
+})
+
+
+test('chronological draft recovery preserves an early name without inventing consent or a previous topic',()=>{
+ const turns=[
+  {role:'assistant',content:'Как мне вас называть?'},
+  {role:'user',content:'Alex'},
+  {role:'assistant',content:'Хотите сегодня провести со мной коучинговую сессию?'},
+  {role:'user',content:'Да, давайте начнём.'}
+ ]
+ const opening=coachOpeningProtocolSnapshot(coachOpeningProgress({turns,locale:'ru',personaId:'mira'}))
+ assert.equal(opening.name,'Alex')
+ assert.equal(opening.checkmarks.invitation,true)
+ assert.equal(opening.completed,false)
+ const recovered=recoverPrivateOpeningScope({turns,opening,locale:'ru',personaId:'mira'})
+ assert.equal(recovered.matched,true)
+ assert.equal(recovered.allowPrior,false)
+ assert.deepEqual(coachOpeningProtocolSnapshot(coachOpeningProgress({turns,locale:'ru',personaId:'mira',...recovered})),opening)
+ const damaged=turns.map((row,index)=>index===0?{...row,interrupted:true}:row)
+ assert.equal(recoverPrivateOpeningScope({turns:damaged,opening,locale:'ru',personaId:'mira'}).matched,false)
+})
+
+test('ordinary private drafts can move to a different coach without changing archive origin or prior authors',async()=>{
+ const domain=await import('../lib/personal-coaching/protocol-draft.mjs')
+ const original={courseSessionId:'life_direction',protocol:{id:'id',personaId:'mira',startedAt:'start',
+  turns:[{role:'assistant',content:'Original reply',coachId:'mira'}]}}
+ assert.equal(domain.coachDraftListSummary(original).privateHandoff,true)
+ const transferred={...original,privateCoachId:'harry'}
+ assert.equal(domain.coachDraftListSummary(transferred).activeCoachId,'harry')
+ const next={...original.protocol,turns:[...original.protocol.turns,
+  {role:'user',content:'Continue'},{role:'assistant',content:'Follow-up',coachId:'harry'}]}
+ assert.equal(domain.coachPrivateHandoffExtends(transferred,next),true)
+ assert.equal(domain.coachPrivateHandoffExtends(transferred,{...next,turns:[...next.turns.slice(0,-1),{...next.turns.at(-1),coachId:'mira'}]}),false)
+ assert.equal(domain.draftTranscriptPrefix(original.protocol,{...next,personaId:'harry'}),false)
+ assert.equal(domain.coachDraftListSummary({...original,courseSessionId:'clarity_day_1'}).privateHandoff,undefined)
+})
+
+test('thematic non-Clarity gates hand off through the existing server continuation action',async()=>{
+ const {coachCourseHandoffEligible}=await import('../lib/coaching/coach-course-continuity.mjs')
+ assert.equal(coachCourseHandoffEligible('life_direction',{gate:{courseSessionId:'life_direction'}}),true)
+ assert.equal(coachCourseHandoffEligible('life_direction',{gate:{courseSessionId:'other'}}),false)
+ assert.equal(coachCourseHandoffEligible('life_direction',{gate:{courseSessionId:'life_direction'},paused:true}),false)
+})
+
+test('a verified ordinary draft can continue through the voice loop without restarting or cloud synthesis',()=>{
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const voice=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
+ assert.match(ui,/setRestoredPrivateVoice\(Boolean\(approvedHandoff&&item\.privateHandoff&&!isClarity&&!thematic&&!structured&&!recovered\.privateProfileV3Requested\)\)/)
+ assert.match(ui,/privateTextOnly&&!privateResumeVoice\?<span data-coach-private-text-resume/)
+ assert.match(ui,/<MyCoachSpeechLoop ref=\{speechRef\} privateResume=\{privateResumeVoice\}/)
+ assert.match(ui,/canStart=\{!resumePending&&!courseGateRequired/)
+ assert.match(ui,/if\(privateTextOnly&&voiceTurn&&!privateResumeVoice\)return null/)
+ assert.match(ui,/if\(restoredDraft\)forceLocal=true/)
+ assert.match(ui,/onSessionStart=\{\(\)=>\{setCloudAgreed\(true\);captureBasicIntroduction\(\)\}\}/)
+ assert.match(voice,/function beginVoiceBargeMonitor\(generation\)\{[^]*?if\(privateResume\)return/)
+ assert.match(voice,/if\(privateResume\)return startPrivateResume\(\)/)
+ assert.match(voice,/if\(privateResume\)\{startPrivateResume\(\);return\}/)
+ const start=voice.slice(voice.indexOf('function startPrivateResume('),voice.indexOf('useImperativeHandle('))
+ assert.match(start,/startListening\(\)/)
+ assert.doesNotMatch(start,/sessionStartRef|speakCoachReply|fetch\(/)
+ const reply=voice.slice(voice.indexOf('async function speakCoachReply('),voice.indexOf('function toggle('))
+ assert.ok(reply.indexOf('if(privateResume)')<reply.indexOf("fetch('/api/app/my-coach/voice/synthesize'"))
+ assert.match(reply,/if\(privateResume\)\{\s*if\(\['safety','boundary'\]\.includes\(result.mode\)\|\|!playDeviceFallback\(true\)\)afterSpeech\(\)\s*return/)
+ assert.match(ui,/data-coach-dock-video[\s\S]*?setViewExpanded/)
+})
+
+test('private microphone startup respects user action and never replays the archived introduction',()=>{
+ const voice=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
+ const start=voice.slice(voice.indexOf('function startPrivateResume('),voice.indexOf('useImperativeHandle('))
+ function run({active=false,enabled=true,canStart=true,visible=true,supported=true,ios=false}={}){
+  const calls=[],activeRef={current:active},introStartedRef={current:false},generationRef={current:7},audioContextRef={current:null}
+  const handler=new Function('activeRef','introStartedRef','generationRef','audioContextRef','enabled','canStart','document','window','supported','t',
+   'setNotice','refreshCoachIos27PlaybackRoute','shouldUseCoachingWebAudio','unlockCoachingAudioContext','ios27NeedsSpeechRecovery','primeMicrophonePermission','startListening',
+   start+';return startPrivateResume')(
+   activeRef,introStartedRef,generationRef,audioContextRef,enabled,canStart,{visibilityState:visible?'visible':'hidden'},{navigator:{}},supported,{unsupported:'unsupported'},
+   value=>calls.push(value),()=>calls.push('route'),()=>true,()=>{calls.push('unlock');return {}},()=>ios,()=>calls.push('prime'),()=>calls.push('listen'))
+  return {handler,calls,activeRef,introStartedRef,generationRef}
+ }
+ for(const flags of [{visible:false},{canStart:false},{enabled:false},{active:true},{supported:false}]){
+  const state=run(flags)
+  assert.equal(state.handler(),false)
+  assert.ok(!state.calls.includes('listen'))
+  assert.equal(state.generationRef.current,7)
+ }
+ for(const ios of [true,false]){
+  const state=run({ios})
+  assert.deepEqual(state.calls,[])
+  assert.equal(state.handler(),true)
+  assert.equal(state.handler(),false)
+  assert.deepEqual(state.calls,ios?['route','unlock','listen']:['route','unlock','prime','listen'])
+  assert.equal(state.introStartedRef.current,true)
+  assert.equal(state.generationRef.current,8)
+ }
 })

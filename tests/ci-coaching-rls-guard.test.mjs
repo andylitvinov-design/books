@@ -35,3 +35,22 @@ test('isolated runner enables the real server module and fails if acceptance is 
  assert.match(integration,/import\('\.\.\/lib\/app\/personal-coaching\.js'\)/)
  assert.match(integration,/Promise\.allSettled/)
 })
+
+// Focused draft-only proposal rehearsal is additive; Ready retains the full
+// App R1 acceptance job and protected merge rules.
+test('draft Clarity proposal rehearsal is exact-diff scoped, disposable and never replaces Ready DB CI',()=>{
+ const source=readFileSync(new URL('../.github/workflows/hh-personal-coaching-session.yml',import.meta.url),'utf8')
+ const app=readFileSync(new URL('../.github/workflows/hh-app-r1.yml',import.meta.url),'utf8')
+ const section=source.split('Rehearse changed Clarity SQL in disposable PostgreSQL (draft only)')[1]?.split('      - name: Scoped eslint')[0]
+ assert.ok(section)
+ assert.ok(section.includes("github.event.pull_request.draft == true"))
+ assert.ok(section.includes('test "$(git rev-parse HEAD)" = "$GITHUB_SHA"'))
+ assert.ok(section.includes('git diff --quiet HEAD^1 HEAD -- docs/coaching/clarity-course-runs.proposal.sql'))
+ assert.ok(section.includes('127.0.0.1:5432:5432'))
+ assert.ok(section.includes('postgres:17-alpine'))
+ assert.ok(section.includes('docker rm -f "$name"'))
+ assert.ok(section.includes('node scripts/ci-coaching-rls.mjs'))
+ assert.ok(!section.includes('continue-on-error'))
+ assert.ok(app.includes('name: Isolated personal coaching owner RLS acceptance'))
+ assert.ok(app.includes("github.event.pull_request.draft == false"))
+})

@@ -51,6 +51,10 @@ on:
       # Client Live Photo APIs have their own App/IA/billing/video owners.
       # Keep the literal shared catch-all dispatcher and all source/security routes.
       - '!app/api/app/live-photos/**'
+      # Coach QA metadata/rating endpoints do not process the client session recording.
+      # Keep all voice, transcript/protocol, shared auth and post-merge media checks.
+      - '!app/api/app/my-coach/qa/**'
+      - '!app/api/app/my-coach/rating/**'
   push:
     branches: ['codex/public-book-library']
     paths:

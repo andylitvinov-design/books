@@ -9,7 +9,7 @@ import {startCoachRecordedTurn,coachRecordedSupported} from '@/lib/personal-coac
 import {coachVoiceFragmentNeedsReview,coachDraftWithoutUncertainSpeech} from '@/lib/personal-coaching/coach-voice-turn-quality.mjs'
 import {coachBasicListeningMode,createCoachBasicEndpointPolicy,coachBasicBackchannel} from '@/lib/personal-coaching/coach-basic-dialogue-policy.mjs'
 import {isCoachBargeEcho} from '@/lib/personal-coaching/coach-barge-in.mjs'
-import {chooseDictationLanguage,coachSpokenTurnLocale,readDictationResults,detectedSpeechLocale,ios27NeedsSpeechRecovery,hasCoachSpokenAnswer} from '@/lib/personal-coaching/my-coach-dictation.mjs'
+import {chooseDictationLanguage,coachSpeechLanguageMemory,coachSpeechNeedsLanguageReview,coachSpokenTurnLocale,readDictationResults,detectedSpeechLocale,ios27NeedsSpeechRecovery,hasCoachSpokenAnswer} from '@/lib/personal-coaching/my-coach-dictation.mjs'
 import {setCoachIos27AudioSession,refreshCoachIos27PlaybackRoute,setCoachIos27DuplexRoute} from '@/lib/personal-coaching/coach-ios-audio-route.mjs'
 import {startCoachingMp3Playback,primeCoachingAudioGesture,unlockCoachingAudioContext,shouldUseCoachingWebAudio} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
 import {coachSpokenText} from '@/lib/coaching/coach-spoken-text.mjs'
@@ -46,7 +46,7 @@ const words={
     iosCue:'Sí.',iosPreparing:'Restableciendo el reconocimiento del iPhone…',iosAwaitSpeech:'Micrófono iniciado; esperando tu voz…',iosSilent:'Safari en iPhone dejó de entregar voz. Puedes escribir o cerrar completamente Safari y volver a abrirlo para restablecer el audio.',iosCueFailed:'Safari no pudo restablecer el reconocimiento. Escribe o reinicia Safari antes de volver a tocar el micrófono.',iosAwaitEnd:'Texto listo. Esperando el final de Safari…',audioHearing:'Voz detectada…',audioTranscribing:'Transcribiendo tu voz…',audioQuiet:'Micrófono activo · esperando tu voz.',audioNoSignal:'Sin señal de audio. Reintenta con Mic o escribe.',deviceFallback:'Voz temporal del dispositivo: voz natural no disponible.',audioUnavailable:'El reconocimiento está temporalmente no disponible. Puedes escribir.',sttCooling:'Cuota gratuita agotada. Reintentaré en un minuto; puedes escribir.',sttQuotaStopped:'Cuota aún agotada. Reintenta con Mic más tarde o escribe.',sttRecovering:'Restableciendo el reconocimiento… Repite lo último.',sttSignIn:'Inicia sesión de nuevo para recuperar el reconocimiento.'},
 }
 
-const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speechLocale='auto',initialDraft='',enabled=false,canStart=true,cloudAvailable=false,cloudAgreed=false,cloudProvider=null,voiceName=null,personaId='mira',voicePace='balanced',basicMode=true,introduction='',outputMuted=false,onSessionStart,onTurn,onCancelTurn,onCoachInterrupted,onVoiceStateChange,onVoiceLevel,onMicLevel,onRequestConsent,onTranscript,onDraft},ref){
+const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speechLocale='auto',initialDraft='',privateResume=false,enabled=false,canStart=true,cloudAvailable=false,cloudAgreed=false,cloudProvider=null,voiceName=null,personaId='mira',voicePace='balanced',basicMode=true,introduction='',outputMuted=false,onSessionStart,onTurn,onCancelTurn,onCoachInterrupted,onVoiceStateChange,onVoiceLevel,onMicLevel,onRequestConsent,onTranscript,onDraft},ref){
   const lang=words[locale]?locale:'en',t=words[lang]
   const [phase,setPhase]=useState('idle')
   const [notice,setNotice]=useState('')
@@ -314,6 +314,9 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     startListening()
   }
   function beginVoiceBargeMonitor(generation){
+    // Do not send an automatic recording of a private reply or its echo.
+    // The existing Mic control can interrupt playback before listening.
+    if(privateResume)return
     // One captured track with browser echoCancellation=true is sampled only
     // locally while the coach speaks. A short duck confirms user voice rather
     // than the loudspeaker echo. Unsupported Safari stays on the manual Mic.
@@ -380,7 +383,6 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
           if(details?.limited||deliveryRef.current.basicMode&&coachBasicBackchannel(value,{duringOutput,questionPending})){
             holdRecognizedDraft(value);return
           }
-          lastHeardRef.current=value
           heardRef.current=value
           transcriptRef.current?.(value)
           void deliver(appendSpokenAnswer(draftAtStartRef.current,value,MY_COACH_PROTOCOL_MAX_TURN_CHARS))
@@ -466,10 +468,24 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     }
   }
 
+  function startPrivateResume(){
+    if(activeRef.current||!enabled||!canStart||document.visibilityState==='hidden')return false
+    if(supported===false){setNotice(t.unsupported);return false}
+    activeRef.current=true
+    introStartedRef.current=true
+    generationRef.current+=1
+    refreshCoachIos27PlaybackRoute(window.navigator)
+    audioContextRef.current=shouldUseCoachingWebAudio(window.navigator)?unlockCoachingAudioContext():null
+    if(!ios27NeedsSpeechRecovery(window.navigator))primeMicrophonePermission()
+    startListening()
+    return true
+  }
+
   useImperativeHandle(ref,()=>({
     startSession(introduction,{naturalVoice=false}={}){
       if(phaseRef.current==='paused')return resumePausedSession()
       if(activeRef.current||!enabled||!canStart||document.visibilityState==='hidden')return false
+      if(privateResume)return startPrivateResume()
       // The hero Play must grant the same voice consent as the toolbar Play.
       sessionStartRef.current?.()
       activeRef.current=true
@@ -717,7 +733,6 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
             sttRecoveryRef.current={generation:-1,retries:0}
             if(!hasCoachSpokenAnswer(value)){startListening();return}
             if(details?.limited){holdRecognizedDraft(value);return}
-            lastHeardRef.current=value
             heardRef.current=value
             transcriptRef.current?.(value)
             void deliver(appendSpokenAnswer(draftAtStartRef.current,value,MY_COACH_PROTOCOL_MAX_TURN_CHARS))
@@ -815,7 +830,6 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       if(final){
         // Preserve interim words following a final segment in the same Safari event.
         finished=visible
-        lastHeardRef.current=finished
         // iOS 27 Safari can become deaf after an explicit stop(). Let this
         // continuous=false recognizer finish naturally after its final result.
       }
@@ -852,7 +866,6 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
             recognitionRef.current=null
             recognition.onresult=null;recognition.onend=null;recognition.onerror=null
             try{recognition.abort()}catch{}
-            lastHeardRef.current=heard
             void deliver(appendSpokenAnswer(draftAtStartRef.current,heard,MY_COACH_PROTOCOL_MAX_TURN_CHARS))
           },final?500:1900)
         }
@@ -865,7 +878,6 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
         recognitionRef.current=null
         recognition.onresult=null;recognition.onend=null;recognition.onerror=null
         if(settleTimerRef.current)clearTimeout(settleTimerRef.current)
-        lastHeardRef.current=heard
         void deliver(appendSpokenAnswer(draftAtStartRef.current,heard,MY_COACH_PROTOCOL_MAX_TURN_CHARS))
         return
       }
@@ -911,7 +923,6 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
         if(hasCoachSpokenAnswer(recovered)){
           // Safari sometimes ends after interim words without a final event.
           // A natural recognizer end commits that one turn; Stop/error never do.
-          lastHeardRef.current=recovered
           void deliver(appendSpokenAnswer(draftAtStartRef.current,recovered,MY_COACH_PROTOCOL_MAX_TURN_CHARS))
         }else{
           transcriptRef.current?.('')
@@ -994,8 +1005,11 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   }
 
   async function deliver(text){
-    // Do not let a 3–5 letter ASR guess become a coaching goal or AI turn.
-    if(coachVoiceFragmentNeedsReview(heardRef.current||text)){
+    // Review suspicious ASR before it can change the next language hint or
+    // become a coaching goal. Keep the draft editable, with no extra API call.
+    const spoken=heardRef.current||text
+    const languageContext={selection:selectionAtRecognitionRef.current,recognizedLanguage:recognizedLanguageRef.current,fallback:lang}
+    if(coachVoiceFragmentNeedsReview(spoken)||coachSpeechNeedsLanguageReview(spoken,languageContext)){
       const candidate=String(text||'').trim()
       uncertainSpeechDraftRef.current={visible:candidate,prior:draftAtStartRef.current}
       currentDraftRef.current=candidate
@@ -1007,6 +1021,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       return
     }
     uncertainSpeechDraftRef.current=null
+    lastHeardRef.current=coachSpeechLanguageMemory(lastHeardRef.current,spoken)
     const generation=++generationRef.current
     hasRecognizedRef.current=true
     setNotice('') // Clear the old user transcript before coach speech.
@@ -1207,6 +1222,13 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
       setNotice(t.fallback)
     }
 
+    // A resumed private reply can quote saved material. Only a device-local
+    // synthesizer can read it aloud, including through typed-turn playback.
+    if(privateResume){
+      if(['safety','boundary'].includes(result.mode)||!playDeviceFallback(true))afterSpeech()
+      return
+    }
+
     // Device narration is a clearly labeled continuity fallback; it is not
     // the persona's natural Google/Fish voice.
 
@@ -1348,6 +1370,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
     if(activeRef.current){pauseSession();return}
     if(!canStart)return
     if(!enabled){onRequestConsent?.();return}
+    if(privateResume){startPrivateResume();return}
     // A natural prerecorded greeting must work even if this browser lacks STT.
     if(!introStartedRef.current){
       // Play is the only start gesture: the visitor starts live voice processing.
@@ -1379,6 +1402,7 @@ const MyCoachSpeechLoop=forwardRef(function MyCoachSpeechLoop({locale='en',speec
   return <div className={styles.root} data-my-coach-voice={phase}>
     <button type="button" className={styles.button}
       onClick={toggle} disabled={!active&&!canStart}
+      aria-describedby={privateResume?'hh-coach-private-voice-notice':undefined}
       aria-pressed={active&&!ready} aria-label={isPaused?continueLabel:ready?(blockedResumeRef.current?t.tapToHear:t.retryMic):interrupting?interruptLabel:active?pauseLabel:!introStartedRef.current?({en:'Start coaching session',ru:'Начать голосовую сессию',es:'Iniciar sesión de voz'}[lang]):t.start}>
       {isPaused||(!active&&!introStartedRef.current)?
         <Play size={19} fill="currentColor" aria-hidden="true"/>:
