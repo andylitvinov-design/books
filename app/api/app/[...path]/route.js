@@ -23,7 +23,7 @@ import { listLabReports, saveLabReport, deleteLabReport } from '@/lib/app/lab-re
 import { readBusinessCoaching, saveBusinessCoaching } from '@/lib/app/business-coaching'
 import { readPersonalCoaching, savePersonalCoaching, readTraditionCoaching, saveTraditionCoaching, readTraditionCoachingSummaries } from '@/lib/app/personal-coaching'
 import {personalCoachingBrainTurn,personalCoachingBrainProbe,myCoachGenerativeTurn,myCoachGenerativeStreamTurn,myCoachGenerativeProbe} from '@/lib/app/coaching-brain'
-import {withPublishedCoachGraph} from '@/lib/app/coach-personality-graph'
+import {readPublishedCoachGraph,withPublishedCoachGraph} from '@/lib/app/coach-personality-graph'
 import {geminiCoachTextConfig} from '@/lib/coaching/gemini-coach-text.mjs'
 import {COACH_SESSION_COOKIE,COACH_SESSION_TTL_SECONDS,sealCoachSession} from '@/lib/coaching/session-authority.mjs'
 import {startCoachMethodSession,prepareCoachMethodTurn,prepareCoachMethodRequest} from '@/lib/coaching/method-session-transport.mjs'
@@ -1258,7 +1258,7 @@ async function handle(request, { params }) {
       try{selected=prepareCoachMethodRequest(checkpointBody,coachMethodContext())}
       catch(error){throw methodError(error)}
       let progress
-      try{progress=geminiFreeLiveCheckpoint(selected.body,{methodSession:selected.session})}
+      try{progress=geminiFreeLiveCheckpoint(selected.body,{methodSession:selected.session,personalityGraph:await readPublishedCoachGraph(config,actor,selected.body.personaId)})}
       catch{throw new AppError('MY_COACH_GEMINI_LIVE_INVALID',400)}
       const {__methodSession,...clientProgress}=progress
       const response=json(clientProgress)
