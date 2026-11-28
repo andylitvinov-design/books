@@ -90,11 +90,116 @@ export function classifyExactSiteVideo(env = process.env, git = execFileSync) {
   }
 }
 
+// Reuse a completed mandatory Core production build ONLY after independently
+// reading its actual GitHub job and exact tested merge identity. This is not
+// merge authority; the existing required Core/Specialist gate still runs.
+// Incomplete proof, older policy, API failure or an unfinished Core => build.
+const CORE_WORKFLOW = '.github/workflows/hh-pr-core-release.yml';
+const CORE_BUILD_STEP = 'Exact proposed release production build and TypeScript check';
+const CORE_IDENTITY = 'HH_CORE_BUILD_IDENTITY_V1';
+const SHA = /^[0-9a-f]{40}$/;
+const positiveId = x => Number.isSafeInteger(x) && x > 0;
+
+export function exactCoreBuildIdentity(env = process.env, git = execFileSync) {
+  if (env.GITHUB_EVENT_NAME !== 'pull_request' ||
+      env.GITHUB_BASE_REF !== 'codex/public-book-library' ||
+      !/^[\w.-]+\/[\w.-]+$/.test(env.GITHUB_REPOSITORY || '') ||
+      !/^[1-9]\d*$/.test(env.HH_PR_NUMBER || '') ||
+      ![env.GITHUB_SHA,env.HH_HEAD_SHA,env.HH_EVENT_BASE_SHA].every(x=>SHA.test(x||''))) return null;
+  const pr=Number(env.HH_PR_NUMBER);
+  if (!positiveId(pr)) return null;
+  const opts={encoding:'utf8',maxBuffer:2*1024*1024,stdio:['ignore','pipe','pipe'],timeout:4000};
+  try {
+    const get=(...args)=>String(git('git',args,opts));
+    const rev=ref=>get('rev-parse',ref).trim();
+    const merge=rev('HEAD'),head=rev('HEAD^2'),base=rev('HEAD^1');
+    if (merge!==env.GITHUB_SHA || head!==env.HH_HEAD_SHA || base!==env.HH_EVENT_BASE_SHA) return null;
+    // A PR cannot define its own Core evidence. Require the checked-out Core
+    // workflow to be byte-identical to the actual protected tested BASE.
+    const trusted=get('show',base+':'+CORE_WORKFLOW);
+    if (!trusted.includes(CORE_IDENTITY) || !trusted.includes(CORE_BUILD_STEP) ||
+        !trusted.includes('run: npm run build -- --no-lint') ||
+        trusted!==get('show','HEAD:'+CORE_WORKFLOW)) return null;
+    const manifest=JSON.parse(get('show','HEAD:package.json'));
+    if (manifest.scripts?.build!=='next build' ||
+        typeof manifest.scripts?.prebuild!=='string' || !manifest.scripts.prebuild.trim()) return null;
+    return {repo:env.GITHUB_REPOSITORY,pr,merge,head,base};
+  } catch { return null; }
+}
+
+export function exactCoreIdentityLog(log, identity, run) {
+  if (typeof log!=='string') return false;
+  // Ignore the shell command printed by Actions; only accept the unique
+  // standalone runtime marker emitted by the BASE-identical ancestry step.
+  const markers=log.split(/\r?\n/).map(line=>line.replace(/^\d{4}-\d\d-\d\dT[\d:.]+Z\s+/,''))
+    .filter(line=>line.startsWith(CORE_IDENTITY+' '));
+  const wanted=[CORE_IDENTITY,identity.pr,run.id,run.run_attempt,identity.merge,identity.head,identity.base].join(' ');
+  return markers.length===1 && markers[0].trim()===wanted;
+}
+
+export function verifiedCompletedCoreBuild(identity, read) {
+  if (!identity || typeof read!=='function') return null;
+  try {
+    const prefix='/repos/'+identity.repo+'/actions';
+    const result=read(prefix+'/workflows/hh-pr-core-release.yml/runs?event=pull_request&head_sha='+identity.head+'&per_page=10');
+    if (!Array.isArray(result?.workflow_runs)) return null;
+    // The whole Core workflow can still be waiting for this very Specialist.
+    // Read the completed build JOB, not the entire workflow conclusion.
+    const candidates=result.workflow_runs.filter(run=>positiveId(run.id) && positiveId(run.run_attempt) &&
+      run.event==='pull_request' && run.head_sha===identity.head &&
+      run.head_repository?.full_name===identity.repo &&
+      String(run.path||'').split('@')[0]===CORE_WORKFLOW).slice(0,2);
+    for (const run of candidates) {
+      const jobs=read(prefix+'/runs/'+run.id+'/attempts/'+run.run_attempt+'/jobs?per_page=100');
+      if (!Array.isArray(jobs?.jobs) || jobs.total_count!==jobs.jobs.length) continue;
+      const core=jobs.jobs.filter(job=>job.name==='core-lint-types-build');
+      if (core.length!==1) continue;
+      const job=core[0];
+      if (!positiveId(job.id) || job.run_id!==run.id || job.status!=='completed' ||
+          job.conclusion!=='success' || !Array.isArray(job.steps)) continue;
+      const builds=job.steps.filter(step=>step.name===CORE_BUILD_STEP);
+      const ancestry=job.steps.filter(step=>step.name==='Verify bounded shallow scope ancestry before PR routing');
+      if (builds.length!==1 || builds[0].status!=='completed' || builds[0].conclusion!=='success' ||
+          ancestry.length!==1 || ancestry[0].status!=='completed' || ancestry[0].conclusion!=='success') continue;
+      if (exactCoreIdentityLog(read(prefix+'/jobs/'+job.id+'/logs',true),identity,run))
+        return {runId:run.id,attempt:run.run_attempt,jobId:job.id};
+    }
+  } catch { /* A read-only optimization can never manufacture a green build. */ }
+  return null;
+}
+
+function coreBuildReader() {
+  const deadline=Date.now()+10_000;
+  return (endpoint,raw=false)=>{
+    const remaining=deadline-Date.now();
+    if (remaining<=0) throw Error('Core build proof budget exhausted');
+    const out=execFileSync('gh',['api','--hostname','github.com',endpoint],{
+      encoding:'utf8',maxBuffer:24*1024*1024,timeout:Math.min(remaining,4000),
+      stdio:['ignore','pipe','pipe'],
+    });
+    return raw?out:JSON.parse(out);
+  };
+}
+
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href===import.meta.url){
+  if(process.argv[2]==='--core-plan'){
+    console.log(exactCoreBuildIdentity()?'REUSE_CANDIDATE':'INDEPENDENT_BUILD');
+  } else if(process.argv[2]==='--core-proof'){
+    const proof=verifiedCompletedCoreBuild(exactCoreBuildIdentity(),coreBuildReader());
+    if(proof){
+      console.log('HH_SITE_VIDEO_CORE_BUILD_REUSED: '+JSON.stringify(proof));
+      if(process.env.GITHUB_STEP_SUMMARY)appendFileSync(process.env.GITHUB_STEP_SUMMARY,
+        'Exact successful Core production build reused: run '+proof.runId+', attempt '+proof.attempt+', job '+proof.jobId+'\n');
+    } else {
+      console.log('HH_SITE_VIDEO_CORE_BUILD_FALLBACK: exact successful Core evidence unavailable');
+      process.exitCode=1;
+    }
+  } else {
   const choice=classifyExactSiteVideo();
   console.log('Site Video PR browser impact',choice);
   if(process.env.GITHUB_OUTPUT)appendFileSync(process.env.GITHUB_OUTPUT,'full='+choice.full+'\n');
   if(process.env.GITHUB_STEP_SUMMARY)appendFileSync(process.env.GITHUB_STEP_SUMMARY,
     'Site Video real browser: '+(choice.full?'required':'DEFERRED TO MANUAL/PRODUCTION')+
     ' ('+choice.reason+')\n');
+  }
 }
