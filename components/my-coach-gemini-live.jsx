@@ -129,7 +129,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   openingPrior=null,allowOpeningPrior=false,
   liveContextAccess='',contextRevision=0,localRecoveryTurns=[],onUnconfirmedInput,
   privateGreetingText='',onPrivateGreeting,onPrivateRecallRequest,
-  methodSession=null,prepareMethodSession,speechReviewConsent=false,onSpeechReviewCandidate,
+  methodSession=null,prepareMethodSession,speechReviewConsent=false,speechReviewProvider='groq',onSpeechReviewCandidate,
 },ref){
   const lang=safeLocale(locale),t=ui[lang]
   const [phase,setPhase]=useState('idle')
@@ -142,7 +142,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     elapsedSeconds,outputMuted,onSessionStart,onVoiceStateChange,onMicLevel,onInputInterim,
     onInputFinal,onOutputInterim,onOutputFinal,onInterrupted,
     onDirectorProgress,onOpeningProgress,onNotice,openingPrior,allowOpeningPrior,
-    liveContextAccess,contextRevision,localRecoveryTurns,onUnconfirmedInput,methodSession,prepareMethodSession,privateGreetingText,onPrivateGreeting,onPrivateRecallRequest,speechReviewConsent,onSpeechReviewCandidate}
+    liveContextAccess,contextRevision,localRecoveryTurns,onUnconfirmedInput,methodSession,prepareMethodSession,privateGreetingText,onPrivateGreeting,onPrivateRecallRequest,speechReviewConsent,speechReviewProvider,onSpeechReviewCandidate}
 
   const notify=text=>{
     setNotice(text)
@@ -521,10 +521,11 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     const decision=propsRef.current.onInputFinal?.(value,{source:'speech',reviewAvailable:Boolean(audioParts)&&propsRef.current.speechReviewConsent===true})
     if(decision?.transcriptReview){
       if(propsRef.current.speechReviewConsent===true&&audioParts){
+        const reviewProvider=propsRef.current.speechReviewProvider
         r.speechReviewQueue??=createSpeechReviewQueue({request:requestSpeechReview,onResult:(id,text)=>{
-          if(runtime.current===r&&!r.ended&&propsRef.current.speechReviewConsent===true)propsRef.current.onSpeechReviewCandidate?.(id,r.paused?'':text)
+          if(runtime.current===r&&!r.ended&&propsRef.current.speechReviewConsent===true&&propsRef.current.speechReviewProvider===reviewProvider)propsRef.current.onSpeechReviewCandidate?.(id,r.paused?'':text)
         }})
-        if(!r.speechReviewQueue.offer({id:decision.transcriptReview,parts:audioParts,locale:r.locale}))propsRef.current.onSpeechReviewCandidate?.(decision.transcriptReview,'')
+        if(!r.speechReviewQueue.offer({id:decision.transcriptReview,parts:audioParts,locale:r.locale,provider:reviewProvider}))propsRef.current.onSpeechReviewCandidate?.(decision.transcriptReview,'')
       }else propsRef.current.onSpeechReviewCandidate?.(decision.transcriptReview,'')
       r.lastAssistantTurnFinished=false;r.pendingDirectorHint='';return false
     }
@@ -1440,8 +1441,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     hasLiveSession:()=>Boolean(runtime.current?.paused||runtime.current&&!runtime.current.ended),
     isResumeUnavailable:()=>runtime.current?.paused===true&&runtime.current.resumeUnavailable===true}),[startSession])
   useEffect(()=>{
-    if(!speechReviewConsent){const r=runtime.current;r?.speechReviewBuffer?.clear();r?.speechReviewQueue?.cancel();if(r)r.speechReviewQueue=null}
-  },[speechReviewConsent])
+    const r=runtime.current;r?.speechReviewBuffer?.clear();r?.speechReviewQueue?.cancel();if(r)r.speechReviewQueue=null
+  },[speechReviewConsent,speechReviewProvider])
   useEffect(()=>{
     runtime.current?.player?.setMuted(outputMuted)
     if(outputMuted)runtime.current?.privateGreeting?.cancel()
