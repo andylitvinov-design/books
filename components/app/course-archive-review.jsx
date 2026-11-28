@@ -8,6 +8,7 @@ import {journalGoalContext} from '@/lib/app/daybook-goal-context.mjs'
 import {COURSE_REVIEW_TAG,archiveReviewPrograms,archiveReviewRows,archiveReviewOutput} from '@/lib/app/course-archive-review.mjs'
 import {downloadCoachingSessionPdf,openCoachingSessionPdf} from '@/lib/personal-coaching/session-pdf'
 import styles from './my-coaching-plan.module.css'
+import CoachArchiveQuality from './coach-archive-quality'
 
 const copy={
  en:{title:'My course review',intro:'Select saved reports that belong to the same personal journey. Nothing is selected automatically. This review does not certify course completion or payment.',program:'Course topics',select:'Select a saved report',none:'Not selected',unavailable:'No saved report in the loaded archive',selected:'Selected reports',more:'Earlier reports may be available below.',takeaway:'My takeaway',step:'My next step',focus:'My focus',missing:'Not recorded',followup:'My plan for the next 30 days (optional)',goal:'Link review to my goal (optional)',noGoal:'No linked goal',save:'Save review in private Daybook',edit:'Update saved review',cancel:'Clear selection',saved:'Review note saved and verified. It contains references and your plan, not copied reports.',working:'Saving…',retry:'Retry same save',error:'Could not verify the save. Retry the same draft before editing.',pdf:'Download review PDF',open:'Open PDF',pdfError:'Could not create the local PDF.',journal:'Open private journal',note:'The selected original reports remain in this archive. The PDF is generated on your device; saving the review note never shares it with a coach.'},
@@ -99,5 +100,5 @@ function OwnerReview({accountId,locale,protocols,hasMore,plan}){
 export default function CourseArchiveReview(props){
  const locale=Object.hasOwn(copy,props.locale)?props.locale:'en'
  if(!props.accountId||!Array.isArray(props.protocols))return null
- return <OwnerReview key={props.accountId} {...props} locale={locale}/>
+ return <><OwnerReview key={props.accountId} {...props} locale={locale}/><CoachArchiveQuality {...props} locale={locale}/></>
 }
