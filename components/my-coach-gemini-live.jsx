@@ -153,6 +153,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   // provider response, bearer URL, WebSocket event reason or sensitive keys.
   const errorNotice=error=>({
     GEMINI_LIVE_LIMIT:t.rateLimit,
+    GEMINI_LIVE_EXPRESS_USED:({en:'Your free chat with this coach has already been used.',ru:'Бесплатный чат с этим коучем уже использован.',es:'Ya usaste el chat gratuito con este coach.'})[lang],
     GEMINI_LIVE_LOGIN:t.login,
     GEMINI_LIVE_PROVIDER_ACCESS:t.providerAccess,
     GEMINI_LIVE_PROVIDER_SETUP:t.providerSetup,
@@ -1241,6 +1242,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     catch{throw Error('GEMINI_LIVE_TOKEN_NETWORK')}
     if(response.status===429)throw Error('GEMINI_LIVE_LIMIT')
     if(response.status===401)throw Error('GEMINI_LIVE_LOGIN')
+    if(r.expressIntro&&response.status===409)throw Error('GEMINI_LIVE_EXPRESS_USED')
     if(!response.ok){
       const fault=await response.json().catch(()=>null)
       const reason=typeof fault?.error==='string'?fault.error:''

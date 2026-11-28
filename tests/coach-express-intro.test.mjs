@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {COACH_EXPRESS_SECONDS,expressClock,expressCopy,expressInstruction} from '../lib/coaching/coach-express-intro.mjs'
+import {COACH_EXPRESS_SECONDS,expressClock,expressCopy,expressInstruction,expressPersona} from '../lib/coaching/coach-express-intro.mjs'
 test('express clock reaches closing at 100s, ends at 120s and cannot extend',()=>{
   const start=1000
   assert.equal(COACH_EXPRESS_SECONDS,120)
@@ -50,4 +50,23 @@ test('express uses a distinct authenticated token route and never checkpoints a 
  assert.ok(transport.includes('delete setup.setup.sessionResumption'))
  assert.ok(server.includes('express?COACH_EXPRESS_SECONDS*1000'))
  assert.ok(server.includes("express?',sessionResumption':''"))
+})
+
+test('exact free CTA and unique character reactions for all public coaches in all languages',()=>{
+ for(const locale of ['en','ru','es']){
+  assert.equal(expressCopy(locale).button,'Free chat: 2 min.')
+  const ids=['mira','max','sofia','alex','merlin','harry','genie','caesar']
+  assert.equal(new Set(ids.map(id=>expressPersona(id)[locale])).size,8)
+  for(const id of ids){const prompt=expressInstruction(id,locale);assert.ok(prompt.includes(expressPersona(id)[locale]));assert.match(prompt,/First substantive reply/);assert.match(prompt,/not the worth of the person/)}
+ }
+})
+test('lifetime account and coach claim is durable and only verified admin is exempt',()=>{
+ const source=readFileSync(new URL('../app/api/app/[...path]/route.js',import.meta.url),'utf8')
+ const claims=readFileSync(new URL('../lib/app/coach-express-claims.js',import.meta.url),'utf8')
+ const schema=readFileSync(new URL('../supabase/migrations/20261128144037_hh_coach_express_lifetime_claims.sql',import.meta.url),'utf8')
+ assert.ok(source.includes('practitionerEmailAllowed(actor)&&await repo.isPractitioner(actor)'))
+ assert.ok(source.indexOf('await consumeRateBatch(config,liveQuota.successful)')<source.indexOf('!await claimExpressOnce(config,actor,start.personaId)'))
+ assert.ok(claims.includes('on conflict(account_id,persona_id) do nothing'))
+ assert.ok(schema.includes('primary key(account_id,persona_id)'))
+ assert.ok(schema.includes('force row level security'))
 })

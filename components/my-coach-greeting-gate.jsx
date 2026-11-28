@@ -136,7 +136,8 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
        setAudioActive(false);setPhase('preview');topicDialog.current?.close()
        // Authorization resumes only the requested introduction. The host still
        // has to obtain explicit consent and a dedicated server entitlement.
-       if(await onExpressStart({personaId,locale:lang,mode:'express_intro'})===false){chosen.current=false;setExpressNotice(gateError)}
+       const result=await onExpressStart({personaId,locale:lang,mode:'express_intro'})
+       if(result===false||result==='used'){chosen.current=false;setExpressNotice(result==='used'?({en:'You have already used your free chat with this coach. Choose another coach or start a full course.',ru:'Вы уже использовали бесплатный чат с этим коучем. Выберите другого коуча или начните курс.',es:'Ya usaste tu chat gratuito con este coach. Elige otro coach o empieza un curso.'})[lang]:gateError)}
      }catch(error){chosen.current=false;throw error}
      return
    }

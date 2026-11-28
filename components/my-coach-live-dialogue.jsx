@@ -2309,9 +2309,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     {expressOpen&&<CoachExpressPanel key={personaId+'-'+conversationLang} personaId={personaId} locale={conversationLang} name={name} voiceName={selectedGeminiVoice} settings={settings} onClose={()=>setExpressOpen(false)}/>}
     {!greetingAccepted&&!expressOpen&&<MyCoachGreetingGate
       personaId={personaId} locale={conversationLang} name={name}
-      methodId={visibleMethodId} onStart={enterCoachingFromGreeting} expressAvailable onExpressStart={async()=>{
-        const response=await fetch('/api/app/my-coach/express-token',{credentials:'same-origin',cache:'no-store'})
-        if(!response.ok||!(await response.json()).available)return false
+      methodId={visibleMethodId} onStart={enterCoachingFromGreeting} expressAvailable onExpressStart={async({personaId:expressPersonaId})=>{
+        const response=await fetch('/api/app/my-coach/express-token?personaId='+encodeURIComponent(expressPersonaId),{credentials:'same-origin',cache:'no-store'})
+        if(!response.ok)return false
+        const status=await response.json()
+        if(status.used)return 'used'
+        if(!status.available)return false
         setExpressOpen(true);return true
       }} entryPending={greetingIdentity.status==='loading'} accountSaving={protocolOwnerReady}
       selectedMethod={selectedMethod} onMethodSelect={setSelectedMethod}
