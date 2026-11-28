@@ -279,9 +279,12 @@ jobs:
               return {
                 id: job.id, run_id: job.run_id, name: job.name,
                 status: job.status, conclusion: job.conclusion,
-                steps: name === "core-lint-types-build" && Array.isArray(job.steps)
-                  ? job.steps.filter(step =>
-                    step.name === "Verify bounded shallow scope ancestry before PR routing")
+                steps: Array.isArray(job.steps)
+                  ? job.steps.filter(step => name === "core-lint-types-build"
+                    ? step.name === "Verify bounded shallow scope ancestry before PR routing"
+                    : ["Pin exact production base for shallow checkout",
+                       "Validate exact-head risk and required specialist workflows",
+                       "Confirm one-runner Core and independent specialist release evidence"].includes(step.name))
                     .map(step => ({name:step.name,status:step.status,conclusion:step.conclusion}))
                   : [],
               };
@@ -392,6 +395,7 @@ jobs:
               freshness=classifier.classifierBase!==base
                 ? {ok:false,reason:'CLASSIFIER_BASE_STALE'}
                 : await policy.assessBaseFreshness({github,owner,repo,pr,...classifier,
+                    readReadyReceipt:target=>policy.verifiedMergeReadyV3({github,owner,repo,pr,run,jobs,target}),
                     verifiedRunBase:async rows=>{
                       // GitHub omits run→PR associations on real successful
                       // Core (observed #4303). Recover a trustworthy base only
@@ -430,6 +434,7 @@ jobs:
             // public-media BASE. Pin it during ARM as well: another
             // production commit must not silently turn that proof stale.
             core.setOutput("requires_current_base",String(
+              freshness.reason==="MERGE_READY_V3_VERIFIED" ||
               freshness.reason==="SENSITIVE_BASE_VERIFIED" ||
               freshness.reason==="ISOLATED_CI_PUBLIC_MEDIA_REVALIDATED" ||
               freshness.reason==="INDEPENDENT_PUBLIC_RASTER_REVALIDATED" ||
