@@ -97,3 +97,34 @@
     padding-inline: 0;
   }
 }
+
+/* Shared mobile scenic-page geometry. The approved Shamanic panel uses 9px
+   side gutters (6px on compact phones). Keep the document canvas dark too:
+   iOS samples it behind the status bar and during elastic scrolling. */
+@media screen and (max-width: 767px) {
+  :root { --hh-scenic-mobile-gutter: 9px; }
+
+  html:has(main[data-shamanica-mobile]),
+  body:has(main[data-shamanica-mobile]),
+  html:has(main[data-reiki-practitioner-landing], main[data-my-reiki-module-landing]),
+  body:has(main[data-reiki-practitioner-landing], main[data-my-reiki-module-landing]) {
+    background-color: #21160d;
+  }
+
+  /* The program root owns the gutter. Do not compound it with the legacy
+     Services shell's 16px padding, or change explicit catalog/chat routes. */
+  main.services-shell--studio[data-support-programs-only] {
+    box-sizing: border-box;
+    width: 100%;
+    padding-inline: 0;
+  }
+
+  main[data-reiki-practitioner-landing][lang],
+  main[data-my-reiki-module-landing][lang] {
+    box-sizing: border-box;
+    padding-inline: var(--hh-scenic-mobile-gutter);
+  }
+}
+@media screen and (max-width: 354px) {
+  :root { --hh-scenic-mobile-gutter: 6px; }
+}

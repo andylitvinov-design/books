@@ -234,6 +234,22 @@ try {
   await expect(section.locator("[data-recommended-business-service]")).toHaveCount(2);
  }
 
+  // Screenshot regression: compare the outer mobile program panel with the
+  // approved Shamanic 9px/6px gutter, not with the inset hero image.
+  const assertScenicGutter = async (page, panel, width, label) => {
+    if (width > 430) return;
+    const box = await panel.boundingBox();
+    assert.ok(box, label + ": scenic panel missing");
+    const viewport = await page.evaluate(() => document.documentElement.clientWidth);
+    const gutter = width <= 354 ? 6 : 9;
+    assert.ok(Math.abs(box.x - gutter) <= 2 && Math.abs(viewport - (box.x + box.width) - gutter) <= 2,
+      label + ": asymmetric or excessive mobile gutter " + JSON.stringify(box));
+  };
+  const assertDarkScenicCanvas = async (page, label) => {
+    const colors = await page.evaluate(() => [document.documentElement, document.body].map(el => getComputedStyle(el).backgroundColor));
+    assert.deepEqual(colors, ["rgb(33, 22, 13)", "rgb(33, 22, 13)"], label + ": light iOS document canvas");
+  };
+
   // Owner-approved Support entry: preserve the real program selector and
   // expanded details; the old quiz/catalog may only be tested via explicit URLs.
   for (const locale of ["en", "ru", "es"]) {
@@ -246,6 +262,7 @@ try {
       const dashboard = programs.locator("[data-profile-space-dashboard]");
       await visible(programs.locator("[data-goal-profile-tabs]"));
       await expect(dashboard).toHaveAttribute("data-profile-space-section", "clarity");
+      await assertScenicGutter(page, programs, width, locale + "/support-express");
       await expect(programs.locator("[data-express-part]")).toHaveCount(3);
       for (const selector of ["[data-services-quiz]", "[data-support-luxe-room]", "[data-services-quick-categories]", "[data-support-catalog-panel]", "[data-services-unified-panel]", "[data-services-studio-card]", "[data-assist-mobile]"]) {
         await expect(main.locator(selector)).toHaveCount(0);
@@ -259,8 +276,10 @@ try {
       await expect(stage).toHaveAttribute("aria-expanded", "true");
       await programs.locator('[data-goal-profile-tab="goals"]').click();
       await expect(dashboard).toHaveAttribute("data-profile-space-section", "goals");
+      await assertScenicGutter(page, programs, width, locale + "/support-goal");
       await programs.locator('[data-goal-profile-tab="business"]').click();
       await expect(dashboard).toHaveAttribute("data-profile-space-section", "business");
+      await assertScenicGutter(page, programs, width, locale + "/support-business");
       const businessStage = programs.locator('[data-business-session="0"] button').first();
       await businessStage.click();
       await expect(programs.locator('[data-business-session-screen="1"]')).toBeVisible();
@@ -1781,8 +1800,33 @@ try {
     const page=await createPage(390);
     try{
       await page.goto(origin+"/"+locale+"/shamanica",{waitUntil:"domcontentloaded"});
+      await assertDarkScenicCanvas(page, locale + "/shamanic");
+      await assertScenicGutter(page, page.locator('main[data-shamanica-mobile] section[aria-labelledby="shamanica-hero-title"]'), 390, locale + "/shamanic");
       await checkInlineHelp(page,"[data-shamanica-ihelp-trigger]");
     }finally{await page.close();}
+  }
+  // Reuse this existing browser run for the three My Reiki program variants.
+  // Each hero and continuation card must share the same two in-deck edges.
+  for (const [locale, width, program] of [["en", 390, "free"], ["ru", 320, "master"], ["es", 430, "pro"]]) {
+    const page = await createPage(width);
+    try {
+      await page.goto(origin + "/" + locale + "/academy/principles-of-energywork" + (program === "free" ? "" : "?program=" + program), {waitUntil:"domcontentloaded"});
+      const main = page.locator("main[data-reiki-practitioner-landing]");
+      await expect(main.locator('[data-reiki-program-tab="' + program + '"]')).toHaveAttribute("aria-current","page");
+      const hero = main.locator(program === "free" ? '[data-energywork-screen="intro"]' : "[data-reiki-advanced-hero]");
+      await visible(hero);
+      await assertDarkScenicCanvas(page, locale + "/reiki/" + program);
+      await assertScenicGutter(page, hero.locator(".."), width, locale + "/reiki/" + program);
+      const heroBox = await hero.boundingBox();
+      const sections = main.locator(program === "free" ? "[data-reiki-details-screen], [data-reiki-overview-system], #energywork-how" : program === "master" ? "[data-reiki-master-level]" : "[data-reiki-pro-module]");
+      assert.equal(await sections.count(), program === "free" ? 5 : program === "master" ? 5 : 6);
+      for (const section of await sections.all()) {
+        const b = await section.boundingBox();
+        assert.ok(b && heroBox && Math.abs(b.x - heroBox.x) <= 1 && Math.abs(b.width - heroBox.width) <= 1,
+          locale + "/reiki/" + program + ": unequal screen width " + JSON.stringify({heroBox,b}));
+      }
+      await assertViewport(page, locale + "/reiki/" + program);
+    } finally { await page.close(); }
   }
   diagnostics.devIssueOverlay = false;
   assert.deepEqual(diagnostics.pageErrors, [], "Unexpected browser page errors");

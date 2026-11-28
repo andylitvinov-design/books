@@ -728,3 +728,11 @@
  .programRoot .brandBar{display:none}
  .programRoot .programScreen{min-width:0}
 }
+
+@media(max-width:760px){
+ .root.programRoot{
+  box-sizing:border-box;width:100%;max-width:510px;min-width:0;
+  margin-inline:auto;padding-inline:var(--hh-scenic-mobile-gutter,9px);
+ }
+ .programRoot .programScreen{width:100%;margin-inline:0;box-sizing:border-box}
+}
