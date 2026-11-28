@@ -52,3 +52,15 @@ test('waiting audio expires during slow request and timeout reports once',async(
 })
 
 import './coach-gemini-speech-review.test.mjs'
+
+import {coachSpeechReviewEnabled,isCoachSpeechReviewRequest} from '../lib/coaching/coach-speech-review-config.mjs'
+test('optional review has independent default-off server gate',()=>{
+ const env={HH_MY_COACH_SPEECH_REVIEW_ENABLED:'true',HH_AUDIO_STT_FREE_CONFIRMED:'true',HH_FIRST_VIDEO_GROQ_FREE_CONFIRMED:'true',HH_FIRST_VIDEO_GROQ_API_KEY:'synthetic'}
+ assert.equal(coachSpeechReviewEnabled(env),true)
+ for(const key of Object.keys(env))assert.equal(coachSpeechReviewEnabled({...env,[key]:''}),false)
+ assert.equal(coachSpeechReviewEnabled({}),false)
+ assert.equal(isCoachSpeechReviewRequest({purpose:'my_coach',filename:'coach-review.wav'}),true)
+ assert.equal(isCoachSpeechReviewRequest({purpose:'my_coach',filename:'other.wav',review:'yes'}),true)
+ assert.equal(isCoachSpeechReviewRequest({purpose:'my_coach',filename:'dictation.wav'}),false)
+ assert.equal(isCoachSpeechReviewRequest({purpose:'ali_chat',filename:'coach-review.wav',review:'yes'}),false)
+})

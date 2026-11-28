@@ -5,7 +5,7 @@ import {geminiSpeechReviewEnabled,geminiSpeechReviewPayload,geminiSpeechReviewTe
 import {speechReviewWav} from '../lib/coaching/coach-speech-review.mjs'
 const wav=Buffer.from(speechReviewWav([new Uint8Array(3200)]))
 test('requires all server gates, validates clip and requests verbatim without context',()=>{
- const env={HH_MY_COACH_GEMINI_TRANSCRIBE_ENABLED:'true',HH_MY_COACH_GEMINI_TRANSCRIBE_FREE_CONFIRMED:'true',HH_MY_COACH_GEMINI_TRANSCRIBE_PRIVACY_APPROVED:'true',HH_MY_COACH_GEMINI_TRANSCRIBE_API_KEY:'mock'}
+ const env={HH_MY_COACH_SPEECH_REVIEW_ENABLED:'true',HH_MY_COACH_GEMINI_TRANSCRIBE_ENABLED:'true',HH_MY_COACH_GEMINI_TRANSCRIBE_FREE_CONFIRMED:'true',HH_MY_COACH_GEMINI_TRANSCRIBE_PRIVACY_APPROVED:'true',HH_MY_COACH_GEMINI_TRANSCRIBE_API_KEY:'mock'}
  assert.equal(geminiSpeechReviewEnabled(env),true)
  for(const key of Object.keys(env))assert.equal(geminiSpeechReviewEnabled({...env,[key]:''}),false)
  const p=geminiSpeechReviewPayload(wav,'ru')

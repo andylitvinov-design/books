@@ -245,6 +245,8 @@ async function readGeminiEngineStatus(signal){
       gemini_tts_free:data.gemini_tts_free===true,
       gemini_tts_paid:data.gemini_tts_paid===true,
       gemini_live_free:data.gemini_live_free===true,
+      speech_review_free:data.speech_review_free===true,
+      speech_review_gemini:data.speech_review_gemini===true,
     }}
   }catch{return {kind:'unavailable'}}
 }
@@ -288,7 +290,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const engineManuallySelectedRef=useRef(false)
   const [geminiCapabilities,setGeminiCapabilities]=useState({
     gemini_free:false,gemini_paid:false,gemini_tts_free:false,gemini_tts_paid:false,
-    gemini_live_free:false,
+    gemini_live_free:false,speech_review_free:false,speech_review_gemini:false,
   })
   const geminiAvailabilityInFlightRef=useRef(false)
   const [geminiConsent,setGeminiConsent]=useState(false)
@@ -581,6 +583,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const ui=sessionUi[lang]||sessionUi.en
   const voiceGate=voiceGateText[lang]||voiceGateText.en
   const liveVoiceSelected=coachEngine==='gemini_live_free'
+  const speechReviewAvailable=speechReviewProvider==='gemini'?geminiReviewOffered&&geminiCapabilities.speech_review_gemini===true:geminiCapabilities.speech_review_free===true
+  const activeSpeechReviewConsent=speechReviewConsent&&speechReviewAvailable
   // Pressing Play affirmatively consents to live voice use, disclosed beside
   // the control. Availability alone never starts streaming or contacts Google.
   const liveVoiceReady=liveVoiceSelected&&geminiCapabilities.gemini_live_free===true
@@ -2423,7 +2427,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
               wave.dataset.voiceDetected=rms>0.025?'true':'false'
             }}
             onInputInterim={setSpeechPreview}
-            speechReviewConsent={speechReviewConsent}
+            speechReviewConsent={activeSpeechReviewConsent}
             speechReviewProvider={speechReviewProvider}
             onSpeechReviewCandidate={(id,text)=>setSpeechReviews(rows=>rows.map(row=>row.id===id?{...row,candidate:speechReviewCandidateText(text,row.raw,row.locale),pending:false}:row))}
             onInputFinal={(text,details)=>{
@@ -2433,7 +2437,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
               const candidate=coachExplicitNameCorrection(text)
               const guard={locale:conversationLang,message:text,turns:turnsRef.current}
               const recallRequested=handlePrivateLiveRecall(text)
-              if(details?.source==='speech'&&!recallRequested&&!candidate&&shouldReviewSpeech(text,conversationLang,speechReviewConsent)&&
+              if(details?.source==='speech'&&!recallRequested&&!candidate&&shouldReviewSpeech(text,conversationLang,activeSpeechReviewConsent)&&
                 !['ru','en','es'].some(locale=>coachingBrainSafety({...guard,locale})||coachingBrainBoundary({...guard,locale}))){
                 const id=++speechReviewSerial.current
                 if(!protocolIdRef.current)protocolIdRef.current=crypto.randomUUID()
@@ -2929,11 +2933,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         </label>}
         {liveVoiceSelected&&<>
           <label className={styles.coachEnginePicker}>
-            <input type="checkbox" checked={speechReviewConsent&&speechReviewProvider==='groq'} disabled={speechReviewConsent&&speechReviewProvider==='gemini'||(!speechReviewConsent&&voiceState.phase!=='idle')} onChange={event=>{setSpeechReviewProvider('groq');setSpeechReviewConsent(event.target.checked);if(!event.target.checked)setSpeechReviews(rows=>rows.map(row=>({...row,pending:false,candidate:''})))}}/>
+            <input type="checkbox" checked={activeSpeechReviewConsent&&speechReviewProvider==='groq'} disabled={(!(geminiCapabilities.speech_review_free===true)&&!(speechReviewConsent&&speechReviewProvider==='groq'))||speechReviewConsent&&speechReviewProvider==='gemini'||(!speechReviewConsent&&voiceState.phase!=='idle')} onChange={event=>{setSpeechReviewProvider('groq');setSpeechReviewConsent(event.target.checked&&(geminiCapabilities.speech_review_free===true));if(!event.target.checked)setSpeechReviews(rows=>rows.map(row=>({...row,pending:false,candidate:''})))}}/>
             <span>{({ru:'Дополнительное распознавание (Groq Whisper Free): сомнительные фрагменты речи отправляются Groq. Условия обработки данных: ',en:'Optional speech review (Groq Whisper Free): suspect speech clips are sent to Groq. Data terms: ',es:'Revisión opcional (Groq Whisper Free): se envían fragmentos dudosos a Groq. Condiciones: '})[lang]}<a href="https://groq.com/privacy-policy/" target="_blank" rel="noreferrer">Groq</a></span>
           </label>
           {geminiReviewOffered&&<label className={styles.coachEnginePicker} data-gemini-transcribe-consent>
-            <input type="checkbox" checked={speechReviewConsent&&speechReviewProvider==='gemini'} disabled={speechReviewConsent&&speechReviewProvider==='groq'||(!speechReviewConsent&&voiceState.phase!=='idle')} onChange={event=>{setSpeechReviewProvider('gemini');setSpeechReviewConsent(event.target.checked);if(!event.target.checked)setSpeechReviews(rows=>rows.map(row=>({...row,pending:false,candidate:''})))}}/>
+            <input type="checkbox" checked={activeSpeechReviewConsent&&speechReviewProvider==='gemini'} disabled={(!(geminiCapabilities.speech_review_gemini===true)&&!(speechReviewConsent&&speechReviewProvider==='gemini'))||speechReviewConsent&&speechReviewProvider==='groq'||(!speechReviewConsent&&voiceState.phase!=='idle')} onChange={event=>{setSpeechReviewProvider('gemini');setSpeechReviewConsent(event.target.checked&&(geminiCapabilities.speech_review_gemini===true));if(!event.target.checked)setSpeechReviews(rows=>rows.map(row=>({...row,pending:false,candidate:''})))}}/>
             <span>{({ru:'Дополнительное распознавание Gemini 3.5 Transcribe: сомнительные фрагменты отправляются Google; бесплатный тариф может использовать данные для улучшения моделей. Необязательно. ',en:'Optional Gemini 3.5 Transcribe: suspect speech clips are sent to Google; free-tier data may be used to improve models. ',es:'Gemini 3.5 Transcribe opcional: los fragmentos dudosos se envían a Google; el nivel gratuito puede usar los datos para mejorar modelos. '})[lang]}<a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noreferrer">Google</a></span>
           </label>}
           <label className={styles.coachEnginePicker} data-gemini-live-free-voice>
