@@ -91,7 +91,90 @@ async function inspectReviews({github,owner,repo,number,expectedHead,minimumAppr
 const CRITICAL_DOMAIN_CHECKS=new Set([
  'focused-unit-types-build','read-only-mobile','webkit_preflight','voice-webkit-macos'
 ]);
-async function auditIndependentDomainChecks({github,owner,repo,expectedHead}){
+
+const CORE_PATH='.github/workflows/hh-pr-core-release.yml';
+const QUEUED=new Set(['queued','requested','waiting','pending']);
+// Only a genuine current unified gate can authorize skipping a queued
+// duplicate. Recheck the actual prior job; running/red/missing proof stays HOLD.
+async function verifiedQueuedDuplicateChecks({github,owner,repo,pr,expectedHead,expectedBase,checks,pending}){
+ const approved=new Set(),full=owner+'/'+repo;
+ if(!pr?.head?.ref||!SHA.test(expectedBase||'')||!Array.isArray(pending)||!pending.length||
+    !pending.every(c=>QUEUED.has(c.status)))return approved;
+ try{
+  const gates=checks.filter(c=>c.name==='hh-merge-check'&&c.head_sha===expectedHead&&
+   c.app?.id===15368&&c.app?.slug==='github-actions'&&c.status==='completed'&&c.conclusion==='success');
+  if(gates.length!==1)return approved;
+  const load=async check=>{
+   const prefix='https://github.com/'+full+'/actions/runs/';
+   const url=check.details_url||'';
+   const ids=url.startsWith(prefix)&&/^([1-9]\d*)\/job\/([1-9]\d*)\/?$/.exec(url.slice(prefix.length));
+   if(!ids)throw Error('CHECK_JOB_UNVERIFIED');
+   const runId=Number(ids[1]),jobId=Number(ids[2]);
+   if(!Number.isSafeInteger(runId)||!Number.isSafeInteger(jobId)||!Number.isSafeInteger(check.id))throw Error('CHECK_JOB_UNVERIFIED');
+   const job=(await github.rest.actions.getJobForWorkflowRun({owner,repo,job_id:jobId})).data;
+   const run=(await github.rest.actions.getWorkflowRun({owner,repo,run_id:runId})).data;
+   if(job?.id!==jobId||job.run_id!==runId||job.name!==check.name||
+      job.check_run_url!=='https://api.github.com/repos/'+full+'/check-runs/'+check.id||
+      run?.id!==runId||run.event!=='pull_request'||run.head_sha!==expectedHead||
+      run.head_branch!==pr.head.ref||run.head_repository?.full_name!==full||
+      !run.pull_requests?.some(p=>p.number===pr.number&&p.base?.ref===PROD))throw Error('CHECK_JOB_UNVERIFIED');
+   return {job,run};
+  };
+  const gate=await load(gates[0]);
+  if(gate.job.status!=='completed'||gate.job.conclusion!=='success'||
+     gate.run.status!=='completed'||gate.run.conclusion!=='success'||
+     String(gate.run.path||'').split('@')[0]!==CORE_PATH||
+     !gate.job.steps?.some(x=>x.name==='Validate exact-head risk and required specialist workflows'&&x.status==='completed'&&x.conclusion==='success'))return approved;
+  const policy=async ref=>(await github.rest.repos.getContent({owner,repo,path:CORE_PATH,ref})).data;
+  const [trusted,candidate]=await Promise.all([policy(expectedBase),policy(expectedHead)]);
+  if(trusted?.type!=='file'||candidate?.type!=='file'||!SHA.test(trusted.sha||'')||
+     trusted.sha!==candidate.sha)return approved;
+  const reply=(await github.request('GET /repos/{owner}/{repo}/actions/jobs/{job_id}/logs',{owner,repo,job_id:gate.job.id})).data;
+  const log=typeof reply==='string'?reply:
+   (Buffer.isBuffer(reply)||reply instanceof ArrayBuffer)?Buffer.from(reply).toString('utf8'):'';
+  if(!log||log.length>24*1024*1024)return approved;
+  const lines=log.split(/\r?\n/).map(x=>x.replace(/^\d{4}-\d\d-\d\dT[\d:.]+Z[ \t]+/,'').trim());
+  const marker='CI_PRIOR_HEAD_SPECIALIST_REUSED:';
+  const receipts=lines.filter(x=>x.startsWith(marker));
+  const headers=lines.filter(x=>x.startsWith('Specialist CI aggregate for PR #'));
+  if(receipts.length!==1||headers.length!==1||
+     !headers[0].startsWith('Specialist CI aggregate for PR #'+pr.number+' head='+expectedHead+' event_base=')||
+     !headers[0].endsWith(' tested_base='+expectedBase))return approved;
+  const rows=JSON.parse(receipts[0].slice(marker.length));
+  if(!Array.isArray(rows)||!rows.length||rows.length>100||
+     new Set(rows.map(x=>x?.name)).size!==rows.length)return approved;
+  const byPath=new Map(rows.map(x=>[x.name,x]));
+  for(const check of pending){
+   const current=await load(check);
+   if(!QUEUED.has(current.job.status))continue;
+   const row=byPath.get(String(current.run.path||'').split('@')[0]);
+   if(!row||!SHA.test(row.prior_head||'')||row.prior_head===expectedHead||
+      !Number.isSafeInteger(row.run_id)||row.run_id<1||
+      !Number.isSafeInteger(row.prior_gate_run)||row.prior_gate_run<1)continue;
+   const [prior,currentCommit,oldCommit]=await Promise.all([
+    github.rest.actions.getWorkflowRun({owner,repo,run_id:row.run_id}).then(x=>x.data),
+    github.rest.git.getCommit({owner,repo,commit_sha:expectedHead}).then(x=>x.data),
+    github.rest.git.getCommit({owner,repo,commit_sha:row.prior_head}).then(x=>x.data)]);
+   if(prior?.id!==row.run_id||prior.head_sha!==row.prior_head||
+      prior.event!=='pull_request'||prior.head_repository?.full_name!==full||
+      prior.head_branch!==pr.head.ref||prior.status!=='completed'||prior.conclusion!=='success'||
+      String(prior.path||'').split('@')[0]!==row.name||
+      !prior.pull_requests?.some(p=>p.number===pr.number&&p.base?.ref===PROD)||
+      !Number.isSafeInteger(prior.run_attempt)||prior.run_attempt<1||
+      currentCommit?.sha!==expectedHead||oldCommit?.sha!==row.prior_head||
+      !SHA.test(currentCommit.tree?.sha||'')||currentCommit.tree.sha!==oldCommit.tree?.sha)continue;
+   const jobs=(await github.request('GET /repos/{owner}/{repo}/actions/runs/{run_id}/attempts/{attempt_number}/jobs',
+    {owner,repo,run_id:prior.id,attempt_number:prior.run_attempt,per_page:100})).data;
+   if(!Array.isArray(jobs?.jobs)||jobs.total_count!==jobs.jobs.length||jobs.jobs.length>100)continue;
+   const matching=jobs.jobs.filter(j=>j.name===check.name);
+   if(matching.length===1&&matching[0].run_id===prior.id&&matching[0].status==='completed'&&
+      matching[0].conclusion==='success')approved.add(check.id);
+  }
+ }catch{/* Unavailable or ambiguous proof preserves the existing wait. */}
+ return approved;
+}
+
+async function auditIndependentDomainChecks({github,owner,repo,expectedHead,expectedBase,pr}){
  if(typeof github?.rest?.checks?.listForRef!=='function')
   return {ok:false,reason:'CRITICAL_CHECK_API_UNAVAILABLE'};
  // GitHub may report >100 checks for one source SHA. Do not classify a
@@ -115,14 +198,17 @@ async function auditIndependentDomainChecks({github,owner,repo,expectedHead}){
   if(data.check_runs.length!==100||page===5)
    return {ok:false,reason:'CRITICAL_CHECK_INVENTORY_INCOMPLETE'};
  }
+ const pending=checks.filter(c=>CRITICAL_DOMAIN_CHECKS.has(c?.name)&&c.status!=='completed');
+ const reused=pending.length&&pending.every(c=>QUEUED.has(c.status))?
+  await verifiedQueuedDuplicateChecks({github,owner,repo,pr,expectedHead,expectedBase,checks,pending}):new Set();
  for(const name of CRITICAL_DOMAIN_CHECKS){
   const matches=checks.filter(c=>c?.name===name);
   if(matches.some(c=>c.head_sha!==expectedHead||
      c.app?.slug!=='github-actions'))
    return {ok:false,reason:'CRITICAL_CHECK_PROOF_UNVERIFIED:'+name};
-  if(matches.some(c=>c.status!=='completed'))
+  if(matches.some(c=>c.status!=='completed'&&!reused.has(c.id)))
    return {ok:false,reason:'CRITICAL_CHECK_PENDING:'+name};
-  if(matches.some(c=>!['success','skipped'].includes(c.conclusion)))
+  if(matches.some(c=>c.status==='completed'&&!['success','skipped'].includes(c.conclusion)))
    return {ok:false,reason:'CRITICAL_CHECK_FAILED:'+name};
  }
  return {ok:true,reason:'CRITICAL_DOMAIN_CHECKS_NOT_RED'};
@@ -186,7 +272,7 @@ async function auditNativeMerge({github,owner,repo,number,expectedHead,expectedB
     expectedHead,minimumApprovals});
   if(!review.ok)return review;
   // This same read-only guard is shared by hourly and event-driven merge lanes.
-  const critical=await auditIndependentDomainChecks({github,owner,repo,expectedHead});
+  const critical=await auditIndependentDomainChecks({github,owner,repo,expectedHead,expectedBase,pr:first});
   if(!critical.ok)return critical;
   // Last fresh read before GitHub's --match-head-commit atomic enforcement.
   const final=(await github.rest.pulls.get({owner,repo,pull_number:number})).data;
@@ -205,4 +291,4 @@ async function auditNativeMerge({github,owner,repo,number,expectedHead,expectedB
    'MERGE_PREFLIGHT_EVIDENCE_UNAVAILABLE');
  }
 }
-module.exports={PROD,HOLDS,REVIEW_QUERY,sameHead,repairCanary,mergeable,held,inspectReviews,auditNativeMerge,auditIndependentDomainChecks,CRITICAL_DOMAIN_CHECKS};
+module.exports={PROD,HOLDS,REVIEW_QUERY,sameHead,repairCanary,mergeable,held,inspectReviews,auditNativeMerge,auditIndependentDomainChecks,verifiedQueuedDuplicateChecks,CRITICAL_DOMAIN_CHECKS};
