@@ -464,7 +464,28 @@ export async function awaitPositiveMergeability(api, ctx, target, sleep = delay)
     const fresh = await api.pr(ctx.number);
     assertSame(fresh, ctx, false);
     if (await api.target() !== target) return null;
-    if (fresh.mergeable === true && fresh.base.sha === target) return fresh;
+    if (fresh.mergeable === true) {
+      if (fresh.base.sha === target) return fresh;
+      // GitHub's PR base snapshot may lag even its own freshly computed
+      // merge commit. Accept the exact two-parent merge proof, not a guess
+      // from a stale snapshot. The final gate still checks full base impact.
+      if (typeof api.commit === 'function' &&
+          /^[0-9a-f]{40}$/.test(fresh.merge_commit_sha || '')) {
+        let proof;
+        try { proof = await api.commit(fresh.merge_commit_sha); }
+        catch { /* A missing/recomputed merge commit remains unproven. */ }
+        if (proof?.sha === fresh.merge_commit_sha &&
+            Array.isArray(proof.parents) && proof.parents.length === 2 &&
+            proof.parents[0]?.sha === target &&
+            proof.parents[1]?.sha === ctx.head) {
+          // Close the race while the immutable commit was read. Do not
+          // return evidence for a target that has already moved again.
+          if (await api.target() !== target) return null;
+          console.log('CI_MERGEABILITY_SNAPSHOT_RECOVERED: verified exact GitHub merge parents');
+          return fresh;
+        }
+      }
+    }
     if (fresh.mergeable !== null && fresh.mergeable !== true) return null;
   }
   return null;
