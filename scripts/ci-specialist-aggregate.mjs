@@ -1581,8 +1581,11 @@ export async function verify(api,ctx,files,options={}) {
   // green gate or authorization to reuse a different source tree.
   console.log('CI_FINAL_SPECIALIST_EVIDENCE:'+JSON.stringify({head:ctx.head,tested_base:ctx.base,
     executed:executed.map(x=>({name:x.name,run_id:x.run_id,jobs:x.jobs})),reused:state.reused||[]}));
+  // Carry the exact protected target already checked by this gate. Legacy or
+  // non-sensitive routes without a stable target proof deliberately emit no receipt.
+  let verifiedBase = null;
   if (requireCurrentBase && typeof api.target === 'function')
-    await verifyStableProtectedBase(api,ctx,verifyCurrentBase,fresh,sleep);
+    verifiedBase = await verifyStableProtectedBase(api,ctx,verifyCurrentBase,fresh,sleep);
   else await verifyCurrentBase(fresh);
   const reused=state.reused||[];
   if(reused.length){
@@ -1604,7 +1607,7 @@ export async function verify(api,ctx,files,options={}) {
     packageOnly:[...packageOnlyAdvisory].sort(),
     dispatcherOnly:[...dispatcherAdvisory].sort(),
   };
-  return {risk,expected,delegated,executed,reused,advisory,packageImpact,head:ctx.head,base:ctx.base};
+  return {risk,expected,delegated,executed,reused,advisory,packageImpact,head:ctx.head,base:ctx.base,verifiedBase};
 }
 
 // Reuse the successful Core and domain jobs for CI-policy-only production
@@ -1797,6 +1800,26 @@ export function diagnoseAggregateError(error) {
   return {category,action,symptomKeys:[...new Set(symptoms)].sort().slice(0,30)};
 }
 
+// Read-only handoff. This is not a status override; the consumer must authenticate
+// the exact successful Actions job/run attempt, immutable checkout and protected
+// workflow, and require the live protected ref to still equal verified_base.
+export function mergeReadyReceipt(env,ctx,files,result) {
+  const sha=value=>typeof value==='string'&&/^[a-f0-9]{40}$/.test(value);
+  const positive=value=>Number.isSafeInteger(value)&&value>0;
+  const runId=Number(env.GITHUB_RUN_ID),attempt=Number(env.GITHUB_RUN_ATTEMPT);
+  if (env.GITHUB_EVENT_NAME!=='pull_request'||env.GITHUB_REPOSITORY!==ctx.repo||
+      !positive(ctx.number)||!positive(runId)||!positive(attempt)||
+      !sha(ctx.head)||!sha(ctx.base)||!sha(files.testedMergeSha)||
+      files.testedMergeSha!==env.GITHUB_SHA||!Array.isArray(files.changedRows)||
+      !files.changedRows.length||result?.head!==ctx.head||result?.base!==ctx.base||
+      !sha(result.verifiedBase)||
+      (result.policyRevalidatedAgainst&&result.policyRevalidatedAgainst!==result.verifiedBase))
+    return null;
+  return {version:1,repository:ctx.repo,pr:ctx.number,head:ctx.head,
+    tested_base:ctx.base,tested_merge:files.testedMergeSha,
+    verified_base:result.verifiedBase,run_id:runId,run_attempt:attempt};
+}
+
 async function main() {
   const env=process.env;
   if (env.GITHUB_EVENT_NAME !== 'pull_request') throw Error('ONLY_PULL_REQUEST_EVENT');
@@ -1852,6 +1875,10 @@ async function main() {
     '\nNon-gating CI advisory: ' + JSON.stringify(result.advisory).slice(0,2000);
   console.log(report);
   if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY,report+'\n');
+  // Emit only after all executed/reused specialist evidence passed. If the target
+  // moved again, the consumer takes its existing conservative freshness path.
+  const receipt=verifiedBase&&mergeReadyReceipt(env,checkedCtx,files,result);
+  if(receipt) console.log('CI_MERGE_READY_V1:'+JSON.stringify(receipt));
 }
 
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href===import.meta.url) {
