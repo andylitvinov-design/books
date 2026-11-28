@@ -104,7 +104,31 @@ jobs:
       - name: TypeScript
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx tsc --noEmit --incremental false
+      # Keep real environment-specific build and smoke/trace. Only reuse
+      # compiler/media caches; a cache miss still executes the original build.
+      - name: Restore production-owned scenario MP3 cache (read-only)
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'codex/public-book-library' }}
+        uses: actions/cache/restore@v4
+        with:
+          path: public/audio/mandala/scenarios
+          key: hh-core-media-v1-${{ runner.os }}-${{ hashFiles('scripts/generate-scenario-melodies.mjs', 'scripts/generate-mandala-melodies.mjs', 'lib/mandala/scenario-audio-catalog.mjs', 'package-lock.json') }}
+      - name: Restore production-owned Next compiler cache (read-only)
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'codex/public-book-library' }}
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            .next/cache
+            tsconfig.tsbuildinfo
+          key: hh-core-next-v2-${{ runner.os }}-${{ hashFiles('package-lock.json', 'next.config.ts', 'tsconfig.json') }}
       - name: Next production build
-        run: npm run build
+        # Required Core already checks lint on protected production PRs.
+        # Keep full prebuild, actual Next compilation, typing and runtime evidence.
+        shell: bash
+        run: |
+          if [[ "$GITHUB_EVENT_NAME" == pull_request && "${GITHUB_BASE_REF:-}" == codex/public-book-library ]]; then
+            npm run build -- --no-lint
+          else
+            npm run build
+          fi
       - name: Verify shipped FFmpeg in owner Dot webhook function trace
         run: node scripts/ensure-owner-video-renderer.mjs --verify-trace

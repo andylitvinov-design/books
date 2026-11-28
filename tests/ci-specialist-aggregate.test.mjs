@@ -3382,3 +3382,39 @@ test('required hh-merge-check aggregates BASE-trusted specialists for CORE as we
   assert.match(job||'',/Fail closed if mandatory Core failed/);
   assert.match(job||'',/Validate exact-head risk and required specialist workflows/);
 });
+
+
+test('batched pure prebuild test registration keeps existing tests and real domain owners', () => {
+  const old={scripts:{
+    prebuild:'node scripts/prepare.mjs && npm run test:coaching:release && npm run test:academy:release',
+    'test:coaching:release':'node --test tests/coach-old.test.mjs',
+    'test:academy:release':'node --test tests/academy-old.test.mjs tests/academy-last.test.mjs'
+  }, dependencies:{next:'15.0.0'}};
+  const next=structuredClone(old);
+  next.scripts['test:coaching:release']='node --test tests/coach-new.test.mjs tests/coach-old.test.mjs tests/coaching-extra.test.mjs';
+  next.scripts['test:academy:release']='node --test tests/academy-old.test.mjs tests/academy-new.test.mjs tests/academy-last.test.mjs';
+  const paths=['package.json','tests/coach-new.test.mjs','tests/coaching-extra.test.mjs','tests/academy-new.test.mjs','lib/coaching/voice.mjs'];
+  const check=(proposal=next,changed=paths,before=old)=>classifyPackageImpact({changed,basePackage:JSON.stringify(before),currentPackage:JSON.stringify(proposal)});
+  assert.deepEqual(check(),{mode:'core',reason:'BATCH_ADDITIVE_PREBUILD_TESTS',workflows:[]});
+  const yaml=pattern=>"on:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths:\n      - 'package.json'\n      - '"+pattern+"'\n";
+  const owners=new Map([
+    ['.github/workflows/hh-live-audio-ci.yml',yaml('lib/live-audio/**')],
+    ['.github/workflows/hh-personal-coaching-session.yml',yaml('lib/coaching/**')],
+  ]);
+  assert.deepEqual(expectedWorkflows({base:owners,current:owners,changed:paths,packageImpact:check()}),['.github/workflows/hh-personal-coaching-session.yml']);
+  for (const mutation of [
+    v=>{v.scripts['test:academy:release']='node --test tests/academy-new.test.mjs tests/academy-last.test.mjs'},
+    v=>{v.scripts['test:academy:release']='node --test tests/academy-last.test.mjs tests/academy-new.test.mjs tests/academy-old.test.mjs'},
+    v=>{v.scripts['test:academy:release']+=' && echo bypass'},
+    v=>{v.scripts['test:academy:release']+=' tests/academy-new.test.mjs'},
+    v=>{v.scripts.prebuild+=' && echo bypass'},
+    v=>{v.scripts['test:monetization']='node --test tests/wallet.test.mjs'},
+    v=>{v.dependencies.next='16.0.0'},
+    v=>{v.scripts['test:coaching:release']+=' tests/billing-new.test.mjs'},
+  ]) {const bad=structuredClone(next);mutation(bad);assert.equal(check(bad).mode,'full');}
+  assert.equal(check(next,paths.slice(0,3)).mode,'full');
+  assert.equal(check(next,[...paths,'package-lock.json']).mode,'full');
+  const before=structuredClone(old),after=structuredClone(next);
+  before.scripts['pretest:academy:release']=after.scripts['pretest:academy:release']='node scripts/side-effect.mjs';
+  assert.equal(check(after,paths,before).mode,'full');
+});
