@@ -60,6 +60,7 @@ jobs:
             const baseEvidence=require(process.env.GITHUB_WORKSPACE+"/scripts/ci-pr-base-freshness.cjs");
             const mergeSafety=require(process.env.GITHUB_WORKSPACE+"/scripts/ci-pr-native-merge-policy.cjs");
             const hourlyProof=require(process.env.GITHUB_WORKSPACE+"/scripts/ci-pr-hourly-ready-proof.cjs");
+            const hourlyReadyCache=new Map();
             let classifier=await baseEvidence.loadTrustedClassifier(process.env.GITHUB_WORKSPACE);
             // A different PR can merge while the inventory is being read.
             // Refresh only the protected policy checkout, never the PR HEAD.
@@ -67,7 +68,7 @@ jobs:
               for(let attempt=0;attempt<3;attempt++){
                 const result=await baseEvidence.assessBaseFreshness({github,owner,repo,pr,...classifier,
                   readReadyReceipt:target=>unifiedRequired?hourlyProof.readHourlyReadyReceipt({github,owner,repo,pr,checks,target,
-                    verify:baseEvidence.verifiedMergeReadyV3}):null,
+                    verify:baseEvidence.verifiedMergeReadyV3,cache:hourlyReadyCache}):null,
                   verifiedRunBase:rows=>baseEvidence.coreRunBaseForCheck({github,owner,repo,pr,
                     check:checks.get(unifiedRequired?"hh-merge-check":"hh-core-verified"),
                     rows,token:process.env.HH_CORE_BASE_TOKEN})});
