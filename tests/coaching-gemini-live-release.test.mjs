@@ -1,3 +1,4 @@
+import './coach-gemini-live-stt-benchmark.test.mjs'
 // The immutable CI manifest gate allows one additive coaching release test.
 // Keep all Gemini Free voice, transport and Safari regressions in the build chain.
 import './my-coach-gemini-tiers-tts.test.mjs';

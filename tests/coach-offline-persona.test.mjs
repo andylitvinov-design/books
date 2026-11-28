@@ -132,3 +132,7 @@ test('ordinary fatigue and question streak never produce a session exit offer in
   }
  }
 })
+
+import {coachSessionDirectivePrompt,finalizeCoachCharacterReply,enforceCoachSessionDirective} from '../lib/coaching/coach-session-director.mjs';
+import {COACH_PERSONAL_EXAMPLE_OFFERS} from '../lib/coaching/coach-personal-example.mjs';
+test('personal examples reach existing Director answer-first without course questions or client action',()=>{for(const personaId of ['mira','max','sofia','alex','merlin','harry','genie','caesar'])for(const locale of ['ru','en','es']){const direct={ru:'Расскажи мне пример',en:'Tell me an example',es:'Cuéntame un ejemplo'}[locale];const yes={ru:'Да',en:'Yes',es:'Sí'}[locale];for(const [message,turns] of [[direct,[]],[yes,[{role:'assistant',content:COACH_PERSONAL_EXAMPLE_OFFERS[locale][0]}]]]){const s=sample(personaId,locale,message,turns,60);const d=s.directive;assert.equal(d.personalExample,true);assert.equal(d.interventionId,'answer_first');assert.equal(d.allowQuestion,false);assert.equal(d.canOfferAction,false);assert.match(coachSessionDirectivePrompt(d),/PERSONAL EXAMPLE REQUEST/);const response={mode:'ai',message:'In my fictional story, a small experiment helped clarify the obstacle.',planSuggestion:'',evidenceQuote:''};assert.equal(finalizeCoachCharacterReply(response,d),response);assert.throws(()=>enforceCoachSessionDirective({...response,message:'What is your goal?'},d));}}});

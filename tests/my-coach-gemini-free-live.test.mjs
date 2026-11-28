@@ -4,6 +4,7 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {runInNewContext} from 'node:vm'
 import {createHmac} from 'node:crypto'
+import {createClarityRun,advanceClarityRun,clarityRunCredentialWindow} from '../lib/coaching/clarity-course-runs.mjs'
 import {GEMINI_FREE_LIVE_MODEL,GEMINI_FREE_LIVE_MAX_SECONDS,geminiFreeLiveConfig,
  normalizeGeminiFreeLiveStart,geminiFreeLiveSetup,issueGeminiFreeLiveToken,
  geminiFreeLiveCheckpoint} from '../lib/coaching/gemini-live-free.mjs'
@@ -15,6 +16,7 @@ import {GEMINI_LIVE_WEBSOCKET,GEMINI_LIVE_INPUT_RATE,GEMINI_LIVE_OUTPUT_RATE,
  appendGeminiLiveTranscript} from '../lib/coaching/gemini-live-transport.mjs'
 import {GEMINI_COACH_VOICE_OPTIONS,lockedCoachSessionVoice,MERLIN_VOCAL_DELIVERY,coachVocalDelivery,approvedGeminiVoice} from '../lib/coaching/gemini-voice-catalog.mjs'
 import {coachLiveMemoryNote,coachLiveApprovedAxes} from '../lib/coaching/coach-live-memory-note.mjs'
+import {COACH_CONTEXT_TOPIC_KEYS} from '../lib/coaching/coach-staged-memory.mjs'
 
 const key='AIza'+'A'.repeat(36)
 const free={
@@ -427,14 +429,14 @@ test('Free Live uses only provider-granted context, never raw client memory prop
  assert.match(ui,/memoryStageToken:stagedMemory\.stageToken/,
   'non-Live engines retain the existing staged server memory contract')
  const socketCalls=[...live.matchAll(/sendSocket\(r,([^\n]+)/g)].map(match=>match[1].trim())
- assert.equal(socketCalls.filter(value=>value.startsWith('r.continuing?geminiLiveContinueMessage():geminiLiveStartMessage()')).length,1)
+ assert.match(live,/const cue=r\.continuing\?geminiLiveContinueMessage\(note\):geminiLiveStartMessage\(note\)/)
  assert.ok(socketCalls.some(value=>value.startsWith('geminiLivePcmMessage(pcm)')))
  assert.ok(socketCalls.some(value=>value.startsWith('geminiLiveTextMessage(body)')))
  assert.match(live,/const packet=geminiLiveContextMessage\(r\.pendingContext\)/)
  assert.match(live,/const packet=geminiLiveDirectorMessage\(r\.pendingDirectorHint\)/)
  assert.ok(socketCalls.some(value=>value.startsWith('packet))')))
  assert.ok(!socketCalls.some(value=>/memoryNote/.test(value)))
- const src=live.slice(live.indexOf('  function handleAudio('),live.indexOf('  function capture('))
+ const src=live.slice(live.indexOf('  async function sendInitialLiveCue('),live.indexOf('  function capture('))
  const phases=[], traffic=[], outputs=[]
  const r={ended:false,ready:false,introSent:false,sessionStarted:false,inputText:'',outputText:'',
   context:{state:'running'},socket:{send:packet=>traffic.push(packet)},audioGate:{accept:()=>true},player:{playing:false}}
@@ -470,9 +472,10 @@ test('Play emits one marked app cue but never fabricated visitor consent',()=>{
  assert.match(speech,/first invitation question/)
   assert.match(speech,/Do not repeat your name, biography or public introduction/)
  assert.doesNotMatch(speech,/previous goal|private session|account ID|API key/i)
+ assert.match(geminiLiveStartMessage('CLIENT-APPROVED REFERENCE DATA (synthetic)').clientContent.turns[0].parts[1].text,/reviewed context sent by the application before this event/)
  const client=load('components/my-coach-gemini-live.jsx')
  assert.match(client,/if\(!r\.introSent\)/)
- assert.match(client,/sendSocket\(r,r\.continuing\?geminiLiveContinueMessage\(\):geminiLiveStartMessage\(\)\)/)
+ assert.match(client,/if\(!sendSocket\(r,cue\)\)/)
  assert.match(client,/r\.sessionStarted=true/)
 })
 test('server turnComplete waits for audible PCM tail onended before transcript final',()=>{
@@ -575,10 +578,18 @@ test('signed owner-scoped Live memory service rejects fake data, wrong account a
  const onlyKeys=(obj,keys)=>{
   if(Object.keys(obj).some(key=>!keys.includes(key)))throw new Err('INVALID_FIELDS',400)
  }
+ let entryRevision=1,entryEnabled=true
  const service=runInNewContext(src+'\nreadMyCoachLiveContext',{
-  AppError:Err,onlyKeys,createHmac,
+  AppError:Err,onlyKeys,createHmac,COACH_CONTEXT_TOPIC_KEYS,
+  readCoachEntrySources:async(_config,_actor,provider,_env,{topicKey,contextSessionToken})=>{
+   assert.equal(provider,'gemini_free');assert.equal(topicKey,'personal_growth');assert.equal(contextSessionToken,'session-fixture')
+   return [{kind:'test_results',sourceKind:'selected_assessment',text:'Approved scale'},
+    {kind:'journal_excerpt',sourceKind:'selected_daybook_excerpt',text:'Approved excerpt'}]
+  },
+  clientMemoryEnabled:()=>true,readClientMemoryConsentForAccount:async()=>({revision:entryRevision,memory_enabled:entryEnabled}),
   verifyCoachMemoryTicket:(token,args)=>args.accountId==='client-A'&&
-   args.provider==='gemini_free'&&(token==='prior-ticket'||(!args.requirePrior&&token==='basic-ticket')),
+   args.provider==='gemini_free'&&(args.requireEntry?token==='entry-ticket'&&args.consentRevision===1:
+      token==='prior-ticket'||(!args.requirePrior&&token==='basic-ticket')),
   geminiFreeLiveConfig:()=>({provider:'gemini_live_free'}),
   coachLiveMemoryNote,coachLiveMemoryScopes:()=>[],
  },{timeout:1000})
@@ -618,6 +629,22 @@ test('signed owner-scoped Live memory service rejects fake data, wrong account a
  await assert.rejects(service(config,{id:'client-B'},body,{},{readStaged}),/MY_COACH_MEMORY_STAGE_REQUIRED/)
  await assert.rejects(service(config,actor,{...body,stageToken:'basic-ticket'},{},{readStaged}),/MY_COACH_MEMORY_STAGE_REQUIRED/)
  await assert.rejects(service(config,actor,{...body,axesRaw:axes},{},{readStaged}),/INVALID_FIELDS/)
+ const entry={stage:'identity',stageToken:'entry-ticket',shareApproved:true,entry:true,continuity:'previous',
+  consent:{priorSessions:true,goals:false,profile:false,assessments:false,axes:false}}
+ assert.match((await service(config,actor,entry,{},{readStaged})).note,/Reviewed last goal/)
+ const materialEntry={...entry,topicKey:'personal_growth',contextSessionToken:'session-fixture'}
+ const stored=await service(config,actor,materialEntry,{},{readStaged})
+ const firstPacket=geminiLiveStartMessage(stored.note)
+ assert.match(firstPacket.clientContent.turns[0].parts[0].text,/Approved scale/)
+ assert.match(firstPacket.clientContent.turns[0].parts[0].text,/Approved excerpt/)
+ assert.match(firstPacket.clientContent.turns[0].parts[0].text,/Reviewed last goal/)
+ const readCount=reads.length
+ entryEnabled=false
+ await assert.rejects(service(config,actor,entry,{},{readStaged}),/MEMORY_CONSENT_REQUIRED/)
+ entryEnabled=true;entryRevision++
+ await assert.rejects(service(config,actor,entry,{},{readStaged}),/MY_COACH_MEMORY_STAGE_REQUIRED/)
+ assert.equal(reads.length,readCount,'disabled or changed permissions did not reopen the archive')
+
  await assert.rejects(service(config,actor,{...body,consent:{...consent,axes:true,profile:false}},{},{readStaged}),/MY_COACH_LIVE_CONTEXT_INVALID/)
  const route=load('app/api/app/my-coach/live-context/route.js')
  assert.match(route,/requireSameOrigin\(request,config\)/)
@@ -643,8 +670,9 @@ test('Director guidance and consented references never interrupt human speech; r
 
 test('catalog session entries load a new document with the session voice policy',()=>{
  const catalog=load('components/my-coach-catalog.jsx')
- const entryTags=[...catalog.matchAll(/<MyCoachExpressStart\b[^<>]*href=\{(?:startHref|coachSessionHref\(lang, persona\.id, normalizeCoachSettings\(persona\.id\)\))\}[^<>]*>/g)]
+ const entryTags=[...catalog.matchAll(/<MyCoachExpressStart\b[^<>]*href=\{(?:startHref|clarityCoachHref\(coachSessionHref\(lang, persona\.id, normalizeCoachSettings\(persona\.id\)\),clarityDay,courseRunId\))\}[^<>]*>/g)]
  assert.equal(entryTags.length,5,'Mira or alternate hero Talk, plan, persona card and legacy Start use the shared auth gate')
+ assert.ok(catalog.includes('const startHref = clarityCoachHref(coachSessionHref(lang, selected.id, safeSettings, safeMethod),clarityDay,courseRunId)'))
  for(const [tag] of entryTags)assert.doesNotMatch(tag,/prefetch/)
  const gate=load('components/my-coach-express-start.jsx')
  assert.match(gate,/<a \{\.\.\.buttonProps\}[^>]*href=\{target\} onClick=\{start\}/)
@@ -656,7 +684,7 @@ test('catalog session entries load a new document with the session voice policy'
 test('in-call Live context grants are checked without a second Gemini inference',async()=>{
  const live=load('components/my-coach-gemini-live.jsx')
  const helper=live.slice(live.indexOf('  function scheduleContextFreshnessCheck(r){'),
-   live.indexOf('  async function loadApprovedContext(r){'))
+   live.indexOf('  async function loadApprovedContext('))
  assert.match(live,/LIVE_CONTEXT_CHECK_MS=5\*60\*1000/)
  assert.match(live,/LIVE_CONTEXT_PACKET_MAX_AGE_MS=60\*1000/)
  assert.match(live,/r\.pendingContextReadAt/)
@@ -759,4 +787,74 @@ test('late opening checkpoint does not interpret the screenshot focus answer as 
  const refusal=geminiFreeLiveCheckpoint({...packet,openingHistory:['нет']})
  assert.equal(refusal.openingProgress.declined,true)
  assert.doesNotMatch(refusal.guidance,/Acknowledge that choice now/)
+})
+
+
+test('Clarity mint requires trusted lease and bounds the remaining time plus setup and observation allowance after cross-coach pause',async()=>{
+ const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0')
+ const base=1795100000000,protocolId=id(2),connectionId=id(8),segmentId=id(9)
+ let run=createClarityRun({id:id(1),ordinal:1,access:'free',protocolIds:[protocolId,id(3),id(4)],createdAt:base})
+ const config=geminiFreeLiveConfig(free)
+ const initial=normalizeGeminiFreeLiveStart({...start,courseSessionId:'clarity_day_1'})
+ const next=normalizeGeminiFreeLiveStart({...start,personaId:'caesar',voiceName:lockedCoachSessionVoice('caesar','ru'),courseSessionId:'clarity_day_1'})
+ let calls=0,last
+ const fetcher=async(_url,options)=>{calls++;last=JSON.parse(options.body);return {ok:true,status:200,json:async()=>({name:'auth_tokens/synthetic-clarity-lease'})}}
+ const mint=(input,now,lease)=>issueGeminiFreeLiveToken(config,input,{now,fetcher,clarityLease:lease})
+ const lease=(previousCredentialExpiresAt,at=base)=>{
+  const value={leaseId:id(7),run,day:1,protocolId,now:at,previousCredentialExpiresAt}
+  try{return {...value,...clarityRunCredentialWindow(run,{day:1,protocolId,now:at,previousCredentialExpiresAt})}}
+  catch{return value}
+ }
+ await assert.rejects(mint(initial,base,undefined),/LEASE_REQUIRED/)
+ await assert.rejects(mint(initial,base,lease(undefined)),/LEASE_REJECTED/)
+ assert.throws(()=>normalizeGeminiFreeLiveStart({...start,courseSessionId:'clarity_day_1',clarityLease:lease(null)}),/REQUEST_INVALID/)
+ assert.equal(calls,0)
+ const first=await mint(initial,base,lease(null))
+ assert.equal(first.expiresAt,new Date(base+1200000).toISOString())
+ assert.equal(last.uses,1)
+ assert.deepEqual(last.bidiGenerateContentSetup.contextWindowCompression,{slidingWindow:{}})
+ const ev=(type,atMs,extra)=>({courseRunId:run.id,expectedRevision:run.clock.revision,day:1,type,atMs,protocolId,connectionId,segmentId,...extra})
+ run=advanceClarityRun(run,ev('begin',base,{coachId:'mira',consent:{kind:'explicit_client_session_consent',decision:'start',protocolId,connectionId,coachId:'mira',atMs:base,turnId:'start'}}))
+ for(let t=10000;t<=420000;t+=10000)run=advanceClarityRun(run,ev('observe',base+t,{evidence:'server_observed_connected'}))
+ await assert.rejects(mint(next,base+420000,lease(base+1200000)),/LEASE_REJECTED/)
+ run=advanceClarityRun(run,ev('coach_change',base+420001,{evidence:'server_observed_stop'}))
+ await assert.rejects(mint(next,base+420001,lease(base+1200000)),/LEASE_REJECTED/)
+ await assert.rejects(mint(next,base+1200000,lease(null)),/LEASE_REJECTED/)
+ await assert.rejects(mint(next,base+1200000,{...lease(base+1200000),protocolId:id(3)}),/LEASE_REJECTED/)
+ assert.equal(calls,1,'no extra provider request while earlier token is potentially usable')
+ const resumed=await mint(next,base+1200000,lease(base+1200000,base+1200000))
+ assert.equal(calls,2)
+ assert.equal(resumed.expiresAt,new Date(base+1200000+780000+65000).toISOString())
+ assert.equal(last.expireTime,resumed.expiresAt)
+ assert.equal(last.newSessionExpireTime,new Date(base+1200000+45000).toISOString())
+ assert.equal(run.clock.days[0].elapsedMs,420000)
+ assert.equal(run.clock.days[0].status,'paused','mint is not start, consent or credited time')
+})
+
+
+test('Clarity mint keeps the persisted expiry and never retries ambiguous issuance',async()=>{
+ const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0')
+ const now=1795100000000,protocolId=id(2),run=createClarityRun({id:id(1),ordinal:1,access:'free',protocolIds:[protocolId,id(3),id(4)],createdAt:now})
+ const window=clarityRunCredentialWindow(run,{day:1,protocolId,now,previousCredentialExpiresAt:null})
+ const lease={leaseId:id(7),run,day:1,protocolId,now,previousCredentialExpiresAt:null,...window}
+ const input=normalizeGeminiFreeLiveStart({...start,courseSessionId:'clarity_day_1'}),config=geminiFreeLiveConfig(free)
+ let calls=0,request
+ const fetcher=async(_url,options)=>{calls++;request=JSON.parse(options.body);return {ok:true,status:200,json:async()=>({name:'auth_tokens/synthetic-reserved-window'})}}
+ const mint=(at,value)=>issueGeminiFreeLiveToken(config,input,{now:at,clarityLease:value,fetcher})
+ await assert.rejects(mint(now+45000,lease),/LEASE_REJECTED/)
+ await assert.rejects(mint(now-1,lease),/LEASE_REJECTED/)
+ await assert.rejects(mint(now,{...lease,leaseId:'missing'}),/LEASE_REJECTED/)
+ await assert.rejects(mint(now,{...lease,expiresAt:new Date(now+1200001).toISOString()}),/LEASE_REJECTED/)
+ await assert.rejects(mint(now,{...lease,day:2}),/LEASE_REJECTED/)
+ assert.equal(calls,0)
+ const result=await mint(now+10000,lease)
+ assert.equal(result.expiresAt,window.expiresAt)
+ assert.equal(request.expireTime,window.expiresAt)
+ assert.equal(request.newSessionExpireTime,window.newSessionExpireTime)
+ assert.deepEqual(request.bidiGenerateContentSetup.contextWindowCompression,{slidingWindow:{}})
+ assert.equal(calls,1)
+ let attempts=0,pauses=0
+ await assert.rejects(issueGeminiFreeLiveToken(config,input,{now,clarityLease:lease,fetcher:async()=>{attempts++;return {ok:false,status:503}},pause:async()=>{pauses++}}),/PROVIDER_UNAVAILABLE/)
+ assert.equal(attempts,1)
+ assert.equal(pauses,0)
 })

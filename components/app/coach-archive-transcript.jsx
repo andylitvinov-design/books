@@ -18,7 +18,7 @@ export default function CoachArchiveTranscript({protocol,locale='en',you,coach})
     <details><summary>{t.original}</summary><p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{row.correction.raw}</p></details>
    </div>:
    <div className={styles.reportSection} key={row.key}>
-    <b>{row.turn.role==='user'?you:coach}</b>
+    <b>{row.turn.role==='user'?you:row.turn.authorPersonaId||coach}</b>
     <p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{row.turn.content}</p>
     {row.turn.interrupted===true&&<small>{t.interrupted}</small>}
    </div>)}

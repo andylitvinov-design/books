@@ -80,3 +80,10 @@ test('saved and draft transcript projection keeps correction distinct and origin
  assert.equal(old.correctionsUnavailable,false)
  assert.deepEqual(old.rows.map(x=>x.turn),turns)
 })
+
+test('chronological transcript projection preserves actual coach attribution across a resumed run',()=>{
+ const original={...p,turns:[{role:'assistant',content:'First question',authorPersonaId:'mira'},{role:'assistant',content:'Second question',authorPersonaId:'max'}],speechAmendments:[event]}
+ const projected=speechTranscriptDisplayRows(original)
+ assert.deepEqual(projected.rows.filter(row=>row.kind==='turn').map(row=>row.turn.authorPersonaId),['mira','max'])
+ assert.equal(projected.rows[1].kind,'correction')
+})
