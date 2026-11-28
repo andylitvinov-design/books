@@ -382,6 +382,11 @@ for (const [name, from, to, operation, expected, event = 'pull_request', missing
           'CI workflow YAML edit', 'CI workflow YAML deletion',
           'CI source aggregator edit', 'CI policy test edit',
           'Core CI workflow edit', 'Source Preflight contract edit', 'ESLint repair contract edit',
+          'CI-only lib/ci/coach-only-impact.mjs edit',
+          'CI-only tests/ci-coach-only-impact.test.mjs edit',
+          'CI-only scripts/ci-site-video-scope.mjs edit',
+          'CI-only tests/ci-site-video-scope.test.mjs edit',
+          'Coach CI proof plus private API stays full Core',
           'CI workflow validation test edit', 'CI YAML plus runtime code',
           'CI YAML rename to runtime file', 'dependency lockfile edit',
         ]).has(name);
