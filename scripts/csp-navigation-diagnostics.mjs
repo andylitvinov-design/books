@@ -177,3 +177,22 @@ export function classifyCspNavigationCancellation(error, { engine, readiness, or
   }
   return null;
 }
+
+// Playwright's native history waiter may be cancelled by the application's
+// required hard replacement of a foreign history document. Never issue a
+// second traversal or suppress real JS/CSP errors. The caller must independently
+// prove that the one native action reached the exact destination and real DOM.
+export async function traverseCspHistory({page,direction,engine,readiness,verifyArrival,onCancellation}) {
+  if (!['back','forward'].includes(direction)) throw new Error('Invalid native history direction');
+  const method = direction === 'back' ? 'goBack' : 'goForward';
+  try {
+    await page[method]({ waitUntil: 'domcontentloaded' });
+  } catch (error) {
+    const firstLine = String(error?.message || '').split('\n')[0];
+    const expected = engine === 'webkit' ? 'Load request cancelled' : engine === 'chromium' ? 'net::ERR_ABORTED' : null;
+    if (readiness !== 'rapid-history' || !expected || page.isClosed() ||
+        firstLine !== 'page.' + method + ': ' + expected + '; maybe frame was detached?') throw error;
+    await verifyArrival(); // Fatal on wrong URL, CSP, landmark or missing navigation evidence.
+    onCancellation({ kind: 'native-history-waiter-cancelled-after-proven-arrival', method, message: firstLine });
+  }
+}

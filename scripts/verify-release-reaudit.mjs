@@ -7,7 +7,7 @@ import { assertSyntheticLoopback } from './helpers/contact-channel-verifier.mjs'
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { chromium, webkit, expect } from '@playwright/test';
-import { classifyCspNavigationCancellation } from './csp-navigation-diagnostics.mjs';
+import { classifyCspNavigationCancellation, traverseCspHistory } from './csp-navigation-diagnostics.mjs';
 import { verifyAboutPlayerHydration } from './about-player-hydration-probe.mjs';
 
 const origin = process.env.REAUDIT_ORIGIN || 'http://127.0.0.1:3123';
@@ -654,6 +654,34 @@ async function exercise(engine, browserType, width) {
         attachCatalogStatsResponseDiagnostic(cspPage, origin, statsResponses);
         attachCspRequestTelemetry(cspPage, origin, requestTelemetry);
         const navigationTrace = [];
+        const nativeHistoryCancellations = [];
+        const traverseHistory = async (direction, pathname, policy, landmark) => {
+          const target = origin + pathname;
+          const from = cspPage.url();
+          const traceStart = navigationTrace.length;
+          await traverseCspHistory({ page: cspPage, direction, engine, readiness,
+            verifyArrival: async () => {
+              assert.notEqual(from, target, 'A native traversal must leave the previous entry');
+              await expect(cspPage).toHaveURL(target, { timeout: 20000 });
+              await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', policy, { timeout: 20000 });
+              await expect(cspPage.locator(landmark).first()).toBeVisible({ timeout: 20000 });
+              await expect.poll(() => navigationTrace.slice(traceStart).includes(target),
+                { timeout: 20000, message: 'Cancelled waiter must have actual target frame navigation' }).toBe(true);
+              await expect.poll(async () => {
+                try {
+                  return await cspPage.evaluate(({ target, policy, landmark }) =>
+                    location.href === target && document.readyState !== 'loading' &&
+                    document.body?.dataset.cspClass === policy && !!document.querySelector(landmark),
+                    { target, policy, landmark });
+                } catch (error) {
+                  if (/Execution context was destroyed, most likely because of a navigation/.test(String(error?.message))) return false;
+                  throw error;
+                }
+              }, { timeout: 20000, message: 'Verify the replacement document, not the cancelled waiter' }).toBe(true);
+            },
+            onCancellation: record => nativeHistoryCancellations.push({ ...record, phase: historyPhase, from, target }),
+          });
+        };
         const waitForDocument = async () => {
           if (readiness !== 'loaded-history') return;
           await cspPage.waitForLoadState('load');
@@ -872,26 +900,26 @@ async function exercise(engine, browserType, width) {
           await waitForDocument();
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Tantra media policy requires a fresh document');
           historyPhase = 'back-from-tantra';
-          await cspPage.goBack({ waitUntil: 'domcontentloaded' });
+          await traverseHistory('back', '/en/about', 'public-video', '#psychic-alchemy-video');
           await expect(cspPage).toHaveURL(origin + '/en/about');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
           await waitForDocument();
           await expect.poll(() => cspPage.evaluate(() => window.__cspInitDocumentProbe), { message: 'Restored interrupted router must be replaced with a fresh document' }).not.toBe(interruptedDocumentProbe);
           historyPhase = 'back-to-diagnostics';
-          await cspPage.goBack({ waitUntil: 'domcontentloaded' });
+          await traverseHistory('back', '/en/services/free-situation-review', 'public-video', 'main[data-free-entry-landing="situation"]');
           await expect(cspPage).toHaveURL(origin + '/en/services/free-situation-review');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
           await waitForDocument();
           historyPhase = 'back-to-support';
-          await cspPage.goBack({ waitUntil: 'domcontentloaded' });
+          await traverseHistory('back', '/en/services', 'public-video', 'main[data-support-programs-only]');
           await expect(cspPage).toHaveURL(origin + '/en/services');
           await waitForDocument();
           historyPhase = 'back-to-public-home';
-          await cspPage.goBack({ waitUntil: 'domcontentloaded' });
+          await traverseHistory('back', '/en/my-coach', 'public-video', 'main[data-my-coach-catalog]');
           await assertCspPublicHome(cspPage);
           await waitForDocument();
           historyPhase = 'back-to-private';
-          await cspPage.goBack({ waitUntil: 'domcontentloaded' });
+          await traverseHistory('back', '/en/client/tests', 'private', '[data-hh-unified-dock]');
           await expect(cspPage).toHaveURL(origin + '/en/client/tests');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'private');
           await waitForDocument();
@@ -901,25 +929,25 @@ async function exercise(engine, browserType, width) {
           await expect(restoredDiscoveryBottom.locator('[data-unified-dock-item="profile"]')).toHaveAttribute('href', '/en/my-page');
           await expect(cspPage.locator('.mobile-bottom-navigation')).toHaveCount(0);
           historyPhase = 'forward-to-public-home';
-          await cspPage.goForward({ waitUntil: 'domcontentloaded' });
+          await traverseHistory('forward', '/en/my-coach', 'public-video', 'main[data-my-coach-catalog]');
           await assertCspPublicHome(cspPage);
           await waitForDocument();
           historyPhase = 'forward-to-support';
-          await cspPage.goForward({ waitUntil: 'domcontentloaded' });
+          await traverseHistory('forward', '/en/services', 'public-video', 'main[data-support-programs-only]');
           await expect(cspPage).toHaveURL(origin + '/en/services');
           await waitForDocument();
           historyPhase = 'forward-to-diagnostics';
-          await cspPage.goForward({ waitUntil: 'domcontentloaded' });
+          await traverseHistory('forward', '/en/services/free-situation-review', 'public-video', 'main[data-free-entry-landing="situation"]');
           await expect(cspPage).toHaveURL(origin + '/en/services/free-situation-review');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
           await waitForDocument();
           historyPhase = 'forward-to-public';
-          await cspPage.goForward({ waitUntil: 'domcontentloaded' });
+          await traverseHistory('forward', '/en/about', 'public-video', '#psychic-alchemy-video');
           await expect(cspPage).toHaveURL(origin + '/en/about');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
           await waitForDocument();
           historyPhase = 'forward-to-tantra';
-          await cspPage.goForward({ waitUntil: 'domcontentloaded' });
+          await traverseHistory('forward', '/en/academy/reiki/tantra-reiki', 'tantra-media', 'main');
           await expect(cspPage).toHaveURL(origin + '/en/academy/reiki/tantra-reiki');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'tantra-media');
           await waitForDocument();
@@ -945,7 +973,7 @@ async function exercise(engine, browserType, width) {
           });
           if (readiness === 'loaded-history') assert.deepEqual(cspErrors, [], 'No page errors in the fully loaded navigation journey');
           assert.deepEqual(unexpectedErrors, [], 'No unexplained JavaScript diagnostics during CSP navigation');
-          return { interruptedDocumentProbe, pageShows, cspErrors, navigationCancellations, myPageGuestFixtureUsed, bfcachePersistedVerified: false, samePolicySoftNavigation: true, privatePublicReload: true, privateBottomNavigationAbsent: true, publicTestsNavigationVerified: true, visibleWordmarkExit: true, publicHomeHistoryVerified: true, tantraReload: true, backForwardVerified: true, privateIframeBlocked: true, aboutRendererAllowed: true, providerResponseStubbed: true, decodedPlaybackClaimed: false };
+          return { interruptedDocumentProbe, pageShows, cspErrors, navigationCancellations, nativeHistoryCancellations, myPageGuestFixtureUsed, bfcachePersistedVerified: false, samePolicySoftNavigation: true, privatePublicReload: true, privateBottomNavigationAbsent: true, publicTestsNavigationVerified: true, visibleWordmarkExit: true, publicHomeHistoryVerified: true, tantraReload: true, backForwardVerified: true, privateIframeBlocked: true, aboutRendererAllowed: true, providerResponseStubbed: true, decodedPlaybackClaimed: false };
         } catch (error) {
           const state = await cspPage.evaluate(() => ({ url: location.href, documentClass: document.body.dataset.cspClass, documentReady: document.readyState })).catch(() => null);
           throw new Error(`${error.message}; document=${JSON.stringify(state)}; navigation=${JSON.stringify(navigationTrace)}; pageShows=${JSON.stringify(pageShows)}; cspErrors=${JSON.stringify(cspErrors)}`);
@@ -954,7 +982,7 @@ async function exercise(engine, browserType, width) {
           lifecycleTrace = await cspPage.evaluate(() => JSON.parse(sessionStorage.getItem('__cspLifecycleTrace') || '[]')).catch(() => lifecycleTrace);
           const fetchTelemetry = await cspPage.evaluate(() => JSON.parse(sessionStorage.getItem('__cspRequestTelemetry') || '[]')).catch(() => []);
           const statsFetch = await cspPage.evaluate(() => JSON.parse(sessionStorage.getItem('__catalogStatsDiagnostic') || '[]')).catch(() => []);
-          writeFileSync(`${evidence}/${label}-csp-${engine}-${readiness}.json`, JSON.stringify({ statsResponses, statsFetch, requestTelemetry, fetchTelemetry, readiness, interruptedDocumentProbe, pageShows, lifecycleTrace, navigationTrace, cspErrors, navigationCancellations, failedRequests, bfcacheNotUsed }, null, 2));
+          writeFileSync(`${evidence}/${label}-csp-${engine}-${readiness}.json`, JSON.stringify({ statsResponses, statsFetch, requestTelemetry, fetchTelemetry, readiness, interruptedDocumentProbe, pageShows, lifecycleTrace, navigationTrace, cspErrors, navigationCancellations, nativeHistoryCancellations, failedRequests, bfcacheNotUsed }, null, 2));
           await cspContext.close(); if (cspBrowser !== browser) await cspBrowser.close();
         }
       });

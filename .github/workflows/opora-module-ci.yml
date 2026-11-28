@@ -128,7 +128,15 @@ jobs:
         with:
           stage: materialize
       - name: Validate the isolated AS5.6 fixture and safety regressions
+        # On ready PRs module-routing already executes these exact three tests.
+        # The required aggregate still waits for module-routing AND real browser evidence.
+        if: github.event_name != 'pull_request'
         run: node --test tests/opora-as56-brief-practice.test.mjs tests/opora-as56-browser-fixture.test.mjs tests/opora-as57-calm-morning.test.mjs
+      - name: Restore trusted production-owned Playwright browsers (read-only)
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: hh-public-browser-blobs-${{ runner.os }}-${{ runner.arch }}-pw1.63.0-v1
       - name: Install isolated browser tools
         run: |
           npm install --prefix /tmp/hh-opora-browser --no-audit --no-fund @playwright/test@1.63.0
