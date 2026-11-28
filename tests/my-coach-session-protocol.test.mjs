@@ -1,3 +1,4 @@
+import './coach-early-contact.test.mjs'
 import './my-coach-speech-amendments.test.mjs'
 import './my-coach-speech-evidence.test.mjs'
 import './my-coach-speech-review.test.mjs'
@@ -1112,5 +1113,29 @@ test('expanded session gate pins its exact version through review, coach handoff
   assert.ok(coachCourseGateArchiveMatches(value,{...value.protocol,courseFieldReview:view.review}));assert.equal(coachCourseGateArchiveMatches(value,{...value.protocol,courseSessionId:'goal_result',courseFieldReview:view.review}),false)
   assert.equal(coachExpandedGateReadbackMatches(course,locale,value.protocol.turns,{...view,scenarioVersion:null}),false);assert.equal(coachExpandedGateReadbackMatches(course,locale,value.protocol.turns,{...view,total:view.total+1}),false)
   assert.equal(coachExpandedGateReadbackMatches(course,locale,value.protocol.turns,{...view,prompt:{...view.prompt,fieldId:'forged'}}),false)
+ }
+})
+
+import {THEMATIC_TRANSCRIPT_REVIEW_VERSION} from '../lib/coaching/session-blueprint.mjs'
+import {deriveCoachDraftReview,coachConversationReviewMatches} from '../lib/personal-coaching/protocol-draft.mjs'
+import {checkpointConfirmation as thematicTranscriptEcho} from '../lib/coaching/coach-course-question-binding.mjs'
+test('expanded conversational review is reproducible from the exact transcript, never a server-issued gate',()=>{
+ for(const locale of ['en','ru','es']){
+  const history=({en:['Yes','My name is Anna','New topic','I want to work on a goal','Calm','Yes'],ru:['Да','Меня зовут Анна','Новая тема','Хочу поработать над целью','Спокойно','Да'],es:['Sí','Me llamo Ana','Un tema nuevo','Quiero trabajar en una meta','Tranquila','Sí']})[locale];
+  const courseSessionId='business_strategy',courseScenarioVersion=THEMATIC_EXPANDED_VERSION,personaId='mira';
+  const opening=coachOpeningProgress({turns:history,locale,personaId});assert.ok(opening.completed);
+  const field=coachCourseProtocolSchema(courseSessionId,locale,{scenarioVersion:courseScenarioVersion}).checkpoints.find(x=>x.id==='strategy_tradeoffs');
+  const quote=({en:'We need to limit the cost of testing.',ru:'Нужно ограничить стоимость проверки.',es:'Necesitamos limitar el coste de la prueba.'})[locale];
+  const turns=[...history.map(content=>({role:'user',content})),{role:'assistant',content:field.question},{role:'user',content:quote},{role:'assistant',content:thematicTranscriptEcho(field.question,quote,locale)},{role:'user',content:({en:'yes',ru:'да',es:'sí'})[locale]},{role:'assistant',content:({en:'Thank you.',ru:'Спасибо.',es:'Gracias.'})[locale]}];
+  const protocol={...sample(),locale,personaId,courseSessionId,courseScenarioVersion,turnLayout:'chronological',opening:coachOpeningProtocolSnapshot(opening),turns};
+  const review=deriveCoachDraftReview(protocol,courseSessionId);assert.equal(review.version,THEMATIC_TRANSCRIPT_REVIEW_VERSION);assert.equal(review.events.length,1);assert.equal(review.events[0].fieldId,field.id);assert.ok(coachConversationReviewMatches({...protocol,courseFieldReview:review}));
+  assert.equal(coachConversationReviewMatches({...protocol,courseFieldReview:{...review,events:[]}}),false);
+  assert.equal(coachConversationReviewMatches({...protocol,courseFieldReview:{...review,version:'hh-coach-thematic-review-v2'}}),false);
+  assert.equal(deriveCoachDraftReview({...protocol,turns:turns.slice(0,-1)},courseSessionId)?.events.length,0);
+  assert.equal(deriveCoachDraftReview({...protocol,turns:turns.slice(0,-2)},courseSessionId)?.events.length,0);
+  assert.equal(deriveCoachDraftReview(normalizeMyCoachProtocol({...protocol,turns:turns.slice(0,-1)}),courseSessionId)?.events.length,0);
+  assert.equal(deriveCoachDraftReview({...protocol,courseScenarioVersion:undefined},courseSessionId),null);
+  assert.equal(normalizeMyCoachProtocol({...protocol,courseFieldReview:review}).courseScenarioVersion,courseScenarioVersion);
+  assert.throws(()=>normalizeMyCoachProtocol({...protocol,courseScenarioVersion:undefined,courseFieldReview:review}));
  }
 })
