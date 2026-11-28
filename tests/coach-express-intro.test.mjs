@@ -39,3 +39,15 @@ test('greeting keeps resume flow and only offers authorized dedicated express tr
  assert.ok(source.includes('onResumeSession(entry.item)'))
  assert.ok(source.includes('resolveEntry(id)'))
 })
+
+test('express uses a distinct authenticated token route and never checkpoints a course',()=>{
+ const route=readFileSync(new URL('../app/api/app/[...path]/route.js',import.meta.url),'utf8')
+ const transport=readFileSync(new URL('../components/my-coach-gemini-live.jsx',import.meta.url),'utf8')
+ const server=readFileSync(new URL('../lib/coaching/gemini-live-free.mjs',import.meta.url),'utf8')
+ assert.ok(route.includes("joined === 'my-coach/express-token'"))
+ assert.ok(route.includes('expressLiveApproved(process.env)'))
+ assert.ok(transport.includes('if(r.expressIntro)return'))
+ assert.ok(transport.includes('delete setup.setup.sessionResumption'))
+ assert.ok(server.includes('express?COACH_EXPRESS_SECONDS*1000'))
+ assert.ok(server.includes("express?',sessionResumption':''"))
+})

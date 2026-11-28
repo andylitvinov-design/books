@@ -27,7 +27,7 @@ import {geminiCoachTextConfig} from '@/lib/coaching/gemini-coach-text.mjs'
 import {COACH_SESSION_COOKIE,COACH_SESSION_TTL_SECONDS,sealCoachSession} from '@/lib/coaching/session-authority.mjs'
 import {startCoachMethodSession,prepareCoachMethodTurn,prepareCoachMethodRequest} from '@/lib/coaching/method-session-transport.mjs'
 import {geminiCoachTtsConfig} from '@/lib/coaching/gemini-coach-tts.mjs'
-import {geminiFreeLiveConfig,geminiFreeLiveUnavailableReason,normalizeGeminiFreeLiveStart,issueGeminiFreeLiveToken,geminiFreeLiveCheckpoint} from '@/lib/coaching/gemini-live-free.mjs'
+import {geminiFreeLiveConfig,geminiFreeLiveUnavailableReason,normalizeGeminiFreeLiveStart,issueGeminiFreeLiveToken,geminiFreeLiveCheckpoint,normalizeExpressLiveStart,expressLiveApproved} from '@/lib/coaching/gemini-live-free.mjs'
 import { readCoachingReportDraft } from '@/lib/app/coaching-report-v2'
 import { listCoachingReports, exportCoachingReports, readCoachingReport, saveCoachingReport, deleteCoachingReport } from '@/lib/app/coaching-report-store'
 import { readCoachingLifePlan, updateCoachingLifePlanArea, importCoachingReportActions } from '@/lib/app/coaching-life-plan'
@@ -1201,17 +1201,20 @@ async function handle(request, { params }) {
     // Gemini Live model, chosen fictional persona and allowed voice.
     // The browser never receives the permanent API key. The audio WebSocket
     // then goes straight to Google, avoiding a billable Vercel audio proxy.
-    if (joined === 'my-coach/live-token') {
+    if (joined === 'my-coach/express-token' || joined === 'my-coach/live-token') {
+      const express=joined==='my-coach/express-token'
+      if(express&&!expressLiveApproved(process.env))throw new AppError('MY_COACH_GEMINI_LIVE_DISABLED',503)
+      if(express&&method==='GET')return json({available:true})
       if (method !== 'POST') throw new AppError('NOT_FOUND',404)
       const vendor=geminiFreeLiveConfig(process.env)
       if (!vendor) throw new AppError('MY_COACH_GEMINI_LIVE_DISABLED',503)
       const liveBody=await readBody(request,2048)
       requireMethodOwner(liveBody)
       let selected
-      try{selected=prepareCoachMethodRequest(liveBody,coachMethodContext())}
+      try{selected=express?{body:liveBody,session:null}:prepareCoachMethodRequest(liveBody,coachMethodContext())}
       catch(error){throw methodError(error)}
       let start
-      try{start=normalizeGeminiFreeLiveStart(selected.body,{methodSession:selected.session})}
+      try{start=express?normalizeExpressLiveStart(selected.body):normalizeGeminiFreeLiveStart(selected.body,{methodSession:selected.session})}
       catch{throw new AppError('MY_COACH_GEMINI_LIVE_INVALID',400)}
       // Abuse control remains before Google, but a failed token mint must not
       // consume the real 2/hour, 4/day and 20/day successful-session quota.

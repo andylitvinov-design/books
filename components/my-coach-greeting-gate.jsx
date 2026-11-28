@@ -129,7 +129,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
  const gateError=({en:'Could not continue. Please try again.',ru:'Не удалось продолжить. Попробуйте ещё раз.',es:'No pudimos continuar. Inténtalo de nuevo.'})[lang]
  const gate=useGooglePageAction({locale:lang,continuation:'my-coach-action',kind:'coach-topic',onAuthorized:async action=>{
    if(action.id===expressActionId){
-     if(!canExpress||chosen.current||switching.current||entryPending)return
+     if(!canExpress||chosen.current||switching.current)return
      chosen.current=true
      try{
        audioRun.current++;detachAudio.current();player.current?.cancel?.();player.current=null
