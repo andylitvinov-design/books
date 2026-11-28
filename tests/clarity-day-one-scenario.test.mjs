@@ -354,3 +354,24 @@ test('early name heard in a real opening survives the same Clarity protocol snap
   assert.equal(run([...invalid,{role:'user',content:'Да, давайте начнём.'}]).checkmarks.name,false)
  }
 })
+
+
+test('explicit opening refusal stops the bound relay, not ordinary protocol requests or name repair',()=>{
+ for(const [locale,no,request,repair] of [
+  ['ru','Нет','Нет, хочу проверить протокол','Повторите пожалуйста'],
+  ['en','No','No, I want to check my protocol','Please repeat'],
+  ['es','No','No, quiero revisar el protocolo','Repite por favor']
+ ]){
+  const run=content=>coachOpeningProgress({turns:[{role:'user',content}],locale,personaId:'mira'})
+  assert.equal(run(no).declined,true)
+  assert.equal(run(request).declined,false)
+  assert.equal(run(repair).declined,false)
+ }
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const input=ui.slice(ui.indexOf('onInputFinal={text=>{'),ui.indexOf('onOutputInterim={setStreamingPreview}'))
+ assert.match(input,/if\(clarityCourseDay\(selectedCourseId\)\)\{\s*if\(!captured\)return true/)
+ assert.match(input,/if\(declined&&!coachingBrainSafety\(guard\)&&!coachingBrainBoundary\(guard\)\)\{\s*setPaused\(true\);setStreamingPreview\(''\);return true/)
+ const transport=readFileSync(new URL('../components/my-coach-gemini-live.jsx',import.meta.url),'utf8')
+ assert.ok(transport.includes('if(decision===true){stop();return true}'))
+ assert.ok(transport.includes("if(r?.claritySelection){stopCourseRelay(r,'idle');return}"))
+})
