@@ -9,6 +9,7 @@ import {beginPrivateCoachSalutation} from '@/lib/coaching/coach-private-greeting
 import {coachExplicitRecall} from '@/lib/coaching/coach-private-recall.mjs'
 import {coachCharacterObservedIds} from '@/lib/coaching/coach-character-signature.mjs'
 import SimliDialoguePilot from './simli-dialogue-pilot'
+import {blocksSyntheticCoachAvatar} from '@/lib/coaching/simli-speech-relay.mjs'
 import {createSpeechReviewBuffer,createSpeechReviewQueue,requestSpeechReview} from '@/lib/coaching/coach-speech-review.mjs'
 import {Mic,Play,Volume2} from 'lucide-react'
 import styles from './my-coach-speech-loop.module.css'
@@ -1475,7 +1476,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     const recovery=geminiLiveLocalRecovery(p.localRecoveryTurns)
     const r={context,stream:null,source:null,processor:null,sink:null,
       socket:null,ready:false,ended:false,history:recovery.history,openingHistory:recovery.openingHistory,characterSeenIds:new Set(coachCharacterObservedIds(p.localRecoveryTurns)),
-      continuing:recovery.continuing,inputText:'',outputText:'',
+      continuing:recovery.continuing,pilotHasRecovery:recovery.continuing,inputText:'',outputText:'',
       speaking:false,interrupted:false,postBarge:false,awaitingBargeReply:false,resumeHandle:null,checkpointCurrent:false,
       paused:false,pauseEpoch:0,resumePending:false,resumeUnavailable:false,resumeInFlight:false,
       modelTurnComplete:false,hadAudio:false,outputWithoutAudio:false,
@@ -1505,8 +1506,10 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
         !r.reconnectTimer,
       onStall:()=>recoverStalledReply(r),
     })
+    const canMirrorAudio=()=>runtime.current===r&&!r.ended&&!r.paused&&
+      !ANTI_STRESS_SESSION_IDS.includes(propsRef.current.courseSessionId)&&!blocksSyntheticCoachAvatar(propsRef.current,r)
     r.player=new GeminiLivePcmPlayer(context,{
-      onScheduledPcm:(samples,start,ctx)=>simliPilotRef.current?.schedule(samples,start,ctx),
+      onScheduledPcm:(samples,start,ctx)=>simliPilotRef.current?.schedule(samples,start,ctx,canMirrorAudio),
       onPlaybackClear:()=>simliPilotRef.current?.clear(),
       onError:()=>discardAudioTurn(r),
       onStart:()=>{if(!r.ended)phaseChange('speaking')},
@@ -1638,7 +1641,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       </span>}
     {notice&&<p className={styles.note} role="status">{notice}</p>}
     {!ANTI_STRESS_SESSION_IDS.includes(courseSessionId)&&personaId==='caesar'&&process.env.NEXT_PUBLIC_HH_SIMLI_OWNER_DIALOGUE_PILOT==='true'&&<SimliDialoguePilot ref={simliPilotRef} target="coach" locale={lang}
-      phase={phase} blocked={!enabled||Boolean(liveContextAccess)||phase==='paused'}
+      phase={phase} blocked={blocksSyntheticCoachAvatar(propsRef.current,runtime.current)||phase==='paused'}
       revision={personaId+'|'+lang+'|'+voiceName+'|'+contextRevision}/>}
   </div>
 })
