@@ -4,7 +4,7 @@ import { verify, requiresCurrentProductionBase, classifyPrState, diagnoseAggrega
 import { createRequire } from 'node:module';
 import { verifyStableProtectedBase, observeProtectedBaseDrift, independentPackageOnlyAdvisories, verifiedCoachDispatcherIsolation, independentDispatcherAdvisories, provenNonApplicableWorkflows, withCompletedSpecialistEvidence, mergeReadyReceipt } from '../scripts/ci-specialist-aggregate.mjs';
 import { inspectJobs, trustedRequiredJobs, inspectWorkflowRuns } from '../lib/ci/specialist-aggregate.mjs';
-import { safeComposedIndependentAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeIndependentRouterPolicyAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeStandaloneVideoAfterSpecialistScopeAdvance, safeNonOverlappingProductAdvance, safeIndependentMixedCandidateAdvance, normalizeIdenticalProtectedOverlap, safeDetachedBenchmarkAdvance, safeTrustedPolicyAdvance, safeAdditiveProtectedProductAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeComposedIndependentAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeIndependentRouterPolicyAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeStandaloneVideoAfterSpecialistScopeAdvance, safeNonOverlappingProductAdvance, safeIndependentMixedCandidateAdvance, normalizeIdenticalProtectedOverlap, safeDetachedBenchmarkAdvance, safeTrustedPolicyAdvance, safeAdditiveProtectedProductAdvance, safeIndependentOwnerHarnessAdvance } from '../lib/ci/production-base-impact.mjs';
 
 const repo = 'andylitvinov-design/books', head = 'a'.repeat(40), base = 'b'.repeat(40);
 const path = '.github/workflows/mobile.yml';
@@ -1745,4 +1745,39 @@ test('Merge Ready V3 emits only complete exact-head and accepted-base evidence',
  assert.equal(mergeReadyReceipt(ctx,files,result,{...env,GITHUB_RUN_ATTEMPT:'0'}),null);
  const reused=mergeReadyReceipt(ctx,files,{...result,executed:[],reused:[{name:path,run_id:51,jobs:2,prior_head:target}]},env);
  assert.equal(reused.evidence[0].prior_head,target);
+});
+
+
+test('mixed protected policy plus independent leaf QA owner does not restart all CI (observed #5929)',()=>{
+ const live='d'.repeat(40),middle='e'.repeat(40);
+ const candidates=['.github/workflows/hh-public-services-production.yml',
+  'scripts/ci-public-services-plan.mjs','scripts/verify-public-services-production.mjs',
+  'tests/ci-public-services-plan.test.mjs'];
+ const product=['components/my-coach-live-dialogue.jsx','lib/coaching/coach-course-continuity.mjs',
+  'lib/coaching/coach-course-gate-draft.mjs','lib/coaching/coach-course-protocol-schema.mjs',
+  'lib/coaching/coach-session-stage-view.mjs','lib/coaching/session-blueprint.mjs',
+  'tests/goal-session-scenarios.test.mjs','tests/my-coach-session-protocol.test.mjs'];
+ const delta={status:'ahead',ahead_by:2,behind_by:0,total_commits:2,
+   base_commit:{sha:base},merge_base_commit:{sha:base},commits:[{sha:middle},{sha:live}],
+   files:product.map(filename=>({filename,status:'modified'}))};
+ const mixed={...delta,files:[...delta.files,
+  {filename:'scripts/ci-specialist-aggregate.mjs',status:'modified'},
+  {filename:'tests/ci-specialist-wait.test.mjs',status:'modified'}]};
+ assert.equal(safeIndependentOwnerHarnessAdvance(delta,base,live,candidates),true);
+ assert.equal(safeTrustedPolicyAdvance(mixed,base,live,candidates),true);
+ assert.equal(safeNonOverlappingProductAdvance(mixed,base,live,candidates),true);
+ assert.equal(safeTrustedPolicyAdvance(delta,base,live,candidates),false);
+ for(const path of ['app/api/holistic-support/audio-storyboard/route.js',
+  'lib/app/client-memory-store.js','lib/coaching/coach-private-recall.mjs',
+  'lib/coaching/unknown-session-store.mjs','package-lock.json','app/[locale]/layout.tsx',
+  '.github/workflows/hh-pr-core-release.yml','components/services-directory-page.tsx',
+  'scripts/verify-public-services-production.mjs']){
+  const changed={...mixed,files:[...mixed.files,{filename:path,status:'modified'}]};
+  assert.equal(safeTrustedPolicyAdvance(changed,base,live,candidates),false,path);
+ }
+ for(const p of ['.github/workflows/hh-pr-core-release.yml','package.json','lib/coaching/session-blueprint.mjs'])
+  assert.equal(safeTrustedPolicyAdvance(mixed,base,live,[...candidates,p]),false,p);
+ assert.equal(safeTrustedPolicyAdvance({...mixed,commits:[]},base,live,candidates),false);
+ assert.equal(safeTrustedPolicyAdvance({...mixed,files:[...mixed.files,mixed.files[0]]},base,live,candidates),false);
+ assert.equal(safeTrustedPolicyAdvance({...mixed,files:[...mixed.files,{filename:'docs/a.md',status:'renamed',previous_filename:'docs/b.md'}]},base,live,candidates),false);
 });
