@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { verify, requiresCurrentProductionBase, classifyPrState, diagnoseAggregateError, awaitPositiveMergeability, verifiedPriorSpecialistEvidence, reusePriorSpecialistState } from '../scripts/ci-specialist-aggregate.mjs';
 import { inspectJobs, trustedRequiredJobs, inspectWorkflowRuns } from '../lib/ci/specialist-aggregate.mjs';
-import { safeComposedIndependentAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeIndependentRouterPolicyAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeStandaloneVideoAfterSpecialistScopeAdvance, safeNonOverlappingProductAdvance, safeIndependentMixedCandidateAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeComposedIndependentAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeIndependentRouterPolicyAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeStandaloneVideoAfterSpecialistScopeAdvance, safeNonOverlappingProductAdvance, safeIndependentMixedCandidateAdvance, normalizeIdenticalProtectedOverlap } from '../lib/ci/production-base-impact.mjs';
 
 const repo = 'andylitvinov-design/books', head = 'a'.repeat(40), base = 'b'.repeat(40);
 const path = '.github/workflows/mobile.yml';
@@ -1294,6 +1294,39 @@ test('mixed tested candidate: independent protected domain is not stale just bec
 });
 
 
+test('same regular protected blob is not a conflicting change; unknown or different evidence stays strict',async()=>{
+  const target='d'.repeat(40),blob='e'.repeat(40),name='lib/site-videos/model.js';
+  const row={filename:name,status:'modified',sha:blob};
+  const delta={status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+    base_commit:{sha:base},merge_base_commit:{sha:base},commits:[{sha:target}],files:[row]};
+  const entry={type:'blob',mode:'100644',sha:blob};
+  const rows=[{filename:name,status:'M'}];
+  const normalize=(d=delta,c=rows,a=entry,b=entry)=>normalizeIdenticalProtectedOverlap(d,base,target,c,async()=>a,async()=>b);
+  assert.deepEqual((await normalize()).identical,[name]);
+  assert.deepEqual((await normalize()).compare.files,[]);
+  const other={filename:'components/unrelated-page.jsx',status:'modified'};
+  assert.deepEqual((await normalize({...delta,files:[row,other]})).compare.files,[other]);
+  for(const result of [
+    await normalize(delta,rows,{...entry,sha:'f'.repeat(40)}),
+    await normalize(delta,rows,entry,{...entry,mode:'100755'}),
+    await normalize(delta,rows,entry,null),
+    await normalize({...delta,commits:[]}),
+    await normalize({...delta,files:[row,row]}),
+    await normalize({...delta,files:[{...row,status:'renamed',previous_filename:'old.js'}]}),
+    await normalize({...delta,files:[{...row,filename:'package-lock.json'}]},[{filename:'package-lock.json',status:'M'}]),
+    await normalize({...delta,files:[{...row,filename:'lib/ci/production-base-impact.mjs'}]},[{filename:'lib/ci/production-base-impact.mjs',status:'M'}]),
+  ]) assert.deepEqual(result.identical,[]);
+  const exact={...pr,mergeable:true,base:{...pr.base,sha:target}};
+  const files={base:new Map(),current:new Map(),changedRows:[...rows,{filename:'app/api/app/my-coach/turn/route.js',status:'M'}]};
+  const api={pr:async()=>exact,target:async()=>target,compare:async()=>delta,
+    entry:async()=>entry,runs:async()=>[],jobs:async()=>[]};
+  // An unchanged HEAD may keep its real specialist evidence, not fabricate new tests.
+  assert.equal((await verify(api,ctx,files,{maxWaitMs:0,readTestedEntry:async()=>entry})).head,head);
+  await assert.rejects(()=>verify({...api,entry:async()=>({...entry,mode:'100755'})},ctx,files,{maxWaitMs:0,readTestedEntry:async()=>entry}),/PRODUCTION_BASE_CHANGED/);
+  await assert.rejects(()=>verify({...api,pr:async()=>({...exact,mergeable:false})},ctx,files,{maxWaitMs:0,readTestedEntry:async()=>entry}),/MERGE_CONFLICT/);
+});
+
+
 test('prior unified gate reuses every proved same-tree Specialist, not stale or red evidence',async()=>{
  const old='d'.repeat(40),oldMerge='e'.repeat(40),merge='f'.repeat(40),sourceTree='1'.repeat(40),mergeTree='2'.repeat(40);
  const gatePath='.github/workflows/hh-pr-core-release.yml', second='.github/workflows/other.yml';
@@ -1342,4 +1375,29 @@ test('prior unified gate reuses every proved same-tree Specialist, not stale or 
  assert.deepEqual(result.missing,[]);assert.deepEqual(result.pending,[]);assert.equal(result.reused.length,2);
  const red=reusePriorSpecialistState({...waiting,missing:[],queued:[],pending:[second+':in_progress'],running:[second+':in_progress'],failed:[path+':failure']},proof);
  assert.deepEqual(red.failed,[path+':failure']);assert.equal(red.reused.length,0);assert.equal(red.pending.length,1);
+});
+
+test('universal moving-base proof treats feature-owned CI regressions as local, not global release policy',()=>{
+  const target='d'.repeat(40);
+  const candidate=['components/my-coach-live-dialogue.jsx','app/api/app/clarity-course/route.js',
+    'tests/ci-coaching-rls-guard.test.mjs','.github/workflows/hh-personal-coaching-session.yml'];
+  const rows=['components/shamanica-business-content.tsx','components/tarot-deck.jsx',
+    'lib/ci/pr-loss-metrics.mjs'].map(filename=>({filename,status:'modified'}));
+  const delta={status:'ahead',ahead_by:2,behind_by:0,total_commits:2,base_commit:{sha:base},
+    merge_base_commit:{sha:base},commits:[{sha:'e'.repeat(40)},{sha:target}],files:rows};
+  const accept=(d=delta,p=candidate)=>safeNonOverlappingProductAdvance(d,base,target,p);
+  assert.equal(accept(),true);
+  // A different, newly named feature is also accepted without a PR ID or exact patch.
+  assert.equal(accept({...delta,files:[{filename:'components/ornithology-detail.jsx',status:'modified'}]}),true);
+  for(const path of ['tests/ci-global-regression.test.mjs','tests/ci-coaching-release-policy.test.mjs',
+    'tests/ci-shamanica-rls-guard.test.mjs','scripts/ci-coaching-rls-guard.mjs','lib/ci/production-base-impact.mjs',
+    '.github/workflows/hh-pr-core-release.yml']) assert.equal(accept(delta,[...candidate,path]),false,path);
+  for(const path of [candidate[0],'components/my-coach-summary.jsx','app/[locale]/layout.tsx',
+    'lib/auth/permissions.mjs','package.json','supabase/migrations/private.sql',
+    '.github/workflows/hh-pr-core-release.yml','lib/ci/production-base-impact.mjs']) {
+    assert.equal(accept({...delta,files:[...rows,{filename:path,status:'modified'}]}),false,path);
+  }
+  assert.equal(accept({...delta,commits:[]}),false);
+  assert.equal(accept({...delta,files:[...rows,rows[0]]}),false);
+  assert.equal(accept({...delta,files:[{...rows[0],status:'renamed',previous_filename:'old.jsx'}]}),false);
 });
