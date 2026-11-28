@@ -305,3 +305,36 @@ test('recognized wrong-gate question cannot turn its response into preferred nam
  assert.equal(p.completed,true)
  assert.equal(p.answers.feelings.quote,'I feel anxious')
 })
+
+
+test('first-party initial name echo holds identity until the client confirms the actual echo',async()=>{
+ const {coachOpeningFirstNameCandidate,coachNameCorrectionQuestion}=await import('../lib/coaching/coach-opening-protocol.mjs')
+ const assistant=content=>({role:'assistant',content})
+ const user=content=>({role:'user',content})
+ for(const [locale,yes,name,invalid] of [['en','Yes','Maya','Not yet'],['ru','Да','Анна','Пока нет'],['es','Sí','María','Todavía no']]){
+  const scope={locale,personaId:'mira'}
+  const turns=[assistant(coachOpeningQuestion('mira','invitation',locale)),user(yes),assistant(coachOpeningQuestion('mira','name',locale))]
+  assert.equal(coachOpeningFirstNameCandidate({...scope,turns,message:invalid}),'')
+  assert.equal(coachOpeningFirstNameCandidate({...scope,turns,message:name}),name)
+  turns.push(user(name),assistant(coachNameCorrectionQuestion(name,locale)))
+  let p=coachOpeningProgress({...scope,turns})
+  assert.equal(p.current,'name')
+  assert.equal(p.checkmarks.name,false)
+  assert.equal(p.pendingNameCorrection.name,name)
+  const wrong=[...turns,assistant(coachOpeningQuestion('mira','focus',locale)),user(yes)]
+  assert.equal(coachOpeningProgress({...scope,turns:wrong}).checkmarks.name,false)
+  turns.push(user(yes))
+  p=coachOpeningProgress({...scope,turns})
+  assert.equal(p.answers.name.value,name)
+  assert.equal(p.current,'focus')
+  assert.equal(p.pendingNameCorrection,null)
+ }
+})
+
+test('first-party opening uses local full question evidence rather than lossy client-only history',()=>{
+ const turns=[{role:'assistant',content:coachOpeningQuestion('mira','invitation','en')},{role:'user',content:'Yes'},
+  {role:'assistant',content:coachOpeningQuestion('mira','focus','en')}]
+ const reply=coachOpeningTurn({locale:'en',openingHistory:['Yes'],openingTurns:turns,message:'Maya'},'mira')
+ assert.equal(reply.openingProgress.current,'name')
+ assert.equal(reply.openingProgress.checkmarks.name,false)
+})

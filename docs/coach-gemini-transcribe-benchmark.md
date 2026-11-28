@@ -1,0 +1,11 @@
+# Gemini 3.5 Transcribe candidate — #5839
+
+Owner direction: evaluate Gemini 3.5 Transcribe in parallel with Whisper Large V3 (#5861). No changes to Gemini Live, runtime route, customer consent or production config in this slice. Google Developer API free-tier data may be used to improve its products. Only synthetic, non-private benchmark audio is eligible; a human must verify the provenance (hash validation alone cannot prove it). Use a dedicated verified non-billed Google project/key; do not reuse the live project key or assume free entitlement. No private audio, profiles, names from customers or transcripts. No automatic provider retry or paid fallback.
+
+Official docs: https://ai.google.dev/gemini-api/docs/transcribe and https://ai.google.dev/api/interactions and https://ai.google.dev/gemini-api/docs/pricing . Use inline WAV, store:false, verbatim, optional language hints and public editorial vocabulary. No smart rewriting, timestamps or diarization in this experiment.
+
+Run mock tests: node --test tests/coach-gemini-transcribe-benchmark.test.mjs
+Validate synthetic corpus (manifest format from #5856): node scripts/coach-speech-gemini-benchmark.mjs CORPUS OUTPUT --synthetic-only --check-only
+Only after verifying free entitlement and provenance: set HH_GEMINI_TRANSCRIBE_FREE_BENCHMARK_CONFIRMED=true and HH_GEMINI_TRANSCRIBE_SYNTHETIC_DATA_ACK=true, supply HH_GEMINI_TRANSCRIBE_BENCHMARK_KEY securely in local environment. Run without --check-only; at most 10 calls per invocation, optional --offset=N, --hints, --vocabulary. Stop on first provider failure. The output includes explicit nulls for unattempted clips; this is PARTIAL, not a complete comparative result. Combine disjoint clip runs with exact audio hashes and the same configuration before final scoring. Never publish credentials or actual private recordings.
+
+Acceptance: compare identical clips with Gemini Live, Whisper Turbo and Large V3 on RU/EN/ES, manual critical semantic checks, WER/CER, coverage, p95, and actual account quota. No automatic production activation. Runtime integration requires separate provider-specific informed consent, verified free entitlement and privacy acceptance, nonblocking queue and no automatic canonical promotion. No cloud inference or performance claims in this PR.

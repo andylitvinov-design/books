@@ -208,6 +208,34 @@ export default function PrCompletionClient(){
           journey.minutesSinceRequest!==null&&
           <p className="hh-pr-journey-note">С момента заявки: {journey.minutesSinceRequest} мин.</p>}
         </div>
+        <section className="hh-pr-history" aria-label="Автоматизации и причины остановки">
+         <h3>Автоматизации · вклад и блокировка</h3>
+         <p className="hh-pr-journey-note">Создал PR: {journey.automationTrace?.origin?.automationId||'UNKNOWN'}
+          {journey.automationTrace?.origin?.runId&&' · '+journey.automationTrace.origin.runId}</p>
+         <p className="hh-pr-journey-note">Проверенный текущий этап: {journey.currentStageTitle} · {journey.attention||journey.stages.find(s=>s.id===journey.currentStage)?.detail||'Причина не подтверждена'}</p>
+         {journey.automationTrace?.current&&<div className="hh-pr-head-evidence">
+          <strong>Последняя запись для актуального состояния: {journey.automationTrace.current.automationId}</strong>
+          <p>{journey.automationTrace.current.stage} · {journey.automationTrace.current.outcome} · {stamp(journey.automationTrace.current.at)}</p>
+          <p>{journey.automationTrace.current.reasonCode||'Нет подтверждённой причины остановки'}</p>
+          {journey.automationTrace.current.nextAction&&<p>Следующий шаг: {journey.automationTrace.current.nextAction}</p>}
+          {journey.automationTrace.current.reportedWaitMinutes!==null&&<p>С момента записи об ожидании: {journey.automationTrace.current.reportedWaitMinutes} мин. (не полное время блокировки)</p>}
+          <a href={journey.automationTrace.current.sourceUrl} target="_blank" rel="noopener noreferrer">Запись агента</a>
+         </div>}
+         {!journey.automationTrace?.current&&<p className="hh-pr-journey-note">Актуальная запись агента отсутствует. Причину и этап см. в независимой диагностике.</p>}
+         {journey.automationTrace?.events?.length>0&&<details className="hh-pr-events">
+          <summary>История действий и наблюдений · {journey.automationTrace.events.length}</summary>
+          <ol>{journey.automationTrace.events.map((e,index)=><li key={e.sourceUrl+'-'+index}>
+           <time dateTime={e.at}>{stamp(e.at)}</time><strong>{e.automationId} · {e.event}</strong>
+           <p>{e.stage} · {e.outcome==='OBSERVED'?'Чужое действие / наблюдение':e.outcome==='DONE'?'Собственное действие по отчёту':e.outcome}</p>
+           <p className="hh-pr-journey-note">{e.runId} · HEAD {e.headSha.slice(0,12)}</p>
+           {e.commitSha&&<p>Commit <code>{e.commitSha.slice(0,12)}</code></p>}
+           {e.reasonCode&&<p>{e.reasonCode}</p>}{e.nextAction&&<p>{e.nextAction}</p>}
+           <a href={e.sourceUrl} target="_blank" rel="noopener noreferrer">Запись</a>
+           {e.evidenceUrl&&<> · <a href={e.evidenceUrl} target="_blank" rel="noopener noreferrer">Доказательство</a></>}
+          </li>)}</ol>
+         </details>}
+         <p className="hh-pr-journey-note">Маркировка агента в GitHub — заявление исполнителя, не криптографическая подпись. CI, merge и LIVE проверяются отдельно. Полнота: {journey.automationTrace?.coverage||'unknown'}. Неизвестное авторство не присваивается агентам.</p>
+        </section>
         <ol className="hh-pr-stage-list">
          {journey.stages.map(step=><li key={step.id}
           className={'hh-pr-stage hh-pr-stage--'+step.state+
@@ -249,6 +277,9 @@ export default function PrCompletionClient(){
           <div className="hh-pr-head-detail">
            <p>{head.subject||'Коммит или наблюдение GitHub'}</p>
            <p className="hh-pr-journey-note">SHA: <code>{head.sha}</code></p>
+           <p className="hh-pr-journey-note">Автоматизация: {head.automation?.automationId||'UNKNOWN'}
+            {head.automation?.runId&&' · '+head.automation.runId}
+            {head.githubActor&&' · GitHub: '+head.githubActor}</p>
            {head.at&&<p className="hh-pr-journey-note">{stamp(head.at)} · дата коммита/наблюдения (не обязательно время публикации HEAD)</p>}
            {head.ciEvents.length>0&&<div>
             <strong>Классификация и маршрутизация</strong>
