@@ -9,6 +9,7 @@
 <title>PR Monitor — Holistic House</title>
 <link rel="stylesheet" href="/monitor.css">
 <script src="/monitor.js" defer></script>
+<script src="/agents-performance.js" defer></script>
 </head>
 <body>
 <header class="topbar">
@@ -41,7 +42,7 @@
   <article><span>Production PR → Merge · P50</span><strong id="k-median">—</strong><small id="k-median-note">Когорта созданных за 24 ч</small></article>
  </section>
  <nav class="section-nav" aria-label="Разделы PR Monitor">
- <a href="#strict">Точная когорта</a><a href="#graphs">Графики</a><a href="#stages">Этапы</a><a href="#ci">CI</a><a href="#error-funnel">Ошибка → Worker</a><a href="#queue">Очередь</a><a href="#prs">PR</a><a href="#repair">Ремонт</a><a href="#issues">Ошибки</a>
+ <a href="#strict">Точная когорта</a><a href="#graphs">Графики</a><a href="#stages">Этапы</a><a href="#ci">CI</a><a href="#error-funnel">Ошибка → Worker</a><a href="#queue">Очередь</a><a href="#agents-performance">Агенты 6+4</a><a href="#prs">PR</a><a href="#repair">Ремонт</a><a href="#issues">Ошибки</a>
  </nav>
  <section class="chart-grid secondary-chart" aria-label="Скорость PR">
   <article class="panel chart"><div class="panel-heading"><div><p class="eyebrow">СКОРОСТЬ</p><h2>PR → Merge</h2></div><span class="small" id="strict-speed-period">Выбранный период: 24 ч</span></div>
@@ -121,6 +122,14 @@
   <div class="panel-heading"><div><p class="eyebrow">ОПЕРАЦИОННАЯ ОЧЕРЕДЬ</p><h2 id="queue-title">PR, блокировки и исполнители</h2></div><span class="small" id="queue-asof">Срез не получен</span></div>
   <div class="metrics compact"><article><span>PR в обработке</span><strong id="k-actionable">—</strong></article><article><span>Блокировки</span><strong id="k-blocked">—</strong></article><article><span>Назначения worker</span><strong id="k-worker">—</strong></article><article><span>PR в production</span><strong id="k-production">—</strong></article></div>
   <div class="two-col"><div><h3>Очередь по состояниям</h3><div class="list" id="queue-states">Данные проверяются…</div></div><div><h3>Причины блокировок</h3><div class="list" id="blocked-reasons">Данные проверяются…</div></div></div>
+ </section>
+ <section class="panel" id="agents-performance" aria-labelledby="agents-performance-title">
+  <div class="panel-heading"><div><p class="eyebrow">AGENTS DIRECTOR · 6+4</p><h2 id="agents-performance-title">Вклад автоматизаций и причины остановки</h2></div><button type="button" id="agents-registry-refresh" class="refresh">Обновить 24 ч</button></div>
+  <p id="agents-registry-status" class="note" role="status" aria-live="polite">Откройте выборку общего реестра.</p>
+  <div class="table-scroll"><table><thead><tr><th>Агент</th><th>Run</th><th>PR</th><th>Commit</th><th>Диагн.</th><th>CI</th><th>ARM</th><th>Merge</th><th>LIVE</th><th>HOLD</th><th>Набл.</th></tr></thead><tbody id="agents-registry-rows"><tr><td colspan="11">—</td></tr></tbody></table></div>
+  <p class="note">Заявленные действия в реестре #1419, не доказанные собственные ремонты. Наблюдения учитываются отдельно. «—» означает отсутствие наблюдаемой записи, не доказанный ноль. <a href="https://github.com/andylitvinov-design/books/issues/1419" target="_blank" rel="noopener noreferrer">Общий реестр ↗</a></p>
+  <div class="subheading">Конкретный PR · проверка GitHub</div><div class="funnel-pr-controls"><label for="agents-pr-number">PR №</label><input id="agents-pr-number" inputmode="numeric" maxlength="6" placeholder="Напр. 5872"><button type="button" id="agents-pr-find">Проверить PR</button></div>
+  <p id="agents-pr-status" class="note" role="status" aria-live="polite">Точный HEAD, коммиты, CI и причина остановки.</p><div id="agents-pr-result" class="list"></div>
  </section>
  <section class="panel" id="prs" aria-labelledby="prs-title">
   <div class="panel-heading"><div><p class="eyebrow">КОНКРЕТНЫЕ PR</p><h2 id="prs-title">Последние изменения и свидетельства</h2></div><span class="small">До 15 записей</span></div>
