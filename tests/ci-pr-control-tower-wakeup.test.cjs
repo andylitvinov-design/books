@@ -201,6 +201,21 @@ test('stale watchdog cron backstop verifies queue state and dispatches at most o
  assert.equal(dry.decision,'NOT_ELIGIBLE');
  assert.equal(calls.length,before);
 });
+test('non-reconcile completions do not suppress stale-cron recovery; active and unknown runs remain conservative',()=>{
+ const {watchdogCronDecision}=require('../scripts/ci-pr-control-tower-wakeup.cjs');
+ const old=new Date(NOW-60*60_000).toISOString(),recent=new Date(NOW-60_000).toISOString();
+ const scheduled={id:81,status:'completed',created_at:old,updated_at:old};
+ const manual={id:82,status:'completed',created_at:recent,updated_at:recent};
+ for(const display_title of ['HH watchdog / dry run','HH watchdog / completion wake','HH watchdog / direct handoff']){
+  const completed={...manual,display_title};
+  assert.equal(watchdogCronDecision([scheduled],[completed],NOW),'WAKE_STALE_WATCHDOG');
+  assert.equal(watchdogCronDecision([scheduled],[{...completed,status:'in_progress'}],NOW),'WATCHDOG_ALREADY_RUNNING');
+  assert.equal(watchdogCronDecision([scheduled],[completed,{...manual,id:83,display_title:'HH watchdog / reconcile'}],NOW),'WATCHDOG_MANUAL_RECENT');
+ }
+ for(const display_title of ['HH watchdog / reconcile','unknown title',undefined]){
+  assert.equal(watchdogCronDecision([scheduled],[{...manual,display_title}],NOW),'WATCHDOG_MANUAL_RECENT');
+ }
+});
 test('existing queued Watchdog or malformed schedule inventory blocks fallback',async()=>{
  const {wakeStaleWatchdog}=require('../scripts/ci-pr-control-tower-wakeup.cjs');
  const context={repo:{owner:'andylitvinov-design',repo:'books'},

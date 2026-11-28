@@ -119,6 +119,11 @@ function watchdogCronDecision(schedule,manual,now){
   if(lastCron!==null&&(lastCron>now+60_000||now-lastCron<WATCHDOG_CRON_GRACE_MS))
     return lastCron>now+60_000?'WATCHDOG_CLOCK_UNVERIFIED':'WATCHDOG_CRON_HEALTHY';
   const recent=manual.some(run=>{
+    // A finished explicit worker refill, relay or dry run is not a real
+    // reconcile. It must not continually suppress recovery of a missing cron.
+    // Active runs above still block; unknown/legacy titles remain conservative.
+    if(['HH watchdog / dry run','HH watchdog / completion wake',
+        'HH watchdog / direct handoff'].includes(run.display_title))return false;
     const completed=Date.parse(run.updated_at||run.created_at);
     return completed>now+60_000||
       now-completed<WATCHDOG_MANUAL_COOLDOWN_MS;
