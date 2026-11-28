@@ -19,9 +19,37 @@ const SAFE_DISPLAY = [
   /^tests\/ci-site-video-scope\.test\.mjs$/,
 ];
 
+// Exact CI policy sources with no production application import or runtime
+// path. Core, actionlint and the applicable independent specialist source
+// contracts still run. Do not generalize to all tests, workflows or lib files.
+const CI_ROUTING_ONLY = new Set([
+  'scripts/ci-site-video-scope.mjs',
+  'tests/ci-site-video-scope.test.mjs',
+  'lib/ci/coach-only-impact.mjs',
+  'tests/ci-coach-only-impact.test.mjs',
+  'tests/ci-pr-selective-workflows.test.mjs',
+  'tests/pr-fast-lane.test.mjs',
+  'docs/operations/CI_RELEASE_POLICY.md',
+  '.github/workflows/hh-pr-core-release.yml',
+  '.github/workflows/site-video-browser.yml',
+  '.github/workflows/hh-profile-axis-matching.yml',
+  '.github/workflows/practice-google-browser.yml',
+  '.github/workflows/hh-private-audio-e2e.yml',
+  '.github/workflows/hh-personal-coaching-session.yml',
+]);
+
+function onlyReviewedCiRouting(files) {
+  return Array.isArray(files) && files.length > 0 && files.length <= CI_ROUTING_ONLY.size &&
+    new Set(files.map(file => file?.filename)).size === files.length &&
+    files.every(file => file && file.status === 'modified' && !file.previous_filename &&
+      CI_ROUTING_ONLY.has(file.filename));
+}
+
 export function needsFullSiteVideoBrowser(files) {
+  if (onlyReviewedCiRouting(files)) return false;
   return !Array.isArray(files) || files.length === 0 || files.length > 3000 ||
-    files.some(file => !file || file.status !== 'modified' ||
+    new Set(files.map(file => file?.filename)).size !== files.length ||
+    files.some(file => !file || file.status !== 'modified' || file.previous_filename ||
       typeof file.filename !== 'string' || !SAFE_DISPLAY.some(re => re.test(file.filename)) ||
       file.filename.split('/').some(part => part === '..' || part === '.'));
 }
@@ -54,6 +82,7 @@ export function classifyExactSiteVideo(env = process.env, git = execFileSync) {
       if (verifiedCoachOnlySharedRouting(files,before,after))
         return {full:false,reason:'EXACT_MY_COACH_ONLY_SHARED_API'};
     }
+    if (onlyReviewedCiRouting(files)) return {full:false,reason:'EXACT_CI_ROUTING_POLICY_ONLY'};
     const full=needsFullSiteVideoBrowser(files);
     return {full,reason:full?'SENSITIVE_OR_UNCLASSIFIED':'REVIEWED_PUBLIC_DISPLAY_ONLY'};
   } catch {
