@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type FormEvent } from "react";
+import { Fragment, useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { positionComposerPopover } from "@/lib/holistic-support/composer-popover-placement.mjs";
 import {Mic, Paperclip, Plus, Send, ImageIcon, Phone, X, Video} from "lucide-react";
 import {MessengerAiLanding} from "@/components/app/messenger-ai-landing";
@@ -725,6 +725,17 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     if(!compact||!messengerView||!composerFocused.current)return;
     const thread=threadRef.current;
     if(!thread)return;
+    if(pageHelp){
+      const turns=thread.querySelectorAll('[data-hh-chat-turn],[data-hh-ai-assistant-message]');
+      const last=turns.item(turns.length-1);
+      const target=last?Math.max(0,Math.min(thread.scrollHeight-thread.clientHeight,
+        thread.scrollTop+last.getBoundingClientRect().bottom-thread.getBoundingClientRect().bottom+12)):
+        Math.max(0,thread.scrollHeight-thread.clientHeight);
+      programmaticScrollTop.current=target;
+      thread.scrollTop=target;
+      setNewBelow(false);
+      return;
+    }
     const aiReplies=thread.querySelectorAll('[data-hh-ai-assistant-message]');
     const turns=thread.querySelectorAll('[data-hh-chat-turn]');
     const anchor=aiReplies.item(aiReplies.length-1)||
@@ -746,7 +757,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     programmaticScrollTop.current=target;
     thread.scrollTop=target;
     setNewBelow(false);
-  },[compact,messengerView,messages.length]);
+  },[compact,messengerView,messages.length,pageHelp]);
   useEffect(()=>{
     const thread=threadRef.current;
     if(!thread)return;
@@ -1408,7 +1419,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       setContentStep(null);setContentVoice(false);setContentBrief("");
       followTail.current=true;setNewBelow(false);setStatus("");setSource("");setChoices([]);setDraft("");
       setMessages(prev=>[...prev,{role:"user" as const,text},
-        {role:"assistant" as const,text:(journeyPath?threeJourneyTurn({path:journeyPath,message:text,locale:turnLocale,history:messages.slice(-6)})?.reply:buildWaveEntryMenu(turnLocale).reply)||
+        {role:"assistant" as const,text:(journeyPath?threeJourneyTurn({path:journeyPath,message:text,locale:turnLocale,history:messages.slice(-6)})?.reply:(pageHelp?pageHelpGreeting(turnLocale)+" "+buildWaveEntryMenu(turnLocale).reply:buildWaveEntryMenu(turnLocale).reply))||
           (/[а-яё]/iu.test(text)?messengerStarter.ru.hello:
             /^(?:hola|buenas)/i.test(text)?messengerStarter.es.hello:turnStarter.hello)}].slice(-30));
       return;
@@ -1925,10 +1936,10 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     }
     void sendTurn(raw);
   }
-  function renderWaveGoalMenu(text:string,index:number){
+  function renderWaveGoalMenu(text:string,index:number,optionsOnly=false){
     const entry=readWaveEntryMenu(text);
-    if(entry)return <div className={`${styles.assistant} ${styles.dialogueMenu}`} data-hh-wave-entry-menu>
-      <strong>{entry.question}</strong>
+    if(entry)return <div className={optionsOnly?styles.dialogueMenu:`${styles.assistant} ${styles.dialogueMenu}`} data-hh-wave-entry-menu>
+      {!optionsOnly&&<strong>{entry.question}</strong>}
       <div className={styles.dialogueChoices} role="group" aria-label={entry.question}>
         {entry.choices.map((choice:{id:string;label:string})=><button key={choice.id} type="button"
           className={styles.dialogueChoice} data-hh-wave-journey={choice.id}
@@ -1936,16 +1947,29 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       </div>
     </div>;
     const menu=readWaveGoalMenu(text);if(!menu)return null;
-    return <div className={styles.assistant} data-hh-wave-goal-menu style={{minWidth:0,display:"grid",gap:10}}>
-      <span>{menu.intro}</span><strong>{menu.question}</strong>
+    return <div className={optionsOnly?styles.dialogueMenu:styles.assistant} data-hh-wave-goal-menu style={{minWidth:0,display:"grid",gap:10}}>
+      {!optionsOnly&&<><span>{menu.intro}</span><strong>{menu.question}</strong></>}
       <div role="group" aria-label={menu.question} style={{display:"grid",gap:7}}>
         {menu.stages.map((label:string,i:number)=><button key={i} type="button" data-hh-wave-goal-step={i+1} data-hh-wave-goal-stage-id={WAVE_GOAL_STAGE_IDS[i]}
           className={styles.dialogueChoice} disabled={busy||proBusy||index!==messages.length-1} onClick={()=>void sendTurn(label)}
           style={{display:"flex",alignItems:"center",gap:9,textAlign:"start",minHeight:44,padding:"9px 10px",border:"1px solid #D5E5DB",borderRadius:12,background:"#F1F6F0",color:"#164D40",font:"inherit",fontWeight:600,whiteSpace:"normal",overflowWrap:"anywhere"}}>
           <span aria-hidden="true" style={{flexShrink:0,background:"#E1EDE3",borderRadius:8,padding:"5px 7px"}}>{String(i+1).padStart(2,"0")}</span><span>{label}</span>
         </button>)}
-      </div><span data-hh-wave-goal-closing>{menu.closing}</span>
+      </div>{!optionsOnly&&<span data-hh-wave-goal-closing>{menu.closing}</span>}
     </div>;
+  }
+  function pageHelpGreeting(language:string){
+    return language==="ru"?"Привет! Рад помочь.":language==="es"?"¡Hola! Estoy aquí para ayudarte.":"Hi! I'm here to help.";
+  }
+  function pageHelpReplyText(text:string,index:number){
+    const entry=readWaveEntryMenu(text);
+    if(entry){
+      const greeting=messages[index-1]?.role==="user"&&isCasualGreeting(messages[index-1].text);
+      const hello=pageHelpGreeting(entry.locale);
+      return greeting?hello+" "+entry.question:entry.question;
+    }
+    const menu=readWaveGoalMenu(text);
+    return menu?[menu.intro,menu.question,menu.closing].filter(Boolean).join("\n"):text;
   }
   function submit(event:FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -2444,7 +2468,18 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         <p className={styles.user} data-hh-chat-turn="user" data-home-handoff-user-preview>
           {homeHandoffPreview}
         </p>}
-      {compact&&(!messengerView||pageHelp)&&<p className={styles.assistant} data-hh-ai-welcome>{pageHelp?.greeting??starter.welcome}</p>}
+      {compact&&pageHelp&&<>
+        <AssistantStart locale={locale} pageHelp section={pageHelp.section} onAsk={()=>{
+          composerRef.current?.focus({preventScroll:true});
+        }}/>
+        <details className={styles.pageHelpMore}><summary>{locale==="ru"?"Помощь с этой страницей":locale==="es"?"Ayuda con esta página":"Help with this page"}</summary>
+        <p className={styles.muted}>{pageHelp.greeting}</p>
+        <div className={styles.startActions} role="group" aria-label={starter.actions} data-hh-ihelp-actions>
+        {pageHelp.actions.map(action=><button type="button" key={action.id}
+          data-hh-ihelp-option={action.id} disabled={busy}
+          onClick={()=>selectPageHelpAction(action)}>{action.label}</button>)}
+        </div></details></>}
+      {compact&&!messengerView&&!pageHelp&&<p className={styles.assistant} data-hh-ai-welcome>{starter.welcome}</p>}
       {!compact&&!messages.length&&<p className={styles.muted}>{t.start}</p>}
       {compact&&messengerView&&supportSelection?.mode==="talk"&&
         <label className={styles.mode} data-hh-friend-tone-control>
@@ -2524,16 +2559,18 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
             </button>)}
         </div>}
       {messages.map((m,index)=>testChatOpen&&messengerView&&index<Math.max(0,messages.length-2)?null:messengerView&&m.role==="assistant"?
-        <div key={index} className={styles.messageWithAvatar} data-hh-ai-assistant-message>
+        <Fragment key={index}><div className={styles.messageWithAvatar} data-hh-ai-assistant-message>
           <img src={persona.image||"/images/holistic-house/reiki-approved-sunrise-v3.webp"}
             width={37} height={37} loading="lazy" alt="" className={styles.messagePortrait}/>
-          {renderWaveGoalMenu(m.text,index)??<p className={styles.assistant}>{m.variant==="alternative"&&<strong className={styles.alternativeLabel}>{locale==="ru"?"Альтернативный ответ · AI на устройстве":locale==="es"?"Respuesta alternativa · IA en el dispositivo":"Alternative answer · On-device AI"}{"\n"}</strong>}{m.text}</p>}
+          {(!pageHelp&&renderWaveGoalMenu(m.text,index))||<p className={styles.assistant}>{m.variant==="alternative"&&<strong className={styles.alternativeLabel}>{locale==="ru"?"Альтернативный ответ · AI на устройстве":locale==="es"?"Respuesta alternativa · IA en el dispositivo":"Alternative answer · On-device AI"}{"\n"}</strong>}{pageHelp?pageHelpReplyText(m.text,index):m.text}</p>}
           {voiceEnabled&&<button type="button" data-hh-voice-turn={index}
             aria-label={voice.t.play} title={voice.t.playConsent}
             disabled={!voice.supported}
-            onClick={()=>{lukasRef.current?.stop();stopAliPersonaAudio();voice.speak(m.text,true);}}
+            onClick={()=>{lukasRef.current?.stop();stopAliPersonaAudio();voice.speak(pageHelp?pageHelpReplyText(m.text,index):m.text,true);}}
             style={{minWidth:32,minHeight:32,marginInlineStart:6,border:"1px solid #E9DFD1",borderRadius:10,background:"#FFFCF7",color:"#143D3A"}}>🔊</button>}
-        </div>:
+        </div>
+        {pageHelp&&index===messages.length-1&&(readWaveEntryMenu(m.text)||readWaveGoalMenu(m.text))&&<div data-hh-ihelp-reply-options style={{alignSelf:"flex-start",width:"100%",maxWidth:420,paddingInlineStart:45,boxSizing:"border-box"}}>{renderWaveGoalMenu(m.text,index,true)}</div>}
+        </Fragment>:
         m.role==="assistant"&&(readWaveEntryMenu(m.text)||readWaveGoalMenu(m.text))?
         <div key={index} data-hh-chat-turn="assistant">{renderWaveGoalMenu(m.text,index)}</div>:
         <p key={index} data-hh-chat-turn={m.role} className={m.role==="user"?styles.user:styles.assistant}>
@@ -2604,16 +2641,6 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         onAdvance={()=>{followTail.current=true;setTestRevision(value=>value+1)}} onClose={()=>{
           followTail.current=true;setNewBelow(false);setTestChatOpen(false);setTestChatTurn(null);setTestSuggestedKey("");setTestFocus(null);setGuideLink(null);
         }}/>}
-      {compact&&entryOpen&&pageHelp&&<>
-        <AssistantStart locale={locale} pageHelp section={pageHelp.section} onAsk={()=>{
-          setEntryOpen(false);composerRef.current?.focus({preventScroll:true});
-        }}/>
-        <details className={styles.pageHelpMore}><summary>{locale==="ru"?"Помощь с этой страницей":locale==="es"?"Ayuda con esta página":"Help with this page"}</summary>
-        <div className={styles.startActions} role="group" aria-label={starter.actions} data-hh-ihelp-actions>
-        {pageHelp.actions.map(action=><button type="button" key={action.id}
-          data-hh-ihelp-option={action.id} disabled={busy}
-          onClick={()=>selectPageHelpAction(action)}>{action.label}</button>)}
-        </div></details></>}
       {compact&&entryOpen&&!pageHelp&&!messengerView&&<div className={styles.startActions} role="group" aria-label={starter.actions}>
         <button type="button" data-hh-ai-start="video" disabled={busy} onClick={()=>startContent(locale)}>
           <span className={styles.startIcon} aria-hidden="true">🎬</span>
