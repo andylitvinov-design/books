@@ -57,7 +57,8 @@ test('the live microphone displays interim words in transcript only',()=>{
     "recognition.onresult=event=>{",
     "recognition.interimResults=true",
     'transcriptRef.current?.(visible)',
-    'lastHeardRef.current=finished',
+    'finished=visible',
+    'lastHeardRef.current=coachSpeechLanguageMemory(lastHeardRef.current,spoken)',
     "event.error==='network'",
   ])assert.ok(loop.includes(marker),marker)
   assert.ok(ui.includes('onTranscript={setSpeechPreview}'))
