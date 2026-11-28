@@ -75,3 +75,5 @@ test('visual identity is honest and existing owner video pilot is Caesar-only',(
 
 // Execute the bounded static-video checks in the existing coaching release suite.
 import './coach-caesar-static-video.test.mjs'
+import './caesar-webrtc-capture.test.mjs'
+import './caesar-capture-ui.test.mjs'

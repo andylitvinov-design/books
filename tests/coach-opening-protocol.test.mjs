@@ -272,3 +272,36 @@ test('Gemini Live receives the same six localized personality questions without 
   assert.equal(new Set(reactions.map(r=>r.split('. ')[0])).size,7)
  }
 })
+
+
+test('delay replies never complete preferred name or restore a corrupt prior name',()=>{
+ for(const [locale,yes,reply,name] of [['en','yes','Not yet.','Noria'],['ru','да','Пока нет.','Анна'],['es','sí','Todavía no.','María']]){
+  let p=coachOpeningProgress({locale,turns:[yes,reply]})
+  assert.equal(p.current,'name')
+  assert.equal(p.checkmarks.name,false)
+  assert.equal(p.answers.name,undefined)
+  p=coachOpeningProgress({locale,turns:[yes,reply,name]})
+  assert.equal(p.answers.name.value,name)
+  p=coachOpeningProgress({locale,turns:[yes],allowPrior:true,priorSession:{name:reply.replace(/\.$/,'')}})
+  assert.equal(p.prior.name,'')
+ }
+})
+
+test('recognized wrong-gate question cannot turn its response into preferred name or bypass feelings',()=>{
+ const question=gate=>({role:'assistant',content:coachOpeningQuestion('mira',gate,'en')})
+ const user=content=>({role:'user',content})
+ const turns=[question('invitation'),user('yes'),question('name'),user('Not yet.'),
+  question('focus'),user('Noria')]
+ let p=coachOpeningProgress({turns,locale:'en'})
+ assert.equal(p.current,'name')
+ assert.equal(p.checkmarks.name,false)
+ turns.push(question('name'),user('Noria'),question('focus'),user('goal'),question('confirmation'),user('yes'))
+ p=coachOpeningProgress({turns,locale:'en'})
+ assert.equal(p.answers.name.value,'Noria')
+ assert.equal(p.current,'feelings')
+ assert.equal(p.completed,false)
+ turns.push(question('feelings'),user('I feel anxious'),question('confirmation'),user('yes'))
+ p=coachOpeningProgress({turns,locale:'en'})
+ assert.equal(p.completed,true)
+ assert.equal(p.answers.feelings.quote,'I feel anxious')
+})

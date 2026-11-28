@@ -834,8 +834,9 @@ export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
             <Link href={"/" + lang + "/services"} prefetch={false} key={lang} lang={lang}
               aria-current={lang === locale ? "page" : undefined}>{lang.toUpperCase()}</Link>)}</div>
         </details>
-        <Link className={styles.help} href={"/" + locale + "/services?assist=chat"} prefetch={false}
-          aria-label={v.help}><CircleHelp size={22} aria-hidden="true" /></Link>
+        <button type="button" className={styles.help} data-services-ihelp-trigger aria-haspopup="dialog"
+          aria-controls="hh-ihelp-panel" onClick={()=>window.dispatchEvent(new Event("hh:open-ihelp"))}
+          aria-label={v.help}><CircleHelp size={22} aria-hidden="true" /></button>
         <Link className={styles.profile} href={"/" + (locale === "es" ? "en" : locale) + "/app/portrait"}
           prefetch={false} aria-label={t.profile}><UserRound size={22} aria-hidden="true" /></Link>
       </div>

@@ -27,3 +27,15 @@ test('all locale and persona instructions keep course and intro separate',()=>{
   }
   assert.throws(()=>expressInstruction('genie','fr'))
 })
+
+import {readFileSync} from 'node:fs'
+test('greeting keeps resume flow and only offers authorized dedicated express transport',()=>{
+ const source=readFileSync(new URL('../components/my-coach-greeting-gate.jsx',import.meta.url),'utf8')
+ assert.match(source,/expressAvailable=false/)
+ assert.ok(source.includes("expressAvailable===true&&typeof onExpressStart==='function'"))
+ assert.ok(source.includes('available={canExpress}'))
+ assert.ok(source.includes('gate.begin({id:expressActionId})'))
+ assert.ok(source.includes("onExpressStart({personaId,locale:lang,mode:'express_intro'})"))
+ assert.ok(source.includes('onResumeSession(entry.item)'))
+ assert.ok(source.includes('resolveEntry(id)'))
+})

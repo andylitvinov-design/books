@@ -18,3 +18,23 @@ test('both assistant entries use shared service choices and preserve the origina
  assert.equal(shell.split('<HolisticAgentChat ').length-1,1);
  assert.ok(!shell.includes('<IHelpWelcome '));
 });
+
+test('iHelp welcome precedes all messages and reply options are outside the assistant bubble',()=>{
+ const chat=read('components/holistic-agent-chat.tsx');
+ const welcome=chat.indexOf('<AssistantStart locale={locale} pageHelp');
+ const messages=chat.indexOf('{messages.map(');
+ assert.ok(welcome>=0&&welcome<messages);
+ assert.ok(chat.includes('{compact&&pageHelp&&<>'));
+ assert.ok(chat.includes('pageHelpReplyText(m.text,index)'));
+ assert.ok(chat.includes('data-hh-ihelp-reply-options'));
+ assert.ok(chat.includes('renderWaveGoalMenu(m.text,index,true)'));
+ assert.ok(chat.includes('pageHelpGreeting(turnLocale)'));
+});
+test('localized conversational greeting keeps the existing menu choice routing',async()=>{
+ const {buildWaveEntryMenu,readWaveEntryMenu,waveDialogueEntryTurn}=await import('../lib/holistic-support/wave-dialogue-entry.mjs');
+ for(const [locale,greeting] of Object.entries({en:"Hi! I'm here to help.",ru:"Привет! Рад помочь.",es:"¡Hola! Estoy aquí para ayudarte."})){
+  const menu=buildWaveEntryMenu(locale),reply=greeting+' '+menu.reply;
+  assert.deepEqual(readWaveEntryMenu(reply),menu);
+  assert.equal(waveDialogueEntryTurn({message:'1',locale,history:[{role:'assistant',text:reply}]}).path,menu.choices[0].id);
+ }
+});
