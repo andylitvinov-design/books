@@ -29,7 +29,7 @@ test('separate consent, same quota and cancellation; no runtime fallback',()=>{
  assert.ok(route.includes('AbortSignal.timeout(10000)'))
  const live=read('components/my-coach-gemini-live.jsx')
  assert.ok(live.includes('provider:reviewProvider'))
- assert.ok(live.includes('[speechReviewConsent,speechReviewProvider]'))
+ assert.ok(live.includes('[speechReviewConsent,speechReviewProvider,speechReviewAll]'))
  const review=read('lib/coaching/coach-speech-review.mjs')
  assert.ok(review.includes("if(gemini)form.set('geminiConsent','yes')"))
  const ui=read('components/my-coach-live-dialogue.jsx')

@@ -148,3 +148,14 @@ test('ordinary pending and matching results never open the correction surface',(
  assert.ok(ui.includes('{visibleSpeechReviews.map(row=>'))
  assert.ok(ui.includes('{!row.observationOnly&&<button type="button" disabled={Boolean(draft.trim())||busy||row.pending}'))
 })
+
+test('ordinary review preserves original live history and Director checkpoint',()=>{
+ const live=readFileSync(new URL('../components/my-coach-gemini-live.jsx',import.meta.url),'utf8')
+ const input=live.slice(live.indexOf('function commitInput('),live.indexOf('function commitOutput('))
+ assert.ok(input.includes('if(decision.observationOnly!==true)'))
+ assert.ok(input.indexOf('if(decision.observationOnly!==true)')<input.indexOf("r.history.push({role:'user',content:value})"))
+ assert.ok(input.includes('void checkpoint(r,value,preceding)'))
+ const effect=live.slice(live.indexOf('const r=runtime.current;r?.speechReviewBuffer?.clear();r?.speechReviewQueue?.cancel();if(r){r.speechReviewQueue=null'),live.indexOf('[speechReviewConsent,speechReviewProvider,speechReviewAll]'))
+ assert.ok(effect.includes('speechReviewQueue?.cancel()'))
+ assert.ok(effect.includes('r.speechReviewBuffer=createSpeechReviewBuffer'))
+})
