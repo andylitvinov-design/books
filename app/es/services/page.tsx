@@ -2,7 +2,7 @@ import { PublicSiteHeader } from "@/components/public-site-header";
 import { redirect } from "next/navigation";
 import { ServicesConversionHero } from "@/components/services-conversion-hero";
 import { ServicesAssistMobile } from "@/components/services-assist-mobile";
-import { ServicesAssistQuiz } from "@/components/services-assist-quiz";
+import { ServicesAssistQuiz, ServicesSupportPrograms } from "@/components/services-assist-quiz";
 import { ServicesPersonalConsultationMobile } from "@/components/services-personal-consultation-mobile";
 import { AssistReikiSession } from "@/components/assist-reiki-session";
 import { ServicesMagicalHelpMobile } from "@/components/services-magical-help-mobile";
@@ -33,11 +33,21 @@ export const metadata = spanishMetadata(
 export default async function SpanishServicesPage({ searchParams }: { searchParams: Promise<{catalog?:string;assist?:string;consultation?:string}> }) {
   const query = await searchParams;
   if (query?.catalog === "1") redirect("/es/services/catalog#service-listings");
+  // The Support tab opens directly on the existing three-program screen.
+  // Explicit legacy entry points remain available for previously shared links.
+  if (query?.assist !== "chat" && query?.assist !== "quiz" && query?.consultation !== "1") {
+    return (
+      <main data-support-luxe="true" data-support-programs-only className={"services-shell services-shell--studio " + assistStyles.assistPage + " " + compactStyles.page + " " + uniformStyles.page} lang="es">
+        <PublicSiteHeader locale="es" showAssessmentStrip={false} />
+        <ServicesSupportPrograms locale="es" />
+      </main>
+    );
+  }
   return (
     <main data-support-luxe={query?.assist === "chat" ? undefined : "true"} className={"services-shell services-shell--studio " + assistStyles.assistPage + " " + compactStyles.page + " " + uniformStyles.page} lang="es">
       <PublicSiteHeader locale="es" showAssessmentStrip={false} />
       <ServicesExplorerProvider>
-        {/* Scenic four-step quiz by default; retain Ali when the guest explicitly chooses chat. */}
+        {/* Explicit compatibility entry only; not rendered on the Support tab. */}
         {query?.assist==="chat" ? <ServicesAssistMobile locale="es" /> : <ServicesAssistQuiz locale="es" />}
         <ServicesCompactCatalog locale="es" initialConsultationOpen={query?.consultation === "1"}>
           <ServicesCompactPanel id="consultation">
