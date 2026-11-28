@@ -92,7 +92,7 @@ function CourseProgress({progress,lang}){
 
 // Audio is the existing public, first-party recorded welcome MP3. The video
 // portrait is silent; no fake lip-sync or Gemini/TTS billing is involved.
-export default function MyCoachGreetingGate({personaId,locale='en',name,methodId,onStart,accountSaving=false,entryPending=false,resumeControl,selectedMethod='',onMethodSelect,methodSelectionEnabled=false,privateProfileEnabled=false,clarityDay=null,draftCourses=[],courseRunId=null,savedSessions=[],resumeLookupReady=false,resumeBusy=false,resumeError=false,resumeCursor=null,onResumeSession,onReloadSessions,canResume}){
+export default function MyCoachGreetingGate({personaId,locale='en',name,methodId,onStart,accountSaving=false,entryPending=false,resumeControl,selectedMethod='',onMethodSelect,methodSelectionEnabled=false,privateProfileEnabled=false,clarityDay=null,draftCourses=[],courseRunId=null,boundStart=null,savedSessions=[],resumeLookupReady=false,resumeBusy=false,resumeError=false,resumeCursor=null,onResumeSession,onReloadSessions,canResume}){
  const lang=words[locale]?locale:'en',t=words[lang]
  const router=useRouter(),query=useSearchParams()
  const persona=getCoachPersona(personaId)
@@ -101,7 +101,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
  const ui=screenWords[lang],presentation=courseLaunchPresentation(lang,course)
  const progress=useCourseSessionProgress(program,course.count,course.available&&!courseRunId,accountSaving)
  const resumePanel=useRef(null)
- const resolveEntry=id=>resolveSavedCoachSession({accountSaving,ready:resumeLookupReady,busy:resumeBusy,error:resumeError,cursor:resumeCursor,items:savedSessions,topic:id,personaId,courseRunId,canResume})
+ const resolveEntry=id=>resolveSavedCoachSession({accountSaving,ready:resumeLookupReady,busy:resumeBusy,error:resumeError,cursor:resumeCursor,items:savedSessions,topic:id,personaId,courseRunId,boundStart,canResume})
  const entryWords=({ru:{lookup:'Проверить историю сессий',choose:'Открыть историю сессий',saved:'Сохранено в черновике',time:'Пройдено'},en:{lookup:'Check session history',choose:'Open session history',saved:'Saved in draft',time:'Completed'},es:{lookup:'Consultar historial',choose:'Abrir historial de sesiones',saved:'Guardado en borrador',time:'Completado'}})[lang]
  const entryLabel=entry=>entry.kind==='resume'?ui.resume:entry.kind==='new'?ui.start:entryWords[entry.kind]
  const [expanded,setExpanded]=useState(false)
@@ -226,7 +226,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
      resumePanel.current?.scrollIntoView?.({block:'nearest'})
      return
    }
-   if(courseRunId)return
+   if(courseRunId&&!entry.boundStart)return
    chosen.current=true
    topicDialog.current?.close()
    audioRun.current++
