@@ -202,7 +202,7 @@ test('single Core-completion workflow preserves successful slot wakeup, failed O
  assert.match(delegated,/actions: write/);
  assert.match(enabled,/actions: read/,'green auto-merge should not gain error-intake write scopes');
  assert.match(success,/github\.event\.workflow_run\.conclusion == 'success'/);
- assert.match(success,/group: hh-pr-core-slot-wakeup/);
+ assert.match(success,/group: hh-control-tower-single-writer/);
  assert.match(success,/ci-pr-slot-wakeup\.cjs/);
  assert.match(success,/ci-pr-repair-verified-finalizer\.cjs/);
  assert.match(success,/ci-pr-core-journey-archive\.cjs/);

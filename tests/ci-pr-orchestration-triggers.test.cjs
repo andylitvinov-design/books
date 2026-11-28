@@ -143,7 +143,7 @@ test('successful Core event has exactly one live rate-bounded slot wakeup owner'
   assert.ok(native.includes("      - 'HH PR core release gate'"));
   assert.ok(native.includes('  core-slot-wakeup:\n'));
   assert.ok(native.includes('name: core-ci-freed-slot-wakeup'));
-  assert.ok(native.includes('group: hh-pr-core-slot-wakeup'));
+  assert.ok(native.includes('group: hh-control-tower-single-writer'));
   assert.ok(native.includes('cancel-in-progress: false'));
   assert.ok(native.includes("github.event.workflow_run.conclusion == 'success'"));
   assert.ok(native.includes('scripts/ci-pr-slot-wakeup.cjs'));
@@ -377,7 +377,7 @@ test('successful Core CI refills capacity through the unified event runner witho
  const direct=read('hh-native-auto-merge');
  const watchdog=read('hh-pr-ten-minute-watchdog');
  assert.ok(direct.includes('  core-slot-wakeup:'));
- assert.ok(direct.includes('group: hh-pr-core-slot-wakeup'));
+ assert.ok(direct.includes('group: hh-control-tower-single-writer'));
  assert.ok(direct.includes("github.event.workflow_run.conclusion == 'success'"));
  assert.ok(direct.includes('scripts/ci-pr-slot-wakeup.cjs'));
  assert.ok(direct.includes("HH PR core release gate"));
@@ -505,7 +505,7 @@ test('bounded AutoMerge/Dispatcher/API workers use slim without changing their f
 test('Four short failure/repair control jobs use slim with every safety gate retained',()=>{
   const cases=[
     ['hh-pr-direct-core-failure',[['direct-core-failure',10]]],
-    ['hh-native-auto-merge',[['core-slot-wakeup',3]]],
+    ['hh-native-auto-merge',[['core-slot-wakeup',8]]],
     ['hh-pr-repair-worker',[['claim',5],['finalize',7]]],
   ];
   for(const [workflow,jobs] of cases){
