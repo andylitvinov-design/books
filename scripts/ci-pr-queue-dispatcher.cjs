@@ -31,14 +31,20 @@ function validReadOnlyConflict(pr){
 // Only after a terminally handled hourly candidate: bounded alternative PR
 // checks, not additional worker executions or source authorisations.
 const MAX_LEGACY_BACKUPS=4, MAX_LEGACY_HOURLY_HISTORY=20;
-// The first fixed fallback block can become entirely terminal. Rotate four
-// read-only fallback candidates per already existing 10-minute observation;
-// no additional Worker slot, CI wake or schedule is created. Ownership and
-// exact task receipt remain mandatory on EVERY selected candidate.
-function legacyFallbackStart(total,now){
+// Match the actual :13/:33/:53 Watchdog cadence. A 10-minute stride
+// advances two windows per real scheduled observation and can permanently
+// skip half of a stable backlog (e.g. 56 candidates and width 4).
+// Event wakes within the same recovery window reuse the bounded sample;
+// they do not add worker slots or authorize any source mutation.
+const WATCHDOG_ROTATION_MS=20*60_000;
+function watchdogRotationStart(total,width,now){
  if(!Number.isSafeInteger(total)||total<=0||
+    !Number.isSafeInteger(width)||width<=0||
     !Number.isFinite(now)||now<0)return 0;
- return (Math.floor(now/600_000)*MAX_LEGACY_BACKUPS)%total;
+ return ((Math.floor(now/WATCHDOG_ROTATION_MS)%total)*Math.min(width,total))%total;
+}
+function legacyFallbackStart(total,now){
+ return watchdogRotationStart(total,MAX_LEGACY_BACKUPS,now);
 }
 const RELEVANT=new Set(['HH PR 10-minute watchdog','HH PR source Repair Worker','HH zero-cost PR CI worker','HH PR core release gate',...Object.keys(QUALITY_EVENT_PATHS)]);
 // Two independent routes: owner-authored manual workflow dispatch, OR a
@@ -202,11 +208,18 @@ function planCandidates(prs,now){
  const manualConflictHints=legacy.filter(pr=>
   (pr.labels||[]).some(label=>label.name==='hh:conflict-repair-needed'));
  const manualConflictProbes=slots=>{
-  const pool=manualConflictHints.filter(pr=>
-   !oldCandidates.some(old=>old.number===pr.number));
-  const count=Math.min(2,Math.max(0,slots),pool.length);
-  const start=pool.length?(Math.floor(now/600000)*Math.max(1,count))%pool.length:0;
-  return Array.from({length:count},(_,i)=>pool[(start+i)%pool.length]);
+  // Keep the stable hint population as the rotation denominator. Removing
+  // the hourly candidate before computing the offset shifts all positions.
+  const pool=manualConflictHints;
+  const excluded=new Set(oldCandidates.map(pr=>pr.number));
+  const count=Math.min(2,Math.max(0,slots),pool.filter(pr=>!excluded.has(pr.number)).length);
+  const start=watchdogRotationStart(pool.length,2,now);
+  const probes=[];
+  for(let i=0;i<pool.length&&probes.length<count;i++){
+   const pr=pool[(start+i)%pool.length];
+   if(!excluded.has(pr.number))probes.push(pr);
+  }
+  return probes;
  };
  // During conflict-only backlogs, rotate a bounded window rather than reread
  // the same 16 already handed-off exact HEADs on each ten-minute cycle.

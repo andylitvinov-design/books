@@ -309,7 +309,7 @@ test('manual-conflict hints get bounded rotating live probes even when list merg
  }));
  const seen=new Set();
  for(let turn=0;turn<12;turn++){
-  const tasks=planCandidates(manual,NOW+turn*600000);
+  const tasks=planCandidates(manual,NOW+turn*1200000);
   assert.ok(tasks.length<=6,'never exhaust bounded inspect budget');
   for(const candidate of tasks)seen.add(candidate.pr_number);
  }
@@ -2670,20 +2670,38 @@ test('saturated direct handoff still requires owner/HEAD proof and has no CI wak
 });
 
 /* HH_LEGACY_FALLBACK_FAIRNESS_V2_TEST */
-test('terminal fallback windows cover all 73 legacy candidates without raising per-sweep cap',()=>{
+test('terminal fallback windows cover stable backlogs at the actual 20-minute Watchdog cadence',()=>{
  const {legacyFallbackStart}=require('../scripts/ci-pr-queue-dispatcher.cjs');
- const size=73,observed=new Set();
- const slot=Math.floor(NOW/600_000);
- for(let k=0;k<Math.ceil(size/4);k++){
-  const start=legacyFallbackStart(size,(slot+k)*600_000);
-  assert.ok(start>=0&&start<size);
-  for(let i=0;i<4;i++)observed.add((start+i)%size);
+ const epoch=Date.parse('2026-11-28T05:13:00Z');
+ for(const size of [1,4,8,16,20,55,56,64,73,104]){
+  const observed=new Set();
+  for(let k=0;k<Math.ceil(size/4);k++){
+   const tick=epoch+k*1_200_000;
+   const start=legacyFallbackStart(size,tick);
+   assert.ok(start>=0&&start<size);
+   assert.equal(legacyFallbackStart(size,tick+2*60_000),start,
+    'an extra event within the same window must not shift the fallback sample');
+   for(let i=0;i<Math.min(4,size);i++)observed.add((start+i)%size);
+  }
+  assert.equal(observed.size,size,'all positions reachable at real cadence: '+size);
  }
- assert.equal(observed.size,size,
-  'bounded existing ten-minute turns eventually inspect every fallback position');
  assert.equal(legacyFallbackStart(0,NOW),0);
  assert.equal(legacyFallbackStart(73,-1),0);
  assert.equal(legacyFallbackStart(73,NaN),0);
+});
+test('manual conflict probes cover a stable even-size population at :13/:33/:53',()=>{
+ const manual=Array.from({length:56},(_,i)=>pr(7100+i,'conflict',{
+  labels:[{name:'hh:repair-manual'},{name:'hh:conflict-repair-needed'}],
+  mergeable:null,mergeable_state:'unknown'
+ }));
+ const start=Date.parse('2026-11-28T05:13:00Z'),seen=new Set();
+ for(let k=0;k<28;k++){
+  const tasks=planCandidates(manual,start+k*1_200_000);
+  assert.ok(tasks.length<=3,'one legacy candidate plus at most two read-only probes');
+  assert.equal(tasks.filter(x=>x.manual_conflict_probe).length,2);
+  for(const task of tasks)seen.add(task.pr_number);
+ }
+ assert.equal(seen.size,56,'no stable manual hint positions are skipped');
 });
 test('processed legacy receipts rotate to a free exact-HEAD task without duplicate claims',async()=>{
  const count=19,freeNumber=6018;
@@ -2702,12 +2720,12 @@ test('processed legacy receipts rotate to a free exact-HEAD task without duplica
    body:commentBody({...t,state:'PREPARED',source_published:false})
   }];
  }
- const start=Math.floor(NOW/600_000)*600_000;
+ const start=Math.floor(NOW/1_200_000)*1_200_000;
  let successes=0;
  for(let i=0;i<Math.ceil(count/4)+1;i++){
   const f=fixture(items,{comments});
   const report=await run({github:f.github,core:core(),context,
-   now:start+i*600_000,capacityFn:f.capacityFn});
+   now:start+i*1_200_000,capacityFn:f.capacityFn});
   assert.ok(report.inspected<=5,'one hourly legacy + at most four fallbacks');
   assert.ok(report.legacyDispatchAccepted<=1,'never create an extra legacy worker');
   assert.equal(report.repairDispatchAccepted,0,'manual cannot become source-writing lane');
