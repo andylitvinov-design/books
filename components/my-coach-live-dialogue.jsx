@@ -1106,6 +1106,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       setError(({ru:'Нажмите Play, чтобы продолжить прежний разговор.',en:'Tap Play to resume the previous conversation.',es:'Pulsa Play para continuar la conversación anterior.'})[lang])
       return null
     }
+    // An explicit typed archive lookup never interrupts either voice engine.
+    if(!nameCorrectionRef.current&&!openingProgress.pendingNameCorrection&&handlePrivateLiveRecall(draft.trim())){
+      setDraft('');setError('');return {mode:'private-archive'}
+    }
     if(privateTextOnly)return await sendMessage(draft.trim(),{forceLocal:true})
     if(liveVoiceSelected){
       // Typed turns go over the SAME Gemini Live WebSocket, never the old
@@ -1123,7 +1127,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
          (voicePaused&&speechRef.current?.isResumeUnavailable?.()))return await sendMessage(message,{forceLocal:true})
       const accepted=speechRef.current?.sendText?.(message)===true
       if(accepted){setDraft('');setError('');return {mode:'live'}}
-      if(coachExplicitRecall(message)){setError(({ru:'Дождитесь окончания текущей реплики и отправьте вопрос о памяти.',en:'Send your memory question after the current reply finishes.',es:'Envía la pregunta de memoria al terminar la respuesta actual.'})[lang]);return null}
       if(voicePaused){setError(({ru:'Нажмите Play, чтобы продолжить прежний разговор.',en:'Tap Play to resume the previous conversation.',es:'Pulsa Play para continuar la conversación anterior.'})[lang]);return null}
       setError(({ru:'Сначала начните живую голосовую сессию.',
         en:'Start the live voice session first.',
@@ -1327,24 +1330,14 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     setPrivateRecall({owner,sessionId,reply})
     return structured?{reply,record:result.kind==='reviewed'?result:null,owner}:reply
   }
-  function privateRecallReceipt(locale){return ({ru:'Предыдущая запись проверена в приватном архиве. Результат показан отдельно.',en:'The private archive check is displayed separately.',es:'La consulta privada se muestra por separado.'})[locale]}
+  function privateRecallReceipt(locale){return ({ru:'Я проверю предыдущую запись отдельно. Мы можем продолжать разговор.',en:'I’ll check the previous record separately. We can keep talking.',es:'Consultaré el registro anterior por separado. Podemos seguir hablando.'})[locale]}
   function handlePrivateLiveRecall(text){
     const guard={locale:conversationLang,message:text,turns:turnsRef.current}
-    if(!coachExplicitRecall(text)||coachingBrainSafety(guard)||coachingBrainBoundary(guard))return null
-    if(!appendLiveTranscript('user',text))return true
-    setStreamingPreview('');setSpeechPreview('')
-    const owner=protocolOwnerRef.current,id=protocolIdRef.current,requestRows=turnsRef.current
-    const privateRecall=loadPrivateRecall(conversationLang,{structured:true}).then(result=>{
-      if(!result||protocolOwnerRef.current!==owner||protocolIdRef.current!==id||turnsRef.current!==requestRows)return null
-      // Keep a truthful local receipt in the same protocol, not copied archive
-      // text, generated conclusions, or a new logical session/clock.
-      const receipt={role:'assistant',content:privateRecallReceipt(conversationLang),mode:'offline',stage:'memory',requestedSavedContext:true,locale:conversationLang,coachId:personaId,capturedAt:new Date().toISOString()}
-      if(coachProtocolCanAppend(requestRows,[receipt])){
-        const next=[...requestRows,receipt];turnsRef.current=next;setTurns(next);queuePrivateDraft(next)
-      }
-      return result
-    })
-    return {privateRecall}
+    if(!coachExplicitRecall(text)||coachingBrainSafety(guard)||coachingBrainBoundary(guard))return false
+    // No speech state, protocol receipt, busy flag or audio API is touched.
+    // The account-bound lookup only updates the collapsed owner preview.
+    void loadPrivateRecall(conversationLang)
+    return true
   }
   function captureBasicIntroduction(){
     if(turnsRef.current.length||courseGateRef.current||profileV3Ref.current)return
@@ -1505,15 +1498,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const localInterruption=forceLocal||readiness.status!=='verified'
       ?(coachingBrainSafety(currentInput)||coachingBrainBoundary(currentInput)):null
     if(coachExplicitRecall(message)&&!coachingBrainSafety(currentInput)&&!coachingBrainBoundary(currentInput)){
-      setBusy(true)
-      try{
-        const reply=await loadPrivateRecall(responseLocale)
-        if(!reply||turnRequestRef.current!==requestId){retainPendingClient();return null}
-        const acknowledgment=privateRecallReceipt(responseLocale)
-        if(!commitCompletedClientTurn(requestId,message,{role:'assistant',content:acknowledgment,locale:responseLocale,mode:'offline',stage:'memory',requestedSavedContext:true}))return null
-        setDraft('');setSpeechPreview('')
-        return {reply,mode:'identity',locale:responseLocale}
-      }finally{setBusy(false)}
+      void loadPrivateRecall(responseLocale)
+      const acknowledgment=privateRecallReceipt(responseLocale)
+      if(!commitCompletedClientTurn(requestId,message,{role:'assistant',content:acknowledgment,locale:responseLocale,mode:'offline',stage:'memory',requestedSavedContext:true}))return null
+      setDraft('');setSpeechPreview('')
+      return {reply:acknowledgment,mode:'identity',locale:responseLocale}
     }
     // Confirm preferred-name changes locally, before any model or unrelated stage.
     if(isNameCorrection&&!coachingBrainSafety(currentInput)&&!coachingBrainBoundary(currentInput)){
@@ -2408,8 +2397,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
               // never mint another grant automatically or let a model save a name.
               const candidate=coachExplicitNameCorrection(text)
               const guard={locale:conversationLang,message:text,turns:turnsRef.current}
-              const recallDecision=handlePrivateLiveRecall(text)
-              if(recallDecision)return recallDecision
+              const recallRequested=handlePrivateLiveRecall(text)
+              // The spoken question already reached the live provider. Capture
+              // normally, without suppressing PCM or awaiting the archive.
               if(candidate&&!coachingBrainSafety(guard)&&!coachingBrainBoundary(guard)){
                 if(!appendLiveTranscript('user',text))return true
                 const question=coachNameCorrectionQuestion(candidate,conversationLang)
@@ -2423,13 +2413,13 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
               }
               const captured=appendLiveTranscript('user',text)
               // Current client corrections/topic changes outrank all old memory.
-              if(['correction','topic_shift'].includes(
+              if(!recallRequested&&['correction','topic_shift'].includes(
                 understandCoachingTurn({locale:conversationLang,message:text}).act)){
                 setContextTopic('')
                 setContextAssessments(false)
                 setContextPaused(true)
               }
-              if(captured&&courseGateOpeningAfter(turnsRef.current,conversationLang)){
+              if(captured&&!recallRequested&&courseGateOpeningAfter(turnsRef.current,conversationLang)){
                 const guard={locale:conversationLang,message:text,turns:turnsRef.current.filter(row=>row.role==='user')}
                 if(coachingBrainSafety(guard)||coachingBrainBoundary(guard))return false
                 const handoff={role:'assistant',content:courseGateHandoffText(conversationLang),mode:'offline',locale:conversationLang}
