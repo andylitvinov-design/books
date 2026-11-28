@@ -5,7 +5,7 @@
  */
 import {NextResponse} from "next/server";
 import {isBoundedCoachReviewWav} from "@/lib/coaching/coach-speech-review-wav.mjs";
-import {coachSpeechReviewEnabled,isCoachSpeechReviewRequest} from "@/lib/coaching/coach-speech-review-config.mjs";
+import {coachSpeechReviewEnabled,isCoachSpeechReviewRequest,coachOrdinarySpeechReviewEnabled} from "@/lib/coaching/coach-speech-review-config.mjs";
 import {shouldUseCoachLargeV3} from "@/lib/coaching/coach-stt-model.mjs";
 import {coachSpeechReviewGlossary} from "@/lib/coaching/coach-speech-review-glossary.mjs";
 import {AppError} from "@/lib/assessments/contracts";
@@ -62,9 +62,12 @@ export async function POST(request){
     // The coach lane is authenticated so a public caller cannot claim its quota.
     const purpose=form.get("purpose");
     const textOnly=output==="text";
+    const reviewScope=form.get("review_scope");
+    if(reviewScope!==null&&(reviewScope!=="ordinary"||purpose!=="my_coach"||!textOnly||!isCoachSpeechReviewRequest({purpose,filename:file.name,review:form.get("review")})))throw new AppError("AUDIO_STT_PURPOSE_INVALID",400);
     if(textOnly&&purpose!==null&&purpose!=="ali_chat"&&purpose!=="my_coach")throw new AppError("AUDIO_STT_PURPOSE_INVALID",400);
     if(purpose==="my_coach"){
       const actor=await createRequestAuth(request,config).verified();
+      if(reviewScope==="ordinary"&&!coachOrdinarySpeechReviewEnabled(process.env))throw new AppError("AUDIO_STT_REVIEW_DISABLED",503);
       if(isCoachSpeechReviewRequest({purpose,filename:file.name,review:form.get("review")})&&(!textOnly||!coachSpeechReviewEnabled(process.env)))
         throw new AppError("AUDIO_STT_REVIEW_DISABLED",503);
       if(isCoachSpeechReviewRequest({purpose,filename:file.name,review:form.get("review")})){

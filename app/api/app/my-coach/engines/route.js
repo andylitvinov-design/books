@@ -10,7 +10,7 @@ import {AppError} from '@/lib/assessments/contracts'
 import {geminiCoachTextConfig} from '@/lib/coaching/gemini-coach-text.mjs'
 import {geminiCoachTtsConfig} from '@/lib/coaching/gemini-coach-tts.mjs'
 import {geminiFreeLiveConfig,geminiFreeLiveUnavailableReason} from '@/lib/coaching/gemini-live-free.mjs'
-import {coachSpeechReviewEnabled} from '@/lib/coaching/coach-speech-review-config.mjs'
+import {coachSpeechReviewEnabled,coachOrdinarySpeechReviewEnabled} from '@/lib/coaching/coach-speech-review-config.mjs'
 import {geminiSpeechReviewEnabled} from '@/lib/coaching/gemini-speech-review-provider.mjs'
 
 export const runtime='nodejs'
@@ -38,6 +38,7 @@ async function handle(request){
         gemini_live_free:Boolean(geminiFreeLiveConfig(process.env)),
         gemini_live_reason:geminiFreeLiveUnavailableReason(process.env),
         speech_review_free:coachSpeechReviewEnabled(process.env),
+        speech_review_ordinary:coachOrdinarySpeechReviewEnabled(process.env),
         speech_review_gemini:geminiSpeechReviewEnabled(process.env),
         live:false},{headers:PRIVATE_HEADERS}))
   }catch(error){

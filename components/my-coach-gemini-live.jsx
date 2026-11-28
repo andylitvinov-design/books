@@ -129,7 +129,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   openingPrior=null,allowOpeningPrior=false,
   liveContextAccess='',contextRevision=0,localRecoveryTurns=[],onUnconfirmedInput,
   privateGreetingText='',onPrivateGreeting,onPrivateRecallRequest,
-  methodSession=null,prepareMethodSession,speechReviewConsent=false,speechReviewProvider='groq',onSpeechReviewCandidate,
+  methodSession=null,prepareMethodSession,speechReviewConsent=false,speechReviewProvider='groq',speechReviewAll=false,onSpeechReviewCandidate,
 },ref){
   const lang=safeLocale(locale),t=ui[lang]
   const [phase,setPhase]=useState('idle')
@@ -142,7 +142,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     elapsedSeconds,outputMuted,onSessionStart,onVoiceStateChange,onMicLevel,onInputInterim,
     onInputFinal,onOutputInterim,onOutputFinal,onInterrupted,
     onDirectorProgress,onOpeningProgress,onNotice,openingPrior,allowOpeningPrior,
-    liveContextAccess,contextRevision,localRecoveryTurns,onUnconfirmedInput,methodSession,prepareMethodSession,privateGreetingText,onPrivateGreeting,onPrivateRecallRequest,speechReviewConsent,speechReviewProvider,onSpeechReviewCandidate}
+    liveContextAccess,contextRevision,localRecoveryTurns,onUnconfirmedInput,methodSession,prepareMethodSession,privateGreetingText,onPrivateGreeting,onPrivateRecallRequest,speechReviewConsent,speechReviewProvider,speechReviewAll,onSpeechReviewCandidate}
 
   const notify=text=>{
     setNotice(text)
@@ -521,14 +521,14 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     const audioParts=audioClip?.parts
     const decision=propsRef.current.onInputFinal?.(value,{source:'speech',reviewAvailable:Boolean(audioParts)&&propsRef.current.speechReviewConsent===true})
     if(decision?.transcriptReview){
-      if(propsRef.current.speechReviewConsent===true&&audioParts){
+      if(propsRef.current.speechReviewConsent===true&&audioParts&&(decision.observationOnly!==true||propsRef.current.speechReviewAll===true)){
         const reviewProvider=propsRef.current.speechReviewProvider
         r.speechReviewQueue??=createSpeechReviewQueue({request:requestSpeechReview,onResult:(id,text)=>{
           if(runtime.current===r&&!r.ended&&propsRef.current.speechReviewConsent===true&&propsRef.current.speechReviewProvider===reviewProvider)propsRef.current.onSpeechReviewCandidate?.(id,r.paused?'':text)
         }})
-        if(!r.speechReviewQueue.offer({id:decision.transcriptReview,parts:audioParts,capturedAt:audioClip.capturedAt,locale:r.locale,provider:reviewProvider,long:process.env.NEXT_PUBLIC_HH_MY_COACH_STT_LONG_REVIEW_ENABLED==='true'&&reviewProvider!=='gemini'}))propsRef.current.onSpeechReviewCandidate?.(decision.transcriptReview,'')
+        if(!r.speechReviewQueue.offer({id:decision.transcriptReview,parts:audioParts,capturedAt:audioClip.capturedAt,locale:r.locale,provider:reviewProvider,observationOnly:decision.observationOnly===true,long:process.env.NEXT_PUBLIC_HH_MY_COACH_STT_LONG_REVIEW_ENABLED==='true'&&reviewProvider!=='gemini'}))propsRef.current.onSpeechReviewCandidate?.(decision.transcriptReview,'')
       }else propsRef.current.onSpeechReviewCandidate?.(decision.transcriptReview,'')
-      r.lastAssistantTurnFinished=false;r.pendingDirectorHint='';return false
+      if(decision.observationOnly!==true){r.lastAssistantTurnFinished=false;r.pendingDirectorHint='';return false}
     }
     if(decision===true){stop();return true}
     r.history.push({role:'user',content:value})
@@ -1445,7 +1445,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     isResumeUnavailable:()=>runtime.current?.paused===true&&runtime.current.resumeUnavailable===true}),[startSession])
   useEffect(()=>{
     const r=runtime.current;r?.speechReviewBuffer?.clear();r?.speechReviewQueue?.cancel();if(r){r.speechReviewQueue=null;r.speechReviewBuffer=createSpeechReviewBuffer({long:process.env.NEXT_PUBLIC_HH_MY_COACH_STT_LONG_REVIEW_ENABLED==='true'&&speechReviewProvider!=='gemini'})}
-  },[speechReviewConsent,speechReviewProvider])
+  },[speechReviewConsent,speechReviewProvider,speechReviewAll])
   useEffect(()=>{
     runtime.current?.player?.setMuted(outputMuted)
     if(outputMuted)runtime.current?.privateGreeting?.cancel()

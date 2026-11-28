@@ -115,3 +115,23 @@ test('suspended scheduler cannot send expired audio or promote late responses',a
  assert.equal(calls,1);time+=13000;complete('late');await Promise.resolve()
  assert.deepEqual(results,[[2,''],[3,'']]);q.cancel()
 })
+
+import {observeSpeechCandidate,canObserveOrdinarySpeech} from '../lib/coaching/coach-speech-evidence.mjs'
+import {coachOrdinarySpeechReviewEnabled} from '../lib/coaching/coach-speech-review-config.mjs'
+test('ordinary observation is explicitly gated and excludes sensitive, typed and over-budget turns',()=>{
+ const a={enabled:true,source:'speech',reviewAvailable:true,sensitive:false,raw:'Я не согласен',count:0}
+ assert.equal(canObserveOrdinarySpeech(a),true)
+ for(const patch of [{enabled:false},{source:'typed'},{reviewAvailable:false},{sensitive:true},{count:30},{raw:''},{raw:'a'.repeat(1201)}])assert.equal(canObserveOrdinarySpeech({...a,...patch}),false)
+ const env={HH_MY_COACH_SPEECH_REVIEW_ENABLED:'true',HH_AUDIO_STT_FREE_CONFIRMED:'true',HH_FIRST_VIDEO_GROQ_FREE_CONFIRMED:'true',HH_FIRST_VIDEO_GROQ_API_KEY:'mock'}
+ assert.equal(coachOrdinarySpeechReviewEnabled(env),false)
+ assert.equal(coachOrdinarySpeechReviewEnabled({...env,HH_MY_COACH_STT_ORDINARY_REVIEW_ENABLED:'true'}),true)
+})
+test('matching observation disappears; disagreement is only a candidate; edit wins',()=>{
+ const row={observationOnly:true,raw:'Я не согласен',locale:'ru',edited:null,pending:true}
+ assert.equal(observeSpeechCandidate(row,'Я не согласен.'),null)
+ assert.equal(observeSpeechCandidate(row,''),null)
+ const mismatch=observeSpeechCandidate(row,'Я согласен')
+ assert.equal(mismatch.raw,row.raw);assert.equal(mismatch.candidate,'Я согласен');assert.equal(mismatch.pending,false)
+ assert.equal(observeSpeechCandidate({...row,edited:'мой текст'},'Я согласен').edited,'мой текст')
+ assert.equal(observeSpeechCandidate({...row,observationOnly:false},'').pending,false)
+})

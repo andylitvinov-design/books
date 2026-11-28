@@ -35,7 +35,7 @@ import MyCoachEarlyExit from './my-coach-early-exit'
 import {coachCompletionDestination,coachEarlyExitDestination,coachShouldOfferEarlyExit} from '@/lib/coaching/coach-early-exit.mjs'
 import MyCoachSpeechLoop from './my-coach-speech-loop'
 import MyCoachGeminiLive from './my-coach-gemini-live'
-import {shouldReviewSpeech,speechReviewCandidateText} from '@/lib/coaching/coach-speech-evidence.mjs'
+import {shouldReviewSpeech,observeSpeechCandidate,canObserveOrdinarySpeech} from '@/lib/coaching/coach-speech-evidence.mjs'
 import {addSpeechAmendment,speechPersonalCorrection} from '@/lib/personal-coaching/speech-amendments.mjs'
 import MyCoachStagedMemoryControls from './my-coach-staged-memory-controls'
 import {coachExplicitRecall,privateCoachRecallText,coachReturningSalutation} from '@/lib/coaching/coach-private-recall.mjs'
@@ -246,6 +246,7 @@ async function readGeminiEngineStatus(signal){
       gemini_tts_paid:data.gemini_tts_paid===true,
       gemini_live_free:data.gemini_live_free===true,
       speech_review_free:data.speech_review_free===true,
+      speech_review_ordinary:data.speech_review_ordinary===true,
       speech_review_gemini:data.speech_review_gemini===true,
     }}
   }catch{return {kind:'unavailable'}}
@@ -266,6 +267,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const persona=getCoachPersona(personaId)
   const [draft,setDraft]=useState('')
   const [speechReviewConsent,setSpeechReviewConsent]=useState(false)
+  const [speechReviewAll,setSpeechReviewAll]=useState(false)
+  const observationBudgetRef=useRef({sessionId:null,count:0})
   const [speechReviewProvider,setSpeechReviewProvider]=useState('groq')
   const geminiReviewOffered=process.env.NEXT_PUBLIC_HH_MY_COACH_GEMINI_TRANSCRIBE_ENABLED==='true'
   const [speechReviews,setSpeechReviews]=useState([])
@@ -273,7 +276,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const speechAmendmentsRef=useRef([])
   const [speechAmendments,setSpeechAmendments]=useState([])
   function restoreSpeechAmendments(value){const rows=value||[];speechAmendmentsRef.current=rows;setSpeechAmendments(rows)}
-  useEffect(()=>{setSpeechReviews([]);setSpeechReviewConsent(false);setSpeechReviewProvider('groq')},[personaId,locale])
+  useEffect(()=>{setSpeechReviews([]);setSpeechReviewConsent(false);setSpeechReviewAll(false);setSpeechReviewProvider('groq')},[personaId,locale])
   const [viewExpanded,setViewExpanded]=useState(false)
   // Public greeting remains a separate, free pre-session screen. No Google
   // token, microphone or coaching clock starts until the user opts in.
@@ -290,7 +293,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const engineManuallySelectedRef=useRef(false)
   const [geminiCapabilities,setGeminiCapabilities]=useState({
     gemini_free:false,gemini_paid:false,gemini_tts_free:false,gemini_tts_paid:false,
-    gemini_live_free:false,speech_review_free:false,speech_review_gemini:false,
+    gemini_live_free:false,speech_review_free:false,speech_review_gemini:false,speech_review_ordinary:false,
   })
   const geminiAvailabilityInFlightRef=useRef(false)
   const [geminiConsent,setGeminiConsent]=useState(false)
@@ -585,6 +588,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const liveVoiceSelected=coachEngine==='gemini_live_free'
   const speechReviewAvailable=speechReviewProvider==='gemini'?geminiReviewOffered&&geminiCapabilities.speech_review_gemini===true:geminiCapabilities.speech_review_free===true
   const activeSpeechReviewConsent=speechReviewConsent&&speechReviewAvailable
+  const activeOrdinaryReview=activeSpeechReviewConsent&&speechReviewProvider==='groq'&&speechReviewAll&&geminiCapabilities.speech_review_ordinary===true
   // Pressing Play affirmatively consents to live voice use, disclosed beside
   // the control. Availability alone never starts streaming or contacts Google.
   const liveVoiceReady=liveVoiceSelected&&geminiCapabilities.gemini_live_free===true
@@ -2434,7 +2438,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             onInputInterim={setSpeechPreview}
             speechReviewConsent={activeSpeechReviewConsent}
             speechReviewProvider={speechReviewProvider}
-            onSpeechReviewCandidate={(id,text)=>setSpeechReviews(rows=>rows.map(row=>row.id===id?{...row,candidate:speechReviewCandidateText(text,row.raw,row.locale),pending:false}:row))}
+            speechReviewAll={activeOrdinaryReview}
+            onSpeechReviewCandidate={(id,text)=>setSpeechReviews(rows=>rows.map(row=>row.id===id?observeSpeechCandidate(row,text):row).filter(Boolean))}
             onInputFinal={(text,details)=>{
               // A recognized explicit correction stops the current transport before
               // its next reply is accepted. Confirmation is a local text turn;
@@ -2481,6 +2486,18 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
                 if(!coachProtocolCanAppend(turnsRef.current,[handoff]))return false
                 const next=[...turnsRef.current,handoff];turnsRef.current=next;setTurns(next);queuePrivateDraft(next)
                 setStreamingPreview('');return true // transport stops before accepting this model response
+              }
+              // Observe ordinary committed turns only after all existing safety,
+              // recall, name and course handoff logic. No second message or
+              // mutation of the original transcript/evidence.
+              const sessionId=protocolIdRef.current
+              if(captured&&sessionId&&observationBudgetRef.current.sessionId!==sessionId)observationBudgetRef.current={sessionId,count:0}
+              const sensitive=Boolean(recallRequested||candidate||['ru','en','es'].some(locale=>coachingBrainSafety({...guard,locale})||coachingBrainBoundary({...guard,locale})))
+              if(captured&&sessionId&&canObserveOrdinarySpeech({enabled:activeOrdinaryReview,source:details?.source,reviewAvailable:details?.reviewAvailable,sensitive,raw:text,count:observationBudgetRef.current.count})){
+                observationBudgetRef.current.count++
+                const id=++speechReviewSerial.current
+                setSpeechReviews(rows=>[...rows,{id,amendmentId:crypto.randomUUID(),sessionId,afterTurnCount:turnsRef.current.length,locale:conversationLang,provider:'groq',raw:text,candidate:'',previous:'',edited:null,pending:true,observationOnly:true}])
+                return {transcriptReview:id,observationOnly:true}
               }
               return false
             }}
@@ -2939,9 +2956,13 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         </label>}
         {liveVoiceSelected&&<>
           <label className={styles.coachEnginePicker}>
-            <input type="checkbox" checked={activeSpeechReviewConsent&&speechReviewProvider==='groq'} disabled={(!(geminiCapabilities.speech_review_free===true)&&!(speechReviewConsent&&speechReviewProvider==='groq'))||speechReviewConsent&&speechReviewProvider==='gemini'||(!speechReviewConsent&&voiceState.phase!=='idle')} onChange={event=>{setSpeechReviewProvider('groq');setSpeechReviewConsent(event.target.checked&&(geminiCapabilities.speech_review_free===true));if(!event.target.checked)setSpeechReviews(rows=>rows.map(row=>({...row,pending:false,candidate:''})))}}/>
+            <input type="checkbox" checked={activeSpeechReviewConsent&&speechReviewProvider==='groq'} disabled={(!(geminiCapabilities.speech_review_free===true)&&!(speechReviewConsent&&speechReviewProvider==='groq'))||speechReviewConsent&&speechReviewProvider==='gemini'||(!speechReviewConsent&&voiceState.phase!=='idle')} onChange={event=>{setSpeechReviewProvider('groq');setSpeechReviewConsent(event.target.checked&&(geminiCapabilities.speech_review_free===true));if(!event.target.checked){setSpeechReviewAll(false);setSpeechReviews(rows=>rows.filter(row=>!row.observationOnly).map(row=>({...row,pending:false,candidate:''})))}}}/>
             <span>{({ru:'Дополнительное распознавание (Groq Whisper Free): сомнительные фрагменты речи отправляются Groq. Условия обработки данных: ',en:'Optional speech review (Groq Whisper Free): suspect speech clips are sent to Groq. Data terms: ',es:'Revisión opcional (Groq Whisper Free): se envían fragmentos dudosos a Groq. Condiciones: '})[lang]}<a href="https://groq.com/privacy-policy/" target="_blank" rel="noreferrer">Groq</a></span>
           </label>
+          {geminiCapabilities.speech_review_ordinary===true&&<label className={styles.coachEnginePicker} data-coach-ordinary-review-consent>
+            <input type="checkbox" checked={activeOrdinaryReview} disabled={!activeSpeechReviewConsent||speechReviewProvider!=='groq'||(!speechReviewAll&&voiceState.phase!=='idle')} onChange={event=>{setSpeechReviewAll(event.target.checked);if(!event.target.checked)setSpeechReviews(rows=>rows.filter(row=>!row.observationOnly))}}/>
+            <span>{({ru:'Проверять также обычные реплики (до 30 за сессию, при доступной квоте): аудио отправляется Groq, совпадения скрываются; исправления только по подтверждению.',en:'Also review ordinary speech (up to 30 per session, within quota): audio is sent to Groq; matching text stays hidden; corrections require confirmation.',es:'Revisar también las frases normales (hasta 30 por sesión, según cuota): se envía audio a Groq; las coincidencias se ocultan; los cambios requieren confirmación.'})[lang]}</span>
+          </label>}
           {geminiReviewOffered&&<label className={styles.coachEnginePicker} data-gemini-transcribe-consent>
             <input type="checkbox" checked={activeSpeechReviewConsent&&speechReviewProvider==='gemini'} disabled={(!(geminiCapabilities.speech_review_gemini===true)&&!(speechReviewConsent&&speechReviewProvider==='gemini'))||speechReviewConsent&&speechReviewProvider==='groq'||(!speechReviewConsent&&voiceState.phase!=='idle')} onChange={event=>{setSpeechReviewProvider('gemini');setSpeechReviewConsent(event.target.checked&&(geminiCapabilities.speech_review_gemini===true));if(!event.target.checked)setSpeechReviews(rows=>rows.map(row=>({...row,pending:false,candidate:''})))}}/>
             <span>{({ru:'Дополнительное распознавание Gemini 3.5 Transcribe: сомнительные фрагменты отправляются Google; бесплатный тариф может использовать данные для улучшения моделей. Необязательно. ',en:'Optional Gemini 3.5 Transcribe: suspect speech clips are sent to Google; free-tier data may be used to improve models. ',es:'Gemini 3.5 Transcribe opcional: los fragmentos dudosos se envían a Google; el nivel gratuito puede usar los datos para mejorar modelos. '})[lang]}<a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noreferrer">Google</a></span>
