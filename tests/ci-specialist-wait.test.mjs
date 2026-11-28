@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { verify, requiresCurrentProductionBase, classifyPrState, diagnoseAggregateError, awaitPositiveMergeability } from '../scripts/ci-specialist-aggregate.mjs';
+import { verify, requiresCurrentProductionBase, classifyPrState, diagnoseAggregateError, awaitPositiveMergeability, verifiedPriorSpecialistEvidence, reusePriorSpecialistState } from '../scripts/ci-specialist-aggregate.mjs';
 import { inspectJobs, trustedRequiredJobs, inspectWorkflowRuns } from '../lib/ci/specialist-aggregate.mjs';
 import { safeComposedIndependentAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeIndependentRouterPolicyAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeStandaloneVideoAfterSpecialistScopeAdvance, safeNonOverlappingProductAdvance, safeIndependentMixedCandidateAdvance, normalizeIdenticalProtectedOverlap } from '../lib/ci/production-base-impact.mjs';
 
@@ -1324,4 +1324,55 @@ test('same regular protected blob is not a conflicting change; unknown or differ
   assert.equal((await verify(api,ctx,files,{maxWaitMs:0,readTestedEntry:async()=>entry})).head,head);
   await assert.rejects(()=>verify({...api,entry:async()=>({...entry,mode:'100755'})},ctx,files,{maxWaitMs:0,readTestedEntry:async()=>entry}),/PRODUCTION_BASE_CHANGED/);
   await assert.rejects(()=>verify({...api,pr:async()=>({...exact,mergeable:false})},ctx,files,{maxWaitMs:0,readTestedEntry:async()=>entry}),/MERGE_CONFLICT/);
+});
+
+
+test('prior unified gate reuses every proved same-tree Specialist, not stale or red evidence',async()=>{
+ const old='d'.repeat(40),oldMerge='e'.repeat(40),merge='f'.repeat(40),sourceTree='1'.repeat(40),mergeTree='2'.repeat(40);
+ const gatePath='.github/workflows/hh-pr-core-release.yml', second='.github/workflows/other.yml';
+ const context={...ctx,previousHead:old,merge};
+ const source={base:new Map([[gatePath,'trusted'],[path,yaml],[second,yaml]]),
+   current:new Map([[gatePath,'trusted'],[path,yaml],[second,yaml]])};
+ const commits={
+  [head]:{sha:head,tree:{sha:sourceTree}},[old]:{sha:old,tree:{sha:sourceTree}},
+  [merge]:{sha:merge,tree:{sha:mergeTree},parents:[{sha:base},{sha:head}]},
+  [oldMerge]:{sha:oldMerge,tree:{sha:mergeTree},parents:[{sha:base},{sha:old}]}
+ };
+ const oldRun={...run('completed','success'),id:321,head_sha:old,path:gatePath};
+ const step=name=>({name,status:'completed',conclusion:'success'});
+ const job=(id,name,steps)=>({id,name,run_id:321,status:'completed',conclusion:'success',steps:steps.map(step)});
+ const jobs=[job(1,'core-lint-types-build',['Verify bounded shallow scope ancestry before PR routing']),
+  job(2,'hh-merge-check',['Pin exact production base for shallow checkout','Validate exact-head risk and required specialist workflows','Confirm one-runner Core and independent specialist release evidence'])];
+ const checkout='[command]/usr/bin/git log -1 --format=%H';
+ const coreLog=[checkout,oldMerge,'HH_CORE_BUILD_IDENTITY_V1 27 321 1 '+oldMerge+' '+old+' '+base].join('\n');
+ const gateLog=[checkout,oldMerge,'Specialist CI aggregate for PR #27 head='+old+' event_base='+base+' tested_base='+base,
+  'Verified applicable workflows: 2','- '+path+' (2 executed jobs; run 11)','- '+second+' (1 executed jobs; run 12)'].join('\n');
+ const specialists=[{...oldRun,id:11,path},{...oldRun,id:12,path:second}];
+ const api={commit:async sha=>commits[sha],runs:async()=>specialists,runsForWorkflow:async()=>[oldRun],
+  attemptJobs:async()=>jobs,jobLog:async id=>id===1?coreLog:gateLog};
+ const check=(a=api,f=source)=>verifiedPriorSpecialistEvidence(a,context,pr,f,[path,second]);
+ const proof=await check();assert.equal(proof.size,2);
+ assert.equal(proof.get(path).run_id,11);
+ assert.equal(proof.get(path).prior_run_attempt,1);
+ for(const state of ['failure','cancelled','in_progress']){
+  const changed={...specialists[0],id:13,status:state==='in_progress'?'in_progress':'completed',
+   conclusion:state==='in_progress'?null:state};
+  const partial=await check({...api,runs:async()=>[...specialists,changed]});
+  assert.equal(partial.has(path),false,state);
+  assert.equal(partial.has(second),true,state);
+ }
+ assert.equal((await check({...api,runs:async()=>[{...specialists[0],conclusion:'failure'},specialists[1]]})).has(path),false);
+ assert.equal((await check({...api,runs:async()=>{throw Error('API unavailable')}})).size,0);
+ assert.equal((await check({...api,commit:async sha=>sha===old?{...commits[sha],tree:{sha:'3'.repeat(40)}}:commits[sha]})).size,0);
+ assert.equal((await check({...api,commit:async sha=>sha===oldMerge?{...commits[sha],tree:{sha:'3'.repeat(40)}}:commits[sha]})).size,0);
+ assert.equal((await check({...api,runsForWorkflow:async()=>[{...oldRun,conclusion:'failure'}]})).size,0);
+ assert.equal((await check({...api,attemptJobs:async()=>[jobs[0],{...jobs[1],conclusion:'failure'}]})).size,0);
+ assert.equal((await check({...api,jobLog:async id=>id===1?coreLog:gateLog.replace('Verified applicable workflows: 2','Verified applicable workflows: 3')})).size,0);
+ assert.equal((await check({...api,jobLog:async id=>id===1?coreLog:gateLog.replace(oldMerge,merge)})).size,0);
+ assert.equal((await check(api,{...source,current:new Map([[gatePath,'candidate'],[path,yaml],[second,yaml]])})).size,0);
+ const waiting={missing:[path],queued:[second+':queued'],pending:[second+':queued'],running:[],failed:[]};
+ const result=reusePriorSpecialistState(waiting,proof);
+ assert.deepEqual(result.missing,[]);assert.deepEqual(result.pending,[]);assert.equal(result.reused.length,2);
+ const red=reusePriorSpecialistState({...waiting,missing:[],queued:[],pending:[second+':in_progress'],running:[second+':in_progress'],failed:[path+':failure']},proof);
+ assert.deepEqual(red.failed,[path+':failure']);assert.equal(red.reused.length,0);assert.equal(red.pending.length,1);
 });

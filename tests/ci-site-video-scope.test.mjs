@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import test from 'node:test';
-import {needsFullSiteVideoBrowser,classifyExactSiteVideo,exactCoreBuildIdentity,exactCoreIdentityLog,verifiedCompletedCoreBuild} from '../scripts/ci-site-video-scope.mjs';
+import {needsFullSiteVideoBrowser,classifyExactSiteVideo,exactCoreBuildIdentity,exactCoreIdentityLog,verifiedCompletedCoreBuild,verifiedEquivalentPriorCoreBuild} from '../scripts/ci-site-video-scope.mjs';
 
 const one=filename=>[{filename,status:'modified'}];
 test('reviewed public-display changes can defer repeated Chromium and Redis E2E',()=>{
@@ -185,4 +185,50 @@ test('workflow retains prebuild, independent build fallback and real browser cov
  assert.match(core,/HH_CORE_BUILD_IDENTITY_V1/);
  assert.match(core,/npm run lint -- --concurrency 2/);
  assert.match(core,/run: npm run build -- --no-lint/);
+});
+
+
+test('new HEAD with identical source and proposed merge tree reuses only a real completed Core build',()=>{
+ const oldHead='d'.repeat(40),oldMerge='e'.repeat(40),sourceTree='1'.repeat(40),mergeTree='2'.repeat(40);
+ const identity=coreIdentity;
+ const run={...coreRun,head_sha:oldHead,repository:{full_name:coreRepo}};
+ const oldLog=[checkout,oldMerge,'HH_CORE_BUILD_IDENTITY_V1 5701 101 2 '+oldMerge+' '+oldHead+' '+coreBase,readiness].join('\n');
+ const commits={
+  [coreHead]:{sha:coreHead,tree:{sha:sourceTree}},
+  [oldHead]:{sha:oldHead,tree:{sha:sourceTree}},
+  [coreMerge]:{sha:coreMerge,tree:{sha:mergeTree},parents:[{sha:coreBase},{sha:coreHead}]},
+  [oldMerge]:{sha:oldMerge,tree:{sha:mergeTree},parents:[{sha:coreBase},{sha:oldHead}]},
+ };
+ const read=({patch={},job=coreJob,log=oldLog,runs=[run]}={})=>(endpoint,raw)=>{
+  if(endpoint.includes('/git/commits/')){const sha=endpoint.split('/').at(-1);return {...commits[sha],...patch[sha]};}
+  if(endpoint.includes('/workflows/'))return {workflow_runs:runs};
+  if(endpoint.includes('/attempts/2/jobs'))return {total_count:1,jobs:[job]};
+  if(endpoint.endsWith('/jobs/201/logs')&&raw)return log;
+  throw Error('unexpected API endpoint');
+ };
+ assert.deepEqual(verifiedEquivalentPriorCoreBuild(identity,oldHead,read()),{
+  runId:101,attempt:2,jobId:201,previousHead:oldHead,mergeTree});
+ for(const patch of [
+  {[oldHead]:{tree:{sha:'3'.repeat(40)}}},
+  {[oldMerge]:{tree:{sha:'3'.repeat(40)}}},
+  {[oldMerge]:{parents:[{sha:'3'.repeat(40)},{sha:oldHead}]}},
+  {[coreMerge]:{parents:[{sha:coreBase},{sha:oldHead}]}},
+ ])assert.equal(verifiedEquivalentPriorCoreBuild(identity,oldHead,read({patch})),null);
+ for(const job of [{...coreJob,conclusion:'failure'},{...coreJob,status:'in_progress'},
+  {...coreJob,steps:[{...coreJob.steps[0],conclusion:'skipped'},coreJob.steps[1]]}])
+  assert.equal(verifiedEquivalentPriorCoreBuild(identity,oldHead,read({job})),null);
+ assert.equal(verifiedEquivalentPriorCoreBuild(identity,oldHead,read({log:oldLog.replace('5701','9999')})),null);
+ assert.equal(verifiedEquivalentPriorCoreBuild(identity,oldHead,read({runs:[run,{...run,id:102}]})),null);
+ assert.equal(verifiedEquivalentPriorCoreBuild(identity,oldHead,read({runs:[{...run,repository:{full_name:'other/repo'}}]})),null);
+ assert.equal(verifiedEquivalentPriorCoreBuild(identity,coreHead,read()),null);
+ assert.equal(verifiedEquivalentPriorCoreBuild(identity,oldHead,()=>{throw Error('API denied')}),null);
+});
+
+test('Core reuses identical prior content only through the protected reader, otherwise runs real build',()=>{
+ const core=readFileSync(new URL('../.github/workflows/hh-pr-core-release.yml',import.meta.url),'utf8');
+ assert.match(core,/git show "\$tested_base:scripts\/ci-site-video-scope\.mjs"/);
+ assert.match(core,/--previous-core-proof/);
+ assert.match(core,/steps\.reuse_build\.outputs\.reused != 'true'/);
+ assert.match(core,/run: npm run build -- --no-lint/);
+ assert.ok(core.includes('Confirm one-runner Core and independent specialist release evidence'));
 });

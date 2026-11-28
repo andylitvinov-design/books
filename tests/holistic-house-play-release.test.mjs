@@ -319,7 +319,7 @@ test('native iPhone artifact build uses supported standard macOS runner without 
   const flow = readSource('.github/workflows/holistic-house-native.yml')
   const ios = flow.slice(flow.indexOf('\n  ios-simulator:'))
   assert.ok(ios.startsWith('\n  ios-simulator:'), 'iOS job exists')
-  assert.ok(ios.includes("    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-24.04' || 'macos-15' }}"))
+  assert.ok(ios.includes("    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-slim' || 'macos-15' }}"))
   assert.doesNotMatch(ios, /macos-14(?:-large|-xlarge)?\b/)
   assert.match(ios, /-sdk iphoneos/)
   assert.match(ios, /Holistic-House-iPhone-Personal-Lite-Unsigned/)
