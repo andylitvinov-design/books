@@ -3452,3 +3452,18 @@ test('batched pure prebuild test registration keeps existing tests and real doma
   before.scripts['pretest:academy:release']=after.scripts['pretest:academy:release']='node scripts/side-effect.mjs';
   assert.equal(check(after,paths,before).mode,'full');
 });
+
+
+test('unified merge receipt is bound to exact verified protected target and Actions attempt', async()=>{
+  const {mergeReadyReceipt}=await import('../scripts/ci-specialist-aggregate.mjs');
+  const a='a'.repeat(40),b='b'.repeat(40),c='c'.repeat(40),d='d'.repeat(40);
+  const env={GITHUB_EVENT_NAME:'pull_request',GITHUB_REPOSITORY:'andylitvinov-design/books',GITHUB_RUN_ID:'123',GITHUB_RUN_ATTEMPT:'2',GITHUB_SHA:c};
+  const ctx={repo:env.GITHUB_REPOSITORY,number:5701,head:a,base:b};
+  const files={testedMergeSha:c,changedRows:[{filename:'app/example.js'}]};
+  const result={head:a,base:b,verifiedBase:d,policyRevalidatedAgainst:d};
+  assert.deepEqual(mergeReadyReceipt(env,ctx,files,result),{version:1,repository:ctx.repo,pr:5701,head:a,tested_base:b,tested_merge:c,verified_base:d,run_id:123,run_attempt:2});
+  for(const invalid of [{...result,verifiedBase:null},{...result,head:b},{...result,policyRevalidatedAgainst:b}]) assert.equal(mergeReadyReceipt(env,ctx,files,invalid),null);
+  assert.equal(mergeReadyReceipt({...env,GITHUB_RUN_ATTEMPT:'0'},ctx,files,result),null);
+  assert.equal(mergeReadyReceipt(env,ctx,{...files,testedMergeSha:a},result),null);
+  assert.equal(mergeReadyReceipt(env,ctx,{...files,changedRows:[]},result),null);
+});
