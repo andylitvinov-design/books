@@ -110,3 +110,15 @@ test('Ideas acceptance waits for exact React readiness instead of unrelated page
   assert.match(js,/browserType: webkit/);
   assert.match(js,/browserType: chromium/);
 });
+
+
+test('unified dock acceptance opens the real legacy Genie disclosure before asserting visibility',()=>{
+  const js=source('scripts/verify-unified-six-dock-browser.mjs');
+  const marker=js.indexOf('const formats=landing.locator("details")');
+  const open=js.indexOf('await formats.locator(":scope > summary").click()',marker);
+  const visible=js.indexOf('await expect(formats.locator("[data-hh-genie-persona-shortcut]")).toBeVisible()',marker);
+  assert.ok(marker>=0&&open>marker&&visible>open);
+  assert.ok(js.includes('await expect(formats).toHaveAttribute("open","")'));
+  assert.ok(js.includes('["therapy","consultation","goal"]'));
+  assert.ok(source('components/app/messenger-ai-landing.tsx').includes('<details className={css.legacyWelcome}>'));
+});

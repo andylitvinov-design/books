@@ -313,8 +313,22 @@ async function inspect(browserType,locale,width){
         await expect(landing).toBeVisible({timeout:30000});
         await expect(page.locator("[data-hh-unified-dock]")).toHaveCount(1);
         await expect(page.locator("[data-hh-unified-dock]")).toBeHidden();
-        await expect(landing.locator("[data-hh-genie-persona-shortcut]")).toBeVisible();
-        await expect(landing.locator("[data-hh-genie-path-choice]")).toHaveCount(3);
+        // The shared opening nests the legacy formats in a native disclosure.
+        // Prove the control is not visible while closed, then exercise the
+        // real accessible summary before checking all three original choices.
+        const formats=landing.locator("details").filter({has:page.locator("[data-hh-genie-persona-shortcut]")});
+        await expect(formats).toHaveCount(1);
+        await expect(formats.locator(":scope > summary")).toBeVisible();
+        if(!await formats.evaluate(el=>el.open)){
+          await expect(formats.locator("[data-hh-genie-persona-shortcut]")).toBeHidden();
+          await formats.locator(":scope > summary").click();
+        }
+        await expect(formats).toHaveAttribute("open","");
+        await expect(formats.locator("[data-hh-genie-persona-shortcut]")).toBeVisible();
+        await expect(formats.locator("[data-hh-genie-path-choice]")).toHaveCount(3);
+        for(const choice of ["therapy","consultation","goal"]){
+          await expect(formats.locator('[data-hh-genie-path-choice="'+choice+'"]')).toBeVisible();
+        }
         const extra=landing.locator("[data-hh-genie-extra-directions]");
         if(!await extra.evaluate(el=>el.open))await extra.locator("summary").click();
         for(const section of ["ai","page","orders","clients"]){
