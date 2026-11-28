@@ -96,7 +96,7 @@ export function githubReader(repo, token, transport = fetch, options = {}) {
   // Never treat an exhausted retry as a passing specialist check.
   const sleep = options.sleep ?? delay;
   const retryDelaysMs = [400, 1200, 2400];
-  async function get(path) {
+  async function get(path, raw = false) {
     const endpoint = path.split('?')[0];
     for (let attempt = 0; ; attempt += 1) {
       let response;
@@ -109,7 +109,14 @@ export function githubReader(repo, token, transport = fetch, options = {}) {
         await sleep(retryDelaysMs[attempt]);
         continue;
       }
-      if (response.ok) return response.json();
+      if (response.ok) {
+        if (!raw) return response.json();
+        const limit=24*1024*1024;
+        if(Number(response.headers?.get('content-length')||0)>limit)throw Error('CI_LOG_TOO_LARGE');
+        const log=await response.text();
+        if(typeof log!=='string'||log.length>limit)throw Error('CI_LOG_TOO_LARGE');
+        return log;
+      }
       // Retryable HTTP 500 and network failures are different from a
       // genuine quota exhaustion. Waiting 0.4/1.2/2.4 seconds cannot reset
       // a primary/secondary GitHub rate window, and multiplied across
@@ -164,6 +171,19 @@ export function githubReader(repo, token, transport = fetch, options = {}) {
       return row;
     },
     jobs: (runId) => pages('/actions/runs/' + runId + '/jobs','jobs',1000),
+    attemptJobs: async (run,attempt) => {
+      if(!Number.isSafeInteger(run)||run<1||!Number.isSafeInteger(attempt)||attempt<1)
+        throw Error('INVALID_CI_ATTEMPT');
+      return pages('/actions/runs/'+run+'/attempts/'+attempt+'/jobs','jobs',100);
+    },
+    commit: sha => {
+      if(!/^[0-9a-f]{40}$/.test(sha||''))throw Error('INVALID_COMMIT_SHA');
+      return get('/git/commits/'+sha);
+    },
+    jobLog: id => {
+      if(!Number.isSafeInteger(id)||id<1)throw Error('INVALID_CI_JOB_ID');
+      return get('/actions/jobs/'+id+'/logs',true);
+    },
     // PR event payloads may retain the base SHA from when the PR was opened.
     // Read the actual protected target ref, not pulls/:number.base.sha.
     target: async () => {
@@ -462,6 +482,108 @@ export function trustedAdditiveActionlint(base, current) {
   let restored = current;
   for (const line of additions) restored = restored.replace(line, '');
   return restored === base;
+}
+
+
+// General, read-only prior HEAD evidence for every applicable Specialist.
+// An exact SHA change alone does not invalidate a previously tested tree.
+// This is NOT a path-name or status-copy waiver: identical source AND
+// proposed merge trees, same protected base, immutable run/attempt identity,
+// actual successful Core + unified gate, and its complete executed-job
+// receipt are mandatory. No candidate workflow may authorize its own reuse.
+const PRIOR_SHA=/^[0-9a-f]{40}$/;
+const PRIOR_CORE='.github/workflows/hh-pr-core-release.yml';
+const priorLines=log=>typeof log==='string'&&log.length<=24*1024*1024
+  ?log.split(/\r?\n/).map(line=>line.replace(/^\d{4}-\d\d-\d\dT[\d:.]+Z[ \t]+/,'').trim()):[];
+function priorCheckout(lines,sha) {
+  const positions=lines.flatMap((line,i)=>line==='[command]/usr/bin/git log -1 --format=%H'?[i]:[]);
+  return positions.length===1&&lines[positions[0]+1]===sha;
+}
+export async function verifiedPriorSpecialistEvidence(api,ctx,pr,files,expected) {
+  const none=new Map();
+  if(![ctx.head,ctx.previousHead,ctx.base,ctx.merge].every(x=>PRIOR_SHA.test(x||''))||
+     ctx.head===ctx.previousHead||!Array.isArray(expected)||!expected.length||
+     files.base?.get(PRIOR_CORE)!==files.current?.get(PRIOR_CORE)||
+     typeof files.base?.get(PRIOR_CORE)!=='string'||
+     !['commit','runsForWorkflow','attemptJobs','jobLog'].every(k=>typeof api[k]==='function'))return none;
+  try{
+    const commit=async sha=>{
+      const c=await api.commit(sha);
+      if(c?.sha!==sha||!PRIOR_SHA.test(c.tree?.sha||''))throw Error('UNVERIFIED_PRIOR_TREE');
+      return c;
+    };
+    const [old,current,merge]=await Promise.all([commit(ctx.previousHead),commit(ctx.head),commit(ctx.merge)]);
+    if(old.tree.sha!==current.tree.sha||merge.parents?.length!==2||
+       merge.parents[0]?.sha!==ctx.base||merge.parents[1]?.sha!==ctx.head)return none;
+    const runs=await api.runsForWorkflow(ctx.previousHead,PRIOR_CORE);
+    if(!Array.isArray(runs)||runs.length>100)return none;
+    const run=runs.filter(x=>x.event==='pull_request'&&x.head_sha===ctx.previousHead&&
+      x.head_branch===pr.head.ref&&x.head_repository?.full_name===ctx.repo&&
+      String(x.path||'').split('@')[0]===PRIOR_CORE&&
+      Number.isSafeInteger(x.id)&&x.id>0&&Number.isSafeInteger(x.run_attempt)&&x.run_attempt>0&&
+      x.pull_requests?.some(p=>p.number===ctx.number&&p.base?.ref===TARGET))
+      .sort((a,b)=>b.id-a.id||b.run_attempt-a.run_attempt)[0];
+    if(!run||run.status!=='completed'||run.conclusion!=='success')return none;
+    const jobs=await api.attemptJobs(run.id,run.run_attempt);
+    if(!Array.isArray(jobs)||!jobs.length||jobs.length>100)return none;
+    const actual=name=>{
+      const found=jobs.filter(j=>j.name===name);
+      const j=found[0];
+      return found.length===1&&j.status==='completed'&&j.conclusion==='success'&&
+        j.run_id===run.id&&Number.isSafeInteger(j.id)&&j.id>0?j:null;
+    };
+    const core=actual('core-lint-types-build'),gate=actual('hh-merge-check');
+    const step=(job,name)=>job?.steps?.filter(x=>x.name===name).length===1&&
+      job.steps.some(x=>x.name===name&&x.status==='completed'&&x.conclusion==='success');
+    if(!core||!gate||!step(core,'Verify bounded shallow scope ancestry before PR routing')||
+       !step(gate,'Pin exact production base for shallow checkout')||
+       !step(gate,'Validate exact-head risk and required specialist workflows')||
+       !step(gate,'Confirm one-runner Core and independent specialist release evidence'))return none;
+    const [coreLog,gateLog]=await Promise.all([api.jobLog(core.id),api.jobLog(gate.id)]);
+    const c=priorLines(coreLog),g=priorLines(gateLog);
+    const marker=c.filter(line=>line.startsWith('HH_CORE_BUILD_IDENTITY_V1 '));
+    if(marker.length!==1)return none;
+    const f=marker[0].split(' '),oldMerge=f[4];
+    if(f.length!==7||f[1]!==String(ctx.number)||f[2]!==String(run.id)||
+       f[3]!==String(run.run_attempt)||!PRIOR_SHA.test(oldMerge||'')||
+       f[5]!==ctx.previousHead||f[6]!==ctx.base||!priorCheckout(c,oldMerge)||
+       !priorCheckout(g,oldMerge))return none;
+    const before=await commit(oldMerge);
+    if(before.parents?.length!==2||before.parents[0]?.sha!==ctx.base||
+       before.parents[1]?.sha!==ctx.previousHead||before.tree.sha!==merge.tree.sha)return none;
+    const receipt=g.filter(line=>line.startsWith('Specialist CI aggregate for PR #'));
+    const header='Specialist CI aggregate for PR #'+ctx.number+' head='+ctx.previousHead+' event_base=';
+    if(receipt.length!==1||!receipt[0].startsWith(header)||
+       !receipt[0].endsWith(' tested_base='+ctx.base)||
+       !PRIOR_SHA.test(receipt[0].slice(header.length,header.length+40)))return none;
+    const counts=g.filter(line=>/^Verified applicable workflows: \d+$/.test(line));
+    if(counts.length!==1)return none;
+    const rows=g.map(line=>/^- (\.github\/workflows\/[a-z0-9._-]+\.ya?ml) \(([1-9]\d*) executed jobs; run ([1-9]\d*)\)$/.exec(line)).filter(Boolean);
+    // A reused prior receipt never becomes an unlimited chain: only actual
+    // executed workflows from a complete original gate qualify.
+    if(rows.length!==Number(counts[0].split(': ')[1])||
+       new Set(rows.map(x=>x[1])).size!==rows.length)return none;
+    const result=new Map();
+    for(const row of rows){
+      const name=row[1],jobs=Number(row[2]),runId=Number(row[3]);
+      if(!Number.isSafeInteger(jobs)||!Number.isSafeInteger(runId))return none;
+      if(expected.includes(name)&&typeof files.base.get(name)==='string'&&
+         files.base.get(name)===files.current.get(name))
+        result.set(name,{name,run_id:runId,jobs,prior_head:ctx.previousHead,prior_gate_run:run.id});
+    }
+    return result;
+  }catch{return none;}
+}
+
+// Never hide a RED or actually running current check. A missing or queued
+// duplicate can use the already executed, same-tree proof instead.
+export function reusePriorSpecialistState(state,prior) {
+  const reusable=new Set([...state.missing,...state.queued.map(x=>x.slice(0,x.lastIndexOf(':')))]
+    .filter(name=>prior.has(name)));
+  const keep=x=>!reusable.has(x.slice(0,x.lastIndexOf(':')));
+  return {...state,missing:state.missing.filter(x=>!reusable.has(x)),
+    queued:state.queued.filter(keep),pending:state.pending.filter(keep),
+    reused:[...reusable].map(name=>prior.get(name))};
 }
 
 export async function verify(api,ctx,files,options={}) {
@@ -804,6 +926,7 @@ export async function verify(api,ctx,files,options={}) {
   // Only the single last running Specialist can use the shorter cadence;
   // bound it to 90 seconds to conserve the shared GitHub read-only API.
   let finalWaveSince = null;
+  const priorEvidence=pinnedChangeRows ? await verifiedPriorSpecialistEvidence(api,ctx,pr,files,expected) : new Map();
   const recovered = new Map();
   const probeTimes = new Map();
   const refreshTimes = new Map();
@@ -875,6 +998,7 @@ export async function verify(api,ctx,files,options={}) {
       }
       state=inspectWorkflowRuns({expected,runs:eligibleRuns([...indexed,...recovered.values()]),pr});
     }
+    state=reusePriorSpecialistState(state,priorEvidence);
     const unregistered = state.observedUnrelated.filter(item => !catalog.has(workflowPath(item)));
     const retiredProblems = state.observedUnrelated.filter(item => retired.has(workflowPath(item)));
     const unexpected = [...new Set([...unregistered, ...retiredProblems])];
@@ -1030,6 +1154,16 @@ export async function verify(api,ctx,files,options={}) {
   }));
   const fresh=await api.pr(ctx.number);
   await verifyCurrentBase(fresh);
+  const reused=state.reused||[];
+  if(reused.length){
+    const latest=inspectWorkflowRuns({expected:reused.map(x=>x.name),runs:await api.runs(ctx.head),pr:fresh});
+    if(latest.failed.length||latest.cancelled.length||latest.interrupted.length||
+       latest.notExecuted.length||latest.uncertain.length||latest.running.length||
+       latest.orphanFailures.length||latest.orphanCancelled.length||latest.orphanInterrupted.length||
+       latest.orphanNotExecuted.length||latest.orphanIncomplete.length)
+      throw Error('CURRENT_SPECIALIST_CHANGED_DURING_PRIOR_EVIDENCE_REUSE');
+    console.log('CI_PRIOR_HEAD_SPECIALIST_REUSED:'+JSON.stringify(reused));
+  }
   // Report non-gating runs for audit; never confuse them with validated CI.
   const advisory={
     nonApplicable:[...state.observedUnrelated.filter(item => !retired.has(workflowPath(item))),
@@ -1038,7 +1172,7 @@ export async function verify(api,ctx,files,options={}) {
     concurrencyOnly:[...concurrencyAdvisory].sort(),
     selfTriggerOnly:[...selfTriggerAdvisory].sort(),
   };
-  return {risk,expected,delegated,executed,advisory,packageImpact,head:ctx.head,base:ctx.base};
+  return {risk,expected,delegated,executed,reused,advisory,packageImpact,head:ctx.head,base:ctx.base};
 }
 
 // Reuse the successful Core and domain jobs for CI-policy-only production
@@ -1164,7 +1298,7 @@ export function diagnoseAggregateError(error) {
   const message = String(error?.message || error || 'unknown');
   const rules = [
     ['PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED','BASE_ADVANCED','Inspect actual overlap, critical/shared changes or incomplete ancestry proof before requesting a new CI wave. Ordinary verified non-overlapping production advances do not require rebasing.'],
-    ['PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PR_HEAD_CHANGED','HEAD_ADVANCED','Discard stale results and run checks on the new PR HEAD.'],
+    ['PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PR_HEAD_CHANGED','HEAD_ADVANCED','Superseded HEAD is not source failure. Verify new HEAD and reuse independently proven identical-tree evidence where available.'],
     ['PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:MERGE_CONFLICT','MERGE_CONFLICT','Resolve the real merge conflict; do not bypass the gate.'],
     ['PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PR_DRAFT','DRAFT_PR','Mark Ready only after the implementation is complete.'],
     ['PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED','PR_STATE_INVALID','Inspect the precise PR state/repository/target reason.'],
@@ -1233,6 +1367,19 @@ async function main() {
   // non-sensitive ordinary paths permit a newer live production BASE; security,
   // payment, privacy, auth, policy and unknown paths still require freshness.
   const checkedCtx={...ctx,base:testedBase};
+  // The immutable synchronize event names the preceding source HEAD.
+  // Never accept a caller-supplied SHA without the matching event identity.
+  if(verifiedBase&&env.GITHUB_EVENT_PATH){
+    try{
+      const event=JSON.parse(readFileSync(env.GITHUB_EVENT_PATH,'utf8'));
+      if(event.action==='synchronize'&&event.pull_request?.number===ctx.number&&
+         event.pull_request?.head?.sha===ctx.head&&event.repository?.full_name===ctx.repo&&
+         PRIOR_SHA.test(event.before||'')){
+        checkedCtx.previousHead=event.before;
+        checkedCtx.merge=env.GITHUB_SHA;
+      }
+    }catch{/* Missing evidence uses the full current-HEAD route. */}
+  }
   let result;
   try {
     result=await verify(api,checkedCtx,files);
@@ -1247,6 +1394,7 @@ async function main() {
   const report='Specialist CI aggregate for PR #' + ctx.number + ' head=' + ctx.head +
     ' event_base=' + ctx.base + ' tested_base=' + testedBase + '\nRisk: ' + result.risk + '\nVerified applicable workflows: ' + result.expected.length +
     '\n' + result.executed.map(x=>'- ' + x.name + ' (' + x.jobs + ' executed jobs; run ' + x.run_id + ')').join('\n') +
+    '\nPreviously executed same-tree workflows reused: ' + JSON.stringify(result.reused||[]) +
     '\nTrusted replacements: ' + result.delegated.map(x=>x.retired + ' => ' + x.replacement).join(', ') +
     '\nPackage impact: ' + result.packageImpact.mode + ' (' + result.packageImpact.reason + ')' +
     '\nTrusted policy revalidated: ' + (result.policyRevalidatedAgainst || 'not required') +
