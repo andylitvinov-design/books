@@ -11,6 +11,7 @@ import {coachSessionOpeningLine} from '../lib/coaching/coach-opening-protocol.mj
 import {coachSessionOpeningAudioPath} from '../lib/personal-coaching/direct-coach-intro-audio.mjs'
 import {lockedCoachSessionVoice} from '../lib/coaching/gemini-voice-catalog.mjs'
 import {chooseDictationLanguage,detectedSpeechLocale,coachSpokenTurnLocale,ios27NeedsSpeechRecovery,
+    coachSpeechLanguageMemory,coachSpeechNeedsLanguageReview,
   readDictationResults,hasCoachSpokenAnswer} from '../lib/personal-coaching/my-coach-dictation.mjs'
 import {appendSpokenAnswer} from '../lib/personal-coaching/speech-text.js'
 import {setCoachIos27AudioSession,refreshCoachIos27PlaybackRoute,setCoachIos27DuplexRoute} from '../lib/personal-coaching/coach-ios-audio-route.mjs'
@@ -25,7 +26,7 @@ const end=source.indexOf("  const isPaused=phase==='paused',active=phase!=='idle
 assert.ok(start>=0&&end>start,'the tested slice is the real voice controller, not a replica')
 const executable=source.slice(start,end)+'\n  return null\n})\nMyCoachSpeechLoop'
 
-function createSession({personaId='mira',cloudProvider='gemini_tts_free',ttsFailures=[],respond,stuckCue=false,skipSpeechStart=false,deviceVoices=[{name:'RU synthetic voice',lang:'ru-RU',localService:true}]}={}){
+function createSession({speechLocale='ru',personaId='mira',cloudProvider='gemini_tts_free',ttsFailures=[],respond,stuckCue=false,skipSpeechStart=false,deviceVoices=[{name:'RU synthetic voice',lang:'ru-RU',localService:true}]}={}){
   const voices=[],inputs=[],phases=[],drafts=[],cueVolumes=[],deviceUtterances=[],timers=new Map()
   let id=0,starts=0,intros=0,ttsCalls=0,cues=0,spoken=0,deviceSpoken=0
   class Recognition{
@@ -82,6 +83,7 @@ function createSession({personaId='mira',cloudProvider='gemini_tts_free',ttsFail
     ...hooks,window:fakeWindow,document:fakeDocument,
     setTimeout:schedule,clearTimeout:cancel,queueMicrotask,AbortController,
     chooseDictationLanguage,detectedSpeechLocale,coachSpokenTurnLocale,ios27NeedsSpeechRecovery,
+    coachSpeechLanguageMemory,coachSpeechNeedsLanguageReview,
     setCoachIos27AudioSession,setCoachIos27DuplexRoute,
     // Feed the real category-reset logic into the evaluated controller, while
     // using a synthetic browser microtask instead of touching real hardware.
@@ -116,7 +118,7 @@ function createSession({personaId='mira',cloudProvider='gemini_tts_free',ttsFail
   const ref={current:null}
   const reply=respond||((text,index)=>({reply:'Мира отвечает на ход '+index,mode:'ai'}))
   Component({
-    locale:'ru',speechLocale:'ru',initialDraft:'',enabled:true,canStart:true,
+    locale:'ru',speechLocale,initialDraft:'',enabled:true,canStart:true,
     cloudAvailable:true,cloudAgreed:true,cloudProvider,
     personaId,introduction:coachSessionOpeningLine(personaId,'ru'),
     onSessionStart:()=>{starts++},
@@ -557,4 +559,23 @@ test('manual replay reads committed opening evidence before any cloud request',(
  assert.match(guard,/replayTurn\.content===spokenText&&\(replayTurn\.stage==='opening'\|\|Boolean\(replayTurn\.openingProgress\)\)/)
  assert.match(guard,/if\(privateOpening\)\{[\s\S]*?setPlaybackNotice\([\s\S]*?\n\s*return\n\s*\}/)
  assert.ok(guard.indexOf('if(privateOpening)')<guard.indexOf('startDirectCoachIntroAudio(introUrl'))
+})
+
+test('uncertain Russian wrong-script ASR keeps the next microphone in RU without creating a coach turn',async()=>{
+ const session=createSession({speechLocale:'auto'})
+ session.ref.current.startSession(coachSessionOpeningLine('mira','ru'),{naturalVoice:true})
+ let mic=await nextMic(session,1)
+ assert.equal(mic.lang,'ru-RU')
+ mic.hear('postawszym')
+ mic=await nextMic(session,2)
+ assert.equal(mic.lang,'ru-RU')
+ assert.deepEqual(session.inputs,[])
+ assert.ok(session.drafts.includes('postawszym'))
+ assert.equal(session.ttsCalls,0)
+ mic.hear('Мне нужна поддержка')
+ mic=await nextMic(session,3)
+ assert.equal(mic.lang,'ru-RU')
+ assert.deepEqual(session.inputs,['Мне нужна поддержка'])
+ assert.equal(session.ttsCalls,1)
+ session.ref.current.stop()
 })

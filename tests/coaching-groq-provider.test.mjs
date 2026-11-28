@@ -9,7 +9,7 @@ import {parseConversationalCoachReply,conversationalCoachMessages} from '../lib/
 import {coachDialoguePolicy} from '../lib/coaching/unified-coach-policy.mjs'
 import {coachStreamingMessages} from '../lib/coaching/groq-coach-stream.mjs'
 import {PUBLIC_COACH_PERSONA_IDS} from '../lib/coaching/persona-registry.mjs'
-import {COACH_PROGRAM_SESSIONS,COACH_COURSE_SESSIONS,INTRODUCTORY_COACH_SESSION_ID} from '../lib/coaching/coach-course-journey.mjs'
+import {coachCourseLiveInstruction,COACH_PROGRAM_SESSIONS,COACH_COURSE_SESSIONS,INTRODUCTORY_COACH_SESSION_ID} from '../lib/coaching/coach-course-journey.mjs'
 import {CLARITY_COURSE_GROUP} from '../lib/coaching/clarity-course.mjs'
 const key='gsk_'+('x'.repeat(38))
 const enabled={HH_COACHING_GROQ_ENABLED:'true',HH_COACHING_GROQ_ZDR_CONFIRMED:'true',
@@ -314,8 +314,14 @@ test('every public persona can send its server prompt without raising the client
     const text=normalizeGenerativeCoachInput(scenario)
     const voice=normalizeGenerativeCoachInput({...scenario,voiceTurn:true})
     const label=[personaId,locale,courseSessionId].join('/')
-    assert.ok(validGroqCoachingMessages(conversationalCoachMessages(text.input,text.persona,'grow','goal')),label)
+    const prompts=conversationalCoachMessages(text.input,text.persona,'grow','goal')
+    assert.ok(validGroqCoachingMessages(prompts),label+' '+prompts.map(m=>m.role+':'+m.content.length).join(','))
+    const system=prompts.filter(m=>m.role==='system').map(m=>m.content).join('\n')
+    assert.ok(system.includes(text.persona.systemInstructions),label+' persona instructions retained')
+    assert.ok(system.includes(coachCourseLiveInstruction(courseSessionId,locale)),label+' course instructions retained')
+    assert.deepEqual(prompts.at(-1),{role:'user',content:message},label)
     const streamed=coachStreamingMessages(conversationalCoachMessages(voice.input,voice.persona,'grow','goal'))
+    assert.ok(validGroqCoachingMessages(streamed),label+' streamed bounds')
     assert.deepEqual(streamed.at(-1),{role:'user',content:message},label)
     assert.match(streamed[0].content,/STREAMED SPEECH OUTPUT/,label)
   }

@@ -6,6 +6,7 @@ import {AppError} from '@/lib/assessments/contracts';
 import {buildPrCompletionJourney} from '@/lib/agent-director/pr-completion-journey.mjs';
 import {verifyPrLiveReadback} from '@/lib/agent-director/pr-live-identity.mjs';
 import {buildPrHeadHistory} from '@/lib/agent-director/pr-head-history.mjs';
+import {buildPrAutomationTrace} from '@/lib/agent-director/pr-automation-trace.mjs';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -208,7 +209,9 @@ async function route(request,method){
      title:'Проверка Supabase runtime',
      detail:'Это изменение только Supabase. GitHub merge и Vercel READY не подтверждают работу Edge/API; нужен отдельный runtime-тест.'}:step)
    }:journey;
-   return auth.apply(NextResponse.json({...corrected,
+   const automationTrace=buildPrAutomationTrace({pr:evidence.pr,comments:evidence.comments,
+    commentsComplete:evidence.commentsComplete,productionVerified:corrected.productionVerified,observedAt});
+   return auth.apply(NextResponse.json({...corrected,automationTrace,
     history:history?{...history,releaseScope:scope,reportedRelease}:null},
     {status:200,headers:PRIVATE_HEADERS}));
   }
