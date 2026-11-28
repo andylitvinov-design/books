@@ -41,7 +41,12 @@ const SimliDialoguePilot=forwardRef(function SimliDialoguePilot({target='coach',
       report(confirmed?status:'unconfirmed')
     })
   }
-  useImperativeHandle(ref,()=>({schedule:(samples,start,ctx)=>run.current?.relay?.schedule(samples,start,ctx),clear:()=>run.current?.relay?.clear()}),[])
+  useImperativeHandle(ref,()=>({
+    schedule:(samples,start,ctx,canSend)=>{
+      if(typeof canSend==='function')run.current?.relay?.schedule(samples,start,ctx,canSend)
+    },
+    clear:()=>run.current?.relay?.clear(),
+  }),[])
   useEffect(()=>{
     mounted.current=true
     const controller=new AbortController()

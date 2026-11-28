@@ -1,4 +1,5 @@
 'use client'
+import CoachMaterialNote from './coach-material-note'
 import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
 import {prepareBrowserPhoto,SUPPORT_PHOTO_ACCEPT} from '@/lib/mandala/prepare-browser-photo'
@@ -20,7 +21,7 @@ async function request(url,options){
 /**
  * @param {{locale?: string, onSelectPhoto?: (photo: File) => void, disabled?: boolean, compact?: boolean, draftPhoto?: File|null, onDraftPhotoSettled?: (file: File) => void}} props
  */
-export default function VideoPhotoLibrary({locale='en',onSelectPhoto,disabled=false,compact=false,draftPhoto=null,onDraftPhotoSettled}){
+export default function VideoPhotoLibrary({locale='en',onSelectPhoto,disabled=false,compact=false,draftPhoto=null,onDraftPhotoSettled,materialAccountId}){
   const t=TEXT[locale]||TEXT.en
   const [opened,setOpened]=useState(Boolean(draftPhoto))
   const [status,setStatus]=useState('idle')
@@ -195,6 +196,7 @@ export default function VideoPhotoLibrary({locale='en',onSelectPhoto,disabled=fa
               {!photo.isProfile?<button type="button" disabled={busy} onClick={()=>void remove(photo.id)}
                 style={{fontSize:11,minHeight:44,flex:1}}>{t.delete}</button>:null}
             </div>
+            {materialAccountId&&<CoachMaterialNote accountId={materialAccountId} locale={locale} kind="photo" id={photo.id}/>}
           </div>)}
         </div>
         {!photos.length?<p style={{fontSize:13,margin:0}}>{t.none}</p>:null}

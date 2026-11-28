@@ -1,3 +1,5 @@
+import ClaritySemanticResult from './clarity-semantic-result'
+import {clarityMethodOutcome} from '@/lib/coaching/clarity-session-fields.mjs'
 // Projection only: a report shows existing reviewed evidence, never invents scores.
 const COPY={
  en:{result:'Session result',partial:'Partial result — open or unverified checkpoints remain',verified:'Verified',reviewed:'Reviewed by you',skipped:'Skipped',missing:'Not explored',current:'Current',desired:'Desired',takeaway:'My takeaway',step:'Next step',question:'Question',confirmation:'Your confirmation',empty:'No structured result recorded yet'},
@@ -39,10 +41,13 @@ export default function MyCoachResultPreview({locale='en',courseSessionId,title,
  // Legacy inner profile data is never used as an outer life-balance score.
  const activeProfile=profile&&(courseSessionId==='introductory'&&profile.track==='outer'||courseSessionId==='meaning_axes_inner_growth'&&profile.track==='inner')?profile:null
  const isReviewed=row=>row.status==='confirmed'&&['client_reviewed_quote','server_verified'].includes(row.source)
- const partial=!activeProfile&&!rows.length||rows.some(r=>!isReviewed(r)&&r.status!=='skipped_by_client')||activeProfile?.rows.some(r=>!isScore(r.current)&&r.current.status!=='skipped_by_client')
+ const day=/^clarity_day_[123]$/.test(courseSessionId||'')?Number(courseSessionId.slice(-1)):null
+ const method=day?clarityMethodOutcome(day,rows):null
+ const partial=method?method.outcome==='partial'||method.outcome==='goal_partial_plan':(!activeProfile&&!rows.length||rows.some(r=>!isReviewed(r)&&r.status!=='skipped_by_client')||activeProfile?.rows.some(r=>!isScore(r.current)&&r.current.status!=='skipped_by_client'))
  return <section data-coach-result-preview style={{display:'grid',gap:10,overflowWrap:'anywhere'}}>
   <h3 style={{margin:0}}>{activeProfile?.title||label[courseSessionId]?.[lang]||title||t.result}</h3>
   {partial&&<small role="status">{t.partial}</small>}
+  {['clarity_day_1','clarity_day_2','clarity_day_3'].includes(courseSessionId)&&<ClaritySemanticResult day={Number(courseSessionId.slice(-1))} rows={rows} locale={lang}/>}
   {activeProfile&&<><Wheel profile={activeProfile}/><ol style={{margin:0,paddingInlineStart:20}}>{activeProfile.rows.map(row=><li key={row.id}><strong>{row.label}</strong> — {t.current}: <Rating field={row.current} t={t}/>{(row.priority||activeProfile.track==='inner'||isScore(row.desired))&&<> · {t.desired}: <Rating field={row.desired} t={t}/></>}</li>)}</ol></>}
   {rows.length>0&&<dl style={{margin:0,display:'grid',gap:8}}>{rows.map(row=><div key={row.id}><dt><strong>{row.label}</strong></dt><dd style={{margin:0}}>{isReviewed(row)?<>{row.questionTurnIndex!=null&&<small style={{display:'block'}}>{t.question}: {row.question}</small>}{row.quote}<br/><small>{row.source==='server_verified'?t.verified:t.reviewed}{row.confirmationQuote&&<> · {t.confirmation}: {row.confirmationQuote}</>}</small></>:row.status==='skipped_by_client'?t.skipped:t.missing}</dd></div>)}</dl>}
   {!activeProfile&&!rows.length&&<p>{t.empty}</p>}
