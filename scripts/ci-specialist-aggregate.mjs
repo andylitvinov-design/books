@@ -505,7 +505,7 @@ export async function verifiedPriorSpecialistEvidence(api,ctx,pr,files,expected)
      ctx.head===ctx.previousHead||!Array.isArray(expected)||!expected.length||
      files.base?.get(PRIOR_CORE)!==files.current?.get(PRIOR_CORE)||
      typeof files.base?.get(PRIOR_CORE)!=='string'||
-     !['commit','runsForWorkflow','attemptJobs','jobLog'].every(k=>typeof api[k]==='function'))return none;
+     !['commit','runs','runsForWorkflow','attemptJobs','jobLog'].every(k=>typeof api[k]==='function'))return none;
   try{
     const commit=async sha=>{
       const c=await api.commit(sha);
@@ -563,13 +563,25 @@ export async function verifiedPriorSpecialistEvidence(api,ctx,pr,files,expected)
     // executed workflows from a complete original gate qualify.
     if(rows.length!==Number(counts[0].split(': ')[1])||
        new Set(rows.map(x=>x[1])).size!==rows.length)return none;
+    // The old unified receipt is not enough if a later attempt of the same
+    // Specialist failed. Inspect the actual prior-HEAD inventory once, using
+    // the same immutable association/ordering rules as the current gate.
+    // Do not synthesize a status or reach behind newer red/pending attempts.
+    const inventory=await api.runs(ctx.previousHead);
+    if(!Array.isArray(inventory)||inventory.length>1000)return none;
+    const oldPr={...pr,head:{...pr.head,sha:ctx.previousHead}};
+    const proofState=inspectWorkflowRuns({expected,runs:inventory,pr:oldPr});
+    const passed=new Map(proofState.passed.map(x=>[x.path.split('@')[0],x]));
     const result=new Map();
     for(const row of rows){
       const name=row[1],jobs=Number(row[2]),runId=Number(row[3]);
       if(!Number.isSafeInteger(jobs)||!Number.isSafeInteger(runId))return none;
-      if(expected.includes(name)&&typeof files.base.get(name)==='string'&&
+      const actual=passed.get(name);
+      if(actual?.id===runId&&Number.isSafeInteger(actual.run_attempt)&&actual.run_attempt>0&&
+         expected.includes(name)&&typeof files.base.get(name)==='string'&&
          files.base.get(name)===files.current.get(name))
-        result.set(name,{name,run_id:runId,jobs,prior_head:ctx.previousHead,prior_gate_run:run.id});
+        result.set(name,{name,run_id:runId,jobs,prior_head:ctx.previousHead,prior_gate_run:run.id,
+          prior_run_attempt:actual.run_attempt});
     }
     return result;
   }catch{return none;}

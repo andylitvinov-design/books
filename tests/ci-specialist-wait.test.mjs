@@ -1314,11 +1314,22 @@ test('prior unified gate reuses every proved same-tree Specialist, not stale or 
  const coreLog=[checkout,oldMerge,'HH_CORE_BUILD_IDENTITY_V1 27 321 1 '+oldMerge+' '+old+' '+base].join('\n');
  const gateLog=[checkout,oldMerge,'Specialist CI aggregate for PR #27 head='+old+' event_base='+base+' tested_base='+base,
   'Verified applicable workflows: 2','- '+path+' (2 executed jobs; run 11)','- '+second+' (1 executed jobs; run 12)'].join('\n');
- const api={commit:async sha=>commits[sha],runsForWorkflow:async()=>[oldRun],
+ const specialists=[{...oldRun,id:11,path},{...oldRun,id:12,path:second}];
+ const api={commit:async sha=>commits[sha],runs:async()=>specialists,runsForWorkflow:async()=>[oldRun],
   attemptJobs:async()=>jobs,jobLog:async id=>id===1?coreLog:gateLog};
  const check=(a=api,f=source)=>verifiedPriorSpecialistEvidence(a,context,pr,f,[path,second]);
  const proof=await check();assert.equal(proof.size,2);
  assert.equal(proof.get(path).run_id,11);
+ assert.equal(proof.get(path).prior_run_attempt,1);
+ for(const state of ['failure','cancelled','in_progress']){
+  const changed={...specialists[0],id:13,status:state==='in_progress'?'in_progress':'completed',
+   conclusion:state==='in_progress'?null:state};
+  const partial=await check({...api,runs:async()=>[...specialists,changed]});
+  assert.equal(partial.has(path),false,state);
+  assert.equal(partial.has(second),true,state);
+ }
+ assert.equal((await check({...api,runs:async()=>[{...specialists[0],conclusion:'failure'},specialists[1]]})).has(path),false);
+ assert.equal((await check({...api,runs:async()=>{throw Error('API unavailable')}})).size,0);
  assert.equal((await check({...api,commit:async sha=>sha===old?{...commits[sha],tree:{sha:'3'.repeat(40)}}:commits[sha]})).size,0);
  assert.equal((await check({...api,commit:async sha=>sha===oldMerge?{...commits[sha],tree:{sha:'3'.repeat(40)}}:commits[sha]})).size,0);
  assert.equal((await check({...api,runsForWorkflow:async()=>[{...oldRun,conclusion:'failure'}]})).size,0);
