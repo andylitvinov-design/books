@@ -680,6 +680,7 @@ const PACKAGE_ONLY_ADVISORY_OWNERS = new Set([
   '.github/workflows/opora-module-ci.yml',
   '.github/workflows/hh-owner-telegram-video.yml',
   '.github/workflows/hh-live-audio-ci.yml',
+  '.github/workflows/holistic-house-native.yml',
 ]);
 export function independentPackageOnlyAdvisories(files,changed,expected) {
   const result=new Set();
@@ -716,6 +717,161 @@ export function independentPackageOnlyAdvisories(files,changed,expected) {
       if(productPaths.length&&matchesTrigger(trigger,productPaths,TARGET))continue;
       result.add(path);
     } catch { /* unknown trigger stays mandatory */ }
+  }
+  return result;
+}
+
+
+// A shared dispatcher is not a universal trigger when the only source edits
+// are confined to existing guarded My Coach branches. Compare every byte
+// outside those AST-proven branch bodies; never remove an existing import,
+// change a guard or hide shared auth/session/payment routing. A new named
+// feature import is allowed only when every reference stays in those bodies.
+// This is a routing proof, not a security review of the feature's code.
+const COACH_SHARED_DISPATCHER='app/api/app/[...path]/route.js';
+const COACH_DEDICATED_ROUTE=/^app\/api\/app\/(?:my-coach|clarity-course)(?:\/[a-z0-9-]+)*\/route\.(?:js|ts)$/i;
+const COACH_IMPORT_SOURCE=/^@\/lib\/(?:coaching\/[a-z0-9-]+\.mjs|app\/(?:clarity-course(?:-[a-z0-9-]+)?|coaching-brain)\.js)$/;
+export function verifiedCoachDispatcherIsolation(before,after,ts) {
+  if(!ts||typeof before!=='string'||typeof after!=='string'||before===after||
+     before.length>250_000||after.length>250_000||before.includes('\r')||after.includes('\r'))return false;
+  try {
+    function parse(source) {
+      const ast=ts.createSourceFile('route.js',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.JS);
+      if(ast.parseDiagnostics.length)return null;
+      const bodies=[],names=new Set(),imports=[];
+      let invalid=false;
+      for(const node of ast.statements) {
+        if(ts.isImportDeclaration(node))imports.push({node,text:source.slice(node.getStart(ast),node.end)});
+      }
+      function visit(node) {
+        if(ts.isIfStatement(node)&&ts.isBinaryExpression(node.expression)) {
+          const e=node.expression;
+          if(e.operatorToken.kind===ts.SyntaxKind.EqualsEqualsEqualsToken&&
+             ts.isIdentifier(e.left)&&e.left.text==='joined'&&ts.isStringLiteral(e.right)&&
+             /^my-coach\/[a-z0-9/-]+$/.test(e.right.text)) {
+            let owner=node.parent;
+            while(owner&&!ts.isFunctionLike(owner))owner=owner.parent;
+            if(owner&&ts.isFunctionDeclaration(owner)&&owner.name?.text==='handle'&&
+               ts.isBlock(node.parent)&&ts.isBlock(node.thenStatement)&&!node.elseStatement) {
+              if(names.has(e.right.text)){invalid=true;return;}
+              names.add(e.right.text);
+              bodies.push({start:node.thenStatement.getStart(ast)+1,end:node.thenStatement.end-1});
+              return;
+            }
+          }
+        }
+        ts.forEachChild(node,visit);
+      }
+      visit(ast);
+      return invalid||!bodies.length?null:{ast,bodies,imports,names,source};
+    }
+    const a=parse(before),b=parse(after);
+    if(!a||!b||a.names.size!==b.names.size||[...a.names].some(x=>!b.names.has(x)))return false;
+    const originalImports=new Set(a.imports.map(x=>x.text)),remove=[],addedNames=new Set();
+    for(const entry of b.imports) {
+      if(originalImports.has(entry.text))continue;
+      const n=entry.node,c=n.importClause,bindings=c?.namedBindings;
+      const start=n.getStart(b.ast);
+      if(!ts.isStringLiteral(n.moduleSpecifier)||!COACH_IMPORT_SOURCE.test(n.moduleSpecifier.text)||
+         !c||c.isTypeOnly||c.name||!bindings||!ts.isNamedImports(bindings)||
+         !bindings.elements.length||n.attributes||entry.text.includes('\n')||
+         (start>0&&after[start-1]!=='\n')||after[n.end]!=='\n')return false;
+      for(const el of bindings.elements) {
+        if(el.isTypeOnly||el.propertyName||addedNames.has(el.name.text))return false;
+        addedNames.add(el.name.text);
+      }
+      remove.push({start,end:n.end+1});
+    }
+    const inRange=(pos,range)=>range.start<=pos&&pos<range.end;
+    const used=new Set();let outside=false;
+    function check(node) {
+      if(ts.isIdentifier(node)&&addedNames.has(node.text)) {
+        const pos=node.getStart(b.ast);
+        if(!remove.some(r=>inRange(pos,r))) {
+          if(!b.bodies.some(r=>inRange(pos,r)))outside=true;
+          else used.add(node.text);
+        }
+      }
+      ts.forEachChild(node,check);
+    }
+    check(b.ast);
+    if(outside||used.size!==addedNames.size)return false;
+    function project(info,extra) {
+      const spans=[...info.bodies.map(r=>({...r,value:'<MY_COACH_BODY>'})),
+        ...extra.map(r=>({...r,value:''}))].sort((x,y)=>y.start-x.start);
+      let text=info.source,last=text.length;
+      for(const range of spans) {
+        if(range.start<0||range.end>last||range.start>range.end)return null;
+        text=text.slice(0,range.start)+range.value+text.slice(range.end);
+        last=range.start;
+      }
+      return text;
+    }
+    const left=project(a,[]),right=project(b,remove);
+    return left!==null&&left===right;
+  } catch{return false;}
+}
+
+const DISPATCHER_ADVISORY_OWNERS=new Set([
+  '.github/workflows/hh-energywork-ai.yml',
+  '.github/workflows/practitioner-presentations.yml',
+  '.github/workflows/practice-visual-browser.yml',
+  '.github/workflows/practice-visual-services.yml',
+  '.github/workflows/practice-google-browser.yml',
+  '.github/workflows/hh-profile-axis-matching.yml',
+]);
+const PRIVATE_COACH_GATE_OWNERS=[
+  '.github/workflows/hh-personal-coaching-session.yml',
+  '.github/workflows/hh-app-r1.yml',
+  '.github/workflows/ia-v2.yml',
+];
+export function independentDispatcherAdvisories(files,rows,expected,readSource,ts) {
+  const result=new Set();
+  if(!Array.isArray(rows)||!rows.length||rows.some(row=>typeof row?.filename!=='string'||row.previous_filename||
+      !['M','A','modified','added'].includes(row.status))||
+     new Set(rows.map(r=>r.filename)).size!==rows.length||!Array.isArray(expected)||
+     !PRIVATE_COACH_GATE_OWNERS.every(name=>expected.includes(name))||
+     !/^[0-9a-f]{40}$/.test(files.testedMergeSha||'')||
+     !rows.some(r=>r.filename===COACH_SHARED_DISPATCHER&&['M','modified'].includes(r.status)))return result;
+  const changed=rows.map(r=>r.filename);
+  // Shared application/auth, security, payments, native and global release
+  // controls never inherit a route-local exemption.
+  if(changed.some(p=>/^(?:\.github\/(?:actions\/|workflows\/(?!hh-personal-coaching-session\.yml$))|lib\/(?:ci\/|security\/|commerce\/|checkout\/|academy\/|practitioners\/)|lib\/app\/(?:auth|session|config|repository)(?:[./-]|$)|app\/api\/(?:auth|payments)\/|app\/(?:layout|globals)\.|components\/app\/app-workspace\.|scripts\/ci-|next\.config\.|middleware\.|tsconfig\.|eslint\.config\.|vercel\.json$)/i.test(p)))return result;
+  try{
+    if(!verifiedCoachDispatcherIsolation(readSource('base',COACH_SHARED_DISPATCHER),
+      readSource('merge',COACH_SHARED_DISPATCHER),ts))return result;
+    const sharedPaths=changed.filter(p=>p===COACH_SHARED_DISPATCHER||COACH_DEDICATED_ROUTE.test(p));
+    const remaining=changed.filter(p=>!sharedPaths.includes(p));
+    for(const name of expected) {
+      if(!DISPATCHER_ADVISORY_OWNERS.has(name)||changed.includes(name))continue;
+      const old=files.base.get(name);
+      if(typeof old!=='string'||old!==files.current.get(name))continue;
+      const trigger=parsePrTrigger(old,name);
+      if(!trigger?.paths||!matchesTrigger(trigger,sharedPaths,TARGET)||
+         (remaining.length&&matchesTrigger(trigger,remaining,TARGET)))continue;
+      result.add(name);
+    }
+  }catch{return new Set();}
+  return result;
+}
+
+// An unassociated run from a known, unchanged workflow with explicit
+// non-matching path selectors cannot block an unrelated exact checkout.
+// Missing/failed expected owners, retired/unknown workflows and any change
+// to the workflow itself remain subject to the existing strict rules.
+export function provenNonApplicableWorkflows(files,changed,baselineExpected) {
+  const result=new Set();
+  if(!Array.isArray(files.changedRows)||!files.changedRows.length||
+     !Array.isArray(changed)||!changed.length||!Array.isArray(baselineExpected))return result;
+  const candidate=[...changed];
+  if(candidate.includes('package-lock.json')&&!candidate.includes('package.json'))candidate.push('package.json');
+  for(const [name,old] of files.base) {
+    if(name===WORKFLOW_PREFIX+'hh-pr-core-release.yml'||baselineExpected.includes(name)||
+       changed.includes(name)||old!==files.current.get(name))continue;
+    try{
+      const trigger=parsePrTrigger(old,name);
+      if(trigger?.paths&&!matchesTrigger(trigger,candidate,TARGET))result.add(name);
+    }catch{/* unknown trigger stays strict */}
   }
   return result;
 }
@@ -1014,14 +1170,12 @@ export async function verify(api,ctx,files,options={}) {
     {encoding:'utf8',maxBuffer:1_000_000,stdio:['ignore','pipe','pipe']}));
   const sources=(side,path)=>readSource(side === 'base' ? ctx.base : ctx.head,path);
   if (risk === 'FAST' && !scopedCssIsSafe(changedRows,sources)) risk='STRICT';
-  if (risk !== 'FAST') {
-    let loaded=false, parser;
-    const loadTypescript=()=>{
-      if (!loaded) { loaded=true; parser=(options.loadTypescript ?? (()=>loadTrustedTypescript(ctx.base)))(); }
-      return parser;
-    };
-    risk=classifyStaticUiText(changedRows,sources,{loadTypescript});
-  }
+  let loaded=false, parser;
+  const loadTypescript=()=>{
+    if (!loaded) { loaded=true; parser=(options.loadTypescript ?? (()=>loadTrustedTypescript(ctx.base)))(); }
+    return parser;
+  };
+  if (risk !== 'FAST') risk=classifyStaticUiText(changedRows,sources,{loadTypescript});
   const packageImpact=classifyPackageImpact({changed,basePackage:files.basePackage,currentPackage:files.currentPackage});
   const baselineExpected=expectedWorkflows({ ...files,changed,packageImpact });
   const routed=resolveExpectedSpecialists({ ...files,changed,expected:baselineExpected });
@@ -1052,8 +1206,17 @@ export async function verify(api,ctx,files,options={}) {
   if (routed.expected.includes(mandala)) advisoryPaths.delete(mandala);
   const packageOnlyAdvisory=pinnedChangeRows ? independentPackageOnlyAdvisories(files,changed,routed.expected) : new Set();
   for(const replacement of replacements) packageOnlyAdvisory.delete(replacement);
-  const expected=routed.expected.filter(name=>!advisoryPaths.has(name) && !concurrencyAdvisory.has(name) && !selfTriggerAdvisory.has(name) && !packageOnlyAdvisory.has(name));
+  const dispatcherAdvisory=pinnedChangeRows && files.testedMergeSha && changed.includes(COACH_SHARED_DISPATCHER) &&
+    PRIVATE_COACH_GATE_OWNERS.every(name=>routed.expected.includes(name)) ?
+    independentDispatcherAdvisories(files,changedRows,routed.expected,(side,path)=>
+      readSource(side==='base'?ctx.base:files.testedMergeSha,path),loadTypescript()) : new Set();
+  for(const replacement of replacements) dispatcherAdvisory.delete(replacement);
+  const nonApplicable=provenNonApplicableWorkflows(files,changed,baselineExpected);
+  for(const name of routed.expected) nonApplicable.delete(name);
+  const expected=routed.expected.filter(name=>!advisoryPaths.has(name) && !concurrencyAdvisory.has(name) &&
+    !selfTriggerAdvisory.has(name) && !packageOnlyAdvisory.has(name) && !dispatcherAdvisory.has(name));
   if(packageOnlyAdvisory.size) console.log('CI_PACKAGE_ONLY_ADVISORY:'+JSON.stringify([...packageOnlyAdvisory].sort()));
+  if(dispatcherAdvisory.size) console.log('CI_DISPATCHER_ONLY_ADVISORY:'+JSON.stringify([...dispatcherAdvisory].sort()));
   // A moving production SHA is not itself a failing PR. Wait for required
   // exact-HEAD specialist evidence before considering any base-sync recovery.
   // Earlier BASE_ADVANCED errors cancelled still-running browser/macOS work;
@@ -1121,11 +1284,12 @@ export async function verify(api,ctx,files,options={}) {
       }
     }
     const allRuns=[...indexed,...recovered.values()];
-    fastDiagnostics=allRuns.filter(run=>(advisoryPaths.has(String(run.path || '').split('@')[0]) || packageOnlyAdvisory.has(String(run.path || '').split('@')[0])) &&
+    const informational=run=>[advisoryPaths,packageOnlyAdvisory,dispatcherAdvisory,nonApplicable]
+      .some(set=>set.has(String(run.path || '').split('@')[0]));
+    fastDiagnostics=allRuns.filter(run=>informational(run)&&run.head_sha===ctx.head &&
       (run.status !== 'completed' || run.conclusion !== 'success')).map(run=>String(run.path).split('@')[0]+':'+(run.conclusion || run.status || 'unknown'));
     const eligibleRuns = rows => rows.filter(run =>
-      !advisoryPaths.has(String(run.path || '').split('@')[0]) &&
-      !packageOnlyAdvisory.has(String(run.path || '').split('@')[0]) &&
+      !informational(run) &&
       !isConcurrencyAdvisoryRun(run,pr,concurrencyAdvisory) &&
       !isConcurrencyAdvisoryRun(run,pr,selfTriggerAdvisory));
     state=inspectWorkflowRuns({expected,runs:eligibleRuns(allRuns),pr});
@@ -1328,7 +1492,7 @@ export async function verify(api,ctx,files,options={}) {
   else await verifyCurrentBase(fresh);
   const reused=state.reused||[];
   if(reused.length){
-    const latest=inspectWorkflowRuns({expected:reused.map(x=>x.name),runs:await api.runs(ctx.head),pr:fresh});
+    const latest=inspectWorkflowRuns({expected:reused.map(x=>x.name),runs:(await api.runs(ctx.head)).filter(run=>!nonApplicable.has(String(run.path||'').split('@')[0])&&!dispatcherAdvisory.has(String(run.path||'').split('@')[0])&&!packageOnlyAdvisory.has(String(run.path||'').split('@')[0])),pr:fresh});
     if(latest.failed.length||latest.cancelled.length||latest.interrupted.length||
        latest.notExecuted.length||latest.uncertain.length||latest.running.length||
        latest.orphanFailures.length||latest.orphanCancelled.length||latest.orphanInterrupted.length||
@@ -1344,6 +1508,7 @@ export async function verify(api,ctx,files,options={}) {
     concurrencyOnly:[...concurrencyAdvisory].sort(),
     selfTriggerOnly:[...selfTriggerAdvisory].sort(),
     packageOnly:[...packageOnlyAdvisory].sort(),
+    dispatcherOnly:[...dispatcherAdvisory].sort(),
   };
   return {risk,expected,delegated,executed,reused,advisory,packageImpact,head:ctx.head,base:ctx.base};
 }
