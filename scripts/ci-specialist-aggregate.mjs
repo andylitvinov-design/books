@@ -1212,6 +1212,7 @@ export async function verify(api,ctx,files,options={}) {
       readSource(side==='base'?ctx.base:files.testedMergeSha,path),loadTypescript()) : new Set();
   for(const replacement of replacements) dispatcherAdvisory.delete(replacement);
   const nonApplicable=provenNonApplicableWorkflows(files,changed,baselineExpected);
+  for(const name of routed.expected) nonApplicable.delete(name);
   const expected=routed.expected.filter(name=>!advisoryPaths.has(name) && !concurrencyAdvisory.has(name) &&
     !selfTriggerAdvisory.has(name) && !packageOnlyAdvisory.has(name) && !dispatcherAdvisory.has(name));
   if(packageOnlyAdvisory.size) console.log('CI_PACKAGE_ONLY_ADVISORY:'+JSON.stringify([...packageOnlyAdvisory].sort()));
