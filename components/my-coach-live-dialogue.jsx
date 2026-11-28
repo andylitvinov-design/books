@@ -24,7 +24,7 @@ import {coachSessionVisibleStageIds} from '@/lib/coaching/coach-session-progress
 import {openingStagePosition,profileStagePosition,methodStagePosition,courseStagePosition,savedProfileStagePosition,openingCapturedAnswers,courseCapturedRows,groupedSessionPosition,boundTranscriptReview,clarityVersionedStageView} from '@/lib/coaching/coach-session-stage-view.mjs'
 import {checkpointQuestionMatches,checkpointConfirmationMatches} from '@/lib/coaching/coach-course-question-binding.mjs'
 import {clarityScenarioVersion,clarityScenarioGateFields} from '@/lib/coaching/clarity-course-scenarios.mjs'
-import {thematicScenarioVersion} from '@/lib/coaching/session-blueprint.mjs'
+import {thematicScenarioVersion,THEMATIC_TRANSCRIPT_REVIEW_VERSION} from '@/lib/coaching/session-blueprint.mjs'
 import {projectClarityPanelClock,restoredClarityRelayBinding} from '@/lib/coaching/clarity-relay-client.mjs'
 import {protocolAnswerClass} from '@/lib/coaching/coach-protocol-validation-gate.mjs'
 import {COACH_PROFILE_AXES} from '@/lib/coaching/coach-profile-intake.mjs'
@@ -333,6 +333,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [ratingError,setRatingError]=useState(false)
   const [autoSaveEnabled,setAutoSaveEnabled]=useState(false)
   const [restoredDraft,setRestoredDraft]=useState(false)
+  const [restoredThematicVersion,setRestoredThematicVersion]=useState(null)
   const [freshPrivateProfile,setFreshPrivateProfile]=useState(false)
   const [courseGate,setCourseGate]=useState(null),courseGateRef=useRef(null)
   const [courseGateEnabled,setCourseGateEnabled]=useState(false),[courseGateBusy,setCourseGateBusy]=useState(false),courseGateBusyRef=useRef(false)
@@ -878,7 +879,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       completed:false,finished:false,ratings:[],total:8,step:1,
       current:'permission',axisTitle:({ru:'Проверка доступа',en:'Access review',es:'Revisión de acceso'})[lang]}:
       newProfileProgress)
-  const courseGateRequired=!freshPrivateProfile&&!profileV3&&coachCourseGateHandoffRequired({enabled:courseGateEnabled,autosave:autoSaveEnabled,courseSessionId:selectedCourseId,locale:conversationLang,opening:openingProgress})
+  const conversationReviewAlreadyStarted=courseFieldReview?.version===THEMATIC_TRANSCRIPT_REVIEW_VERSION&&courseFieldReview.events?.length>0
+  const courseGateRequired=!conversationReviewAlreadyStarted&&!freshPrivateProfile&&!profileV3&&coachCourseGateHandoffRequired({enabled:courseGateEnabled,autosave:autoSaveEnabled,courseSessionId:selectedCourseId,locale:conversationLang,opening:openingProgress})
   const courseGateCanStart=Boolean(courseGateRequired&&!courseGate&&!courseGateAttemptRef.current&&voiceState.phase==='idle'&&!busy&&!paused&&!protocolOpen)
   // Never let the free dialogue ask another core question while the server gate is required.
   useEffect(()=>{
@@ -967,7 +969,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   // review or temporarily inconsistent turn snapshot to crash the session.
   let courseRows=[],courseReviewInvalid=false
   let effectiveCourseReview=courseGate?courseGate.step.review:courseFieldReview
-  const courseScenarioVersion=courseGate?courseGate.step.scenarioVersion||null:coachReviewScenarioVersion(effectiveCourseReview)||(courseGateEnabled&&autoSaveEnabled&&!effectiveCourseReview?(clarityScenarioVersion(selectedCourseId)||thematicScenarioVersion(selectedCourseId)):null)
+  const conversationalScenarioVersion=restoredDraft?restoredThematicVersion:thematicScenarioVersion(selectedCourseId)
+  const courseScenarioVersion=courseGate?courseGate.step.scenarioVersion||null:coachReviewScenarioVersion(effectiveCourseReview)||(conversationalScenarioVersion||(courseGateEnabled&&autoSaveEnabled&&!effectiveCourseReview?clarityScenarioVersion(selectedCourseId):null))
   const courseSchema=coachCourseProtocolSchema(selectedCourseId,lang,{scenarioVersion:courseScenarioVersion})
   // A selected course stays a course even while evidence/readback is unavailable.
   // Never replace its checklist with a persona method because rows are temporarily empty.
@@ -985,12 +988,13 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         return field&&test(field,locale)
       })
       const matches=(row,text)=>typeof text==='string'&&across(row,(field,locale)=>checkpointQuestionMatches(field,locale,text.trim()))
-      if(!courseGate&&!courseGateRequired&&!courseScenarioVersion){
+      if(!courseGate&&!courseGateRequired&&(!courseScenarioVersion||conversationalScenarioVersion===courseScenarioVersion)){
         // Existing explicit review events win. Reconstruct only exact spoken/
         // typed question + literal answer + exact echo + explicit assent.
         // No inference from the currently suggested field and no new provider.
         effectiveCourseReview=boundTranscriptReview({courseId:selectedCourseId,turns,fields:courseSchema.checkpoints,
-          existing:courseFieldReview,afterIndex:openingEnd,matchQuestion:matches,
+          existing:courseFieldReview||(conversationalScenarioVersion?{version:THEMATIC_TRANSCRIPT_REVIEW_VERSION,courseSessionId:selectedCourseId,events:[]}:null),afterIndex:openingEnd,matchQuestion:matches,
+          ...(conversationalScenarioVersion?{reviewVersion:THEMATIC_TRANSCRIPT_REVIEW_VERSION}:{}),
           matchEcho:(row,q,quote,echo)=>typeof echo==='string'&&across(row,(field,locale)=>
             checkpointQuestionMatches(field,locale,q)&&checkpointConfirmationMatches(field,q,quote,locale,echo)),
           answerClass:protocolAnswerClass,normalize:normalizeCoachCourseFieldReview})
@@ -1363,7 +1367,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     try{
       value=normalizeMyCoachDraft({courseSessionId:selectedCourseId,...(freshPrivateProfile?{privateProfileV3Requested:true}:{}),protocol:{
         id:protocolIdRef.current,personaId:protocolOriginPersonaRef.current||personaId,methodId:visibleMethodId,locale:restoredProfileProof.current?.value.block.locale||conversationLang,
-        courseSessionId:selectedCourseId,
+        courseSessionId:selectedCourseId,...(conversationalScenarioVersion?{courseScenarioVersion:conversationalScenarioVersion}:{}),
         startedAt:protocolStartedRef.current,completedAt:new Date().toISOString(),
         durationSeconds:Math.floor(activeClockRef.current.sample(window.performance.now())),turnLayout:'chronological',
         ...(speechAmendmentsRef.current.length?{speechAmendments:speechAmendmentsRef.current}:{}),
@@ -1612,7 +1616,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   function courseGateHandoffText(locale){return ({ru:'Вступление завершено. Продолжим в режиме проверяемого протокола: сначала ответ, затем проверка и сохранение. Вы можете начать или закончить сессию.',en:'The opening is complete. Continue in verified protocol mode: answer, verify, then save. You can start or finish the session.',es:'La introducción ha terminado. Continúa con el protocolo verificado: responder, verificar y guardar. Puedes empezar o terminar la sesión.'})[locale]}
   function courseGateOpeningAfter(rows,locale){
     const opening=coachOpeningProgress({turns:rows,locale,personaId:openingEvidencePersonaId,...localOpeningScope})
-    return !freshPrivateProfile&&!profileV3&&coachCourseGateHandoffRequired({enabled:courseGateEnabled,autosave:autoSaveRef.current,courseSessionId:selectedCourseId,locale,opening})
+    return !conversationReviewAlreadyStarted&&!freshPrivateProfile&&!profileV3&&coachCourseGateHandoffRequired({enabled:courseGateEnabled,autosave:autoSaveRef.current,courseSessionId:selectedCourseId,locale,opening})
   }
   async function sendMessage(raw,{voiceTurn=false,utteranceLocale=null,onApprovedPhrase=null,forceLocal=false}={}){
     if(courseGateRequired||courseGateRef.current||courseGateAttemptRef.current||courseGateBusyRef.current)return null
@@ -1853,7 +1857,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         headers:{'Content-Type':'application/json',...(methodSession?{'X-HH-Account-ID':methodSession.accountId}:{})},
         body:JSON.stringify({
           personaId,settings,locale:responseLocale,consent:true,message,voiceTurn:voiceTurn===true,
-          courseSessionId:selectedCourseId,
+          courseSessionId:selectedCourseId,...(conversationalScenarioVersion?{courseScenarioVersion:conversationalScenarioVersion}:{}),
           ...(methodSession?{methodId:methodSession.methodId,methodSessionId:methodSession.methodSessionId}:{}),
           ...(!liveVoiceSelected&&entryMemoryToken&&!contextFocusChanged?{
             memoryEntryStageToken:entryMemoryToken,
@@ -2090,7 +2094,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const locked=courseGateRef.current?.protocol
     return normalizeMyCoachProtocol({
       id:protocolIdRef.current,personaId:locked?.personaId||protocolOriginPersonaRef.current||personaId,methodId:locked?.methodId||visibleMethodId,locale:locked?.locale||restoredProfileProof.current?.value.block.locale||conversationLang,
-      courseSessionId:selectedCourseId,
+      courseSessionId:selectedCourseId,...(conversationalScenarioVersion?{courseScenarioVersion:conversationalScenarioVersion}:{}),
       startedAt:protocolStartedRef.current||protocolFinishedAt,
       completedAt:protocolFinishedAt,durationSeconds:Math.floor(clarityCourseDay(selectedCourseId)?activeSessionSeconds:activeClockRef.current.sample(window.performance.now())),
       ...(clarityTimeLimit.current&&clarityCourseDay(selectedCourseId)?{clarityTimeLimitReached:true,clarityHomeworkAccepted}:{}),
@@ -2245,7 +2249,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     try{
       insightResult=protocolSaveSnapshotRef.current||currentProtocol()
       insightOverview=myCoachProtocolPdfOptions(insightResult,{locale:conversationLang}).protocolOverview||''
-      insightRows=coachCourseProtocolRows(insightResult.courseSessionId,insightResult.turns,insightResult.courseFieldReview,lang)
+      insightRows=coachCourseProtocolRows(insightResult.courseSessionId,insightResult.turns,insightResult.courseFieldReview,lang,{scenarioVersion:coachReviewScenarioVersion(insightResult.courseFieldReview)||insightResult.courseScenarioVersion||null})
       insightProfile=coachSavedProfileV3(insightResult,lang)
     }catch{/* show unavailable, retain original dialogue */}
   }
@@ -2448,7 +2452,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       restoredProfileCheckin.current=p.profileCheckin?.version===COACH_PROFILE_REVIEW_VERSION?p.profileCheckin:null
       autoSaveRef.current=true;engineManuallySelectedRef.current=true;turnsRef.current=p.turns
       flushSync(()=>{
-        setRestoredDraft(true);setFreshPrivateProfile(recovered.privateProfileV3Requested===true);setAutoSaveEnabled(true);setAutoSaveStatus('saved')
+        setRestoredDraft(true);setRestoredThematicVersion(p.courseScenarioVersion||null);setFreshPrivateProfile(recovered.privateProfileV3Requested===true);setAutoSaveEnabled(true);setAutoSaveStatus('saved')
         setTurns(p.turns);setSelectedCourseId(recovered.courseSessionId);setSpeechLocale(p.locale)
         setSelectedGoal('')
         if(restoredProfileCheckin.current)setProfileReviewStart({from:p.turns.filter(row=>row.role==='user'&&row.unanswered!==true).length,token:null,provider:null})
@@ -2738,7 +2742,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         <div className={`${styles.voiceCenter} ${callStyles.center}`} data-voice-active={voiceState.phase!=='idle'?'true':undefined}>
           {privateTextOnly&&!privateResumeVoice?<span data-coach-private-text-resume>{({ru:'Текст',en:'Text',es:'Texto'})[lang]}</span>:liveVoiceSelected&&!privateResumeVoice?<MyCoachGeminiLive ref={speechRef} outputMuted={outputMuted}
             locale={conversationLang} personaId={personaId} settings={settings}
-            courseSessionId={selectedCourseId}
+            courseSessionId={selectedCourseId} courseScenarioVersion={conversationalScenarioVersion}
             clarityRelaySelection={clarityCourseActive&&protocolOwnerReady&&(!restoredDraft||restoredRelay)?{accountId:protocolOwnerRef.current,personaId,day:clarityCourseDay(selectedCourseId),runId:activeCourseRunId||null,protocolId:protocolIdRef.current,minimumElapsedMs:relayClockRef.current?.elapsedMs||0}:null}
             onClarityRelayClock={acceptClarityRelayClock}
             methodSession={methodSession} prepareMethodSession={ensureCoachMethodSession}

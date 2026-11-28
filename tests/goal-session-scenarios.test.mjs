@@ -149,3 +149,14 @@ test('expanded thematic scenario binds every non-contact stage to individual que
   assert.equal(coachCourseProtocolRows(id,[],null,locale).length,old.checkpoints.length);
  }
 });
+
+import {normalizeThematicConversationVersion,thematicConversationTimeGuidance} from '../lib/coaching/session-blueprint.mjs';
+test('explicit expanded conversation version uses the same localized questions and timing in shared model guidance',()=>{
+ for(const item of [...COACH_PROGRAM_GROUPS.flatMap(g=>g.sessions),...COACH_COURSE_SESSIONS].filter(x=>thematicScenarioVersion(x.id)))for(const locale of ['en','ru','es']){
+  const version=THEMATIC_EXPANDED_VERSION,id=item.id,b=sessionBlueprint(id,locale,{expanded:true});
+  const prompt=coachCourseLiveInstruction(id,locale,version);assert.ok(prompt.includes('COURSE SCENARIO FIRST'));
+  for(const f of b.additionalCheckpoints){assert.ok(prompt.includes(f.question));assert.equal(coachCourseIndependentQuestion(id,locale,f.question,version),true);assert.equal(coachCourseIndependentQuestion(id,locale,f.question),false)}
+  for(const stage of b.stages){const hint=thematicConversationTimeGuidance(id,locale,stage.start*60,version);for(const f of stage.fields)assert.ok(hint.includes(f));assert.ok(hint.length<=450)}
+ }
+ assert.throws(()=>normalizeThematicConversationVersion('goal_result',THEMATIC_EXPANDED_VERSION));assert.throws(()=>normalizeThematicConversationVersion('business_strategy','forged'));
+});
