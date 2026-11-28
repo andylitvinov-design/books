@@ -161,7 +161,7 @@ test('My Coach persona dialogue speaks and listens on exactly the consented sess
   const css=source('components/my-coach-speech-loop.module.css')
   assert.match(ui,/MyCoachSpeechLoop/)
   assert.match(ui,/const result=await sendMessage\(draft.trim\(\)\)/)
-  assert.ok(ui.includes("if(!spokeInSession&&!['safety','boundary','identity'].includes(result.mode))"),
+  assert.ok(ui.includes("if(!privateResumeVoice&&!spokeInSession&&!['safety','boundary','identity'].includes(result.mode))"),
     'typed turns use live audio first; safety and private identity responses never go to the vendor')
   assert.match(loop,/if\(result\.mode==='identity'\)\{\s*if\(!playDeviceFallback\(true\)\)/)
   assert.match(loop,/if\(localOnly&&!localVoice\)return false/)
@@ -649,7 +649,7 @@ test('Gemini Live is the default and Basic/Pro returns to a two-way Free stream 
  assert.match(ui,/const privateTextOnly=\(restoredDraft&&!restoredRelay\)\|\|freshPrivateProfile/)
  assert.match(toggle,/disabled=\{privateTextOnly\|\|replaying\|\|paused\|\|voicePaused\|\|protocolOpen\|\|clarityCourseActive\}/)
  assert.match(ui,/if\(freshPrivateProfile\)forceLocal=true/)
- assert.match(ui,/if\(privateTextOnly&&voiceTurn\)return null/)
+ assert.match(ui,/if\(privateTextOnly&&voiceTurn&&!privateResumeVoice\)return null/)
  assert.match(ui,/if\(restoredDraft\)forceLocal=true/)
  assert.match(toggle,/speechRef\.current\?\.stop\?\.\(\)/)
  assert.match(toggle,/cancelPendingCoachTurn\(\)/)

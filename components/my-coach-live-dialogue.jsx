@@ -1251,7 +1251,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     // round trip. The old stop() destroyed it and left typed replies silent.
     const liveVoice=speechRef.current?.pauseForTypedTurn?.()===true
     if(!liveVoice&&!privateResumeVoice)ensureReplayAudioOutput()
-    const result=await sendMessage(draft.trim(),{forceLocal:privateResumeVoice})
+    const result=await sendMessage(draft.trim())
     if(result?.reply){
       const spokeInSession=liveVoice&&speechRef.current?.speakReply?.(result)
       if(!privateResumeVoice&&!spokeInSession&&!['safety','boundary','identity'].includes(result.mode))
@@ -2753,7 +2753,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             onDirectorProgress={setLiveDirectorProgress}
             onNotice={setPlaybackNotice}
           />:<MyCoachSpeechLoop ref={speechRef} privateResume={privateResumeVoice} outputMuted={outputMuted} locale={conversationLang} speechLocale={speechLocale} initialDraft={draft}
-            introduction={introduction} onSessionStart={()=>{if(!privateResumeVoice){setCloudAgreed(true);captureBasicIntroduction()}}}
+            introduction={introduction} onSessionStart={()=>{setCloudAgreed(true);captureBasicIntroduction()}}
             cloudAvailable={!privateResumeVoice&&chosenCloudAvailable} cloudAgreed={!privateResumeVoice&&chosenCloudAgreed}
             cloudProvider={privateResumeVoice?null:chosenCloudProvider} voiceName={selectedGeminiVoice}
             personaId={personaId} voicePace={settings?.pace} basicMode={coachEngine.startsWith('groq_')} enabled={true}
