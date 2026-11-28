@@ -718,3 +718,13 @@
  .programScreen :global([data-profile-space-dashboard]){margin:0 auto;max-width:100%;min-width:0}
  .programScreen :global([data-goal-profile-tabs]){scroll-margin-top:12px}
 }
+
+/* The retained program screen is now the actual start of Support, not an
+   offscreen lazy section behind the retired wizard. */
+.root.programRoot{display:block}
+.programRoot .programScreen{content-visibility:visible;contain-intrinsic-size:none;margin-top:0}
+@media(min-width:761px){
+ .root.programRoot{max-width:940px;width:calc(100% - 24px);margin:16px auto 24px}
+ .programRoot .brandBar{display:none}
+ .programRoot .programScreen{min-width:0}
+}

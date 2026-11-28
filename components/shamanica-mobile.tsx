@@ -200,16 +200,17 @@ const artifactsUi={
  ru:{title:"Ритуалы и артефакты",lead:"Сакральные инструменты, ритуалы и символы для размышления, ясности и перемен.",explore:"Смотреть артефакты",request:"Запросить сессию",sendNote:"Отправьте заявку в мессенджере.",heading:"Что вы найдёте здесь?",popular:"Популярные артефакты",all:"Все",other:"Другие практики"},
  es:{title:"Rituales y artefactos",lead:"Herramientas sagradas, rituales y objetos simbólicos para la reflexión, el enfoque y el cambio.",explore:"Explorar artefactos",request:"Solicitar sesión",sendNote:"Envía tu solicitud en el chat.",heading:"¿Qué encontrarás aquí?",popular:"Artefactos destacados",all:"Ver todos",other:"Más prácticas"}
 } as const;
+const businessArtifactsUi={
+ en:{...artifactsUi.en,title:"Business Artifacts",lead:"Symbolic tools and rituals for reflection, clarity, leadership and growth."},
+ ru:{...artifactsUi.ru,title:"Бизнес-артефакты",lead:"Символические инструменты и ритуалы для ясности, лидерства и развития."},
+ es:{...artifactsUi.es,title:"Artefactos empresariales",lead:"Herramientas simbólicas y rituales para la claridad, el liderazgo y el crecimiento."}
+} as const;
 const featuredArtifacts=[
  {id:"personal",title:{en:"Personal talisman",ru:"Личный талисман",es:"Talismán personal"},image:"/academy/reiki-yggdrasil/source/advanced-runes.png",path:"holistic-support#talismans"},
  {id:"fu",title:{en:"Daoist Fu",ru:"Талисман Фу",es:"Talismán Fu"},image:"/images/holistic-house/tao-fu-balance.webp",path:"holistic-support#talismans"},
  {id:"mandala",title:{en:"Personal mandala",ru:"Личная мандала",es:"Mandala personal"},image:"/images/holistic-house/mandala-gold-reference.webp",path:"holistic-support/mandala"}
 ] as const;
-const geanieCopy={
- en:{headline:"Need Hint? Help?",invitation:"Ask our AI Geanie.",cta:"Ask a question"},
- ru:{headline:"Нужна подсказка? Помощь?",invitation:"Спросите нашего AI-Джина.",cta:"Задать вопрос"},
- es:{headline:"¿Necesitas ayuda?",invitation:"Pregunta a nuestro Genio IA.",cta:"Hacer una pregunta"}
-} as const;
+
 const cabinetCopy={
  en:{subtitle:"Tools for mind, heart, power & life.",open:"Find the right practice · 3 questions",shelves:"Explore the alchemist's shelves"},
  ru:{subtitle:"Инструменты для ума, сердца, силы и жизни.",open:"Подобрать практику · 3 вопроса",shelves:"Полки кабинета алхимика"},
@@ -303,7 +304,7 @@ const quizPhotos={
 
 export function ShamanicaMobile({locale,audience="self"}:{locale:PublicLocale;audience?:"self"|"business"}){
  const business=audience==="business";
- const router=useRouter(),t=copy[locale],a=artifactsUi[locale];
+ const router=useRouter(),t=copy[locale],a=(business?businessArtifactsUi:artifactsUi)[locale];
  const [step,setStep]=useState(0);
  const [goal,setGoal]=useState<Goal>("energy");
  const [method,setMethod]=useState<Method>("energy");
@@ -369,7 +370,7 @@ export function ShamanicaMobile({locale,audience="self"}:{locale:PublicLocale;au
       </select><ChevronDown size={15} aria-hidden="true"/>
      </label>
      <Link className={styles.iconButton} href={"/"+locale+"/explore"} aria-label={t.search} prefetch={false}><Search size={22}/></Link>
-     <button type="button" className={styles.helpButton} data-shamanica-ihelp-trigger={business||undefined} aria-label={t.help} onClick={()=>window.dispatchEvent(new Event("hh:open-ihelp"))}><CircleHelp size={22} aria-hidden="true"/></button>
+     <button type="button" className={styles.helpButton} data-shamanica-ihelp-trigger aria-haspopup="dialog" aria-controls="hh-ihelp-panel" aria-label={t.help} onClick={()=>window.dispatchEvent(new Event("hh:open-ihelp"))}><CircleHelp size={22} aria-hidden="true"/></button>
      <Link className={styles.profileButton} href={"/"+(locale==="es"?"en":locale)+"/app/portrait"} aria-label={locale==="ru"?"Профиль":locale==="es"?"Perfil":"Profile"} prefetch={false}><UserRound size={23}/></Link>
      <details className={styles.menu}><summary className={styles.iconButton} aria-label={t.menu}><Menu size={22}/></summary>
       <nav className={styles.menuPop}><Link href={locale==="en"?"/":"/"+locale}>{t.self}</Link><Link href={"/"+locale+"/shamanica/business"}>{t.work}</Link><Link href={"/"+locale+"/academy"}>{t.services.learning[0]}</Link><Link href={"/"+locale+"/explore"}>{t.search}</Link></nav>
@@ -379,18 +380,18 @@ export function ShamanicaMobile({locale,audience="self"}:{locale:PublicLocale;au
    <nav className={styles.audiences} aria-label="Audience">
     <Link className={!business?styles.audienceActive:undefined} aria-current={!business?"page":undefined} href={"/"+locale+"/shamanica"}><Heart size={18}/>{t.self}</Link>
     <Link className={business?styles.audienceActive:undefined} aria-current={business?"page":undefined} href={"/"+locale+"/shamanica/business"}><BriefcaseBusiness size={18}/>{t.work}</Link>
-    {business?<button type="button" aria-label={t.help} onClick={()=>window.dispatchEvent(new Event("hh:open-ihelp"))}><Sparkles size={18}/>{t.help}</button>:<Link href={"/"+locale+"/holistic-support/mobile"}><Sparkles size={18}/>{t.help}</Link>}
+    <button type="button" aria-label={t.help} onClick={()=>window.dispatchEvent(new Event("hh:open-ihelp"))}><Sparkles size={18}/>{t.help}</button>
    </nav>
    <section className={styles.hero} aria-labelledby="shamanica-hero-title">
-    {!business?<div className={styles.artifactHero} data-shamanic-artifact-hero>
+    {<div className={styles.artifactHero} data-shamanic-artifact-hero>
      <div className={styles.artifactHeroArt} aria-hidden="true"/>
      <div className={styles.artifactHeroText}>
-      <span className={styles.artifactEyebrow}><Sparkles size={17} aria-hidden="true"/>{a.title}</span>
+      <span className={styles.artifactEyebrow}><Sparkles size={17} aria-hidden="true"/>{artifactsUi[locale].title}</span>
       <h1 id="shamanica-hero-title">{a.title}</h1>
       <p>{a.lead}</p>
      </div>
      <div className={styles.artifactActions}>
-      <a href="#shamanic-artifact-list" data-shamanic-explore-artifacts>{a.explore}<ArrowRight size={18} aria-hidden="true"/></a>
+      {business?<a href="#business-artifact-list" data-shamanic-explore-artifacts>{a.explore}<ArrowRight size={18} aria-hidden="true"/></a>:<a href="#shamanic-artifact-list" data-shamanic-explore-artifacts>{a.explore}<ArrowRight size={18} aria-hidden="true"/></a>}
       <button type="button" aria-expanded={requestOpen} aria-controls="shamanic-session-contact" data-shamanic-request-session onClick={()=>setRequestOpen(open=>!open)}>{a.request}<ChevronDown size={17} aria-hidden="true"/></button>
      </div>
      <div id="shamanic-session-contact" className={styles.sessionContact} hidden={!requestOpen} data-shamanic-session-contact>
@@ -399,27 +400,7 @@ export function ShamanicaMobile({locale,audience="self"}:{locale:PublicLocale;au
        <a href={telegram} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" data-messenger-only-channel="telegram"><Send size={16} aria-hidden="true"/>Telegram</a>
       </div><small>{a.sendNote}</small>
      </div>
-    </div>:<>
-    <div className={styles.mirrorIntro}>
-     <span className={styles.mirrorSymbol} aria-hidden="true"><span className={styles.moonLeft}>☾</span><Image src="/images/holistic-house/shamanic-sun-hd.avif" width={66} height={48} alt="" unoptimized/><span className={styles.moonRight}>☽</span></span>
-     <h1 id="shamanica-hero-title">{locale==="ru"?"Шаманик":"Shamanic"}
-      <span>{locale==="ru"?"Кабинет алхимика":locale==="es"?"Gabinete del alquimista":"Alchemist’s Cabinet"}</span>
-     </h1>
-     <p className={styles.mirrorTagline}>{cabinetCopy[locale].subtitle}</p>
-    </div>
-    <aside className={styles.geaniePromo} data-shamanica-ai-geanie aria-label={geanieCopy[locale].headline}>
-     <Image className={styles.geaniePortrait} src="/images/holistic-house/shamanic-ai-geanie.webp"
-      width={173} height={257} alt="" unoptimized/>
-     <div className={styles.geanieSpeech}>
-      <strong>{geanieCopy[locale].headline}</strong>
-      <span>{geanieCopy[locale].invitation}</span>
-      <button type="button" className={styles.geanieAsk} data-shamanica-genie-ask
-       onClick={()=>window.dispatchEvent(new Event("hh:open-ihelp"))}>
-       {geanieCopy[locale].cta}<ArrowRight size={15} aria-hidden="true"/>
-      </button>
-     </div>
-    </aside>
-    </>}
+    </div>}
    </section>
    {business?<ShamanicaBusinessContent locale={locale}/>:<>
    <section className={styles.services} data-shamanica-cabinet-shelves aria-labelledby="shamanica-services-title">

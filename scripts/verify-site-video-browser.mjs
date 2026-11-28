@@ -138,9 +138,9 @@ try {
     }
   }
   for (const [target, slot, locale, id, youtubeId] of [
-    ['/en/services', 'services-intro', 'en', '48105a2f2228e7cb3a67391e97acaf8b', 's30Y42IwPcg'],
+    ['/en/services?assist=quiz', 'services-intro', 'en', '48105a2f2228e7cb3a67391e97acaf8b', 's30Y42IwPcg'],
     ['/en/homeopathy', 'homeopathy-intro', 'en', '34df311e461509433b45929908a9097a', 'ILyRWyHtJoE'],
-    ['/ru/services', 'services-intro', 'ru', '79c2845577865979cd95ac40a08fc01a', 'Cz6SxXJNZbw'],
+    ['/ru/services?assist=quiz', 'services-intro', 'ru', '79c2845577865979cd95ac40a08fc01a', 'Cz6SxXJNZbw'],
     ['/ru/homeopathy', 'homeopathy-intro', 'ru', '0f984780d06948b1e78166e6e553e4e9', 'Q9NvYECKWuc'],
   ]) {
     await navigate(target)
@@ -247,7 +247,12 @@ try {
   // First-screen Videos is a three-offer shelf, not a duplicate page or hidden checkout.
   if (!live) {
     for (const locale of ['en', 'ru']) {
+      // The real Support entry is programs-only; the legacy video catalogue
+      // remains reachable by its existing explicit compatibility URL.
       await navigate('/' + locale + '/services')
+      await expect(page.locator('main[data-support-programs-only]')).toBeVisible()
+      await expect(page.locator('[data-services-unified-panel]')).toHaveCount(0)
+      await navigate('/' + locale + '/services?assist=quiz')
       await expect.poll(
         () => page.evaluate(() => history.pushState.toString().includes("__NA")),
         { timeout: 30000, message: 'Services media disclosures require hydrated React' },

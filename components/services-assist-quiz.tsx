@@ -715,7 +715,6 @@ export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
   const v = supportVisualCopy[locale];
   const review = reviewCopy[locale];
   const [reviewOpen,setReviewOpen] = useState(false);
-  const homeHref = locale === "en" ? "/" : "/" + locale;
   const reviewWhatsApp = whatsappEnquiryUrl({locale,service:review.service,request:review.request,pagePath:"/"+locale+"/services"});
   const [audience,setAudience]=useState<"personal"|"business">("personal");
   const [topicTouched,setTopicTouched]=useState(false);
@@ -822,24 +821,7 @@ export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
 
   return <section className={styles.root} data-services-quiz data-services-quiz-questions="4"
     data-services-quiz-step={step + 1} data-quiz-route={topic} lang={locale} aria-labelledby="services-quiz-title">
-    <div className={styles.brandBar}>
-      <Link href={homeHref} prefetch={false} className={styles.brand} aria-label="Holistic House">
-        <span className={styles.brandEmblem}><Sparkles size={24} aria-hidden="true" /></span>
-        <span><strong>Holistic House</strong></span>
-      </Link>
-      <div className={styles.brandActions}>
-        <details className={styles.languageMenu}>
-          <summary aria-label="Language"><span>{locale.toUpperCase()}</span><ChevronDown size={16} aria-hidden="true" /></summary>
-          <div className={styles.languageOptions}>{publicLocales.map(lang =>
-            <Link href={"/" + lang + "/services"} prefetch={false} key={lang} lang={lang}
-              aria-current={lang === locale ? "page" : undefined}>{lang.toUpperCase()}</Link>)}</div>
-        </details>
-        <Link className={styles.help} href={"/" + locale + "/services?assist=chat"} prefetch={false}
-          aria-label={v.help}><CircleHelp size={22} aria-hidden="true" /></Link>
-        <Link className={styles.profile} href={"/" + (locale === "es" ? "en" : locale) + "/app/portrait"}
-          prefetch={false} aria-label={t.profile}><UserRound size={22} aria-hidden="true" /></Link>
-      </div>
-    </div>
+    <SupportBrandBar locale={locale} />
 
     <div className={styles.audienceSwitch} data-services-audience role="group" aria-label={v.audience}>
       <button type="button" aria-pressed={audience === "personal"} onClick={() => {
@@ -941,10 +923,7 @@ export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
     </div>
 
     </div>
-    <section id="support-programs" className={styles.programScreen} data-support-program-screen
-      aria-label={locale==="ru"?"Программы поддержки":locale==="es"?"Programas de apoyo":"Support programs"}>
-      <ProfileSpaceDashboard locale={locale} root={"/"+(locale==="es"?"en":locale)+"/app"} homeDiscovery={true} />
-    </section>
+    <SupportProgramScreen locale={locale} />
     <div className={styles.paper} data-support-catalog-panel>
     {audience === "personal" ? <section className={styles.categories} data-services-quick-categories aria-labelledby="services-quiz-categories-title">
       <div className={styles.categoryHeader}>
@@ -1001,4 +980,49 @@ export function ServicesAssistQuiz({ locale }: { locale: PublicLocale }) {
     {audience === "personal" ? <p className={styles.privacy}>{t.privacy}</p> : null}
     </div>
   </section>;
+}
+
+// Shared with the retired opt-in questionnaire so the visible header and
+// the actual program content stay identical to the approved mobile design.
+function SupportBrandBar({ locale }: { locale: PublicLocale }) {
+  const t = copy[locale];
+  const v = supportVisualCopy[locale];
+  const homeHref = locale === "en" ? "/" : "/" + locale;
+  return (
+    <div className={styles.brandBar}>
+      <Link href={homeHref} prefetch={false} className={styles.brand} aria-label="Holistic House">
+        <span className={styles.brandEmblem}><Sparkles size={24} aria-hidden="true" /></span>
+        <span><strong>Holistic House</strong></span>
+      </Link>
+      <div className={styles.brandActions}>
+        <details className={styles.languageMenu}>
+          <summary aria-label="Language"><span>{locale.toUpperCase()}</span><ChevronDown size={16} aria-hidden="true" /></summary>
+          <div className={styles.languageOptions}>{publicLocales.map(lang =>
+            <Link href={"/" + lang + "/services"} prefetch={false} key={lang} lang={lang}
+              aria-current={lang === locale ? "page" : undefined}>{lang.toUpperCase()}</Link>)}</div>
+        </details>
+        <button type="button" className={styles.help} data-services-ihelp-trigger aria-haspopup="dialog"
+          aria-controls="hh-ihelp-panel" onClick={()=>window.dispatchEvent(new Event("hh:open-ihelp"))}
+          aria-label={v.help}><CircleHelp size={22} aria-hidden="true" /></button>
+        <Link className={styles.profile} href={"/" + (locale === "es" ? "en" : locale) + "/app/portrait"}
+          prefetch={false} aria-label={t.profile}><UserRound size={22} aria-hidden="true" /></Link>
+      </div>
+    </div>
+  );
+}
+
+function SupportProgramScreen({ locale }: { locale: PublicLocale }) {
+  return (
+    <section id="support-programs" className={styles.programScreen} data-support-program-screen
+      aria-label={locale==="ru"?"Программы поддержки":locale==="es"?"Programas de apoyo":"Support programs"}>
+      <ProfileSpaceDashboard locale={locale} root={"/"+(locale==="es"?"en":locale)+"/app"} homeDiscovery={true} />
+    </section>
+  );
+}
+
+export function ServicesSupportPrograms({ locale }: { locale: PublicLocale }) {
+  return <div className={styles.root + " " + styles.programRoot} data-support-programs lang={locale}>
+    <SupportBrandBar locale={locale} />
+    <SupportProgramScreen locale={locale} />
+  </div>;
 }

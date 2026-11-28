@@ -110,6 +110,25 @@ try {
     return page;
   };
 
+  // The approved inline help entry must open the existing consultant in place,
+  // not the legacy support route or a second floating launcher.
+  async function checkInlineHelp(page, selector) {
+    const trigger=page.locator(selector);
+    const previousUrl=page.url();
+    await expect(trigger).toBeVisible();
+    await expect(page.locator("[data-hh-ihelp-trigger]")).toHaveCount(0);
+    await trigger.click();
+    const dialog=page.locator("[data-hh-ihelp-dialog]");
+    await expect(dialog).toBeVisible({timeout:30000});
+    await expect(dialog.locator("[data-hh-ihelp-welcome]")).toBeVisible({timeout:30000});
+    await expect(dialog.locator("[data-hh-assistant-service]")).toHaveCount(3);
+    assert.equal(page.url(),previousUrl,"Inline help must not navigate");
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await expect(trigger).toBeFocused();
+    assert.equal(page.url(),previousUrl,"Closing help must preserve the page");
+  }
+
  // Shamanica Business currently has six expandable service shelves beneath
  // the hero and quiz. Reject stale first-screen-only card assertions: verify
  // the real six photo-backed categories, their working second level, and
@@ -118,11 +137,27 @@ try {
   await page.goto(origin+"/"+locale+"/shamanica/business",{waitUntil:"domcontentloaded",timeout:75000});
   const section=page.locator("[data-shamanica-business]");
   await visible(section);
+  // The native disclosure can open before React hydration and be reset when
+  // the client subtree commits. Wait for this component, not router internals.
+  await expect(section).toHaveAttribute("data-business-hydrated","true",{timeout:30000});
   await expect(page.locator("[data-sitewide-antistress-banner]")).toHaveCount(0);
   await expect(page.locator("[data-hh-ihelp-trigger]:visible")).toHaveCount(0);
   await expect(page.locator("[data-shamanica-ihelp-trigger]")).toBeVisible();
+  if(width===390) await checkInlineHelp(page,"[data-shamanica-ihelp-trigger]");
   const shelves=section.locator("[data-business-cabinet-shelves]");
   await expect(shelves).toHaveAttribute("data-expanded","false");
+  // The six classic service cards now sit inside a native disclosure.
+  // Exercise the real user interaction before checking artwork and geometry.
+  const openServiceShelves = async () => {
+    const drawer = shelves.locator("details").filter({has: page.locator("[data-business-shelf]")});
+    await expect(drawer).toHaveCount(1);
+    await expect(drawer).not.toHaveAttribute("open", "");
+    await expect(drawer.locator("[data-business-shelf]:visible")).toHaveCount(0);
+    await drawer.locator(":scope > summary").click();
+    await expect(drawer).toHaveAttribute("open", "");
+    await expect(drawer.locator("[data-business-shelf]:visible")).toHaveCount(6);
+  };
+  await openServiceShelves();
   await expect(shelves.locator("[data-business-shelf]")).toHaveCount(6);
   const artwork = shelves.locator('[data-business-shelf] > span[aria-hidden="true"]');
   await expect(artwork).toHaveCount(6);
@@ -163,8 +198,7 @@ try {
   assert.ok(m.dockTop>=0&&m.dockBottom<=m.viewportHeight+2,
     "Business fixed dock must remain inside viewport "+locale+"/"+width+" "+JSON.stringify(m));
   if(locale==="ru"&&width===390)await page.screenshot({path:output+"/shamanica-business-ru-390.png",fullPage:false});
-  await expect.poll(()=>page.evaluate(()=>history.pushState.toString().includes("__NA")),
-   {timeout:30000,message:"Business quiz hydration"}).toBe(true);
+  await expect(shelves.locator('[data-business-shelf="express"]')).toBeVisible();
   await shelves.locator('[data-business-shelf="express"]').click();
   await expect(shelves).toHaveAttribute("data-expanded","true");
   await expect(shelves.locator('[data-business-second-level="express"] [data-business-subservice]')).toHaveCount(5);
@@ -178,6 +212,7 @@ try {
   }
   await shelves.locator("[data-business-back-to-shelves]").click();
   await expect(shelves).toHaveAttribute("data-expanded","false");
+  await openServiceShelves();
   await shelves.locator('[data-business-shelf="strategy"]').click();
   await expect(shelves.locator('[data-business-second-level="strategy"] [data-business-subservice]')).toHaveCount(4);
   await expect(shelves.locator('[data-business-get-details="strategy"]')).toHaveCount(1);
@@ -199,18 +234,56 @@ try {
   await expect(section.locator("[data-recommended-business-service]")).toHaveCount(2);
  }
 
+  // Owner-approved Support entry: preserve the real program selector and
+  // expanded details; the old quiz/catalog may only be tested via explicit URLs.
+  for (const locale of ["en", "ru", "es"]) {
+    for (const width of [320, 390, 430, 1188]) {
+      const page = await createPage(width);
+      const response = await page.goto(origin + "/" + locale + "/services", { waitUntil: "domcontentloaded" });
+      assert.equal(response?.status(), 200);
+      const main = page.locator("main[data-support-programs-only]");
+      const programs = main.locator("[data-support-program-screen]");
+      const dashboard = programs.locator("[data-profile-space-dashboard]");
+      await visible(programs.locator("[data-goal-profile-tabs]"));
+      await expect(dashboard).toHaveAttribute("data-profile-space-section", "clarity");
+      await expect(programs.locator("[data-express-part]")).toHaveCount(3);
+      for (const selector of ["[data-services-quiz]", "[data-support-luxe-room]", "[data-services-quick-categories]", "[data-support-catalog-panel]", "[data-services-unified-panel]", "[data-services-studio-card]", "[data-assist-mobile]"]) {
+        await expect(main.locator(selector)).toHaveCount(0);
+      }
+      for (const [key, slug] of [["diagnostics", "free-situation-review"], ["homeopathy", "alchemy-of-soul"], ["constellations", "business-consulting"]]) {
+        await expect(programs.locator('[data-express-part="' + key + '"] a[href="/' + locale + '/services/' + slug + '"]')).toHaveCount(1);
+      }
+      await expect.poll(() => page.evaluate(() => history.pushState.toString().includes("__NA")), { timeout: 30000 }).toBe(true);
+      const stage = programs.locator('[data-clarity-stage="0"] button').first();
+      await stage.click();
+      await expect(stage).toHaveAttribute("aria-expanded", "true");
+      await programs.locator('[data-goal-profile-tab="goals"]').click();
+      await expect(dashboard).toHaveAttribute("data-profile-space-section", "goals");
+      await programs.locator('[data-goal-profile-tab="business"]').click();
+      await expect(dashboard).toHaveAttribute("data-profile-space-section", "business");
+      const businessStage = programs.locator('[data-business-session="0"] button').first();
+      await businessStage.click();
+      await expect(programs.locator('[data-business-session-screen="1"]')).toBeVisible();
+      await assertNoDevIssueOverlay(page, locale + "/support-programs/" + width);
+      await assertViewport(page, locale + "/support-programs/" + width);
+      await page.close();
+    }
+  }
+
   // Mobile Assist keeps issues, questions, answers, and reset in one messenger.
   // The three responsive recommendations are separate small cards BELOW the chat.
   // Preserve all locale/desktop/privacy contracts; never navigate Telegram in CI.
   const verifyMobileAssist = async (page, locale, width) => {
     // Owner's screenshot: one question per green panel with four progress dots,
     // six photographic category cards, and the existing shared seven-item dock.
-    await page.goto(origin + "/" + locale + "/services", { waitUntil: "domcontentloaded" });
+    await page.goto(origin + "/" + locale + "/services?assist=quiz", { waitUntil: "domcontentloaded" });
     const quiz = page.locator("[data-services-quiz]");
     await visible(quiz.locator("#services-quiz-title"));
     await expect(quiz).toHaveAttribute("data-services-quiz-questions", "4");
     await expect(quiz).toHaveAttribute("data-services-quiz-step", "1");
     await expect(page.locator("[data-hh-ihelp-trigger]")).toHaveCount(0);
+    if(width===390) await checkInlineHelp(page,"[data-services-ihelp-trigger]");
+    await expect(quiz).toHaveAttribute("data-services-quiz-step", "1");
     await expect(quiz.locator("[data-quiz-dot]")).toHaveCount(4);
     await expect(quiz.locator("[data-services-quiz-question]")).toHaveCount(1);
     await expect(quiz.locator('[data-services-quiz-question="topic"] [data-services-quiz-choice]')).toHaveCount(4);
@@ -1035,7 +1108,7 @@ try {
   for (const locale of ["en", "ru"]) {
     for (const width of [320, 360, 390, 430, 1188]) {
       const page = await createPage(width);
-      await page.goto(origin + "/" + locale + "/services", { waitUntil: "domcontentloaded" });
+      await page.goto(origin + "/" + locale + "/services?assist=quiz", { waitUntil: "domcontentloaded" });
       if (width <= 760) {
         await verifyMobileAssist(page, locale, width);
       } else {
@@ -1187,7 +1260,7 @@ try {
       if (width === 390) {
         // The homepage's existing #consultation link must reveal real paid/express
         // booking choices instead of landing on a hidden collapsed mobile panel.
-        await page.goto(origin + "/" + locale + "/services#consultation", { waitUntil: "domcontentloaded" });
+        await page.goto(origin + "/" + locale + "/services?assist=quiz#consultation", { waitUntil: "domcontentloaded" });
         const linkedPanel = page.locator('[data-services-unified-panel="consultation"]');
         await expect(linkedPanel).toHaveAttribute("data-expanded", "true");
         await visible(linkedPanel.locator("#consultation"));
@@ -1324,7 +1397,7 @@ try {
   // Spanish uses its own page route but the same EN/RU/ES discovery component.
   {
     const page = await createPage(390);
-    await page.goto(origin + "/es/services", { waitUntil: "domcontentloaded" });
+    await page.goto(origin + "/es/services?assist=quiz", { waitUntil: "domcontentloaded" });
     await expect(page.locator('[data-services-studio-free]')).toBeHidden();
     assert.equal(await page.locator('[data-services-studio-free] [data-services-studio-card]').count(), 3);
     assert.equal(await page.locator('[data-services-studio-paid] [data-services-studio-card]').count(), 6);
@@ -1703,6 +1776,13 @@ try {
       try{await checkCompactBusiness(page,locale,width);}
       finally{await page.close();}
     }
+  }
+  for(const locale of ["ru","en","es"]){
+    const page=await createPage(390);
+    try{
+      await page.goto(origin+"/"+locale+"/shamanica",{waitUntil:"domcontentloaded"});
+      await checkInlineHelp(page,"[data-shamanica-ihelp-trigger]");
+    }finally{await page.close();}
   }
   diagnostics.devIssueOverlay = false;
   assert.deepEqual(diagnostics.pageErrors, [], "Unexpected browser page errors");

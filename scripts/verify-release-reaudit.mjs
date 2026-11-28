@@ -714,7 +714,39 @@ async function exercise(engine, browserType, width) {
           await cspPage.locator('[data-hh-unified-dock] [data-unified-dock-item="profile"]').click();
           await expect(cspPage).toHaveURL(origin + '/en/my-page');
           await expect(cspPage.locator('[data-universal-my-page]')).toBeVisible();
-          await expect(cspPage.locator('[data-my-page-public-fallback="guest"] [data-my-page-google]')).toBeVisible();
+          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
+          let myPageGuestFixtureUsed = false;
+          // Isolated production build intentionally has no configured auth service.
+          // Prove the REAL anonymous API fails closed before a narrow 401 fixture
+          // exercises the real Retry -> Google guest UI. Never stub a LIVE API.
+          if (['localhost', '127.0.0.1'].includes(new URL(origin).hostname)) {
+            assertSyntheticLoopback(origin);
+            const myPageApi = origin + '/api/app/my-page';
+            const actual = await cspPage.request.get(myPageApi);
+            if (actual.status() === 503) {
+              assert.deepEqual(await actual.json(), { error: 'APP_UNAVAILABLE' });
+              const unavailable = cspPage.locator('[data-my-page-public-fallback="error"]');
+              await expect(unavailable).toBeVisible({ timeout: 15000 });
+              await expect(cspPage.locator('[data-my-page-private-feed]')).toHaveCount(0);
+              let fixtureHits = 0;
+              await cspPage.route(myPageApi, route => {
+                if (route.request().method() !== 'GET') return route.abort();
+                fixtureHits++;
+                return route.fulfill({ status: 401, contentType: 'application/json',
+                  headers: { 'cache-control': 'no-store' }, body: JSON.stringify({ error: 'SIGN_IN_REQUIRED' }) });
+              });
+              try {
+                await unavailable.getByRole('button', { name: 'Try again', exact: true }).click();
+                await expect(cspPage.locator('[data-my-page-public-fallback="guest"] [data-my-page-google]')).toBeVisible({ timeout: 15000 });
+                assert.ok(fixtureHits > 0, 'Synthetic guest response must have been consumed');
+                myPageGuestFixtureUsed = true;
+              } finally { await cspPage.unroute(myPageApi); }
+            } else {
+              assert.equal(actual.status(), 401, 'Anonymous configured API must deny access');
+              assert.deepEqual(await actual.json(), { error: 'SIGN_IN_REQUIRED' });
+            }
+          }
+          await expect(cspPage.locator('[data-my-page-public-fallback="guest"] [data-my-page-google]')).toBeVisible({ timeout: 15000 });
           await expect(cspPage.locator('[data-my-page-private-feed]')).toHaveCount(0);
           // The old private discovery remains independently protected.
           await cspPage.locator('[data-my-page-discover]').click();
@@ -884,7 +916,7 @@ async function exercise(engine, browserType, width) {
           });
           if (readiness === 'loaded-history') assert.deepEqual(cspErrors, [], 'No page errors in the fully loaded navigation journey');
           assert.deepEqual(unexpectedErrors, [], 'No unexplained JavaScript diagnostics during CSP navigation');
-          return { interruptedDocumentProbe, pageShows, cspErrors, navigationCancellations, bfcachePersistedVerified: false, samePolicySoftNavigation: true, privatePublicReload: true, privateBottomNavigationAbsent: true, publicTestsNavigationVerified: true, visibleWordmarkExit: true, publicHomeHistoryVerified: true, tantraReload: true, backForwardVerified: true, privateIframeBlocked: true, aboutRendererAllowed: true, providerResponseStubbed: true, decodedPlaybackClaimed: false };
+          return { interruptedDocumentProbe, pageShows, cspErrors, navigationCancellations, myPageGuestFixtureUsed, bfcachePersistedVerified: false, samePolicySoftNavigation: true, privatePublicReload: true, privateBottomNavigationAbsent: true, publicTestsNavigationVerified: true, visibleWordmarkExit: true, publicHomeHistoryVerified: true, tantraReload: true, backForwardVerified: true, privateIframeBlocked: true, aboutRendererAllowed: true, providerResponseStubbed: true, decodedPlaybackClaimed: false };
         } catch (error) {
           const state = await cspPage.evaluate(() => ({ url: location.href, documentClass: document.body.dataset.cspClass, documentReady: document.readyState })).catch(() => null);
           throw new Error(`${error.message}; document=${JSON.stringify(state)}; navigation=${JSON.stringify(navigationTrace)}; pageShows=${JSON.stringify(pageShows)}; cspErrors=${JSON.stringify(cspErrors)}`);

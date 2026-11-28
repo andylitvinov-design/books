@@ -104,3 +104,37 @@ test('approved compact My Page dashboard preserves owner-scoped data and real co
  assert.ok(help.includes('[data-my-page-inline-help]'))
  assert.ok(client.includes('data-my-page-private-feed'))
 })
+
+import {selectLastCoachSession} from '../lib/app/my-page-session-history.mjs'
+test('Last Session includes active saved drafts without claiming review or leaking transcript',()=>{
+ const reviewed={id:'a',personaId:'mira',completedAt:'2026-11-25T10:00:00Z',provenance:'client_reviewed_dialogue',turns:[{content:'PRIVATE'}]}
+ const draft={id:'b',personaId:'max',updatedAt:'2026-11-26T10:00:00Z',startedAt:'2026-11-26T09:58:00Z',turnCount:3,durationSeconds:120,courseSessionId:'life_direction'}
+ assert.equal(selectLastCoachSession([], [draft]).status,'draft')
+ assert.equal(selectLastCoachSession([], [draft]).startedAt,draft.startedAt)
+ assert.equal(selectLastCoachSession([], [{...draft,startedAt:'2026-11-27'}]).startedAt,null)
+ assert.equal(selectLastCoachSession([], [{...draft,startedAt:undefined}]).startedAt,null)
+ assert.equal(selectLastCoachSession([reviewed], [draft]).id,'b')
+ assert.equal(selectLastCoachSession([reviewed], [{...draft,id:'a'}]).status,'reviewed')
+ assert.equal(selectLastCoachSession(null, [{...draft,turnCount:0}]),null)
+ assert.equal(selectLastCoachSession([], [{...draft,updatedAt:'invalid'}]),null)
+ assert.equal(JSON.stringify(selectLastCoachSession([reviewed],[])).includes('PRIVATE'),false)
+ const source=readFileSync(new URL('../components/app/profile-personal-summary.jsx',import.meta.url),'utf8')
+ assert.ok(source.includes('/api/app/my-coach/draft?view=summary'))
+ assert.ok(source.includes('selectLastCoachSession(reviewed,drafts)'))
+ assert.ok(source.includes('daily?.owner===accountId'))
+})
+
+import {coachArchiveSessionMetadata} from '../lib/app/coach-archive-session-metadata.mjs'
+test('private archive shows real start date and recorded duration for drafts and reviewed sessions',()=>{
+ const p={personaId:'mira',courseSessionId:'introductory',startedAt:'2026-11-25T10:00:00Z',completedAt:'2026-11-25T10:05:00Z',durationSeconds:125,turns:[{content:'PRIVATE'}]}
+ const m=coachArchiveSessionMetadata(p,'2026-11-26T10:00:00Z')
+ assert.deepEqual(m,{date:p.startedAt,dateKind:'start',duration:'2:05',personaId:'mira',courseSessionId:'introductory'})
+ assert.equal(coachArchiveSessionMetadata(p).date,p.startedAt)
+ assert.equal(coachArchiveSessionMetadata({durationSeconds:null},p.completedAt).dateKind,'saved')
+ assert.equal(coachArchiveSessionMetadata({durationSeconds:7201}).duration,null)
+ assert.equal(coachArchiveSessionMetadata({startedAt:'2026-11-26'},'2026-11-25').date,'2026-11-25')
+ assert.equal(coachArchiveSessionMetadata({}).date,null)
+ const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
+ assert.ok(read('components/app/my-coach-draft-archive.jsx').includes('<CoachSessionArchiveHeader protocol={p}'))
+ assert.ok(read('components/app/my-coaching-plan.jsx').includes('<CoachSessionArchiveHeader protocol={protocol} locale={lang} reviewed/>'))
+})

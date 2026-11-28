@@ -173,10 +173,13 @@ test('slots, locales and entities have isolated, validated keys and real public 
   assert.notEqual(videoKey('home-intro', 'en'), videoKey('home-intro', 'ru'))
   assert.notEqual(videoKey('remedy-detail', 'en', 'arsenicum-album'), videoKey('remedy-detail', 'en', 'natrum-muriaticum'))
   assert.equal(videoPagePath('home-intro', 'en'), '/?lang=en')
-  assert.equal(videoPagePath('service-business', 'ru'), '/ru/services#business')
-  assert.equal(videoPagePath('method-hypnotherapy', 'en'), '/en/services#methods')
-  assert.equal(videoPagePath('method-constellations', 'ru'), '/ru/services#methods')
-  assert.equal(videoPagePath('consultation', 'en'), '/en/services#consultation')
+  // Support is now the programs entry. Managed videos remain in the explicit compatibility catalogue.
+  for (const locale of ['en', 'ru']) {
+    assert.equal(videoPagePath('services-intro', locale), '/' + locale + '/services?assist=quiz#meet-andrey')
+    for (const slot of ['method-hypnotherapy', 'method-constellations', 'service-business', 'service-alchemy', 'service-archetypal', 'consultation']) {
+      assert.equal(videoPagePath(slot, locale), '/' + locale + '/services?assist=quiz#method-videos')
+    }
+  }
   assert.equal(videoPagePath('remedy-detail', 'ru', 'arsenicum-album'), '/ru/homeopathy/remedies/arsenicum-album')
   assert.equal(videoPagePath('book-detail', 'en', 'example-book'), '/books/example-book?lang=en')
   for (const args of [
