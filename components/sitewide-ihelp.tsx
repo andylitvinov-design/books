@@ -213,12 +213,12 @@ function PageHelp({pathname}:{pathname:string}){
  // This route has its own visible Ali secretary chat; avoid an overlapping iHelp bubble.
  if(/^\/(?:ru|en|es)\/my-coach\/real\/[a-z0-9-]+\/?$/.test(pathname))return null;
  return <>
-   <button type="button" ref={launcher} className={styles.launcher} hidden={inlineHelpRoute}
+   {!inlineHelpRoute&&<button type="button" ref={launcher} className={styles.launcher}
      data-hh-ihelp-trigger aria-label={t.open} aria-haspopup="dialog"
      aria-controls={nativeVideoOpen?"hh-ihelp-video-director-dialog":"hh-ihelp-panel"}
      aria-expanded={open||nativeVideoOpen} onClick={show}>
      <MessageCircleQuestion size={18} aria-hidden="true"/><span>iHelp</span>
-   </button>
+   </button>}
    {mounted&&<div className={styles.overlay} data-hh-ihelp-overlay hidden={!open}>
      <button type="button" tabIndex={-1} aria-label={t.close}
        className={styles.backdrop} onClick={close}/>
