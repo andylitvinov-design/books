@@ -1,3 +1,4 @@
+import './coach-personality-matrix.test.mjs';
 import test from 'node:test'
 import './coach-character-signature.test.mjs'
 import './page-auth-continuation.test.mjs'
