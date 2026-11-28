@@ -343,3 +343,34 @@ test('private microphone startup respects user action and never replays the arch
   assert.equal(state.generationRef.current,8)
  }
 })
+
+
+test('archive promotion requires exact server receipt and ignores stale account generations',async()=>{
+ const source=readFileSync(new URL('../components/app/my-coach-draft-archive.jsx',import.meta.url),'utf8')
+ const start=source.indexOf(' async function action(item,reviewed){')
+ const end=source.indexOf(' const items=state.owner===accountId',start)
+ assert.ok(start>=0&&end>start)
+ async function run({response,changeGeneration=false,changeOwner=false,reviewed=true}){
+  const generation={current:0},ownerRef={current:'owner'},accountId='owner',state={owner:'owner',items:[{id:'protocol'}]},events=[]
+  const handler=new Function('busy','accountId','state','generation','ownerRef','setBusy','setError','setNotice','fetch','setState','onReviewed','t','lang',source.slice(start,end)+';return action')(
+   false,accountId,state,generation,ownerRef,x=>events.push(['busy',x]),x=>events.push(['error',x]),x=>events.push(['notice',x]),
+   async()=>({ok:response.status===200,status:response.status,json:async()=>{if(changeGeneration)generation.current++;if(changeOwner)ownerRef.current='another';return response.body}}),
+   fn=>events.push(['items',fn(state).items.length]),()=>events.push(['reviewed']),{saved:'confirmed'},'en')
+  await handler({id:'protocol',revision:3},reviewed?{id:'protocol'}:null)
+  return events
+ }
+ assert.deepEqual((await run({response:{status:200,body:{saved:true,id:'protocol'}}})).filter(e=>e[0]==='items'||e[0]==='reviewed'),[['items',0],['reviewed']])
+ for(const body of [{saved:true,id:'wrong'},{saved:true},{saved:false,id:'protocol'}]){
+  const events=await run({response:{status:200,body}})
+  assert.ok(events.some(e=>e[0]==='error'&&e[1]===true));assert.ok(!events.some(e=>e[0]==='items'||e[0]==='reviewed'))
+ }
+ for(const flags of [{changeGeneration:true},{changeOwner:true}]){
+  const events=await run({...flags,response:{status:200,body:{saved:true,id:'protocol'}}})
+  assert.ok(!events.some(e=>e[0]==='items'||e[0]==='reviewed'||(e[0]==='busy'&&e[1]===false)))
+ }
+ const open=await run({response:{status:409,body:{error:'CLARITY_SESSION_STILL_OPEN'}}})
+ assert.ok(open.some(e=>e[0]==='notice'&&e[1].includes('final report is not yet confirmed')))
+ assert.ok(!open.some(e=>e[0]==='items'||e[0]==='reviewed'))
+ const deleted=await run({reviewed:false,response:{status:200,body:{deleted:true,id:'protocol'}}})
+ assert.ok(deleted.some(e=>e[0]==='items'&&e[1]===0));assert.ok(!deleted.some(e=>e[0]==='reviewed'))
+})

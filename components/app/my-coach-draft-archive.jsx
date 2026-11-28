@@ -64,9 +64,11 @@ export default function MyCoachDraftArchive({accountId,locale='en',onReviewed}){
   }catch{if(ownerRef.current===accountId&&generation.current===current)setError(true)}
   finally{if(ownerRef.current===accountId&&generation.current===current)setBusy(false)}
  }
- useEffect(()=>{setState({owner:null,items:[],cursor:null});void load();return()=>{generation.current++}},[accountId])
+ useEffect(()=>{setState({owner:null,items:[],cursor:null});setNotice('');setError(false);setBusy(false);void load();return()=>{generation.current++}},[accountId])
  async function action(item,reviewed){
-  if(busy||state.owner!==accountId)return
+  if(busy||!accountId||state.owner!==accountId)return
+  const current=++generation.current
+  const isCurrent=()=>ownerRef.current===accountId&&generation.current===current
   setBusy(true);setError(false);setNotice('')
   try{
    const response=await fetch(reviewed?'/api/app/my-coach/protocol':'/api/app/my-coach/draft',{
@@ -74,20 +76,20 @@ export default function MyCoachDraftArchive({accountId,locale='en',onReviewed}){
     body:JSON.stringify(reviewed?{action:'save',consent:true,protocol:reviewed,draftRevision:item.revision}:{action:'discard',confirmed:true,id:item.id})})
    const result=await response.json().catch(()=>null)
    if(response.status===409&&result?.error==='CLARITY_SESSION_STILL_OPEN'){
-    if(ownerRef.current===accountId)setNotice(({ru:'Протокол сохранён. Продолжите незавершённую сессию перед сохранением итогового отчёта.',en:'The protocol is saved. Continue the unfinished session before saving its final report.',es:'El protocolo está guardado. Continúa la sesión pendiente antes de guardar su informe final.'})[lang])
+    if(isCurrent())setNotice(({ru:'Черновик сохранён, итоговый отчёт ещё не подтверждён. Продолжите незавершённую сессию.',en:'Your draft is retained; the final report is not yet confirmed. Continue the unfinished session.',es:'Tu borrador se conserva; el informe final aún no está confirmado. Continúa la sesión pendiente.'})[lang])
     return
    }
-   if(!response.ok||(reviewed?result?.saved!==true:result?.deleted!==true))throw Error('DRAFT_ACTION')
-   if(ownerRef.current!==accountId)return
-   setState(previous=>({...previous,items:previous.items.filter(x=>x.id!==item.id)}))
+   if(!response.ok||result?.id!==item.id||(reviewed?result?.saved!==true:result?.deleted!==true))throw Error('DRAFT_ACTION')
+   if(!isCurrent())return
+   setState(previous=>previous.owner===accountId?({...previous,items:previous.items.filter(x=>x.id!==item.id)}):previous)
    if(reviewed){setNotice(t.saved);onReviewed?.()}
-  }catch{if(ownerRef.current===accountId)setError(true)}
-  finally{if(ownerRef.current===accountId)setBusy(false)}
+  }catch{if(isCurrent())setError(true)}
+  finally{if(isCurrent())setBusy(false)}
  }
  const items=state.owner===accountId?state.items:[]
  return <section data-my-coach-draft-archive>
   <h2>{t.title}</h2>{notice&&<p role="status">{notice}</p>}
-  {error&&<p role="alert">{t.error} <button type="button" onClick={()=>load()}>{t.more}</button></p>}
+  {error&&<p role="alert">{t.error} <button type="button" disabled={busy} onClick={()=>load()}>{({ru:'Обновить архив',en:'Refresh archive',es:'Actualizar archivo'})[lang]}</button></p>}
   {!busy&&!error&&!items.length&&<p>{t.empty}</p>}
   {items.map(item=><DraftRow key={item.id+':'+item.revision} item={item} t={t} lang={lang} busy={busy} onAction={action}/>)}
   {state.owner===accountId&&state.cursor&&<button type="button" disabled={busy} onClick={()=>load(state.cursor)}>{t.more}</button>}
