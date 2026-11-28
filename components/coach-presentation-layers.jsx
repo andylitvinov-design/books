@@ -3,109 +3,142 @@ import {useCallback,useEffect,useRef,useState} from 'react'
 import {coachPresentationMetadataMatches} from '@/lib/coaching/coach-reaction-v4-registry.mjs'
 import styles from './my-coach-motion-media.module.css'
 
-// Presentation only: two independently decoded layers. Never blend two faces
-// or replace a visible video with a poster while the next file is loading.
-export default function CoachPresentationLayers({opening,presence,openingActive,enabled,onOpeningDone,onReady}){
+// Original welcome, measured same-camera return, then presence.
+// Separate role identity allows two layers to reuse the same immutable MP4.
+export default function CoachPresentationLayers({opening,returnClip,presence,openingActive,returnActive,enabled,onOpeningDone,onReturnDone,onReady}){
   const openingRef=useRef(null)
+  const returnRef=useRef(null)
   const presenceRef=useRef(null)
-  const activeSrcRef=useRef(null)
+  const activeRoleRef=useRef(null)
   const visibleRef=useRef(null)
   const failedRef=useRef({})
   const playbackEpoch=useRef(0)
   const progressRef=useRef(null)
+  const returnStarted=useRef(false)
   const [mounted,setMounted]=useState(false)
   const [failed,setFailed]=useState({})
-  const [visibleSrc,setVisibleSrc]=useState(null)
-  const active=openingActive?opening:presence
-  const targetSrc=active&&!failed[active.src]?active.src:null
+  const [visibleRole,setVisibleRole]=useState(null)
+  const role=openingActive?'opening':returnActive?'return':'presence'
+  const active=openingActive?opening:returnActive?returnClip:presence
   const renderLayers=enabled||mounted
   useEffect(()=>{if(enabled)setMounted(true)},[enabled])
 
-  const fail=useCallback((clip,video)=>{
-    if(!clip||!video||(openingRef.current!==video&&presenceRef.current!==video))return
+  const fail=useCallback((clip,video,failedRole)=>{
+    const ref=failedRole==='opening'?openingRef:failedRole==='return'?returnRef:presenceRef
+    if(!clip||!video||ref.current!==video)return
     video.pause()
-    failedRef.current={...failedRef.current,[clip.src]:true}
-    setFailed(previous=>previous[clip.src]?previous:{...previous,[clip.src]:true})
-    if(visibleRef.current===clip.src){
-      // Never fall back to a previously shown lower-resolution greeting.
-      // Parent holds the same-camera HD anchor after the opening.
+    failedRef.current={...failedRef.current,[failedRole]:true}
+    setFailed(previous=>previous[failedRole]?previous:{...previous,[failedRole]:true})
+    if(visibleRef.current===failedRole){
       visibleRef.current=null
-      setVisibleSrc(null)
+      setVisibleRole(null)
       onReady(false)
     }
-    if(clip.src===opening?.src){
+    // Hidden return failure retains the outgoing frame, not an abrupt cut.
+    // Never fall back to a previously shown lower-resolution greeting.
+    if(failedRole==='opening'&&activeRoleRef.current!=='return'&&activeRoleRef.current!=='presence'){
+      onReturnDone()
       onOpeningDone()
     }
-  },[opening,presence,onOpeningDone,onReady])
+  },[onOpeningDone,onReturnDone,onReady])
 
   useEffect(()=>{
-    const openingVideo=openingRef.current
-    const presenceVideo=presenceRef.current
-    const target=targetSrc===opening?.src?openingVideo:targetSrc===presence?.src?presenceVideo:null
+    const videos={opening:openingRef.current,return:returnRef.current,presence:presenceRef.current}
+    const target=active&&!failed[role]?videos[role]:null
     const epoch=++playbackEpoch.current
-    activeSrcRef.current=enabled?targetSrc:null
-    progressRef.current=target?{video:target,epoch,start:target.currentTime}:null
-    // If the incoming clip fails before being shown, keep the outgoing
-    // decoded frame. After HD has actually been shown, fail() can only
-    // expose the matching poster, never restart the earlier greeting.
-    for(const video of [openingVideo,presenceVideo]){
+    activeRoleRef.current=enabled&&target?role:null
+    progressRef.current=null
+    for(const video of Object.values(videos)){
       if(video&&(!enabled||video!==target))video.pause()
     }
-    if(enabled&&target){
-      let cancelled=false
-      const clip=targetSrc===opening?.src?opening:presence
+    if(!enabled||!target||!active)return()=>{playbackEpoch.current++;activeRoleRef.current=null;progressRef.current=null}
+    let cancelled=false
+    const current=()=>!cancelled&&epoch===playbackEpoch.current&&activeRoleRef.current===role
+    const play=()=>{
+      if(!current()||target.seeking||target.readyState<1)return
+      if(!coachPresentationMetadataMatches(active,target)){fail(active,target,role);return}
+      if(target.ended&&role!=='presence'){
+        if(role==='opening')onOpeningDone()
+        else onReturnDone()
+        return
+      }
+      if(role==='return'&&!returnStarted.current){
+        if(Math.abs(target.currentTime-active.startTime)>1/24){
+          try{target.currentTime=active.startTime}catch{fail(active,target,role)}
+          return
+        }
+        returnStarted.current=true
+      }
+      progressRef.current={video:target,epoch,start:target.currentTime}
       const attempt=target.play()
       if(attempt?.catch)void attempt.catch(error=>{
-        if(!cancelled&&error?.name==='NotSupportedError')fail(clip,target)
-        // AbortError and Safari autoplay policy are not evidence of a broken file.
-        // Keep the last rendered frame/poster and retry on visibility change.
+        if(current()&&error?.name==='NotSupportedError')fail(active,target,role)
       })
-      return()=>{cancelled=true;playbackEpoch.current++;activeSrcRef.current=null;progressRef.current=null;target.pause()}
     }
-    return()=>{playbackEpoch.current++;activeSrcRef.current=null;progressRef.current=null}
-  },[enabled,renderLayers,targetSrc,opening,presence,openingActive,failed,fail,onReady])
+    target.addEventListener('loadedmetadata',play)
+    target.addEventListener('seeked',play)
+    play()
+    return()=>{
+      cancelled=true;playbackEpoch.current++;activeRoleRef.current=null;progressRef.current=null
+      target.removeEventListener('loadedmetadata',play)
+      target.removeEventListener('seeked',play)
+      target.pause()
+    }
+  },[enabled,renderLayers,role,active,failed,fail,onOpeningDone,onReturnDone])
 
-  function valid(video,clip){
+  function valid(video,clip,videoRole){
     if(coachPresentationMetadataMatches(clip,video))return true
-    fail(clip,video)
+    fail(clip,video,videoRole)
     return false
   }
-  function reveal(video,clip,epoch=playbackEpoch.current){
-    if(epoch!==playbackEpoch.current||failedRef.current[clip.src])return
-    if(activeSrcRef.current!==clip.src||video.paused||video.ended||video.readyState<2)return
-    if(openingRef.current!==video&&presenceRef.current!==video)return
-    if(!valid(video,clip))return
-    if(visibleRef.current===clip.src)return
-    visibleRef.current=clip.src
-    setVisibleSrc(clip.src)
+  function reveal(video,clip,videoRole,epoch=playbackEpoch.current,mediaTime=video.currentTime){
+    if(epoch!==playbackEpoch.current||failedRef.current[videoRole])return
+    if(activeRoleRef.current!==videoRole||video.paused||video.ended||video.seeking||video.readyState<2)return
+    const ref=videoRole==='opening'?openingRef:videoRole==='return'?returnRef:presenceRef
+    if(ref.current!==video||!valid(video,clip,videoRole))return
+    if(videoRole==='return'&&(!returnStarted.current||mediaTime<clip.startTime-1/48))return
+    if(visibleRef.current===videoRole)return
+    visibleRef.current=videoRole
+    setVisibleRole(videoRole)
     onReady(true)
   }
-  function playing(video,clip){
-    if(!valid(video,clip))return
+  function playing(video,clip,videoRole){
+    if(!valid(video,clip,videoRole))return
     if(typeof video.requestVideoFrameCallback==='function'){
       const epoch=playbackEpoch.current
-      video.requestVideoFrameCallback(()=>reveal(video,clip,epoch))
+      video.requestVideoFrameCallback((_,metadata)=>reveal(video,clip,videoRole,epoch,metadata?.mediaTime??video.currentTime))
     }
-    // Without frame callbacks, wait for actual progress in onTimeUpdate.
   }
-  function layer(clip,role,ref){
+  function metadata(video,clip,videoRole){
+    if(!valid(video,clip,videoRole))return
+    // Pre-seek the hidden bridge to its verified frame while the original
+    // is visible. Never rewind it on a visibility or reduced-motion change.
+    if(videoRole==='return'&&!returnStarted.current&&!video.seeking&&Math.abs(video.currentTime-clip.startTime)>1/24){
+      try{video.currentTime=clip.startTime}catch{fail(clip,video,videoRole)}
+    }
+  }
+  function ended(video,videoRole){
+    if(activeRoleRef.current!==videoRole||!video.ended)return
+    if(videoRole==='opening')onOpeningDone()
+    if(videoRole==='return')onReturnDone()
+  }
+  function layer(clip,videoRole,ref){
     if(!clip)return null
-    return <video key={role+':'+clip.src} ref={ref} className={[styles.video,styles.presentationLayer].join(' ')}
-      data-coach-presentation-video={visibleSrc===clip.src?'true':undefined}
-      data-presentation-layer={role} data-presentation-visible={visibleSrc===clip.src?'true':'false'}
-      src={clip.src} poster={clip.poster} muted loop={role==='presence'} playsInline preload="auto"
+    return <video key={videoRole+':'+clip.src} ref={ref} className={[styles.video,styles.presentationLayer].join(' ')}
+      data-coach-presentation-video={visibleRole===videoRole?'true':undefined}
+      data-presentation-layer={videoRole} data-presentation-visible={visibleRole===videoRole?'true':'false'}
+      src={clip.src} poster={clip.poster} muted loop={videoRole==='presence'} playsInline preload={videoRole==='opening'?'auto':'metadata'}
       controls={false} disablePictureInPicture
-      onLoadedMetadata={event=>valid(event.currentTarget,clip)}
-      onPlaying={event=>playing(event.currentTarget,clip)}
-      onTimeUpdate={event=>{const video=event.currentTarget
-        // Safari can delay a hidden layer's frame callback. Only advance once
-        // playback demonstrably progressed with current decoded frame data.
+      onLoadedMetadata={event=>metadata(event.currentTarget,clip,videoRole)}
+      onPlaying={event=>playing(event.currentTarget,clip,videoRole)}
+      onTimeUpdate={event=>{
+        const video=event.currentTarget
         const progress=progressRef.current
-        if(progress?.video===video&&video.currentTime-progress.start>=.12)reveal(video,clip,progress.epoch)
+        if(progress?.video===video&&video.currentTime-progress.start>=.12)reveal(video,clip,videoRole,progress.epoch)
       }}
-      onEnded={role==='opening'?onOpeningDone:undefined}
-      onError={event=>fail(clip,event.currentTarget)} />
+      onEnded={videoRole==='presence'?undefined:event=>ended(event.currentTarget,videoRole)}
+      onError={event=>fail(clip,event.currentTarget,videoRole)} />
   }
   if(!renderLayers)return null
-  return <>{layer(opening,'opening',openingRef)}{layer(presence,'presence',presenceRef)}</>
+  return <>{layer(opening,'opening',openingRef)}{layer(returnClip,'return',returnRef)}{layer(presence,'presence',presenceRef)}</>
 }
