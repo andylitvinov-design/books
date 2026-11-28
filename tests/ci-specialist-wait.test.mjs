@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { verify, requiresCurrentProductionBase, classifyPrState, diagnoseAggregateError, awaitPositiveMergeability, verifiedPriorSpecialistEvidence, reusePriorSpecialistState } from '../scripts/ci-specialist-aggregate.mjs';
-import { verifyStableProtectedBase, observeProtectedBaseDrift, independentPackageOnlyAdvisories } from '../scripts/ci-specialist-aggregate.mjs';
+import { createRequire } from 'node:module';
+import { verifyStableProtectedBase, observeProtectedBaseDrift, independentPackageOnlyAdvisories, verifiedCoachDispatcherIsolation, independentDispatcherAdvisories, provenNonApplicableWorkflows } from '../scripts/ci-specialist-aggregate.mjs';
 import { inspectJobs, trustedRequiredJobs, inspectWorkflowRuns } from '../lib/ci/specialist-aggregate.mjs';
 import { safeComposedIndependentAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeIndependentRouterPolicyAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeStandaloneVideoAfterSpecialistScopeAdvance, safeNonOverlappingProductAdvance, safeIndependentMixedCandidateAdvance, normalizeIdenticalProtectedOverlap } from '../lib/ci/production-base-impact.mjs';
 
@@ -1432,7 +1433,7 @@ test('final base race retries freshness only, never real source failure or stabl
 });
 
 test('root-only optional product workflows are advisory only for verified isolated server dependency additions',async()=>{
- const names=['hh-static-image-cost-guard','opora-module-ci','hh-owner-telegram-video','hh-live-audio-ci'].map(n=>'.github/workflows/'+n+'.yml');
+ const names=['hh-static-image-cost-guard','opora-module-ci','hh-owner-telegram-video','hh-live-audio-ci','holistic-house-native'].map(n=>'.github/workflows/'+n+'.yml');
  const security='.github/workflows/hh-billing-isolated.yml';
  const basePackage={name:'hh',dependencies:{react:'19.0.0'},scripts:{'test:app':'node --conditions=react-server --test tests/coach-old.test.mjs'}};
  const currentPackage=JSON.parse(JSON.stringify(basePackage));currentPackage.dependencies.ws='8.23.0';
@@ -1467,4 +1468,60 @@ test('root-only optional product workflows are advisory only for verified isolat
  assert.deepEqual(good.expected,[security]);assert.equal(good.executed.length,1);
  assert.deepEqual(good.advisory.packageOnly,[...names].sort());
  await assert.rejects(()=>verify({...api,runs:async()=>[candidateRun(security,30,'failure')]},ctx,files,{maxWaitMs:0}),/SPECIALIST_FAILED/);
+});
+
+test('route-local coach source proof retains all shared statements and new import usage boundaries',()=>{
+ const ts=createRequire(new URL('../lib/ci/fast-ui-parser/package.json',import.meta.url))('typescript');
+ const original=[
+  "import {sharedAuth} from '@/lib/app/session.js'",
+  "async function handle(joined) {",
+  "  await sharedAuth()",
+  "  if (joined === 'my-coach/stream') { return 'old'; }",
+  "  if (joined === 'my-coach/live-token') { return 'old'; }",
+  "  if (joined === 'services/cart') { return 'cart'; }",
+  "}", ""
+ ].join('\n');
+ const proposed="import {clarityCourseDay} from '@/lib/coaching/clarity-course.mjs'\n"+
+   original.replace("return 'old';","return clarityCourseDay('day');").replace("return 'old';","return 'token';");
+ const proof=(value=proposed)=>verifiedCoachDispatcherIsolation(original,value,ts);
+ assert.equal(proof(),true);
+ for(const bad of [
+  proposed.replace('await sharedAuth()','await sharedAuth(false)'),
+  proposed.replace("return 'cart';","return clarityCourseDay('day');"),
+  proposed.replace("joined === 'my-coach/stream'","joined === 'services/stream'"),
+  proposed.replace("return 'cart';","return 'new-cart';"),
+  proposed.replace("@/lib/coaching/clarity-course.mjs","@/lib/app/session.js"),
+  proposed.replace('await sharedAuth()','await sharedAuth(); clarityCourseDay()'),
+  proposed.replace("return clarityCourseDay('day');","return 'unused';"),
+  proposed.replace("if (joined === 'services/cart')","if (joined === 'my-coach/extra') {return 1;} if (joined === 'services/cart')"),
+  proposed+"function broken( {"
+ ])assert.equal(proof(bad),false,bad);
+ const shared='app/api/app/[...path]/route.js',other='.github/workflows/practice-visual-services.yml';
+ const mandatory=['hh-personal-coaching-session','hh-app-r1','ia-v2'].map(n=>'.github/workflows/'+n+'.yml');
+ const yaml="on:\n  pull_request:\n    paths:\n      - 'app/api/app/*/route.js'\n      - 'components/practice-*'\n";
+ const files={base:new Map([[other,yaml]]),current:new Map([[other,yaml]]),testedMergeSha:'d'.repeat(40)};
+ const rows=[{filename:shared,status:'M'},{filename:'app/api/app/clarity-course/route.js',status:'A'}];
+ const verifyScope=(r=rows,owners=[other,...mandatory],f=files)=>[...independentDispatcherAdvisories(f,r,owners,
+   side=>side==='base'?original:proposed,ts)];
+ assert.deepEqual(verifyScope(),[other]);
+ assert.deepEqual(verifyScope([...rows,{filename:'components/practice-editor.jsx',status:'M'}]),[]);
+ assert.deepEqual(verifyScope([...rows,{filename:'lib/app/session.js',status:'M'}]),[]);
+ assert.deepEqual(verifyScope(rows,[other,...mandatory.slice(1)]),[]);
+ assert.deepEqual(verifyScope(rows,[other,...mandatory],{...files,testedMergeSha:null}),[]);
+ assert.deepEqual(verifyScope(rows,[other,...mandatory],{...files,current:new Map([[other,yaml+'# changed']])}),[]);
+});
+test('known untouched nonapplicable workflow with orphan run is advisory; unknown and required runs remain blockers',async()=>{
+ const other='.github/workflows/non-applicable.yml';
+ const extraYaml="on:\n  pull_request:\n    paths:\n      - 'lib/elsewhere/**'\n";
+ const files={base:new Map([[path,yaml],[other,extraYaml]]),current:new Map([[path,yaml],[other,extraYaml]]),
+   changedRows:[{filename:'lib/crm/a.js',status:'M'}]};
+ const make=(filename,id,conclusion,pull_requests)=>({...run('completed',conclusion),path:filename,id,pull_requests});
+ const normal=run('completed','success'),orphan=make(other,82,'failure',[]);
+ const api={pr:async()=>({...pr,mergeable:true}),target:async()=>base,runs:async()=>[normal,orphan],
+   jobs:async()=>[{name:'test',status:'completed',conclusion:'success'}]};
+ assert.deepEqual([...provenNonApplicableWorkflows(files,['lib/crm/a.js'],[path])],[other]);
+ const good=await verify(api,ctx,files,{maxWaitMs:0});
+ assert.deepEqual(good.expected,[path]);assert.ok(good.advisory.nonApplicable.includes(other+':failure'));
+ await assert.rejects(()=>verify({...api,runs:async()=>[normal,make('.github/workflows/unknown.yml',83,'failure',[])]},ctx,files,{maxWaitMs:0}),/SPECIALIST_FAILED/);
+ await assert.rejects(()=>verify({...api,runs:async()=>[normal,make(path,84,'failure',[])]},ctx,files,{maxWaitMs:0}),/SPECIALIST_FAILED/);
 });
