@@ -110,6 +110,13 @@ for(const extra of [{},{contextSentKey:'private'},{claritySelection:{memorySelec
  assert.equal(output[0].meta.requestedSavedContext,privateContext)
  assert.equal(runtime.history.length,privateContext?0:1)
 }
+{
+ const output=[]
+ const runtime={outputText:'A partly heard answer',history:[],characterSeenIds:new Set(),interrupted:true}
+ outputFunction(v=>v,{current:{onOutputFinal:(value,meta)=>output.push({value,meta})}},()=>[])(runtime)
+ assert.deepEqual(output,[{value:'A partly heard answer',meta:{interrupted:true,requestedSavedContext:false}}])
+ assert.deepEqual(runtime.history,[])
+}
 
 import {coachTranscriptQualityFields,coachTranscriptQualityExtends} from '../lib/personal-coaching/protocol-quality.mjs'
 import {coachProtocolEvidenceVeto} from '../lib/coaching/coach-protocol-relevance.mjs'

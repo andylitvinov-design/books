@@ -156,3 +156,18 @@ test('exact course-run CTA restores only its verified matching saved session',()
  assert.match(gate,/onResumeSession\(entry.item\)/)
  assert.ok(gate.indexOf('if(courseRunId)return',gate.indexOf('function chooseSession'))<gate.indexOf('onStart?.(id,options)'))
 })
+test('saved session entry never restarts on unknown, partial or ambiguous history',()=>{
+ const item={id:'saved',courseSessionId:'intro',personaId:'genie',durationSeconds:420}
+ const input={accountSaving:true,ready:true,topic:'intro',personaId:'genie',items:[item]}
+ assert.deepEqual(resolveSavedCoachSession(input),{kind:'resume',item})
+ assert.equal(resolveSavedCoachSession({...input,personaId:'mira'}).kind,'choose')
+ assert.equal(resolveSavedCoachSession({...input,cursor:{next:'x'}}).kind,'choose')
+ assert.equal(resolveSavedCoachSession({...input,items:[item,{...item,id:'other'}]}).kind,'choose')
+ for(const patch of [{ready:false},{busy:true},{error:true}])assert.equal(resolveSavedCoachSession({...input,...patch}).kind,'lookup')
+ assert.equal(resolveSavedCoachSession({...input,items:[]}).kind,'new')
+ assert.equal(resolveSavedCoachSession({...input,accountSaving:false,ready:false}).kind,'new')
+ const gate=read('components/my-coach-greeting-gate.jsx')
+ assert.doesNotMatch(gate,/window\.confirm/)
+ assert.match(gate,/onResumeSession\(entry.item\)/)
+ assert.ok(gate.indexOf("if(entry.kind!=='new')")<gate.indexOf('onStart?.(id,options)'))
+})

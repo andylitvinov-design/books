@@ -54,6 +54,70 @@ test('account-bound entry projection is awaited before Play and kept out of prov
   assert.match(ui,/data-coach-private-entry-context/)
 })
 
+function simulateGreetingReads(){
+  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+  const start=ui.indexOf('  useEffect(()=>{\n    let active=true\n    const controller=new AbortController()')
+  const end=ui.indexOf('\n  },[])',start)+8
+  const pending=[],timers=new Set(),states=[],ready=[]
+  const owner={current:null}
+  let cleanup
+  runInNewContext(ui.slice(start,end),{
+    AbortController,
+    useEffect:startEffect=>{cleanup=startEffect()},
+    setTimeout:callback=>{timers.add(callback);return callback},
+    clearTimeout:callback=>timers.delete(callback),
+    turnsRef:{current:[]},protocolStartedRef:{current:null},protocolOwnerRef:owner,
+    namePreferenceVersion:{current:null},
+    setGreetingIdentity:value=>states.push(value),
+    setProtocolOwnerReady:value=>ready.push(value),
+    appFetch:(path,body,method,{accountId,signal})=>new Promise((resolve,reject)=>{
+      signal.addEventListener('abort',()=>reject(signal.reason),{once:true})
+      pending.push({path,accountId,signal,resolve,reject})
+    }),
+  })
+  return {pending,timers,states,ready,owner,cleanup}
+}
+
+const ownerId='10000000-0000-4000-8000-000000000001'
+const nextRead=()=>new Promise(resolve=>setImmediate(resolve))
+
+test('slow account verification and memory loading each get their own bounded timeout and retry',async()=>{
+  const state=simulateGreetingReads()
+  ;[...state.timers][0]()
+  await nextRead()
+  assert.equal(state.pending.length,2)
+  assert.equal(state.pending[0].signal.aborted,true)
+  state.pending[1].resolve({account:{id:ownerId}})
+  await nextRead()
+  assert.equal(state.pending[2].accountId,ownerId)
+  ;[...state.timers][0]()
+  await nextRead()
+  assert.equal(state.pending.length,4)
+  assert.equal(state.pending[3].accountId,ownerId)
+  state.pending[3].resolve({entryContext:{kind:'unfinished'},hasPreviousProtocol:true})
+  await nextRead()
+  assert.equal(state.states.at(-1).entryContext.kind,'unfinished')
+  assert.deepEqual(state.ready,[true])
+  assert.equal(state.timers.size,0)
+})
+
+test('greeting memory stops on account mismatch or unmount',async()=>{
+  const changed=simulateGreetingReads()
+  changed.pending[0].resolve({account:{id:ownerId}})
+  await nextRead()
+  changed.pending[1].reject(Object.assign(Error('ACCOUNT_CHANGED'),{status:409}))
+  await nextRead()
+  assert.equal(changed.pending.length,2)
+  assert.equal(changed.owner.current,null)
+  assert.deepEqual(changed.ready,[true,false])
+  assert.equal(changed.states.at(-1).name,'')
+  const closed=simulateGreetingReads()
+  closed.cleanup()
+  await nextRead()
+  assert.equal(closed.pending.length,1)
+  assert.equal(closed.pending[0].signal.aborted,true)
+  assert.equal(closed.states.length,0)
+})
 
 test('entry consent explicitly binds the ticket to Gemini Free and discards a withdrawn request',async()=>{
   const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')

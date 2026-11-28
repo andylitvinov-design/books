@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import {useState} from "react";
 import {ArrowLeft, ArrowRight, ClipboardCheck, Compass, Gem, Search, Sprout, Target, TrendingUp, UserRound, Users} from "lucide-react";
 import type {PublicLocale} from "@/lib/public-locales";
@@ -25,6 +26,22 @@ const businessDetailHref=(locale:PublicLocale,id:string)=>{
  if(id==="ritual")return "/"+locale+"/holistic-support/mandala";
  return shamanicaBusinessHref(locale,id);
 };
+const businessArtifactCopy={
+ en:{heading:"What will you find here?",popular:"Popular Business Artifacts",all:"See All",more:"More business services",back:"All categories",titles:["Psychic Remedies","Artifacts","Rituals & Reiki Energy Support","Shamanic Mandalas Support"],subtitles:["(homeopathic support)","(archetypal energy support)","",""],featured:["Personal talisman","Daoist Fu","Personal mandala"]},
+ ru:{heading:"Что вы найдёте здесь?",popular:"Популярные бизнес-артефакты",all:"Все",more:"Другие бизнес-услуги",back:"Все направления",titles:["Психические средства","Артефакты","Ритуалы и энергетическая поддержка Рейки","Поддержка шаманских мандал"],subtitles:["(гомеопатическая поддержка)","(архетипическая энергоподдержка)","",""],featured:["Личный талисман","Талисман Фу","Личная мандала"]},
+ es:{heading:"¿Qué encontrarás aquí?",popular:"Artefactos empresariales destacados",all:"Ver todos",more:"Más servicios empresariales",back:"Todas las categorías",titles:["Remedios psíquicos","Artefactos","Rituales y apoyo energético Reiki","Apoyo con mandalas chamánicos"],subtitles:["(apoyo homeopático)","(apoyo energético arquetípico)","",""],featured:["Talismán personal","Talismán Fu","Mandala personal"]}
+} as const;
+const businessArtifactCards=[
+ {id:"remedies",Icon:Sprout,image:"/images/holistic-house/distance-homeopathy.webp"},
+ {id:"artifacts",Icon:Gem,image:"/images/holistic-house/tao-fu-balance.webp"},
+ {id:"energy",Icon:Target,image:"/images/holistic-house/reiki-approved-sunrise-v3.webp"},
+ {id:"mandala",Icon:Compass,image:"/images/holistic-house/mandala-gold-reference.webp"}
+] as const;
+const businessFeaturedArtifacts=[
+ {image:"/academy/reiki-yggdrasil/source/advanced-runes.png",path:"holistic-support#talismans"},
+ {image:"/images/holistic-house/tao-fu-balance.webp",path:"holistic-support#talismans"},
+ {image:"/images/holistic-house/mandala-gold-reference.webp",path:"holistic-support/mandala"}
+] as const;
 const expressPrices=["FREE","45 CAD","75 CAD","200 CAD","300 CAD"] as const;
 type ShelfId=(typeof businessShelves)[number]["id"];
 const translations={
@@ -138,7 +155,7 @@ type Start=typeof startChoices[number]["id"];
 type ServiceId="express"|typeof BUSINESS_SERVICES[number];
 
 export function ShamanicaBusinessContent({locale}:{locale:PublicLocale}){
- const t=translations[locale];
+ const t=translations[locale],a=businessArtifactCopy[locale];
  const [step,setStep]=useState(0);
  const [goal,setGoal]=useState<Goal>("express");
  const [concern,setConcern]=useState<Concern>("unclear");
@@ -192,9 +209,9 @@ export function ShamanicaBusinessContent({locale}:{locale:PublicLocale}){
   </section>
   </details>
   <section className={styles.services} data-business-cabinet-shelves data-expanded={activeShelf?"true":"false"} aria-labelledby="business-services-heading">
-   <h2 id="business-services-heading">{activeShelf?t.shelves[shelfIndex]:t.servicesTitle}</h2>
+   <h2 id="business-services-heading">{activeShelf?(businessArtifactCards.findIndex(item=>item.id===activeShelf.id)>=0?a.titles[businessArtifactCards.findIndex(item=>item.id===activeShelf.id)]:t.shelves[shelfIndex]):a.heading}</h2>
    {activeShelf?<>
-    <button type="button" className={styles.shelfBack} onClick={()=>{setSelectedShelf(null);setSelectedOption(null);}} data-business-back-to-shelves><ArrowLeft size={18} aria-hidden="true"/>{t.backToShelves}</button>
+    <button type="button" className={styles.shelfBack} onClick={()=>{setSelectedShelf(null);setSelectedOption(null);}} data-business-back-to-shelves><ArrowLeft size={18} aria-hidden="true"/>{a.back}</button>
     <p className={styles.focusLead}>{t.chooseFocus}</p>
     {activeShelf.id==="express"||activeShelf.id==="strategy"?<>
      <div className={styles.offerChoices} role="group" aria-label={t.chooseFocus} data-business-second-level={activeShelf.id}>
@@ -230,13 +247,26 @@ export function ShamanicaBusinessContent({locale}:{locale:PublicLocale}){
      </div>
      <p className={styles.catalogHint}>{t.categoryHint}</p>
     </>}
-   </>:<div className={styles.serviceGrid}>
+   </>:<>
+    <div className={styles.artifactGrid} data-business-artifact-categories>
+     {businessArtifactCards.map(({id,Icon,image},index)=>{
+      const contents=<><span className={styles.artifactPhoto}><Image src={image} alt="" fill sizes="(max-width:640px) 20vw, 100px"/></span><span className={styles.artifactText}><Icon size={16} aria-hidden="true"/><strong>{a.titles[index]}</strong>{a.subtitles[index]&&<small>{a.subtitles[index]}</small>}<ArrowRight className={styles.artifactArrow} size={16} aria-hidden="true"/></span></>;
+      return id==="mandala"?<Link key={id} className={styles.artifactCard} href={"/"+locale+"/holistic-support/mandala"} prefetch={false} data-business-artifact-category={id}>{contents}</Link>:<button key={id} type="button" className={styles.artifactCard} data-business-artifact-category={id} onClick={()=>{setSelectedShelf(id);setSelectedOption(null);}}>{contents}</button>;
+     })}
+    </div>
+   </>}
+   <section id="business-artifact-list" className={styles.businessFeatured} aria-labelledby="business-artifact-heading">
+    <div className={styles.businessFeaturedHeader}><h2 id="business-artifact-heading">{a.popular}</h2><Link href={shamanicaBusinessHref(locale,"artifacts")} prefetch={false}>{a.all}<ArrowRight size={15}/></Link></div>
+    <div className={styles.businessFeaturedGrid}>{businessFeaturedArtifacts.map((item,index)=><Link href={"/"+locale+"/"+item.path} key={item.path+"-"+index} prefetch={false}><span className={styles.businessFeaturedPhoto}><Image src={item.image} alt="" fill sizes="(max-width:640px) 30vw, 190px"/></span><strong>{a.featured[index]}</strong></Link>)}</div>
+   </section>
+   {!activeShelf&&<details className={styles.moreServices}><summary>{a.more}</summary><div className={styles.serviceGrid}>
     {businessShelves.map(({id,Icon},index)=><button className={styles.serviceCard} type="button" key={id}
      onClick={()=>{setSelectedShelf(id);setSelectedOption(null);}} data-business-shelf={id} aria-label={t.shelves[index]}>
      <span className={styles.serviceImage} aria-hidden="true"/>
      <span className={styles.serviceText}><Icon size={25} className={styles.serviceIcon} strokeWidth={1.6} aria-hidden="true"/><strong>{t.shelves[index]}</strong><ArrowRight size={16} className={styles.cardArrow} aria-hidden="true"/></span>
     </button>)}
-   </div>}
+   </div></details> }
+
   </section>
  </div>;
 }
