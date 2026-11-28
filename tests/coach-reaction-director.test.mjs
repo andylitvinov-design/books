@@ -295,7 +295,7 @@ test('presentation contexts use a stable source independent of greeting audio an
  assert.ok(css.includes('.media .video.presentationLayer{opacity:0;transition:none;will-change:auto}'))
  assert.ok(css.includes(".media .video.presentationLayer[data-presentation-visible='true']{opacity:1}"))
  assert.ok(motion.includes('!presentationActive&&!sessionContext&&!released&&!protectedHold'))
- assert.ok(motion.includes('presentationActive?(openingActive?opening?.poster||pinnedPresentation?.poster:pinnedPresentation?.poster||opening?.poster)'))
+ assert.ok(motion.includes('presentationActive?(openingActive?opening?.poster||presentation?.poster||pinnedPresentation?.poster:presentation?.poster||pinnedPresentation?.poster||opening?.poster)'))
  assert.ok(motion.includes("presentationActive?personaId+'-presentation'"))
  assert.ok(motion.includes('},[shouldPlay,src,presentationActive,sessionContext])'))
 })
@@ -527,4 +527,16 @@ test('Harry catalog preserves the approved native source and avoids 3x mobile ov
  assert.ok(css.includes("background-image:url('/images/holistic-house/my-coach-motion/harry-greeting-real-v2.webp')!important"))
  assert.ok(media.includes("const harryOriginalPoster=MEDIA_ROOT+'harry-greeting-real-v2.webp'"))
  assert.ok(media.includes('preferredPoster!==missingPoster?preferredPoster:largeHarryFallback'))
+})
+
+
+test('presentation waits for current playback progress and cannot reveal a failed or stale layer',()=>{
+ const src=readFileSync(new URL('../components/coach-presentation-layers.jsx',import.meta.url),'utf8')
+ assert.ok(src.includes('epoch!==playbackEpoch.current||failedRef.current[clip.src]'))
+ assert.ok(src.includes('video.requestVideoFrameCallback(()=>reveal(video,clip,epoch))'))
+ assert.ok(src.includes('video.currentTime-progress.start>=.12'))
+ assert.ok(src.includes('progress?.video===video'))
+ assert.doesNotMatch(src,/else reveal\(video,clip\)/)
+ assert.ok(src.includes('if(visibleRef.current===clip.src){'))
+ assert.doesNotMatch(src,/visibleRef.current===clip.src\|\|clip.src===presence/)
 })
