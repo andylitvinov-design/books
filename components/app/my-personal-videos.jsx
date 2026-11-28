@@ -8,6 +8,7 @@ import PersonalVideoMessengerPanel from './personal-video-messenger-panel'
 import SupportPhotoCabinet from '@/components/app/support-photo-cabinet'
 import {MATERIAL_TAB_IDS,selectedMaterialTab,materialTabSearch} from '@/lib/app/my-materials-tabs.mjs'
 import MyLivePhotos from '@/components/app/my-live-photos'
+import CoachMaterialNote from './coach-material-note'
 
 const COPY={
   en:{title:'My Videos',subtitle:'Your private saved videos, separate from the public video editor.',new:'Create free video',myPage:'Publish on My Page',
@@ -217,11 +218,11 @@ export default function MyPersonalVideos({accountId,locale='en'}){
     </div>
     <div role="tabpanel" id="my-materials-panel-avatars" aria-labelledby="my-materials-tab-avatars"
       hidden={activeTab!=='avatars'}>
-      {activeTab==='avatars'?<MyLivePhotos locale={locale}/>:null}
+      {activeTab==='avatars'?<MyLivePhotos locale={locale} materialAccountId={accountId}/>:null}
     </div>
     <div role="tabpanel" id="my-materials-panel-photos" aria-labelledby="my-materials-tab-photos"
       hidden={activeTab!=='photos'}>
-      {activeTab==='photos'?<SupportPhotoCabinet locale={locale}/>:null}
+      {activeTab==='photos'?<SupportPhotoCabinet locale={locale} materialAccountId={accountId}/>:null}
     </div>
     <div role="tabpanel" id="my-materials-panel-videos" aria-labelledby="my-materials-tab-videos"
       hidden={activeTab!=='videos'}>
@@ -260,6 +261,7 @@ export default function MyPersonalVideos({accountId,locale='en'}){
             <button type="button" disabled={busy||video.status!=='ready'} onClick={()=>void prepareDownload(video.id)}>{t.download}</button>
             <button type="button" disabled={busy} onClick={()=>void remove(video.id)}>{t.delete}</button>
           </div>
+          {video.status==='ready'&&<CoachMaterialNote accountId={accountId} locale={locale} kind="video" id={video.id}/>}
           {play?.id===video.id&&<video src={play.url} controls playsInline preload="metadata" style={{width:'100%',marginTop:10}}/>}
           {download?.id===video.id&&<p><a href={download.url} target="_blank" rel="noopener noreferrer">{t.download} MP4</a></p>}
         </article>)}

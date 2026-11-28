@@ -129,7 +129,7 @@ export default function DaybookJournal({locale,...serverRoute}){
   if(saving.current||!draft||phase!=='ready')return
   saving.current=true;setBusy(true);setStatus('saving');const token=epoch.current
   try{
-   const input={id:draft.id,revision:draft.revision,text:draft.text,tags:draft.tags.filter(tag=>tag.trim()),kind:draft.kind,locale:draft.locale,timezone:draft.timezone,localDay:draft.localDay,goalId:draft.goalId}
+   const input={id:draft.id,revision:draft.revision,text:draft.text,tags:draft.tags.filter(tag=>tag.trim()),kind:draft.kind,locale:draft.locale,timezone:draft.timezone,localDay:draft.localDay,goalId:draft.goalId,...(draft.material?{material:draft.material}:{})}
    const entry=await saver.current.save(input)
    if(token!==epoch.current)return
    setEntries(old=>[entry,...old.filter(item=>item.id!==entry.id)]);setDraft(entry);setStatus('saved')
