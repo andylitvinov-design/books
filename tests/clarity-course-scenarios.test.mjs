@@ -375,3 +375,55 @@ test('B: eight core axes precede support, radar never invents a rating or choose
  assert.equal(result.axes[0].current,0);assert.equal(result.axes[0].desired,10)
  assert.equal(result.axes[1].current,null);assert.equal(result.axes[1].desired,null)
 })
+
+import {clarityTranscriptReviewVersion} from '../lib/coaching/clarity-course-scenarios.mjs'
+import {deriveClarityRelayReview,coachReviewScenarioVersion} from '../lib/coaching/coach-course-protocol-schema.mjs'
+test('all three Clarity relay scenarios preserve exact version, client-reviewed evidence, stage projection and visit scope',()=>{
+ const visitId='11111111-1111-4111-8111-111111111111'
+ const make=(role,content,extra={})=>({role,content,coachId:'mira',visitId,...(role==='assistant'?{authorPersonaId:'mira'}:{}),...extra})
+ for(const [i,course] of ['clarity_day_1','clarity_day_2','clarity_day_3'].entries())for(const locale of locales){
+  const scenarioVersion=clarityScenarioVersion(course),schema=coachCourseProtocolSchema(course,locale,{scenarioVersion})
+  const id=i===0?'situation':i===1?'episode':'changes'
+  const field=schema.checkpoints.find(f=>f.id===id)||schema.checkpoints.find(f=>clarityScenarioGateFields(course).some(g=>g.id===f.id&&g.kind==='text'&&!g.requiresConsent))
+  assert.ok(field)
+  const quote=({en:'I noticed more energy at work.',ru:'Я заметила больше сил на работе.',es:'Noté más energía en el trabajo.'})[locale]
+  const yes=({en:'yes',ru:'да',es:'sí'})[locale]
+  const turns=[make('assistant',field.question),make('user',quote),make('assistant',checkpointConfirmation(field.question,quote,locale)),make('user',yes),make('assistant','Next')]
+  const review=deriveClarityRelayReview(course,turns)
+  assert.equal(review.version,clarityTranscriptReviewVersion(course));assert.equal(coachReviewScenarioVersion(review),scenarioVersion)
+  assert.equal(review.events.length,1);assert.equal(review.events[0].fieldId,field.id)
+  const rows=coachCourseProtocolRows(course,turns,review,locale)
+  assert.equal(rows.find(f=>f.id===field.id).quote,quote);assert.equal(rows.find(f=>f.id===field.id).reviewOrigin,'relay_transcript')
+  const stage=groupedSessionPosition(null,courseStagePosition(rows),{mode:'course',courseId:course,locale})
+  assert.equal(stage.total,6);assert.equal(stage.rows.flatMap(g=>g.coreChildren).find(f=>f.id===field.id).quote,quote)
+  const record={id:'record',courseSessionId:course,provenance:'client_autosaved_unreviewed_draft',turns,courseScenarioVersion:scenarioVersion}
+  const draft=claritySessionProtocol(record,i+1,locale,{draftReview:review,scenarioVersion})
+  assert.equal(draft.rows.find(f=>f.id===field.id).quote,quote)
+  assert.equal(draft.rows.find(f=>f.id===field.id).reviewOrigin,'relay_transcript')
+  const empty=claritySessionProtocol({...record,turns:[]},i+1,locale,{scenarioVersion})
+  assert.deepEqual(empty.rows.map(f=>f.id),schema.checkpoints.map(f=>f.id))
+   assert.ok(empty.rows.every(f=>f.status==='not_explored'&&f.quote===''))
+   assert.equal(claritySessionProtocol({...record,turns:[]},i+1,locale),null)
+   assert.equal(claritySessionProtocol({...record,turns:[],courseScenarioVersion:undefined},i+1,locale,{scenarioVersion}),null)
+   assert.equal(claritySessionProtocol({...record,courseScenarioVersion:'wrong-version'},i+1,locale,{draftReview:review,scenarioVersion}),null)
+   assert.equal(claritySessionProtocol({...record,turns:[]},i+1,locale,{draftReview:{version:'wrong-review',courseSessionId:course,events:[]},scenarioVersion}),null)
+  assert.equal(deriveClarityRelayReview(course,turns.slice(0,-1)).events.length,0)
+  assert.equal(deriveClarityRelayReview(course,turns.map((t,j)=>j===3?{...t,visitId:'22222222-2222-4222-8222-222222222222'}:t)).events.length,0)
+  assert.equal(deriveClarityRelayReview(course,turns,0).events.length,0)
+  assert.equal(deriveClarityRelayReview(course,turns.map((t,j)=>j===2?{...t,interrupted:true}:t)).events.length,0)
+ }
+})
+test('Clarity relay never converts a rating without exact method consent into verified evidence',()=>{
+ for(const course of ['clarity_day_1','clarity_day_2']){
+  const schema=coachCourseProtocolSchema(course,'en',{scenarioVersion:clarityScenarioVersion(course)})
+  const consent=schema.checkpoints.find(f=>f.id===(course==='clarity_day_1'?'balance_consent':'inner_consent'))
+  const rating=schema.checkpoints.find(f=>f.id!==consent.id&&f.id.startsWith(course==='clarity_day_1'?'outer_':'inner_'))
+  const quote=course==='clarity_day_1'?'5':'5 / 8'
+  const m=(role,content)=>({role,content,coachId:'mira',visitId:'visit'})
+  const sequence=[m('assistant',rating.question),m('user',quote),m('assistant',checkpointConfirmation(rating.question,quote,'en')),m('user','yes'),m('assistant','Thank you')]
+  assert.equal(deriveClarityRelayReview(course,sequence).events.length,0)
+  const accepted=deriveClarityRelayReview(course,[m('assistant',consent.question),m('user','yes'),...sequence])
+  assert.equal(accepted.events[0].binding.decision,'accepted')
+  assert.equal(accepted.events.at(-1).fieldId,rating.id)
+ }
+})
