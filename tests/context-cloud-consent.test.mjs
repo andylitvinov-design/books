@@ -66,3 +66,18 @@ test('a category grant cannot lift an explicit item withdrawal', () => {
   assert.equal(hasCoachContextGrant(request, [categoryGrant, grant, revoked]), false)
   assert.equal(hasCoachContextGrant(request, [revoked, categoryGrant, { ...grant, revision: 4 }]), true)
 })
+
+test('reviewed protocol fields need an expiring Groq grant for the exact session, source and policy',()=>{
+  const scope={...request,category:'reviewed_protocol_fields',sessionOnly:true}
+  const approved={...grant,...scope,expiresAt:150}
+  assert.equal(hasCoachContextGrant(scope,[approved]),true)
+  for(const change of [{accountId:'other'},{sessionId:'another'},{sourceRevision:'changed'},
+    {policyVersion:'changed'},{provider:'openrouter'},{sessionOnly:false},{now:150}]){
+    assert.equal(hasCoachContextGrant({...scope,...change},[approved]),false)
+  }
+  for(const change of [{sessionId:null},{itemId:null},{expiresAt:null}]){
+    assert.equal(hasCoachContextGrant(scope,[{...approved,...change}]),false)
+  }
+  const withdrawal={...approved,itemId:null,sourceRevision:null,decision:'revoke',revision:2,expiresAt:null}
+  assert.equal(hasCoachContextGrant(scope,[approved,withdrawal]),false)
+})

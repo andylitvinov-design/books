@@ -53,7 +53,8 @@ if(!isolated){
         create schema auth; create schema app; create schema app_private;
         create function auth.uid() returns uuid language sql stable as
           $$ select nullif((coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb->>'sub'),'')::uuid $$;
-        create table app.accounts (id uuid primary key,status text not null,onboarding_state text not null);
+        create table app.accounts (id uuid primary key,status text not null,onboarding_state text not null,
+          display_name text not null default 'Synthetic owner');
         create table app.practitioners(id uuid primary key,trusted_auth_user_id uuid not null,
            active boolean not null,status text not null,public_profile jsonb not null default '{}'::jsonb);
         create table app.consultation_requests(id uuid primary key, account_id uuid not null references app.accounts(id),
@@ -63,7 +64,7 @@ if(!isolated){
         -- The synthetic suite binds claims directly, without the app's HTTP session fixture.
         create function app_private.session_active() returns boolean language sql stable security invoker as
           $$ select app_private.account_active() $$;
-        insert into app.accounts values
+        insert into app.accounts(id,status,onboarding_state) values
           ('${A}','active','active'),('${B}','active','active'),
           ('${M1}','active','active'),('${M2}','active','active');
         insert into app.practitioners values
@@ -92,6 +93,9 @@ if(!isolated){
       await db.query(await readFile(new URL('../supabase/migrations/20261023183700_hh_personal_coaching_sessions.sql',import.meta.url),'utf8'))
       await db.query(await readFile(new URL('../supabase/migrations/20261125144854_hh_my_coach_private_protocol_drafts_20261125.sql',import.meta.url),'utf8'))
       await db.query(await readFile(new URL('../docs/coaching/PERSONAL_MEMORY_PROTOCOL_REFS_DRAFT.sql',import.meta.url),'utf8'))
+      await db.query(await readFile(new URL('../supabase/migrations/20261120190000_hh_context_cloud_grants.sql',import.meta.url),'utf8'))
+      await db.query(await readFile(new URL('../supabase/migrations/20261123023514_hh_daybook_coach_excerpt_consent_20261123.sql',import.meta.url),'utf8'))
+      await db.query(await readFile(new URL('../docs/coaching/PME_REVIEWED_FIELD_GRANT_DRAFT.sql',import.meta.url),'utf8'))
       const force = await db.query(`select relname,relrowsecurity,relforcerowsecurity from pg_class
         where oid in ('app_private.client_ai_memory_settings'::regclass,
         'app_private.client_ai_memory_items'::regclass,
@@ -279,8 +283,66 @@ if(!isolated){
         const original=await exportFor(B)
         assert.equal(original.exportStatus,'ok')
         assert.deepEqual(original.items.map(item=>item.value),[quote])
+        const {readApprovedCoachReviewedFields}
+          =await import('../lib/app/my-coach-reviewed-field-consent.js')
+        const {readMyCoachStagedMemory}=await import('../lib/app/my-coach-staged-memory.js')
+        const {createStagedCoachModelContextLoader}=await import('../lib/app/my-coach-model-memory.js')
+        const {issueCoachContextSession}=await import('../lib/app/coach-context-session.js')
+        const {issueCoachMemoryTicket}=await import('../lib/coaching/coach-staged-memory-ticket.mjs')
+        const {projectCoachReviewedFields}=await import('../lib/coaching/coach-preconsulting.mjs')
+        const env={HH_COACH_REVIEWED_FIELD_GRANTS_ENABLED:'true',HH_COACH_CONTEXT_ENABLED:'true',
+          HH_CLIENT_MEMORY_ENABLED:'true',HH_COACH_MEMORY_SELECTION_ENABLED:'true',
+          HH_COACHING_GROQ_ENABLED:'true',HH_COACHING_GROQ_ZDR_CONFIRMED:'true',
+          HH_COACHING_GROQ_FREE_TIER_CONFIRMED:'true',HH_FIRST_VIDEO_GROQ_API_KEY:'gsk_'+ 'synthetic-fixture'.repeat(2),
+          HH_COACH_CONTEXT_GROQ_POLICY:'synthetic-v1',HH_COACH_CONTEXT_GROQ_NOTICE_EN:'Fixture',
+          HH_COACH_CONTEXT_GROQ_NOTICE_RU:'Fixture',HH_COACH_CONTEXT_GROQ_NOTICE_ES:'Fixture'}
+        const contextSessionToken=issueCoachContextSession(config,actor(B)).token
+        const identity=await readMyCoachStagedMemory(config,actor(B),{stage:'identity',provider:'groq',
+          consent:{sessionAccepted:true,priorSessions:true,providerSharing:true}},env)
+        const {stageToken}=identity
+        const projection=projectCoachReviewedFields(protocol)
+        const packetScope={contextSessionToken,stageToken,projection}
+        const allow={stage:'reviewed_fields',provider:'groq',decision:'grant',confirmed:true,contextSessionToken,stageToken,
+          reviewProof:identity.reviewedFieldProof}
+        assert.match(allow.reviewProof,/^[a-f0-9]{64}$/)
+        const grantFor=(body=allow)=>readMyCoachStagedMemory(config,actor(B),body,env)
+        const fieldsFor=(id=B,body=packetScope,policy=env)=>readApprovedCoachReviewedFields(config,actor(id),body,policy)
+        const loadModel=createStagedCoachModelContextLoader(config,actor(B),{
+          locale:'ru',personaId:'mira',openingPrior:{name:'Андрей',topic:'Работа'},allowOpeningPrior:true,
+          openingHistory:['да','да, верно','Продолжим прошлую','challenge','волнуюсь','да'],
+          memoryStageToken:stageToken,contextSessionToken,memorySharePrior:true,memoryShareReviewedFields:true,
+        },env)
+        assert.deepEqual(await fieldsFor(),[])
+        assert.doesNotMatch(JSON.stringify(await loadModel('groq',{voiceTurn:false})),/quiet walk/)
+        await assert.rejects(()=>grantFor(),{code:'MY_COACH_MEMORY_GRANT_REQUIRED'})
+        await as(B,d=>d.query('update app_private.client_ai_memory_settings set third_party_inference_enabled=true where account_id=$1',[B]))
+        await assert.rejects(()=>grantFor({...allow,reviewProof:'f'.repeat(64)}),{code:'MY_COACH_MEMORY_REVIEW_STALE'})
+        assert.equal((await grantFor()).granted,true)
+        assert.ok((await fieldsFor())[0].text.includes(quote))
+        assert.match(JSON.stringify(await loadModel('groq',{voiceTurn:false})),/quiet walk/)
+        assert.doesNotMatch(JSON.stringify(await loadModel('groq',{voiceTurn:true})),/quiet walk/)
+        assert.equal(await loadModel('openrouter',{voiceTurn:false}),null)
+        const otherStageToken=issueCoachMemoryTicket({accountId:B,provider:'groq',secret:config.encryptionKey,priorSessions:true})
+        assert.deepEqual(await fieldsFor(B,{...packetScope,stageToken:otherStageToken}),[])
+        assert.deepEqual(await fieldsFor(A),[])
+        assert.deepEqual(await fieldsFor(B,{...packetScope,contextSessionToken:issueCoachContextSession(config,actor(B)).token}),[])
+        assert.deepEqual(await fieldsFor(B,packetScope,{...env,HH_COACH_CONTEXT_GROQ_POLICY:'synthetic-v2'}),[])
+        assert.deepEqual(await fieldsFor(B,{...packetScope,projection:{...projection,
+          fields:projection.fields.map(field=>({...field,revision:field.revision+1}))}}),[])
+        assert.equal((await as(A,d=>d.query("select * from app_private.context_cloud_grants where category='reviewed_protocol_fields'"))).rowCount,0)
+        const ledger=(await as(B,d=>d.query("select * from app_private.context_cloud_grants where category='reviewed_protocol_fields'"))).rows
+        assert.equal(ledger.length,1)
+        assert.doesNotMatch(JSON.stringify(ledger),/quiet walk/)
+        await as(B,d=>d.query('update app_private.client_ai_memory_settings set revision=revision+1 where account_id=$1',[B]))
+        assert.deepEqual(await fieldsFor(),[])
+        await grantFor()
+        assert.ok((await fieldsFor()).length)
+        await grantFor({stage:'reviewed_fields',provider:'groq',decision:'revoke',contextSessionToken})
+        assert.deepEqual(await fieldsFor(),[])
+        await grantFor()
         await manageMyCoachMemorySelection(config,actor(B),{action:'correct',confirmed:true,operationId:op(101),
           id:refB,expectedRevision:0,value:'Walking after lunch works for me.'})
+        assert.deepEqual(await fieldsFor(),[])
         const corrected=await exportFor(B)
         assert.equal(corrected.exportStatus,'ok')
         assert.equal((await recallFor(B)).item.value,'Walking after lunch works for me.')

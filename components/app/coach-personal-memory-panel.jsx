@@ -3,6 +3,7 @@ import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
 import {appFetch} from '@/lib/app/client-fetch'
 import {MEMORY_CORRECTION_MAX_LENGTH} from '@/lib/coaching/coach-memory-selection.mjs'
+import {GROWTH_GOALS} from '@/lib/inner-growth/course-model.js'
 import css from './my-page.module.css'
 const copy={
  en:{title:'My Memory',lead:'Review confirmed answers from saved sessions. Selected memories stay private; they do not authorize an AI provider.',query:'Search past answers',search:'Search history',searchSaved:'Search selected memories',all:'All types',resource:'Resources',goal_statement:'Goals',action_statement:'Actions',practice_observation:'Practices',state_observation:'States',client_statement:'Other answers',history:'Historical answer',partial:'Only part of the archive could be checked.',none:'No matching confirmed answers in the checked archive.',error:'Memory is unavailable.',saved:'Selected for private memory.',forgotten:'Removed from memory. The original session remains in your Daybook.',selected:'My selected memories',load:'Show selected memories',more:'More',save:'Keep in My Memory',forget:'Forget selection',consent:'Enable memory and sensitive-memory permission to save historical answers.',settings:'Memory permissions',unavailable:'Source unavailable. You can forget this selection.',confirm:'Forget this selection? It will not automatically return.'},
@@ -38,18 +39,36 @@ const practiceCopy={
   partial:'Showing recent practice outcomes. The counts cover the sessions shown here.',
   helpful:'Helpful',neutral:'No change',not_helpful:'Did not help',discomfort:'Discomfort',unknown:'No clear response',
   day:n=>'Course day '+n,pair:(a,b)=>'Difficulty before '+a+'/10, after '+b+'/10',
-  caution:'You reported discomfort with this practice.'},
+  caution:'You reported discomfort with this practice.',focus:'Your current focus',choose:'Choose a focus',
+  suggest:'Use my history for this focus',no_match:'No previously helpful practice matches this focus.',
+  selectionPartial:'There is more history for this focus than can be checked in one request.',
+  discomfort_reported:'You reported discomfort with a matching practice. You can skip it.',
+  stale_consent:'Permissions changed. Open your practice history again.',
+  previously_helpful:'You previously reported that this helped. You can decide if it fits today.'},
  ru:{heading:'Что мне помогает',open:'Показать историю практик',empty:'Пока нет результатов практик.',
   partial:'Показаны недавние практики. Подсчёт относится к сессиям на этой странице.',
   helpful:'Помогло',neutral:'Без изменений',not_helpful:'Не помогло',discomfort:'Дискомфорт',unknown:'Нет ясного ответа',
   day:n=>'День курса '+n,pair:(a,b)=>'Трудность до '+a+'/10, после '+b+'/10',
-  caution:'Вы отмечали дискомфорт при этой практике.'},
+  caution:'Вы отмечали дискомфорт при этой практике.',focus:'Что важно сейчас',choose:'Выберите тему',
+  suggest:'Подобрать практику по моей истории',no_match:'В истории нет практики по этой теме, которую вы отмечали как полезную.',
+  selectionPartial:'За один запрос нельзя проверить всю историю практик по этой теме.',
+  discomfort_reported:'Вы отмечали дискомфорт при практике по этой теме. Вы можете её пропустить.',
+  stale_consent:'Разрешения изменились. Откройте историю практик заново.',
+  previously_helpful:'Раньше вы отметили, что эта практика помогла. Вы можете решить, подходит ли она сегодня.'},
  es:{heading:'Qué me funciona',open:'Mostrar historial de prácticas',empty:'Aún no hay resultados de prácticas.',
   partial:'Se muestran las prácticas recientes. Los recuentos corresponden a las sesiones que aparecen aquí.',
   helpful:'Me ayudó',neutral:'Sin cambios',not_helpful:'No me ayudó',discomfort:'Malestar',unknown:'Sin respuesta clara',
   day:n=>'Día '+n+' del curso',pair:(a,b)=>'Dificultad antes '+a+'/10, después '+b+'/10',
-  caution:'Has indicado malestar con esta práctica.'},
+  caution:'Has indicado malestar con esta práctica.',focus:'Tu enfoque actual',choose:'Elige un enfoque',
+  suggest:'Usar mi historial para este enfoque',no_match:'Ninguna práctica de este enfoque consta como útil en tu historial.',
+  selectionPartial:'Hay más historial sobre este enfoque del que se puede revisar en una consulta.',
+  discomfort_reported:'Has indicado malestar con una práctica de este enfoque. Puedes omitirla.',
+  stale_consent:'Los permisos han cambiado. Vuelve a abrir tu historial de prácticas.',
+  previously_helpful:'Antes indicaste que esta práctica te ayudó. Tú decides si te sirve hoy.'},
 }
+const practiceFocusEs={calm_regulation:'Calma y conexión con el presente',inner_support:'Apoyo interior',
+ emotional_flexibility:'Equilibrio emocional',attention_clarity:'Claridad y atención',
+ connection_boundaries:'Conexión y límites',energy_agency:'Energía y capacidad de actuar'}
 const types=['resource','goal_statement','action_statement','practice_observation','state_observation','client_statement']
 export default function CoachPersonalMemoryPanel({accountId,locale='en',selectionEnabled=false}){
  const t=copy[locale]||copy.en
@@ -62,6 +81,8 @@ export default function CoachPersonalMemoryPanel({accountId,locale='en',selectio
  const [editing,setEditing]=useState(null)
  const [importState,setImportState]=useState(null)
  const [practiceHistory,setPracticeHistory]=useState(null)
+ const [practiceFocus,setPracticeFocus]=useState('')
+ const [practiceSelection,setPracticeSelection]=useState(null)
  const [busy,setBusy]=useState(false),[notice,setNotice]=useState('')
  const pending=useRef(null)
  const importKey='hh.my-memory.import.'+accountId
@@ -80,12 +101,14 @@ export default function CoachPersonalMemoryPanel({accountId,locale='en',selectio
    else window.sessionStorage.removeItem(importKey)
   }catch{/* The current page can still resume from React state. */}
  }
- async function run(fn){
+ async function run(fn,{keepPracticeHistory=false}={}){
   if(pending.current)return
-  setPracticeHistory(null)
+  if(!keepPracticeHistory)setPracticeHistory(null)
+  setPracticeSelection(null)
   const controller=new AbortController();pending.current=controller;setBusy(true);setNotice('')
   try{await fn(controller.signal)}catch(e){
    if(!controller.signal.aborted){
+    setPracticeHistory(null)
     setSelected(null)
     setEditing(null)
     if(e.code==='ACCOUNT_CHANGED'||e.code==='SIGN_IN_REQUIRED'){setResult(null);updateImportState(null)}
@@ -121,6 +144,16 @@ export default function CoachPersonalMemoryPanel({accountId,locale='en',selectio
    const next=await post('my-coach/memory-selection',{action:'practice-outcomes'},signal)
    if(!signal.aborted)setPracticeHistory(next)
   })
+ }
+ function findPractice(){
+  if(!practiceFocus||!Number.isInteger(practiceHistory?.settingsRevision))return
+  void run(async signal=>{
+   const next=await post('my-coach/memory-selection',{action:'practice-selection',focus:practiceFocus,
+    confirmed:true,expectedSettingsRevision:practiceHistory.settingsRevision},signal)
+   if(signal.aborted)return
+   if(next.status==='stale_consent'||next.status==='not_authorized')setPracticeHistory(null)
+   setPracticeSelection(next)
+  },{keepPracticeHistory:true})
  }
  function downloadSelected(){
   void run(async signal=>{
@@ -243,9 +276,27 @@ export default function CoachPersonalMemoryPanel({accountId,locale='en',selectio
   {selectionEnabled&&<section data-my-page-practice-memory>
    <h3>{practice.heading}</h3>
    <button type="button" className={css.secondary} disabled={busy} onClick={loadPracticeHistory}>{practice.open}</button>
-   {practiceHistory?.status==='not_authorized'&&<p>{t.consent} <Link href={'/'+locale+'/app/memory'} prefetch={false}>{t.settings}</Link></p>}
+   {(practiceHistory?.status==='not_authorized'||practiceSelection?.status==='not_authorized')&&
+    <p>{t.consent} <Link href={'/'+locale+'/app/memory'} prefetch={false}>{t.settings}</Link></p>}
    {practiceHistory?.status==='empty'&&<p role="status">{practice.empty}</p>}
    {practiceHistory?.status==='partial'&&<p role="status">{practice.partial}</p>}
+   {Number.isInteger(practiceHistory?.settingsRevision)&&practiceHistory.items.length>0&&
+    <form onSubmit={e=>{e.preventDefault();findPractice()}}>
+     <label className={css.label}>{practice.focus}
+      <select className={css.field} value={practiceFocus} disabled={busy}
+       onChange={e=>{setPracticeFocus(e.target.value);setPracticeSelection(null)}}>
+       <option value="">{practice.choose}</option>
+       {Object.entries(GROWTH_GOALS).map(([key,goal])=>
+        <option key={key} value={key}>{locale==='es'?practiceFocusEs[key]:goal.title[locale]||goal.title.en}</option>)}
+      </select>
+     </label>
+     <button className={css.secondary} type="submit" disabled={busy||!practiceFocus}>{practice.suggest}</button>
+    </form>}
+   {practiceSelection&&practiceSelection.status!=='not_authorized'&&<div role="status">
+    {practiceSelection.item&&<p><strong>{practiceSelection.item.title[locale]||practice.day(practiceSelection.item.day)}</strong>
+     {' · '}<time dateTime={practiceSelection.item.reportedAt}>{practiceSelection.item.reportedAt.slice(0,10)}</time></p>}
+    <p>{practiceSelection.status==='partial'?practice.selectionPartial:practice[practiceSelection.status]}</p>
+   </div>}
    {practiceHistory?.counts&&practiceHistory.items.length>0&&<p role="status">
     {Object.entries(practiceHistory.counts).map(([key,count])=>practice[key]+' '+count).join(' · ')}
    </p>}

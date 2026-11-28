@@ -67,3 +67,45 @@ test('recall reports distinct dated responses and never conflates practice versi
  assert.equal(practiceHistoryView(rows,owner,true).status,'partial')
  assert.equal(practiceHistoryView(rows,owner,true).items[2].recall,'review_history')
 })
+
+test('practice selection requires explicit request consent, a canonical current focus and a permissions revision',()=>{
+ const request={action:'practice-selection',focus:'calm_regulation',confirmed:true,expectedSettingsRevision:3}
+ assert.deepEqual(normalizeMemorySelection(request),request)
+ for(const patch of [{focus:'unknown'},{focus:'__proto__'},{confirmed:false},{expectedSettingsRevision:'3'},
+  {mode:'video'},{provider:'groq'},{courseRunId:'alternate'},{accountId:other}]){
+  assert.throws(()=>normalizeMemorySelection({...request,...patch}),/MY_COACH_MEMORY_SELECTION_INVALID/)
+ }
+})
+
+test('Director uses exact context, one dated direct report and no positive suggestion from partial history',async()=>{
+ const {chooseRememberedPractice}=await import('../lib/coaching/coach-session-director.mjs')
+ const recent='2026-11-20T12:00:00.000Z'
+ const earlier='2026-11-01T12:00:00.000Z'
+ const rows=[
+  session({id:'helpful-same',focus:'calm_regulation',completed_at:recent}),
+  session({id:'uncomfortable-same',focus:'calm_regulation',completed_at:earlier,comfort:'uncomfortable'}),
+  session({id:'helpful-other-focus',focus:'attention_clarity',completed_at:recent}),
+  session({id:'helpful-other-account',account_id:other,focus:'calm_regulation'}),
+  session({id:'skip',focus:'calm_regulation',lesson_id:'practice-b',usefulness:'skip'}),
+  session({id:'helpful-alternative',focus:'calm_regulation',lesson_id:'practice-c',completed_at:earlier}),
+  session({id:'non-catalogued',focus:'calm_regulation',lesson_id:'practice-d',completed_at:recent}),
+ ]
+ const titleFor=item=>item.practiceId==='practice-d'?null:{en:'An authored course practice'}
+ const result=chooseRememberedPractice(rows,{accountId:owner,focus:'calm_regulation',titleFor})
+ assert.equal(result.status,'previously_helpful')
+ assert.deepEqual(result.item,{title:{en:'An authored course practice'},reportedAt:earlier,day:1})
+ assert.doesNotMatch(JSON.stringify(result),/helpful-alternative|practice-c|cycle-1|private|accountId/)
+ assert.deepEqual(chooseRememberedPractice(rows.slice(0,5),{accountId:owner,focus:'calm_regulation',titleFor}),{status:'discomfort_reported',item:null})
+ assert.deepEqual(chooseRememberedPractice(rows,{accountId:owner,focus:'calm_regulation',titleFor,partial:true}),{status:'partial',item:null})
+ assert.deepEqual(chooseRememberedPractice(rows,{accountId:owner,focus:'energy_agency',titleFor}),{status:'no_match',item:null})
+})
+
+test('a report of discomfort blocks another variant or version of the same named practice',async()=>{
+ const {chooseRememberedPractice}=await import('../lib/coaching/coach-session-director.mjs')
+ const rows=[
+  session({id:'helpful',focus:'calm_regulation',variant:'a'}),
+  session({id:'discomfort',focus:'calm_regulation',variant:'b',content_version:'content-2',comfort:'uncomfortable'}),
+ ]
+ const titleFor=()=>({en:'An authored course practice'})
+ assert.deepEqual(chooseRememberedPractice(rows,{accountId:owner,focus:'calm_regulation',titleFor}),{status:'discomfort_reported',item:null})
+})

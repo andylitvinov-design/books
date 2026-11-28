@@ -1753,7 +1753,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           ...(requestedSavedContext?{
             memoryStageToken:stagedMemory.stageToken,memorySharePrior,
             memoryShareGoals,memoryShareTests,
-            ...(memorySharePrior&&memoryProvider==='groq'&&stagedMemory?.shareReviewedFields===true?{memoryShareReviewedFields:true}:{}),
+            ...(memorySharePrior&&memoryProvider==='groq'&&voiceTurn!==true&&sessionToken&&
+              stagedMemory?.shareReviewedFields===true?{memoryShareReviewedFields:true}:{}),
             ...(sessionToken?{contextSessionToken:sessionToken}:{}),
           }:{}),
           ...(selectedGeminiEngine?{
@@ -2678,7 +2679,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           setContextTopic(value);setContextAssessments(false)
         }}
         assessmentsAllowed={contextAssessments} onAssessmentsAllowed={setContextAssessments}
-        contextSessionToken={contextSession?.token} contextRevision={contextRevision}
+        contextSessionToken={contextSession?.token}
+        reviewedSessionActive={Boolean(contextSession&&!contextSession.expired)}
+        contextAccountId={contextSession?.accountId} contextRevision={contextRevision}
+        onReviewedFieldsWithdraw={cancelPendingCoachTurn}
         onMemoryChange={setStagedMemory}>
           <button type="button" disabled={contextSessionLoading||busy||Boolean(contextSession&&contextSession.expiresAt>Date.now())} onClick={async()=>{
             setContextSessionLoading(true)

@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs'
 import {createHash} from 'node:crypto'
 import * as core from '../lib/coaching/coach-memory-selection.mjs'
 import * as practice from '../lib/coaching/coach-practice-memory.mjs'
+import {chooseRememberedPractice} from '../lib/coaching/coach-session-director.mjs'
 import {searchOwnerReviewedEvidence} from '../lib/coaching/coach-personal-memory.mjs'
 const src=readFileSync(new URL('../lib/app/my-coach-memory-selection.js',import.meta.url),'utf8')
 const body=src.replace(/^import \{[\s\S]*?\} from '[^']+'\n/gm,'')
@@ -66,7 +67,8 @@ function fixture(){
  const deps={randomUUID:()=>R,AppError,transaction:async(config,actor,fn)=>fn({query}),
   operationHash:digest,ownerMemoryFingerprint:fp,projectOwnerMemoryArchiveRow:()=>({supported:true,items:[item]}),
   seal:JSON.stringify,openSealed:JSON.parse,OWNER_MEMORY_MAX_CIPHERTEXT_BYTES:4194304,searchOwnerReviewedEvidence,
-  lessonFor:()=>null,...practice,...core}
+  chooseRememberedPractice,lessonFor:(focus,day,locale,length,version)=>focus==='calm_regulation'&&version==='v1'
+   ?{id:'found-practice',title:locale==='ru'?'Практика курса':'Course practice'}:null,...practice,...core}
  const manage=new Function(...Object.keys(deps),body+'\nreturn {manageMyCoachMemorySelection,readOwnerCheckpointMemory,writeReviewedProtocolMemory}')(...Object.values(deps))
  const run=raw=>manage.manageMyCoachMemorySelection({}, {id:A},raw)
  const recall=target=>manage.readOwnerCheckpointMemory({query},{},{id:A},target)
@@ -97,6 +99,31 @@ test('practice outcome reads use the owner settings lock and never select raw co
  f.calls.length=0
  assert.deepEqual(await f.run({action:'practice-outcomes'}),{status:'not_authorized',counts:null,items:[]})
  assert.equal(f.calls.some(x=>x.sql.includes('from app_private.growth_sessions')),false)
+})
+test('Director choice reads only the requested focus and rejects stale or revoked consent before course access',async()=>{
+ const f=fixture()
+ const request={action:'practice-selection',focus:'calm_regulation',confirmed:true,expectedSettingsRevision:1}
+ f.practiceRows.push({
+  id:'session-1',account_id:A,cycle_id:'cycle',day_number:1,lesson_id:'found-practice',content_version:'v1',
+  completed_at:'2026-11-01T10:00Z',window:'practice_v15',focus:'calm_regulation',usefulness:'useful',
+ })
+ const makeRead=x=>x.sql.includes('from app_private.growth_sessions')
+ const view=await f.run({action:'practice-outcomes'})
+ assert.equal(view.settingsRevision,1)
+ f.calls.length=0
+ const choice=await f.run(request)
+ assert.deepEqual(choice,{status:'previously_helpful',item:{
+  title:{en:'Course practice',ru:'Практика курса'},reportedAt:'2026-11-01T10:00:00.000Z',day:1}})
+ assert.deepEqual(f.calls.find(makeRead).args,[A,practice.PRACTICE_HISTORY_LIMIT+1,'calm_regulation'])
+ assert.match(f.calls.find(makeRead).sql,/welcomeFocus'\s*=\$3/)
+ assert.doesNotMatch(f.calls.find(makeRead).sql,/before_now|after_now|dailyMethodChoice|moduleActivityChoice/)
+ f.calls.length=0
+ f.settings.revision++
+ assert.deepEqual(await f.run(request),{status:'stale_consent',item:null})
+ assert.equal(f.calls.some(makeRead),false)
+ f.revoke()
+ assert.deepEqual(await f.run(request),{status:'not_authorized',item:null})
+ assert.equal(f.calls.some(makeRead),false)
 })
 test('server adapter saves canonical evidence once, never caller text; exact retry is idempotent',async()=>{
  const f=fixture(),request=f.save()
