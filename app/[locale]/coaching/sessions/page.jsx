@@ -6,6 +6,7 @@ import PublicCoachingDiscovery from '@/components/public-coaching-discovery'
 import { getPublicCoachingCatalog } from '@/lib/coaching/public-coaching-catalog'
 import { resolveCoachSelection } from '@/lib/coaching/persona-registry.mjs'
 import { COACH_PROGRAM_GROUPS } from '@/lib/coaching/coach-program-topics.mjs'
+import {businessDaybookCoachSession} from '@/lib/coaching/business-daybook-coach-scenarios.mjs'
 import styles from './page.module.css'
 import { metadataBaseFor } from '@/data/site-metadata'
 
@@ -38,6 +39,8 @@ export default async function PublicCoachingPage({params,searchParams}){
  if(query?.courseRunId!==undefined&&(!day||!courseRunId||!selection))notFound()
  const personaSelection=selection?{...selection,clarityDay:day,courseRunId}:null
  const goalCourseId=typeof query.goalCourse==='string'&&COACH_PROGRAM_GROUPS.find(group=>group.id==='goal')?.sessions.some(item=>item.id===query.goalCourse)?query.goalCourse:null
+ const businessCourseId=typeof query.businessCourse==='string'&&businessDaybookCoachSession(query.businessCourse)?.id
+ if(query.businessCourse!==undefined&&(!businessCourseId||!selection||day||courseRunId||goalCourseId))notFound()
  let catalog=null
  try{
    // Read exactly the same published, reviewed Supabase reference catalog used
@@ -48,6 +51,6 @@ export default async function PublicCoachingPage({params,searchParams}){
  }
  return <div className={styles.fullWidth} lang={locale} data-coaching-full-width>
    {!personaSelection&&<div className={styles.header}><PublicSiteHeader locale={locale}/></div>}
-   <PublicCoachingDiscovery locale={locale} catalog={catalog} personaSelection={personaSelection} goalCourseId={goalCourseId}/>
+   <PublicCoachingDiscovery locale={locale} catalog={catalog} personaSelection={personaSelection} goalCourseId={goalCourseId} businessCourseId={businessCourseId||null}/>
  </div>
 }
