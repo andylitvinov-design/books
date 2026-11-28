@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
-import { matchesTrigger, parsePrTrigger } from '../lib/ci/specialist-aggregate.mjs';
+import { matchesTrigger, parsePrTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists } from '../lib/ci/specialist-aggregate.mjs';
 import { SHARED_COACH_DISPATCHER, verifiedCoachOnlySharedRouting } from '../lib/ci/coach-only-impact.mjs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -785,6 +785,33 @@ function reviewedIHelpPhoto3843(env,rows) {
   return seen.size === REVIEWED_IHELP_PHOTO_3843_DELTA.size;
 }
 
+// These reviewed source-only contracts use Node's standard library, not the
+// app package graph. A newly added import, require, or dynamic execution
+// conservatively restores the regular npm route. Never skip the tests.
+const NODE_ONLY_PUBLIC_TESTS = new Set([
+  'tests/holistic-support-topics.test.mjs',
+  'tests/remote-energy-support-mobile-compact.test.mjs',
+  'tests/alchemy-soul-mobile-landing.test.mjs',
+  'tests/alchemy-soul-spanish-parity.test.mjs',
+]);
+export function isDependencyFreePublicTest(path, source) {
+  if (!NODE_ONLY_PUBLIC_TESTS.has(path) || typeof source !== 'string' ||
+      !source.length || source.length > 200000) return false;
+  const lines = source.split('\n');
+  let imports = 0;
+  for (const line of lines) {
+    // The exact reviewed files use single-line named/default Node imports.
+    // Anything less obvious, including a new local dependency, stays regular.
+    if (/\b(?:require\s*\(|import\s*\(|createRequire\b|execFile\b|spawn\b)/.test(line)) return false;
+    if (/^\s*import\b/.test(line)) {
+      if (!/^\s*import\s+[\w{},\s]+\s+from\s+['"]node:(?:test|assert\/strict|fs|fs\/promises)['"]\s*;?\s*$/.test(line)) return false;
+      imports++;
+    }
+    if (/^\s*export\b.*\bfrom\b/.test(line)) return false;
+  }
+  return imports > 0;
+}
+
 export function planPublicServicesEvent(env = process.env, git = execFileSync) {
   if (env.GITHUB_EVENT_NAME !== 'pull_request') return full('MANUAL_OR_NON_PR_EVENT');
   const base = env.HH_PUBLIC_BASE_SHA;
@@ -930,8 +957,16 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
     const modifiedPublicUnitTest = /^tests\/(?:holistic-|alchemy-|remote-|direction-|public-service)[a-z0-9._-]*\.test\.mjs$/i;
     if (rows.length >= 2 && rows.length <= 24 &&
         rows.every((item,i) => i % 2 === 0 ? item === 'M' : modifiedPublicUnitTest.test(item))) {
+      // Only the reviewed exact Node-only contracts qualify. If any
+      // source read or import proof fails, retain the existing npm path.
+      let dependencyFree = false;
+      try {
+        dependencyFree = rows.every((item,i) => i % 2 === 0 ||
+          (NODE_ONLY_PUBLIC_TESTS.has(item) &&
+            isDependencyFreePublicTest(item, String(git('git',['show','HEAD:'+item],options)))));
+      } catch { /* normal install path */ }
       return {mode:'contracts',reason:'MODIFIED_PUBLIC_TESTS_ONLY',
-        build:false,browser:false,metrics:false,cases:'none'};
+        build:false,browser:false,metrics:false,cases:'none', ...(dependencyFree ? {dependencyFree:true} : {})};
     }
     const changed = [];
     const mandalaOwned = new Set(), coreOwned = new Set(), publicOwned = new Map();
@@ -1106,8 +1141,78 @@ export function planPrivatePractitionerMediaRows(rows) {
     build:true,browser:true,metrics:false,cases:'verify-public-services-production.mjs'};
 }
 
-function main() {
-  const plan = planPublicServicesEvent();
+
+// Reuse the SAME protected aggregate's owner proof rather than a second,
+// weaker filename allowlist. It proves guarded Coach-only dispatcher edits,
+// additive server dependencies, unchanged public selectors and independently
+// required Coach/App/IA/Billing owners. All actual public, shared, unknown or
+// unverified changes retain the legacy full plan. No PR-number exception.
+export async function refinePublicServicesPlan(plan, env = process.env, {
+  git = execFileSync, loadPolicy = () => import('./ci-specialist-aggregate.mjs'),
+} = {}) {
+  if (plan?.mode !== 'full' || env.GITHUB_EVENT_NAME !== 'pull_request' ||
+      env.GITHUB_BASE_REF !== 'codex/public-book-library') return plan;
+  const base = env.HH_PUBLIC_VERIFIED_TESTED_BASE, head = env.HH_PUBLIC_HEAD_SHA;
+  const merge = env.HH_PUBLIC_VERIFIED_MERGE, eventBase = env.HH_PUBLIC_BASE_SHA;
+  if ([base, head, merge, eventBase].some(x => !/^[0-9a-f]{40}$/.test(x || '')) ||
+      env.HH_PUBLIC_VERIFIED_EVENT_BASE !== eventBase ||
+      env.HH_PUBLIC_VERIFIED_HEAD !== head || env.GITHUB_SHA !== merge) return plan;
+  const opts = { encoding: 'utf8', maxBuffer: 4 * 1024 * 1024,
+    stdio: ['ignore', 'pipe', 'pipe'] };
+  const read = args => String(git('git', args, opts));
+  try {
+    if (read(['rev-parse', 'HEAD']).trim() !== merge ||
+        read(['rev-parse', 'HEAD^1']).trim() !== base ||
+        read(['rev-parse', 'HEAD^2']).trim() !== head) return plan;
+    // Never run a candidate-modified aggregate or any of its CI library
+    // dependencies as the authority to remove its own browser checks.
+    read(['diff', '--quiet', base, merge, '--', 'scripts/ci-specialist-aggregate.mjs', 'lib/ci']);
+    const policy = await loadPolicy();
+    if (typeof policy.independentDispatcherAdvisories !== 'function' ||
+        typeof policy.loadTrustedTypescript !== 'function') return plan;
+    const files = policy.worktreeSources(base);
+    files.testedMergeSha = merge;
+    const rows = policy.checkoutChangedRows(base);
+    const changed = rows.map(row => row.filename);
+    if (!changed.includes(SHARED_COACH_DISPATCHER)) return plan;
+    const packageImpact = classifyPackageImpact({changed,
+      basePackage: files.basePackage, currentPackage: files.currentPackage});
+    const baselineExpected = expectedWorkflows({...files, changed, packageImpact});
+    const routed = resolveExpectedSpecialists({...files, changed, expected:baselineExpected});
+    // Replacement owners still have to be selected by the real aggregate.
+    const publicWorkflow = '.github/workflows/hh-public-services-production.yml';
+    if (routed.delegated.some(row => row.replacement === publicWorkflow)) return plan;
+    const parser = policy.loadTrustedTypescript(base);
+    if (!parser) return plan;
+    const advisory = policy.independentDispatcherAdvisories(files, rows, routed.expected,
+      (side, path) => read(['show', (side === 'base' ? base : merge) + ':' + path]), parser);
+    if (!advisory.has(publicWorkflow)) return plan;
+    // Retain ordinary consent/service source tests in this job. The aggregate
+    // independently requires the affected real private/billing/browser owners.
+    return { mode:'contracts', reason:'PROTECTED_COMPOSED_COACH_OWNERS',
+      build:false, browser:false, metrics:false, cases:'none' };
+  } catch {
+    // Old protected policy, missing parser, incomplete evidence and git errors
+    // never turn a required browser run into a false successful skip.
+    return plan;
+  }
+}
+
+// Only proven independently owned routes can avoid the entire application
+// install. The remaining public smoke tests import local/Node modules only.
+// Focused/full, modified public tests, unknown reasons and manual QA keep npm.
+export function publicServicesDependencyFree(plan) {
+  return plan?.mode === 'contracts' && plan.build === false &&
+    plan.browser === false && plan.metrics === false && plan.cases === 'none' &&
+    ['INDEPENDENT_OWNER_OR_CORE','PROTECTED_COMPOSED_COACH_OWNERS',
+      'EXACT_MY_COACH_ONLY_SHARED_API'].includes(plan.reason) ||
+    (plan?.mode === 'contracts' && plan.build === false && plan.browser === false &&
+      plan.metrics === false && plan.cases === 'none' &&
+      plan.reason === 'MODIFIED_PUBLIC_TESTS_ONLY' && plan.dependencyFree === true);
+}
+
+async function main() {
+  const plan = await refinePublicServicesPlan(planPublicServicesEvent());
   const summary = 'Public Services impact: ' + plan.mode +
     ' (' + plan.reason + '); build=' + plan.build +
     ', browser=' + plan.browser + ', metrics=' + plan.metrics +
@@ -1118,6 +1223,7 @@ function main() {
       ['mode=' + plan.mode, 'reason=' + plan.reason, 'build=' + plan.build,
         'browser=' + plan.browser, 'metrics=' + plan.metrics,
         'release_proof=' + (plan.releaseProof === true),
+        'dependency_free=' + publicServicesDependencyFree(plan),
         'pr_heavy=' + requiresPublicServicesHeavyPr(plan),
         'engines=' + publicPlaywrightEngines(plan),
         'cases=' + plan.cases].join('\n') + '\n');
@@ -1125,8 +1231,8 @@ function main() {
   if (process.env.GITHUB_STEP_SUMMARY) {
     appendFileSync(process.env.GITHUB_STEP_SUMMARY, '### Public Services exact-PR scope\n' +
       summary + '\n' +
-      'Unclassified, payment, middleware, manifest and application changes always run full E2E.\n');
+      'Unverified shared/public runtime changes retain full E2E; proven independent ownership retains mandatory affected specialists.\n');
   }
 }
 
-if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) main();
+if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) await main();

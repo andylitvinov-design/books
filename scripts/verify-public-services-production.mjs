@@ -12,12 +12,37 @@ import { rankDiscoveryVideos } from "../lib/video-discovery/ranker.mjs";
 import { telegramServiceRequestUrl } from "../lib/assist/telegram-business-request.mjs";
 import { resolveTelegramServiceHandoffUrl } from "../lib/app/telegram-entry-url.mjs";
 import { mkdir, writeFile } from "node:fs/promises";
+import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
 const origin = process.env.HH_PUBLIC_QA_ORIGIN || "http://127.0.0.1:3100";
 if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(origin)) {
   throw new Error("Public acceptance may run only against an isolated loopback server");
 }
-const output = "artifacts/public-services-production";
+// PR-only parallel acceptance: both independent shards must pass.
+// Standalone/manual invocation retains the original full sequential suite.
+const shard = process.env.HH_PUBLIC_SERVICES_SHARD || "all";
+assert.ok(["all", "0", "1"].includes(shard), "Invalid Public Services shard");
+if (shard === "all" && process.env.HH_PUBLIC_SERVICES_PARALLEL === "1") {
+  const results = await Promise.all(["0", "1"].map(id => new Promise(resolve => {
+    const child = spawn(process.execPath, [fileURLToPath(import.meta.url)], {
+      env: { ...process.env, HH_PUBLIC_SERVICES_SHARD: id },
+      stdio: "inherit",
+    });
+    child.once("error", error => { console.error("Public Services shard launch failed", id, error); resolve(false); });
+    child.once("close", (code, signal) => {
+      console.log("Public Services shard", id, "exit", code, "signal", signal);
+      resolve(code === 0 && signal === null);
+    });
+  })));
+  assert.ok(results.every(Boolean), "Both Public Services shards must pass");
+  console.log("PASS public production service acceptance (both shards)");
+  process.exit(0);
+}
+const localesFor = (locales, offset = 0) => shard === "all"
+  ? locales : locales.filter((_, index) => (index + offset) % 2 === Number(shard));
+const includesShard = id => shard === "all" || shard === id;
+const output = "artifacts/public-services-production" + (shard === "all" ? "" : "/shard-" + shard);
 await mkdir(output, { recursive: true });
 
 const browser = await chromium.launch();
@@ -236,7 +261,7 @@ try {
 
   // Owner-approved Support entry: preserve the real program selector and
   // expanded details; the old quiz/catalog may only be tested via explicit URLs.
-  for (const locale of ["en", "ru", "es"]) {
+  for (const locale of localesFor(["en", "ru", "es"], 0)) {
     for (const width of [320, 390, 430, 1188]) {
       const page = await createPage(width);
       const response = await page.goto(origin + "/" + locale + "/services", { waitUntil: "domcontentloaded" });
@@ -1065,7 +1090,7 @@ try {
 
   // Spanish Alchemy has its own route. Check its untouched default state too;
   // do not navigate payment links or enable optional payment providers.
-  {
+  if (includesShard("1")) {
     const locale = "es";
     for (const width of [320, 360, 390, 1188]) {
       const page = await createPage(width);
@@ -1105,7 +1130,7 @@ try {
     }
   }
 
-  for (const locale of ["en", "ru"]) {
+  for (const locale of localesFor(["en", "ru"], 0)) {
     for (const width of [320, 360, 390, 430, 1188]) {
       const page = await createPage(width);
       await page.goto(origin + "/" + locale + "/services?assist=quiz", { waitUntil: "domcontentloaded" });
@@ -1395,7 +1420,7 @@ try {
   }
 
   // Spanish uses its own page route but the same EN/RU/ES discovery component.
-  {
+  if (includesShard("1")) {
     const page = await createPage(390);
     await page.goto(origin + "/es/services?assist=quiz", { waitUntil: "domcontentloaded" });
     await expect(page.locator('[data-services-studio-free]')).toBeHidden();
@@ -1471,7 +1496,7 @@ try {
   // Real hydrated, non-submitting conversion journey for ALL personal service
   // landing variants, including Spanish. Verify navigation, pricing, live
   // thumbnails and message drafts; NEVER follow or send any messenger URL.
-  for (const locale of ["en", "ru", "es"]) {
+  for (const locale of localesFor(["en", "ru", "es"], 1)) {
     for (const service of ["imagery-therapy", "systemic-constellations"]) {
       const width = 390;
       const page = await createPage(width);
@@ -1531,7 +1556,7 @@ try {
   // Business Strategy & Founder Coaching has its own separate source-backed
   // landing (PR #993); verify all three locales without assuming it uses
   // PersonalServiceLanding's generic consultation choice component.
-  for (const locale of ["en", "ru", "es"]) {
+  for (const locale of localesFor(["en", "ru", "es"], 0)) {
     const page = await createPage(390);
     const label = locale + "/business-consulting/390";
     const response = await page.goto(origin + "/" + locale + "/services/business-consulting", {waitUntil:"domcontentloaded",timeout:60000});
@@ -1579,7 +1604,7 @@ try {
     ["alchemy-of-soul", "alchemy"],
     ["hypnotherapy-course", "hypnotherapy"],
   ];
-  for (const locale of ["en", "ru"]) {
+  for (const locale of localesFor(["en", "ru"], 1)) {
     for (const [slug, kind] of coreServices) {
       for (const width of [320, 360, 390, 1188]) {
         const page = await createPage(width);
@@ -1700,7 +1725,7 @@ try {
 
   // Read-only EN/RU/ES acceptance for the CURRENT three free entry routes.
   // Never submit a visitor form: a clicked CTA is neither a CRM lead nor a booking.
-  for (const locale of ["en", "ru", "es"]) {
+  for (const locale of localesFor(["en", "ru", "es"], 1)) {
     for (const [kind, slug, captureId] of [
       ["tests", "tests", "start-free"],
       ["situation", "services/free-situation-review", "request-free-review"],
@@ -1770,14 +1795,14 @@ try {
       }
     }
   }
-  for(const locale of ["ru","en","es"]){
+  for(const locale of localesFor(["ru","en","es"], 0)){
     for(const width of [320,390,430]){
       const page=await createPage(width);
       try{await checkCompactBusiness(page,locale,width);}
       finally{await page.close();}
     }
   }
-  for(const locale of ["ru","en","es"]){
+  for(const locale of localesFor(["ru","en","es"], 1)){
     const page=await createPage(390);
     try{
       await page.goto(origin+"/"+locale+"/shamanica",{waitUntil:"domcontentloaded"});

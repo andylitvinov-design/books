@@ -5,7 +5,7 @@ import { parsePrTrigger } from '../lib/ci/specialist-aggregate.mjs';
 import { requiresRealMediaWebKit } from '../lib/ci/merge-check-light.mjs';
 import test from 'node:test';
 import { approvedTelegramPresentation } from '../lib/crm/telegram-presentation.mjs';
-import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr, publicPlaywrightEngines, isTrustedMandalaOwnerPath, isTrustedCoreCiOwnerPath, verifiedCriticalPublicCases, REVIEWED_VOICE_2629_DELTA, REVIEWED_PHRASES_3006_DELTA , exactReleaseProofAddition, EXACT_RELEASE_PROOF_BLOBS, planPrivatePractitionerMediaRows, PRIVATE_PRACTITIONER_MEDIA_OWNERS, PRIVATE_PRACTITIONER_MEDIA_REVIEWED_ADDITIONS } from '../scripts/ci-public-services-plan.mjs';
+import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, refinePublicServicesPlan, publicServicesDependencyFree, isDependencyFreePublicTest, requiresPublicServicesHeavyPr, publicPlaywrightEngines, isTrustedMandalaOwnerPath, isTrustedCoreCiOwnerPath, verifiedCriticalPublicCases, REVIEWED_VOICE_2629_DELTA, REVIEWED_PHRASES_3006_DELTA , exactReleaseProofAddition, EXACT_RELEASE_PROOF_BLOBS, planPrivatePractitionerMediaRows, PRIVATE_PRACTITIONER_MEDIA_OWNERS, PRIVATE_PRACTITIONER_MEDIA_REVIEWED_ADDITIONS } from '../scripts/ci-public-services-plan.mjs';
 
 const workflow = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 const verifyPinnedPublicBrowsers = src => {
@@ -1518,7 +1518,7 @@ test('private practitioner meditation is publicly smoke-tested without unrelated
 test('private media declarations initialize before CLI main to avoid hidden full-suite routing',()=>{
   const src=readFileSync(new URL('../scripts/ci-public-services-plan.mjs',import.meta.url),'utf8');
   const declaration=src.indexOf('const privatePractitionerFiles = new Set(');
-  const entry=src.indexOf('\nfunction main() {');
+  const entry=src.indexOf('\nasync function main() {');
   const execute=src.lastIndexOf('main();');
   assert.ok(declaration>=0 && entry>declaration && execute>entry,
     'private media ownership constants must be initialized before direct CLI invocation');
@@ -1928,4 +1928,156 @@ test('CI-only Public Services plus Home/Practice lint policy does not build the 
     assert.equal(simulate([['D',path]]).mode,'full',path+' deleted');
   }
   assert.equal(planPublicServicesEvent({GITHUB_EVENT_NAME:'workflow_dispatch'}).cases,'all');
+});
+
+
+test('Public Services parallel acceptance preserves both shards and manual full coverage', () => {
+  const src = readFileSync(new URL('../scripts/verify-public-services-production.mjs', import.meta.url), 'utf8');
+  const yaml = workflow('hh-public-services-production.yml');
+  assert.ok(yaml.includes('HH_PUBLIC_SERVICES_PARALLEL:'));
+  assert.ok(src.includes('["0", "1"].map'));
+  assert.ok(src.includes('results.every(Boolean)'));
+  assert.ok(src.includes('code === 0 && signal === null'));
+  assert.ok(src.includes('"/shard-" + shard'));
+  assert.equal((src.match(/for\s*\(const locale of localesFor\(/g) || []).length, 8);
+  assert.equal((src.match(/if \(includesShard\("[01]"\)\)/g) || []).length, 2);
+  const partition = (locales, offset, shard) => shard === 'all' ? locales : locales.filter((_, index) => (index + offset) % 2 === Number(shard));
+  for (const locales of [['en','ru'],['en','ru','es'],['ru','en','es']]) {
+    for (const offset of [0,1]) {
+      assert.deepEqual(partition(locales, offset, 'all'), locales);
+      const combined = [...partition(locales, offset, '0'), ...partition(locales, offset, '1')];
+      assert.equal(new Set(combined).size, locales.length);
+      assert.deepEqual(combined.sort(), [...locales].sort());
+    }
+  }
+});
+
+
+test('Public Services uses protected composed ownership only for the exact verified merge', async () => {
+  const base='a'.repeat(40),head='b'.repeat(40),merge='c'.repeat(40);
+  const env={GITHUB_EVENT_NAME:'pull_request',GITHUB_BASE_REF:'codex/public-book-library',
+    GITHUB_SHA:merge,HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head,
+    HH_PUBLIC_VERIFIED_EVENT_BASE:base,HH_PUBLIC_VERIFIED_TESTED_BASE:base,
+    HH_PUBLIC_VERIFIED_HEAD:head,HH_PUBLIC_VERIFIED_MERGE:merge};
+  const plan={mode:'full',reason:'ADDED_REMOVED_OR_UNSAFE_DIFF_STATUS',
+    build:true,browser:true,metrics:true,cases:'all'};
+  let loaded=0;
+  const dispatcher='app/api/app/[...path]/route.js';
+  const publicOwner='.github/workflows/hh-public-services-production.yml';
+  const ownerSource=workflow('hh-public-services-production.yml');
+  const sources=new Map([[publicOwner,ownerSource]]);
+  const pkg=readFileSync(new URL('../package.json',import.meta.url),'utf8');
+  const mockGit=(_bin,args)=>{
+    if(args[0]==='rev-parse')return ({HEAD:merge,'HEAD^1':base,'HEAD^2':head})[args[1]];
+    if(args[0]==='diff'&&args[1]==='--quiet')return '';
+    if(args[0]==='show')return args[1];
+    throw Error('unexpected git request');
+  };
+  const fakePolicy={
+    worktreeSources:()=>({base:sources,current:sources,basePackage:pkg,currentPackage:pkg}),
+    checkoutChangedRows:()=>[{status:'M',filename:dispatcher}],
+    loadTrustedTypescript:()=>({trusted:true}),
+    independentDispatcherAdvisories:(files,rows,expected,readSource,parser)=>{
+      assert.equal(files.testedMergeSha,merge);
+      assert.equal(rows[0].filename,dispatcher);
+      assert.equal(readSource('base',dispatcher),base+':'+dispatcher);
+      assert.equal(readSource('merge',dispatcher),merge+':'+dispatcher);
+      assert.ok(parser.trusted);
+      return new Set([publicOwner]);
+    },
+  };
+  const deps={git:mockGit,loadPolicy:async()=>{loaded++;return fakePolicy}};
+  const refined=await refinePublicServicesPlan(plan,env,deps);
+  assert.deepEqual(refined,{mode:'contracts',reason:'PROTECTED_COMPOSED_COACH_OWNERS',
+    build:false,browser:false,metrics:false,cases:'none'});
+  assert.equal(requiresPublicServicesHeavyPr(refined),false);
+  assert.equal(loaded,1);
+  for(const bad of [
+    {...env,GITHUB_EVENT_NAME:'workflow_dispatch'},
+    {...env,GITHUB_BASE_REF:'main'},
+    {...env,HH_PUBLIC_VERIFIED_HEAD:''},
+    {...env,GITHUB_SHA:head},
+  ])assert.strictEqual(await refinePublicServicesPlan(plan,bad,deps),plan);
+  assert.equal(loaded,1);
+  const changedPolicy={...deps,git:(bin,args)=>{
+    if(args[0]==='diff')throw Error('policy changed');
+    return mockGit(bin,args);
+  }};
+  assert.strictEqual(await refinePublicServicesPlan(plan,env,changedPolicy),plan);
+  assert.equal(loaded,1);
+  for(const overrides of [
+    {independentDispatcherAdvisories:()=>new Set()},
+    {loadTrustedTypescript:()=>null},
+    {checkoutChangedRows:()=>[{status:'M',filename:'app/api/payments/route.js'}]},
+  ])assert.strictEqual(await refinePublicServicesPlan(plan,env,
+    {...deps,loadPolicy:async()=>({...fakePolicy,...overrides})}),plan);
+  assert.strictEqual(await refinePublicServicesPlan(plan,env,
+    {...deps,loadPolicy:async()=>{throw Error('old base policy')}}),plan);
+});
+
+
+test('independent Public Services routing never installs unrelated app dependencies or browser caches',()=>{
+  const eligible={mode:'contracts',reason:'PROTECTED_COMPOSED_COACH_OWNERS',
+    build:false,browser:false,metrics:false,cases:'none'};
+  for(const reason of ['INDEPENDENT_OWNER_OR_CORE','PROTECTED_COMPOSED_COACH_OWNERS','EXACT_MY_COACH_ONLY_SHARED_API'])
+    assert.equal(publicServicesDependencyFree({...eligible,reason}),true);
+  for(const changes of [
+    {mode:'full'}, {mode:'focused'}, {build:true}, {browser:true}, {metrics:true},
+    {cases:'verify-service-cart-browser.mjs'}, {reason:'MODIFIED_PUBLIC_TESTS_ONLY'},
+    {reason:'EXISTING_NODE_SOURCE_TESTS_ONLY'}, {reason:'MANUAL_OR_NON_PR_EVENT'},
+    {reason:'ADDED_REMOVED_OR_UNSAFE_DIFF_STATUS'}, {reason:'UNKNOWN'},
+  ])assert.equal(publicServicesDependencyFree({...eligible,...changes}),false);
+  const yaml=workflow('hh-public-services-production.yml');
+  assert.ok(!yaml.includes('cache: npm'),'do not restore the package cache before routing');
+  for(const name of [
+    'Resolve npm cache only for dependent Public Services checks',
+    'Restore npm package cache only when application dependencies are needed',
+    'Load original checksum-verified FFmpeg for npm ci',
+    'Install SHA-verified FFmpeg into package after npm ci',
+    'Holistic Support first screen, private handoff and Coaching Lounge contracts',
+    'Energy Love Business inline focus regression',
+    'Canonical Homeopathy / Alchemy service routing regression',
+  ]){
+    const step=yaml.split('      - name: '+name+'\n')[1]?.split('\n      - ')[0];
+    assert.ok(step?.includes("steps.scope.outputs.dependency_free != 'true'"),name);
+  }
+  assert.match(yaml,/run: npm ci --include=dev --no-audit --no-fund\n        if: .*dependency_free/);
+  const smoke=yaml.split('      - name: Fast public consent, service and Reiki contract tests\n')[1]?.split('\n      - ')[0];
+  assert.ok(smoke?.includes('tests/public-service-enquiries.test.mjs'));
+  assert.ok(!smoke?.includes("steps.scope.outputs.dependency_free != 'true'"),
+    'protected composed owner routes still execute dependency-free consent/booking tests');
+  assert.match(yaml,/steps.scope.outputs.pr_heavy == 'true'/);
+});
+
+
+test('reviewed Node-only public test edits need no application install but still execute exact tests',()=>{
+  const paths=[
+    'tests/holistic-support-topics.test.mjs','tests/remote-energy-support-mobile-compact.test.mjs',
+    'tests/alchemy-soul-mobile-landing.test.mjs','tests/alchemy-soul-spanish-parity.test.mjs',
+  ];
+  const base='a'.repeat(40),head='b'.repeat(40),z=String.fromCharCode(0);
+  const env={GITHUB_EVENT_NAME:'pull_request',HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head};
+  const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
+  const run=(files,readSource=source)=>planPublicServicesEvent(env,(_bin,args)=>{
+    if(args[0]==='rev-parse')return head;
+    if(args[0]==='merge-base')return '';
+    if(args[0]==='diff')return files.flatMap(path=>['M',path]).join(z)+z;
+    if(args[0]==='show'&&args[1].startsWith('HEAD:'))return readSource(args[1].slice(5));
+    throw Error('unavailable source');
+  });
+  for(const path of paths)assert.equal(isDependencyFreePublicTest(path,source(path)),true,path);
+  const fast=run(paths);
+  assert.equal(fast.reason,'MODIFIED_PUBLIC_TESTS_ONLY');
+  assert.equal(publicServicesDependencyFree(fast),true);
+  for(const append of ["\nimport ts from 'typescript';","\nimport '../lib/unknown.mjs';",
+    "\nawait import('unknown');","\nconst dependency = require('unknown');"]){
+    assert.equal(publicServicesDependencyFree(run(paths,path=>source(path)+append)),false);
+  }
+  assert.equal(publicServicesDependencyFree(run([...paths,'tests/direction-extras.test.mjs'])),false);
+  assert.equal(publicServicesDependencyFree(run(paths,()=>{throw Error('missing');})),false);
+  const yaml=workflow('hh-public-services-production.yml');
+  assert.match(yaml,/Run exact modified public unit tests \(no unrelated browser matrix\)/);
+  assert.match(yaml,/node --test "\$\{files\[@\]\}"/);
+  assert.ok(!yaml.includes('uses: actions/cache@v4'),'read-only restore, no shared cache writes');
+  assert.ok(yaml.includes('compression-level: 0'));
 });

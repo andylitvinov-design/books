@@ -304,7 +304,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
       - name: Select exact-head Public Services impact
         id: scope
         env:
@@ -320,17 +319,28 @@ jobs:
       - name: Verify independent public CI release proof (no store/payment browsers)
         if: ${{ github.event_name == 'pull_request' && steps.scope.outputs.release_proof == 'true' }}
         run: node --test tests/ci-public-release-evidence.test.mjs
+      - name: Resolve npm cache only for dependent Public Services checks
+        if: ${{ github.event_name != 'pull_request' || steps.scope.outputs.dependency_free != 'true' }}
+        id: npm_cache_path
+        run: printf 'path=%s\n' "$(npm config get cache)" >> "$GITHUB_OUTPUT"
+      - name: Restore npm package cache only when application dependencies are needed
+        if: ${{ github.event_name != 'pull_request' || steps.scope.outputs.dependency_free != 'true' }}
+        # Restore only: never publish a shared cache from this PR job.
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ steps.npm_cache_path.outputs.path }}
+          key: node-cache-${{ runner.os }}-x64-npm-${{ hashFiles('package-lock.json') }}
       # NODE_ENV=production is needed for the browser build, but our
       # source-level render tests need devDependency 'typescript'.
       - name: Load original checksum-verified FFmpeg for npm ci
         uses: ./.github/actions/ci-ffmpeg-static
-        if: ${{ github.event_name != 'pull_request' || steps.scope.outputs.reason != 'INDEPENDENT_OWNER_OR_CORE' }}
+        if: ${{ github.event_name != 'pull_request' || steps.scope.outputs.dependency_free != 'true' }}
       - run: npm ci --include=dev --no-audit --no-fund
-        if: ${{ github.event_name != 'pull_request' || steps.scope.outputs.reason != 'INDEPENDENT_OWNER_OR_CORE' }}
+        if: ${{ github.event_name != 'pull_request' || steps.scope.outputs.dependency_free != 'true' }}
 
       - name: Install SHA-verified FFmpeg into package after npm ci
         uses: ./.github/actions/ci-ffmpeg-static
-        if: ${{ github.event_name != 'pull_request' || steps.scope.outputs.reason != 'INDEPENDENT_OWNER_OR_CORE' }}
+        if: ${{ github.event_name != 'pull_request' || steps.scope.outputs.dependency_free != 'true' }}
         with:
           stage: materialize
       - name: Run exact modified public unit tests (no unrelated browser matrix)
@@ -350,7 +360,7 @@ jobs:
           node --test "${files[@]}"
 
       - name: Holistic Support first screen, private handoff and Coaching Lounge contracts
-        if: ${{ github.event_name != 'pull_request' || (steps.scope.outputs.reason != 'INDEPENDENT_OWNER_OR_CORE' && steps.scope.outputs.reason != 'MODIFIED_PUBLIC_TESTS_ONLY') }}
+        if: ${{ github.event_name != 'pull_request' || (steps.scope.outputs.dependency_free != 'true' && steps.scope.outputs.reason != 'MODIFIED_PUBLIC_TESTS_ONLY') }}
         run: |
           node --test tests/temple-support-hub.test.mjs tests/holistic-support-first-screen.test.mjs tests/temple-insights-compact-cta.test.mjs tests/holistic-support-topics.test.mjs tests/remote-energy-support-mobile-compact.test.mjs tests/remote-energy-support-booking.test.mjs tests/practitioner-remote-energy-support.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-inline-talisman-order.test.mjs tests/holistic-compact-search.test.mjs
           if [[ "$GITHUB_EVENT_NAME" != pull_request || "$GITHUB_BASE_REF" != codex/public-book-library ]]; then npx --no-install eslint 'app/[locale]/holistic-support/page.tsx' components/holistic-support-topic-filter.tsx components/remote-energy-support-booking.tsx components/holistic-inline-support-order.tsx components/academy-course-video-playlist.tsx lib/practitioners/public-remote-support-masters.ts app/api/public/remote-energy-support-masters/route.ts; fi
@@ -361,7 +371,7 @@ jobs:
           # lint for config/lockfile changes. Retain full fixed-list lint on manual QA.
           # Whole-project TypeScript is required by the unconditional PR Core gate.
       - name: Energy Love Business inline focus regression
-        if: ${{ github.event_name != 'pull_request' || (steps.scope.outputs.reason != 'INDEPENDENT_OWNER_OR_CORE' && steps.scope.outputs.reason != 'MODIFIED_PUBLIC_TESTS_ONLY') }}
+        if: ${{ github.event_name != 'pull_request' || (steps.scope.outputs.dependency_free != 'true' && steps.scope.outputs.reason != 'MODIFIED_PUBLIC_TESTS_ONLY') }}
         run: node --test tests/direction-three-sections.test.mjs tests/direction-offers.test.mjs tests/goal-support-offers.test.mjs tests/direction-extras.test.mjs
       # Exact-version binaries; no untrusted cross-PR/browser-version restore.
       # Browser engines install on explicit full workflow_dispatch OR when
@@ -421,13 +431,19 @@ jobs:
           }
           NODE
       - name: Canonical Homeopathy / Alchemy service routing regression
-        if: ${{ github.event_name != 'pull_request' || (steps.scope.outputs.reason != 'INDEPENDENT_OWNER_OR_CORE' && steps.scope.outputs.reason != 'MODIFIED_PUBLIC_TESTS_ONLY') }}
+        if: ${{ github.event_name != 'pull_request' || (steps.scope.outputs.dependency_free != 'true' && steps.scope.outputs.reason != 'MODIFIED_PUBLIC_TESTS_ONLY') }}
         run: node --test tests/practitioner-homeopathy-canonical-route.test.mjs tests/alchemy-soul-mobile-landing.test.mjs tests/alchemy-soul-spanish-parity.test.mjs tests/service-alchemy-one-screen-story.test.mjs tests/alchemy-panel-overflow-diagnostics.test.mjs
       # Required fast checks cover actual contact consent, private handoff and
       # service order safety. No redundant production build/browser install.
       - name: Fast public consent, service and Reiki contract tests
         if: github.event_name == 'pull_request' && steps.scope.outputs.reason != 'INDEPENDENT_OWNER_OR_CORE' && steps.scope.outputs.reason != 'MODIFIED_PUBLIC_TESTS_ONLY'
+        # Also runs on the dependency-free protected Coach routes: these four
+        # suites exercise real local consent/enquiry contracts without npm.
         run: node --test tests/contact-channel-chooser.test.mjs tests/services-browser-order-contract.test.mjs tests/reiki-unified-order-capture.test.mjs tests/public-service-enquiries.test.mjs
+      - name: Record dependency-free acceptance proof
+        if: github.event_name == 'pull_request' && steps.scope.outputs.dependency_free == 'true'
+        run: |
+          echo 'Public Services: independently owned exact checkout; no duplicate npm/FFmpeg installation, compiler cache or browser build. Affected owner gates remain required.' >> "$GITHUB_STEP_SUMMARY"
       - name: Record fast PR acceptance
         if: github.event_name == 'pull_request'
         run: |
@@ -438,6 +454,9 @@ jobs:
         env:
           HH_PUBLIC_CASES: ${{ steps.scope.outputs.cases }}
           HH_PUBLIC_METRICS: ${{ steps.scope.outputs.metrics }}
+          # Both locale shards must pass; manual dispatch retains serial QA.
+          HH_PUBLIC_SERVICES_SHARD: all
+          HH_PUBLIC_SERVICES_PARALLEL: ${{ github.event_name == 'pull_request' && '1' || '0' }}
         run: |
           set -euo pipefail
           mkdir -p artifacts/public-services-production
@@ -568,7 +587,7 @@ jobs:
             printf 'home-rsc-local,NOT_APPLICABLE,0\n' >> artifacts/public-services-production/timings.csv
           fi
           printf 'public-services-total,%s,%s\n' "$([[ "$status" == 0 ]] && echo PASS || echo FAIL)" "$((SECONDS-acceptance_started))" >> artifacts/public-services-production/timings.csv
-          echo "Public Services complete: status=$status, elapsed=$((SECONDS-acceptance_started))s, max browser concurrency=2"
+          echo "Public Services complete: status=$status, elapsed=$((SECONDS-acceptance_started))s, max browser concurrency=$([[ "$HH_PUBLIC_SERVICES_PARALLEL" == 1 ]] && echo 3 || echo 2)"
           cat artifacts/public-services-production/timings.csv
                     {
             echo "Production server diagnostic summary (no application secrets are configured for this job)"
@@ -579,6 +598,8 @@ jobs:
         if: always() && steps.scope.outputs.build == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true')
         with:
           name: public-services-production-acceptance
+          # Screenshots are already compressed; avoid extra CPU in the merge tail.
+          compression-level: 0
           path: |
             artifacts/public-services-production/
             artifacts/business-quiz-mobile/
