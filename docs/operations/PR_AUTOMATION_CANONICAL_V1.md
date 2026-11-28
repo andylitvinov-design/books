@@ -3,6 +3,16 @@
 **Contract:** HH_PR_AUTOMATION_CANONICAL_V1 · **adopted:** 2026-11-04 · **status:** CURRENT.
 **Scope:** ChatGPT PR Sweep / PR Optimizer roles and the single PR backlog notifier for `andylitvinov-design/books`. This file is the one durable operating instruction for those roles. Historical role prompts live under [archive/PR_AUTOMATIONS_2026-11-04](archive/PR_AUTOMATIONS_2026-11-04/README.md); they are **NOT EXECUTABLE POLICY**.
 
+## Owner update — 2026-11-28 · HH_AGENTS_6_PLUS_4_V4
+
+The ten active Chat automations now use the following Toronto cadence (no new scheduled tasks): six universal My Coach agents :00/:10/:20/:30/:40/:50, independent LIVE :05, Triage :15, Native Merge :35, Repair :45. Older cadence/disabled-role statements below are historical where they conflict. The existing GitHub workflows remain primary and their schedules are not changed. Triage :15 is the single writer of the existing root registry #1419 and its Sheet; an existing signed native Worker owns its reserved task. No new queue.
+
+One demonstrated root → one responsible PR and one verified writer. Use current HEAD/base, causal job, affected paths and dependency evidence; identical error names alone do not establish a common root. Claim/read back the winning lease before an allowed write; independent roots may progress concurrently. A blocked, already-owned or unchanged root is skipped in favor of another independent eligible root; no repeated CI/logs for unchanged evidence. After a shared fix, verify affected PR dependencies against actual current base/HEAD, then use the existing guarded freshness/conflict path only where required. No blanket rebases or reruns.
+
+Ordinary authorized source/test/TS or proven semantic conflict repair may use the existing scoped connector, exact-HEAD lease, focused tests and atomic CAS. Diagnostic task flags source_write_authorized=false and execution_authorized=false **must remain false**; they are not write authorization and cannot be flipped by Chat. An existing permitted writer route or explicit required owner review remains mandatory. Verified Specialist failure receipts identify the actual failed workflow path, not a generic release-gate root; they stay diagnostic, require independent causal evidence and do not grant a worker capability. PREPARED or terminal without source proof is not published; verify real GitHub SHA before claiming a repair. Do not redispatch ambiguous jobs.
+
+Use the existing trace contract HH_PR_TRACE_V1 (PR/commit trailers HH-Automation and HH-Run; PR receipt with stage, event, exact HEAD/base or merge SHA, outcome, reason and next action). Record own DONE and others' OBSERVED separately; unmarked historical actor stays UNKNOWN. No secrets or private client data. Reuse existing permitted free cloud/browser/CI evidence; absent owner-authenticated functional evidence is AWAITING_FUNCTIONAL_SMOKE, not LIVE. Existing single ordinary publisher, new ready changes at least 90 minutes apart; no Vercel publication 01:00–07:00 Toronto; no new spend, runner, service or CI schedule.
+
 ## 1. Order of authority — never replay an old snapshot as today's instruction
 
 1. Owner's latest express safety, privacy and **zero additional cost** boundaries, plus current GitHub branch protection, current PR HEAD and applicable CI checks. Never override these.

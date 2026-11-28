@@ -83,6 +83,20 @@ function strategyFor(category,root='UNVERIFIED',canRetry=false){
     return {code:'FREE_PROVIDER_HOLD',action:'CHECK_FREE_MODEL_AND_QUOTA_NO_RETRY',minutes:30};
   return {code,action,minutes};
 }
+function specialistPaths(value){
+ return Array.isArray(value)&&value.length>0&&value.length<=5&&value.every(path=>
+  typeof path==='string'&&/^\.github\/workflows\/[a-z0-9._-]+\.ya?ml$/.test(path))?
+  [...new Set(value)].sort():null;
+}
+function terminalSourceLifecycle(latest){
+ if(latest.state==='PREPARED')
+  return {state:'PREPARED_NOT_PUBLISHED',next_action:'HANDOFF_EXISTING_SOURCE_OWNER',worker_task_key:latest.task_key};
+ if(!['PUBLISHED','REPAIRED','DONE'].includes(latest.state))return null;
+ if(latest.source_published===true&&/^[a-f0-9]{40}$/i.test(latest.new_sha||'')&&
+    latest.new_sha.toLowerCase()!==String(latest.head_sha||'').toLowerCase())
+  return {state:'SOURCE_PUBLISHED_VERIFY_PENDING',next_action:'VERIFY_NEW_HEAD_REQUIRED_CHECKS',worker_task_key:latest.task_key};
+ return {state:'TERMINAL_WITHOUT_SOURCE_PROOF',next_action:'VERIFY_SOURCE_READBACK_OR_ROUTE_EXISTING_OWNER',worker_task_key:latest.task_key};
+}
 function makeCoreTask({pr,run,classification,root='UNVERIFIED',now=Date.now()}={}){
   if(!pr||!Number.isSafeInteger(pr.number)||pr.number<1||pr.state!=='open'||pr.draft||
       pr.base?.ref!==PROD||pr.head?.repo?.full_name!==REPO||!SHA.test(pr.head?.sha||'')||
@@ -99,7 +113,14 @@ function makeCoreTask({pr,run,classification,root='UNVERIFIED',now=Date.now()}={
       classification.source_write_authorized!==false||
       classification.execution_authorized!==false||!CODE.test(classification.reason_code||'')||
       !Number.isFinite(now)||now<=0)throw Error('UNVERIFIED_CORE_ERROR_TASK');
-  const st=root==='SOURCE_OR_PREFLIGHT'&&repairableCoreTestFailure(classification)?
+  // Preserve the actual Specialist identity for the existing Triage/Repair handoff.
+  // This is diagnostic evidence only; no authorization or dispatch is granted.
+  const specialist=classification.category==='TEST_FAILURE'&&
+    classification.reason_code==='VERIFIED_REQUIRED_SPECIALIST_FAILURE'&&
+    classification.evidence_code==='EXACT_GITHUB_SPECIALIST_TERMINAL_LOG'?
+    specialistPaths(classification.failed_specialist_workflows):null;
+  const st=specialist?{code:'SPECIALIST_TRIAGE',action:'VERIFY_INDEPENDENT_SPECIALIST_CHECK',minutes:15}:
+    root==='SOURCE_OR_PREFLIGHT'&&repairableCoreTestFailure(classification)?
     {code:'GUARDED_SOURCE_REPAIR',action:'VERIFY_SOURCE_SCOPE_AND_CI',minutes:15}:
     strategyFor(classification.category,root,classification.retry?.allowed===true);
   return Object.freeze({
@@ -109,6 +130,7 @@ function makeCoreTask({pr,run,classification,root='UNVERIFIED',now=Date.now()}={
     run_attempt:run.run_attempt,category:classification.category,
     ruleset_version:rules.version,reason_code:classification.reason_code,root_code:root,
     confidence:Number.isFinite(classification.confidence)?classification.confidence:0,
+    ...(specialist?{failed_specialist_workflows:specialist}:{}),
     strategy_code:st.code,responsible_role:rules.categories[classification.category].responsible_role,
     ...executorPlan(classification.category,root,classification),
     next_action:st.action,recommended_status:classification.recommended_status||'UNCLASSIFIED',
@@ -192,6 +214,8 @@ function validTask(x){
     Number.isSafeInteger(x.pr_number)&&x.pr_number>0&&SHA.test(x.head_sha||'')&&
     Object.hasOwn(rules.categories,x.category)&&x.ruleset_version===rules.version&&
     CODE.test(x.strategy_code||'')&&CODE.test(x.next_action||'')&&
+    (x.failed_specialist_workflows===undefined||(x.category==='TEST_FAILURE'&&
+      x.reason_code==='VERIFIED_REQUIRED_SPECIALIST_FAILURE'&&!!specialistPaths(x.failed_specialist_workflows)))&&
     typeof x.responsible_role==='string'&&x.responsible_role.length>0&&
     x.responsible_role.length<=64&&iso(x.created_at)&&iso(x.next_check_at)&&
     (x.executor_id===undefined||(
@@ -209,6 +233,7 @@ function taskBody(x){
     'Strategy '+x.strategy_code+'; owner '+x.responsible_role+'; next '+x.next_action+'.\n'+
     'Executor target: '+(x.executor_id||OWNER_EXECUTOR)+
       ' ('+(x.assignment_status||'NOT_SELECTED')+'); no worker started.\n'+
+    (x.failed_specialist_workflows?'Verified failed Specialist workflow(s): '+x.failed_specialist_workflows.join(', ')+'.\n':'')+
     fence+'json\n'+JSON.stringify(x)+'\n'+fence;
 }
 function taskStatus(comments,task){
@@ -391,10 +416,8 @@ function taskLifecycle(comments,task,now=Date.now()){
     x.error_task_id===task.task_id);
   const latest=same.at(-1);
   if(!latest)return {state:'CLASSIFIED_NOT_DELIVERED',next_action:'RECONCILE_EXISTING_DISPATCHER'};
-  if(['PUBLISHED','REPAIRED','DONE'].includes(latest.state)){
-    return {state:'SOURCE_PUBLISHED_VERIFY_PENDING',next_action:'VERIFY_NEW_HEAD_REQUIRED_CHECKS',
-      worker_task_key:latest.task_key};
-  }
+  const terminal=terminalSourceLifecycle(latest);
+  if(terminal)return terminal;
   if(['FAILED','MANUAL','REJECTED','UNCONFIRMED','VERIFY_REQUIRED'].includes(latest.state))
     return {state:'REPAIR_FAILED_REDIAGNOSE',next_action:'RECLASSIFY_WORKER_FAILURE_AND_ASSIGN_OWNER',
       worker_task_key:latest.task_key};
