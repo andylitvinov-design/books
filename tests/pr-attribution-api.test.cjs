@@ -25,7 +25,7 @@ const comments=[{id:123,user:{id:41898282,login:'github-actions[bot]',type:'Bot'
   performed_via_github_app:{id:15368,slug:'github-actions'},
   created_at:at(45),html_url:`https://github.com/${repo}/pull/3390#issuecomment-123`,
   body:stage('repair_started',33,'github_actions_fix_step')+'\n'+stage('source_published',45,'verified_git_ref',A,B)}];
-function makeRequest({prValue=pr,runRows=runs,commentRows=comments,timelineRows=[],rate=900,synthetic=null}={}){
+function makeRequest({prValue=pr,runRows=runs,commentRows=comments,timelineRows=[],registryRows=[],rate=900,synthetic=null}={}){
  const calls=[];
  const request=async (url,options)=>{
   calls.push({url,options});const x=new URL(url);const path=x.pathname;
@@ -36,6 +36,7 @@ function makeRequest({prValue=pr,runRows=runs,commentRows=comments,timelineRows=
   else if(path.endsWith('/actions/runs/101/jobs'))data={total_count:jobs[101].length,jobs:jobs[101]};
   else if(path.endsWith('/issues/3390/comments'))data=commentRows;
   else if(path.endsWith('/issues/3390/timeline'))data=timelineRows;
+  else if(path.endsWith('/issues/1419/comments'))data=registryRows;
   else if(path.endsWith('/git/commits/'+String(synthetic?.head_sha)))data=synthetic.commit;
   else throw Error('UNEXPECTED_URL:'+url);
   return {ok:true,status:200,headers:{get:()=>String(rate)},json:async()=>data};
@@ -467,4 +468,18 @@ test('6+4 attribution reuses existing requests, separates actual commit markers 
  assert.equal(build({comments:[make({...e,event:'COMMIT_WRITTEN',stage:'HEAD',outcome:'DONE',commit_sha:A})],timeline:[]}).credits.some(c=>c.metric==='commits'),false);
  const m=makeRequest({prValue:p,commentRows:[make(e)],timelineRows:timeline});
  const out=await api.loadPr(3390,{request:m.request,now:Date.parse(at(100))});assert.equal(out.source.reads,6);assert.equal(out.automation_trace.origin.actor,'mycoach-20');
+});
+
+
+test('6+4 shared ledger is opt-in, within the existing request cap; other PRs and observations cannot inflate own commit credit',async()=>{
+ const p={...pr,state:'open',merged:false,merged_at:null,closed_at:null,base:{ref:base,sha:C}};
+ const e={schema:'HH_PR_TRACE_V1',automation_id:'triage-15',run_id:'triage-15-20261128T131617Z',pr:3390,stage:'CI',event:'STAGE_OBSERVED',outcome:'OBSERVED',at:at(45),head_sha:B,base_sha:C,reason_code:'CI_ACTIVE'};
+ const c={id:1234,user:{login:'andylitvinov-design',id:274943885},created_at:at(45),body:'<!-- HH_PR_TRACE_V1 -->\n'+JSON.stringify(e)+'\n<!-- HH_PR_TRACE_V1 -->\n'+JSON.stringify({...e,pr:3391})};
+ const m=makeRequest({prValue:p,commentRows:[],registryRows:[c]});
+ const out=await api.loadPr(3390,{request:m.request,now:Date.parse(at(100)),includeRegistry:true});
+ assert.equal(out.source.reads,7);assert.equal(out.automation_trace.events.length,1);assert.equal(out.automation_trace.events[0].url,'https://github.com/andylitvinov-design/books/issues/1419#issuecomment-1234');
+ assert.equal(out.automation_registry.observed_prs,2);assert.equal(out.automation_registry.actors[0].observations,2);assert.equal(out.automation_registry.actors[0].reported.COMMIT_WRITTEN,undefined);
+ assert.equal(out.automation_trace.credits.some(x=>x.metric==='commits'),false);
+ const normal=makeRequest({prValue:p,commentRows:[],registryRows:[c]});
+ assert.equal((await api.loadPr(3390,{request:normal.request,now:Date.parse(at(100))})).source.reads,6);
 });

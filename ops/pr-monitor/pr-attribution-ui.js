@@ -223,6 +223,18 @@
     for(const c of t.commits){const row=elt('p',null,c.actor+' · '+c.sha.slice(0,12)+(c.run?' · '+c.run:''));addLink(row,'https://github.com/andylitvinov-design/books/commit/'+c.sha,' GitHub');details.append(row);}
     for(const e of t.events){const row=elt('p',null,e.actor+' · '+e.event+' · '+(e.outcome==='OBSERVED'?'Чужой результат':e.outcome==='DONE'?'Действие по заявлению':e.outcome)+(e.reason?' · '+e.reason:'')+' · '+fmtDate(e.at));addLink(row,e.url,' Источник');details.append(row);}
     section.append(details);
+    const registry=data.automation_registry;
+    if(registry?.schema==='HH_AGENT_REGISTRY_SAMPLE_V1'){
+      const ledger=elt('details','hh-pr-audit-events');
+      ledger.append(elt('summary',null,'Реестр 6+4 за 24ч · '+registry.observed_prs+' PR · '+registry.event_count+' записей'));
+      const actions=[['PR_CREATED','PR'],['COMMIT_WRITTEN','Commit'],['ERROR_DETECTED','Диагностика'],['CI_RESTORED','CI'],['MERGE_ARMED','ARM'],['MERGED','Merge'],['DEPLOYED','Deploy'],['LIVE_VERIFIED','LIVE']];
+      for(const actor of agentIds){
+        const a=registry.actors.find(x=>x.actor===actor),row=elt('div','hh-pr-audit-interval');
+        row.append(elt('strong',null,actor),elt('p',null,actions.map(([k,l])=>l+': '+(a?.reported?.[k]||'—')).join(' · ')),elt('p',null,'Запуски в реестре: '+(a?.runs||'—')+' · Наблюдения: '+(a?.observations||'—')+' · HOLD/WAIT: '+(a?.blocked||'—')));ledger.append(row);
+      }
+      const note=elt('p','hh-pr-audit-foot','Заявления в общем реестре, не независимое доказательство собственных исправлений. '+registry.comment_count+' комментариев; '+(registry.page_complete?'вся полученная страница':'выборка ограничена 100 последними комментариями')+'. Не все запуски и PR покрыты.');
+      addLink(note,registry.source_url,' Реестр #1419');ledger.append(note);section.append(ledger);
+    }else section.append(elt('p','hh-pr-audit-foot','Общий реестр недоступен или не вошёл в лимит чтения; статистика 24ч не подтверждена.'));
     const sample=elt('details','hh-pr-audit-events');sample.append(elt('summary',null,'Вклад агентов · просмотрено '+agentSample.size+' PR в сессии'));
     const totals=new Map();
     for(const report of agentSample.values())for(const c of report.credits||[]){const k=c.metric+':'+c.key;if(!totals.has(k))totals.set(k,{metric:c.metric,actors:new Set()});totals.get(k).actors.add(c.actor);}
@@ -376,7 +388,7 @@
     if(active)active.abort();active=new AbortController();
     live.textContent=`Проверяю PR #${n} по GitHub...`;submit.disabled=true;
     try{
-      const response=await fetch('/api/pr-attribution?pr='+encodeURIComponent(n),
+      const response=await fetch('/api/pr-attribution?pr='+encodeURIComponent(n)+'&registry=1',
         {signal:active.signal,cache:'no-store'});
       const data=await response.json();
       if(!response.ok||data.schema!=='HH_PR_ATTRIBUTION_V1'||!Array.isArray(data.intervals))

@@ -81,3 +81,7 @@ No new API requests, webhooks, background jobs, scheduled CI, subscriptions, or 
 
 ## 2026-11-28 — 6+4 automation attribution
 The existing on-demand endpoint uses HH-Automation / HH-Run labels and HH_PR_TRACE_V1 from the already read PR, comment and timeline pages; zero additional requests, polls or services. Actor labels are declarations, not signed actor identity. Actual timeline commit markers only; comment assertions alone do not count commits. CI/merge/LIVE require matching observed events; ambiguous ownership is UNKNOWN. Exact-head/base blockers are distinct from prior history. Public response excludes arbitrary comment prose and links to evidence. Session aggregate deduplicates a bounded 40 inspected PR sample, not a full 24h census. Preserve existing charts and full independent monitor source bundle; no partial deployment.
+
+
+## Shared registry attribution (28 Nov 2026)
+Triage :15 already emits HH_PR_TRACE_V1 in existing issue #1419, e.g. comment 7239840086. An explicit PR-history lookup from the monitor requests at most one optional latest-100 comment page within the existing 15-read budget and rate reserve. The selected PR receives only its own validated ledger records and correct issue links; a separate 24-hour bounded registry sample distinguishes declared actions, observations and blockers. It is not full execution history or independent proof of a source write/merge. Ordinary callers without registry=1 retain identical request count. Missing ledger data is partial, not zero. No poll, new service or registry mutation.
