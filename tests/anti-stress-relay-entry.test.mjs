@@ -136,3 +136,12 @@ test('Therapy locks approved coach voice, verifies owner before greeting and exp
  assert.match(relay,/if\(!approved\|\|body\.voiceName!==approved\)/)
  assert.match(voice,/onTherapyRelayClosed\?\.\(receipt\)/)
 })
+
+test('Therapy initialization timeout rejects stalled authorization and disposes late open',async()=>{
+ let release,entered
+ const wait=new Promise(r=>release=r),enteredOpen=new Promise(r=>entered=r)
+ const s=new Socket();let timer,closes=0,n=50
+ const h=attachAntiStressRelayEntry(s,{owner,readRun:async()=>fixture().run,uuid:()=>id(++n),resolveEntitlement:entitlement,prepareBody:async b=>({body:b,session:null}),open:async()=>{entered();await wait;return {close:async()=>{closes++}}},schedule:fn=>{timer=fn;return 1},cancel:()=>{timer=null}})
+ s.input(wire());await enteredOpen;timer();release();await h.settled()
+ assert.equal(s.readyState,3);assert.equal(closes,1);assert.equal(s.messages.at(-1).type,'hh_anti_stress_unavailable')
+})

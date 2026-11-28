@@ -390,3 +390,18 @@ test('Clarity permits only a single consented memory fingerprint on an exact exi
  for(const bad of [null,{...memorySelection,consent:false},{...memorySelection,provider:'groq'},{...memorySelection,value:'raw'},{...memorySelection,fingerprint:'bad'}])assert.throws(()=>normalizeClarityRelayEntry(frame({runId:id(10),memorySelection:bad}),owner),invalid)
  assert.throws(()=>normalizeClarityRelayEntry(frame({memorySelection}),owner),invalid)
 })
+
+
+test('relay initialization times out before provider allocation and disposes a late controller',async()=>{
+ let release;const pending=new Promise(resolve=>{release=resolve})
+ const a=fixture({prepareBody:async b=>{await pending;return {body:b,session:null}}})
+ a.client.emit('message',frame());a.expire();release();await a.relay.settled()
+ assert.equal(a.opens,0);assert.equal(a.client.readyState,3)
+ assert.deepEqual(a.client.sent,[{type:'hh_clarity_unavailable'}])
+ let resolveOpen,entered,closes=0
+ const enteredOpen=new Promise(resolve=>{entered=resolve}),waitOpen=new Promise(resolve=>{resolveOpen=resolve})
+ const b=fixture({open:async()=>{entered();await waitOpen;return {close:async()=>{closes++}}}})
+ b.client.emit('message',frame());await enteredOpen;b.expire();resolveOpen();await b.relay.settled()
+ assert.equal(b.client.readyState,3);assert.equal(closes,1)
+ assert.equal(b.client.sent.at(-1).type,'hh_clarity_unavailable')
+})
