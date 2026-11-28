@@ -1,0 +1,9 @@
+# Preserve original coach performances · 2026-11-28
+
+Owner regression: Mira's prior head tilt and smile disappeared; all prior approved clips must coexist with new media and be smoothly matched. Never treat a new neutral loop as a replacement for approved acting.
+
+Confirmed merged #5830 removed the 480px opening for Mira, Max, Sofia and Alex; merged #5849 explicitly selects MIR-A01, MAX-A01, ALX-A01 for public neutral presence. #5737 temporarily excludes ten of 31 registered reactions after detail audit. No claim that the original media was deleted.
+
+This source change restores the exact pinned opening for all six original-bearing coaches, once per presentation, independent of native resolution; preserves all current HD presence, immutable hashes, two-layer decoded playback, session camera, privacy, audio, reduced-motion and safety policies. Samir retains existing neutral and dialogue inventory; Caesar retains the separately managed video path. No new media or spend.
+
+Outstanding media work: recover and visually review the actual owner-approved tilt/smile (including older v3 and natural takes), identify all legacy performances in the archive, restore their acting in versioned same-camera derivatives without changing original bytes. Reprocess the 10 flagged IDs MIR-02, ALX-02, SOF-01, MER-01, HAR-03A, MIR-A02, ALX-A02, SOF-A02, MAX-A02, MER-A02; do not relabel or silently discard. Match geometry, face position, expression, exposure, color, frame timing and decoded end/start pose. No full-face dissolve, fake detail or unverified re-enable. Existing original-to-HD seams remain unverified, and the alternate-camera HD neutral clips may have visible framing changes. Full normal-speed mobile Safari review of all eight personas and existing CI/production acceptance required. Source-only restoration is not completion of the full request.
