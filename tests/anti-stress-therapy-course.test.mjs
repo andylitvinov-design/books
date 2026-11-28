@@ -102,3 +102,22 @@ test('ambiguous shared evidence cannot create a personal meditation',()=>{
  const base=[row('practice_consent','accepted'),row('practice_status','attempted'),row('resource_kind','imagery'),row('resource_selected','quiet shore'),row('resource_response','comfortable'),row('meditation_consent','accepted',{evidenceId:'verified-resource_selected'})]
  assert.equal(antiStressResult(id,base).meditation.body,null)
 })
+
+import {antiStressProgressProjection} from '../lib/coaching/anti-stress-progress.mjs'
+test('all therapy progress groups and archive rows use the same exact session scenario, never the clock as answer evidence',()=>{
+ for(const sessionId of ANTI_STRESS_SESSION_IDS)for(const locale of ['en','ru','es']){
+  const s=antiStressScenario(sessionId,locale),selection={runId:'run',protocolId:'protocol',sessionId},binding={programType:'therapy',courseRunId:'run',protocolId:'protocol',sessionId,scenarioVersion:s.version}
+  const run={id:'run',programType:'therapy',days:Array.from({length:3},(_,i)=>i===s.number-1?{protocolId:'protocol',sessionId}:{})}
+  const make=rows=>({binding,run,reviewRevision:1,protocol:{binding,rows}})
+  const empty=antiStressProtocolRows(sessionId,[],locale),unloaded=antiStressProgressProjection({selection,locale,elapsedMs:900000})
+  assert.equal(unloaded.minuteDots,15);assert.equal(unloaded.elapsedMinutes,15);assert.equal(unloaded.available,false);assert.ok(unloaded.groups.every(g=>g.tone==='gray'))
+  const p=antiStressProgressProjection({selection,locale,data:make(empty),elapsedMs:900000})
+  assert.equal(p.groups.length,6);assert.deepEqual(p.groups.map(g=>g.label),s.stages.map(g=>g.label));assert.deepEqual(p.groups.flatMap(g=>g.children.map(f=>f.fieldId)),s.fields.map(f=>f.id));assert.ok(p.groups.every(g=>g.tone==='gray'))
+  const ledger=s.fields.map(f=>({fieldId:f.id,scenarioVersion:s.version,reviewed:true,evidenceId:'e-'+f.id,status:'confirmed',value:f.kind==='rating'?0:f.kind==='choice'?f.choices[0]:'A client statement'}))
+  const rows=antiStressProtocolRows(sessionId,ledger,locale),complete=antiStressProgressProjection({selection,locale,data:make(rows)})
+  assert.ok(complete.groups.slice(1).every(g=>g.tone==='green'));assert.equal(complete.groups[0].tone,'gray');assert.equal(complete.groups.flatMap(g=>g.children).find(r=>r.fieldId==='stress_before').value,0)
+  assert.equal(antiStressProgressProjection({selection,locale,data:make([...rows,rows[0]])}),null)
+  assert.equal(antiStressProgressProjection({selection,locale,data:{...make(rows),binding:{...binding,protocolId:'other'}}}),null)
+  assert.equal(antiStressProgressProjection({selection,locale,data:{...make(rows),reviewRevision:0}}),null)
+ }
+})
