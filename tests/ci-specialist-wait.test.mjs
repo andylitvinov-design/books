@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { verify, requiresCurrentProductionBase, classifyPrState, diagnoseAggregateError, awaitPositiveMergeability, verifiedPriorSpecialistEvidence, reusePriorSpecialistState } from '../scripts/ci-specialist-aggregate.mjs';
+import { verify, requiresCurrentProductionBase, classifyPrState, diagnoseAggregateError, awaitPositiveMergeability, verifiedPriorSpecialistEvidence, reusePriorSpecialistState, revalidateAfterTrustedPolicyAdvance } from '../scripts/ci-specialist-aggregate.mjs';
 import { createRequire } from 'node:module';
 import { verifyStableProtectedBase, observeProtectedBaseDrift, independentPackageOnlyAdvisories, verifiedCoachDispatcherIsolation, independentDispatcherAdvisories, provenNonApplicableWorkflows } from '../scripts/ci-specialist-aggregate.mjs';
 import { inspectJobs, trustedRequiredJobs, inspectWorkflowRuns } from '../lib/ci/specialist-aggregate.mjs';
@@ -1558,4 +1558,31 @@ test('protected additive benchmark tools and registrations do not invalidate unr
   rows.map((r,i)=>i===4?{...r,deletions:1,changes:2}:r)
  ])assert.equal(yes(bad),false);
  assert.equal(safeTrustedPolicyAdvance({...diff,files:rows},base,target,candidate),false);
+});
+
+test('use newer protected gate before old optional waits; unavailable proof never waives a real failure',async()=>{
+ const target='c'.repeat(40),files={changedRows:[{filename:'components/my-coach-live-dialogue.jsx',status:'M'}]};
+ const delta={status:'ahead',ahead_by:1,behind_by:0,total_commits:1,base_commit:{sha:base},
+  merge_base_commit:{sha:base},commits:[{sha:target}],files:[{filename:'scripts/ci-specialist-aggregate.mjs',status:'modified'}]};
+ let compares=0,loads=0,checks=0,cleaned=0;
+ const api={target:async()=>target,compare:async()=>{compares++;return delta;}};
+ const result={risk:'STRICT',expected:[],executed:[],advisory:{}};
+ const loader=async()=>{loads++;return {safeTrustedPolicyAdvance:()=>true,
+  verify:async()=>{checks++;return result;},cleanup:()=>{cleaned++;}};};
+ const opts={optional:true,loadPolicy:loader};
+ const noDrift=await revalidateAfterTrustedPolicyAdvance({...api,target:async()=>base},ctx,files,opts);
+ assert.equal(noDrift,null);assert.equal(compares,0);assert.equal(loads,0);
+ const selected=await revalidateAfterTrustedPolicyAdvance(api,ctx,files,opts);
+ assert.equal(selected.policyRevalidatedAgainst,target);assert.equal(checks,1);assert.equal(cleaned,1);
+ assert.equal(await revalidateAfterTrustedPolicyAdvance({...api,compare:async()=>{throw Error('API unavailable');}},ctx,files,opts),null);
+ assert.equal(await revalidateAfterTrustedPolicyAdvance(api,ctx,files,{optional:true,loadPolicy:async()=>{throw Error('missing protected code');}}),null);
+ assert.equal(await revalidateAfterTrustedPolicyAdvance(api,ctx,files,{optional:true,loadPolicy:async()=>({
+  safeTrustedPolicyAdvance:()=>false,verify:async()=>{throw Error('must not execute');}
+ })}),null);
+ await assert.rejects(()=>revalidateAfterTrustedPolicyAdvance(api,ctx,files,{optional:true,loadPolicy:async()=>({
+  safeTrustedPolicyAdvance:()=>true,verify:async()=>{throw Error('SPECIALIST_FAILED');}
+ })}),/SPECIALIST_FAILED/);
+ await assert.rejects(()=>revalidateAfterTrustedPolicyAdvance(api,ctx,files,{optional:true,loadPolicy:async()=>({
+  safeTrustedPolicyAdvance:()=>true,verify:async()=>{throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PR_HEAD_CHANGED');}
+ })}),/PR_HEAD_CHANGED/);
 });
