@@ -151,7 +151,7 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
     data-coach-natural-performance={presentationActive?(openingActive?'protected-original':presentation?'reaction-v4-presentation':'still'):released?'reaction-v4':isGenie?'samir-three-state-v1':hasVideo&&(personaId!=='harry'||Boolean(greetingSrc))?'v1':'still'}
     data-coach-motion-scene={visualScene} data-coach-motion-ready={videoReady?'true':'false'}
     aria-hidden="true">
-    <img src={poster} className={styles.poster} alt="" draggable={false} loading={context==='greeting'?'eager':'lazy'} decoding="async" fetchPriority={isGenie&&context==='greeting'?'high':undefined}
+    <img src={poster} className={styles.poster} alt="" draggable={false} loading={context==='hero'||context==='greeting'?'eager':'lazy'} decoding="async" fetchPriority={context==='hero'||(isGenie&&context==='greeting')?'high':undefined}
       onError={poster===preferredPoster?()=>setMissingPoster(preferredPoster):undefined} />
     {presentationActive?<CoachPresentationLayers key={personaId} opening={opening} presence={presentation}
         openingActive={openingActive} enabled={shouldPlay} onOpeningDone={finishPresentationOpening} onReady={setVideoReady} />:released?<CoachReactionDirectorMedia key={personaId+':'+released.anchorHash} media={released} intent={reactionIntent} enabled={shouldPlay} onReady={value=>{setVideoReady(value);if(value)setUnavailableCamera(null)}} onUnavailable={failCamera} />:!sessionContext&&shouldPlay&&(isGenie
