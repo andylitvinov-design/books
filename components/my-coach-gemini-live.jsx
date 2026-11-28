@@ -126,7 +126,7 @@ function audioTranscription(value){return typeof value==='string'?value.trim():'
 // client-side transcript persistence or unconsented fallback.
 const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   locale='en',personaId='mira',settings={},courseSessionId='life_direction',courseScenarioVersion=null,voiceName='Puck',enabled=false,
-  canStart=true,elapsedSeconds=0,outputMuted=false,onSessionStart,onVoiceStateChange,
+  canStart=true,elapsedSeconds=0,contactElapsedSeconds=0,outputMuted=false,onSessionStart,onVoiceStateChange,
   onMicLevel,onInputInterim,onInputFinal,onOutputInterim,onOutputFinal,
   onInterrupted,onDirectorProgress,onOpeningProgress,onNotice,
   openingPrior=null,allowOpeningPrior=false,
@@ -144,7 +144,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   const relayStopUnverified=useRef(false)
   const propsRef=useRef({})
   propsRef.current={locale:lang,personaId,settings,courseSessionId,courseScenarioVersion,voiceName,enabled,canStart,
-    elapsedSeconds,outputMuted,onSessionStart,onVoiceStateChange,onMicLevel,onInputInterim,
+    elapsedSeconds,contactElapsedSeconds,outputMuted,onSessionStart,onVoiceStateChange,onMicLevel,onInputInterim,
     onInputFinal,onOutputInterim,onOutputFinal,onInterrupted,
     onDirectorProgress,onOpeningProgress,onNotice,openingPrior,allowOpeningPrior,
     liveContextAccess,contextRevision,localRecoveryTurns,onUnconfirmedInput,methodSession,prepareMethodSession,privateGreetingText,onPrivateGreeting,onPrivateRecallRequest,clarityRelaySelection,onClarityRelayClock,clarityOpeningMemoryStageToken,clarityOpeningMemoryScope,speechReviewConsent,speechReviewProvider,onSpeechReviewCandidate}
@@ -473,6 +473,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
           message:text,turns:previous.map(turn=>({...turn,content:turn.content.slice(0,300)})),
           characterSeenIds:[...new Set([...coachCharacterObservedIds(p.localRecoveryTurns),...coachCharacterObservedIds(previous),...r.characterSeenIds])],
           elapsedSeconds:Math.min(7200,Math.max(0,Math.floor(p.elapsedSeconds||0))),
+          contactElapsedSeconds:Math.min(7200,Math.max(0,Math.floor(p.contactElapsedSeconds||0))),
           openingHistory:r.openingHistory.slice(0,-1).slice(0,20).map(text=>text.slice(0,120)),
           ...(p.allowOpeningPrior&&p.openingPrior?{allowOpeningPrior:true,openingPrior:p.openingPrior}:{}),
           consent:true,voiceConsent:true,trainingUseConsent:true})
