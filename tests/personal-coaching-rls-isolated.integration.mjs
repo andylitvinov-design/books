@@ -252,6 +252,31 @@ if(!isolated){
           const privileges=(await db.query("select has_table_privilege('anon',$1,'SELECT') as anon_read,has_table_privilege('authenticated',$1,'SELECT') as authenticated_read,has_table_privilege('authenticated',$1,'INSERT') as authenticated_write",[table])).rows[0]
           assert.deepEqual(privileges,{anon_read:false,authenticated_read:false,authenticated_write:false})
         }
+        // Cross-transport exclusion uses the same account lock in both directions.
+        const {reserveOrdinaryGeminiWindowInTransaction}=await import('../lib/app/clarity-course-runs.js')
+        const directTable='app_private.coaching_direct_live_windows'
+        const D='10000000-0000-4000-8000-000000000004'
+        const actorD={id:D,claims:{sub:D}}
+        const direct=actor=>transaction(config,actor,c=>reserveOrdinaryGeminiWindowInTransaction(c,actor))
+        await db.query('insert into app.accounts(id,status,onboarding_state) values ($1,$2,$2)',[D,'active'])
+        const directAt=await direct(actorD)
+        const directExpiry=(await as(D,c=>c.query('select possible_expires_at_ms from '+directTable))).rows[0].possible_expires_at_ms
+        assert.equal(Number(directExpiry),directAt+21*60*1000)
+        assert.equal((await as(A,c=>c.query('select * from '+directTable+' where account_id=$1',[D]))).rowCount,0)
+        await assert.rejects(()=>reserve(actorD,candidate(6)),{code:'CLARITY_CREDENTIAL_BUSY'})
+        await assert.rejects(()=>direct(actorA),{code:'CLARITY_CREDENTIAL_BUSY'})
+        assert.equal((await as(A,c=>c.query('select * from '+directTable))).rowCount,0)
+        await db.query('update '+directTable+' set possible_expires_at_ms=1 where account_id=$1',[D])
+        const crossRace=await Promise.allSettled([direct(actorD),reserve(actorD,candidate(6))])
+        assert.equal(crossRace.filter(x=>x.status==='fulfilled').length,1)
+        assert.equal(crossRace.find(x=>x.status==='rejected').reason.code,'CLARITY_CREDENTIAL_BUSY')
+        await assert.rejects(()=>as(D,c=>c.query('delete from '+directTable)),/permission denied/i)
+        await db.query("update app.accounts set status='inactive' where id=$1",[D])
+        assert.equal((await as(D,c=>c.query('select * from '+directTable))).rowCount,0)
+        await db.query('delete from app.accounts where id=$1',[D])
+        assert.equal((await db.query('select * from '+directTable+' where account_id=$1',[D])).rowCount,0)
+        const directPrivileges=(await db.query("select has_table_privilege('anon',$1,'SELECT') as anon_read,has_table_privilege('authenticated',$1,'INSERT') as authenticated_write",[directTable])).rows[0]
+        assert.deepEqual(directPrivileges,{anon_read:false,authenticated_write:false})
         // Rehearse Goal's exact proposed schema with the real reviewed archive migration.
         // No production connections or real client data are used.
         await db.query(await readFile(new URL('../supabase/migrations/20261122133522_hh_my_coach_durable_protocol_archive_v1_20261122.sql',import.meta.url),'utf8'))
