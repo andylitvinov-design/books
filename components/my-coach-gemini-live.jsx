@@ -608,6 +608,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(!value||r.ended)return
     const preceding=r.history.slice(-10)
     const decision=propsRef.current.onInputFinal?.(value)
+    // A dubious ASR turn is a review draft, not a Director checkpoint.
+    // Do not stop or replay the independent Gemini audio conversation.
+    if(decision?.transcriptReview===true){r.lastAssistantTurnFinished=false;r.pendingDirectorHint='';return false}
     if(decision?.privateRecall){startPrivateRecall(r,decision.privateRecall,!atBoundary);return true}
     if(decision===true){stop();return true}
     r.history.push({role:'user',content:value})

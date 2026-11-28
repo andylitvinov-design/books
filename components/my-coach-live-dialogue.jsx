@@ -35,6 +35,7 @@ import MyCoachEarlyExit from './my-coach-early-exit'
 import {coachCompletionDestination,coachEarlyExitDestination,coachShouldOfferEarlyExit} from '@/lib/coaching/coach-early-exit.mjs'
 import MyCoachSpeechLoop from './my-coach-speech-loop'
 import MyCoachGeminiLive from './my-coach-gemini-live'
+import {isSuspectShortRussianSpeech} from '@/lib/coaching/coach-speech-evidence.mjs'
 import MyCoachStagedMemoryControls from './my-coach-staged-memory-controls'
 import {coachExplicitRecall,privateCoachRecallText,coachReturningSalutation} from '@/lib/coaching/coach-private-recall.mjs'
 import MyCoachSessionStateCard from './my-coach-session-state-card'
@@ -2410,6 +2411,15 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
               const guard={locale:conversationLang,message:text,turns:turnsRef.current}
               const recallDecision=handlePrivateLiveRecall(text)
               if(recallDecision)return recallDecision
+              // Keep explicit safety/boundary/name processing ahead of ASR review.
+              // A short Polish-looking token during Russian speech is not a fact.
+              if(!candidate&&isSuspectShortRussianSpeech(text,conversationLang)&&
+                !['ru','en','es'].some(locale=>coachingBrainSafety({...guard,locale})||coachingBrainBoundary({...guard,locale}))){
+                setDraft(previous=>previous.trim()?previous+'\n'+text:text)
+                setSpeechPreview('')
+                setError(({ru:'Проверьте расшифровку в поле ввода. Голосовой разговор продолжается.',en:'Review the transcription in the input field. The voice conversation continues.',es:'Revisa la transcripción en el campo de texto. La conversación de voz continúa.'})[lang])
+                return {transcriptReview:true}
+              }
               if(candidate&&!coachingBrainSafety(guard)&&!coachingBrainBoundary(guard)){
                 if(!appendLiveTranscript('user',text))return true
                 const question=coachNameCorrectionQuestion(candidate,conversationLang)
