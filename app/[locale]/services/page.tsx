@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { ServicesConversionHero } from "@/components/services-conversion-hero";
 import { ServicesAssistMobile } from "@/components/services-assist-mobile";
-import { ServicesAssistQuiz } from "@/components/services-assist-quiz";
+import { ServicesAssistQuiz, ServicesSupportPrograms } from "@/components/services-assist-quiz";
 import { ServicesPersonalConsultationMobile } from "@/components/services-personal-consultation-mobile";
 import { AssistReikiSession } from "@/components/assist-reiki-session";
 import { ServicesMagicalHelpMobile } from "@/components/services-magical-help-mobile";
@@ -90,11 +90,21 @@ export default async function ServicesPage({ params, searchParams }: PageProps) 
   const query = await searchParams;
   if (query?.catalog === "1") redirect("/" + locale + "/services/catalog#service-listings");
   const current = copy[locale];
+  // The Support tab opens directly on the existing three-program screen.
+  // Explicit legacy entry points remain available for previously shared links.
+  if (query?.assist !== "chat" && query?.assist !== "quiz" && query?.consultation !== "1") {
+    return (
+      <main data-support-luxe="true" data-support-programs-only className={"services-shell services-shell--studio " + assistStyles.assistPage + " " + compactStyles.page + " " + uniformStyles.page} lang={locale}>
+        <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
+        <ServicesSupportPrograms locale={locale} />
+      </main>
+    );
+  }
   return (
     <main data-support-luxe={query?.assist === "chat" ? undefined : "true"} className={"services-shell services-shell--studio " + assistStyles.assistPage + " " + compactStyles.page + " " + uniformStyles.page} lang={locale}>
       <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
       <ServicesExplorerProvider>
-        {/* Four-question public entry; the original Ali dialogue stays available on explicit request. */}
+        {/* Explicit compatibility entry only; not rendered on the Support tab. */}
         {query?.assist==="chat" ? <ServicesAssistMobile locale={locale} /> : <ServicesAssistQuiz locale={locale} />}
         <ServicesCompactCatalog locale={locale} initialConsultationOpen={query?.consultation === "1"}>
           <ServicesCompactPanel id="consultation">

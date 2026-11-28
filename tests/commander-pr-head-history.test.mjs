@@ -59,3 +59,29 @@ test('history is private, paginated and never confuses queue time with PR cycle'
  assert.match(client,/journeys\[item.requestId\]\?\.currentHeadSha/);
  assert.doesNotMatch(client,/dangerouslySetInnerHTML|GITHUB_TOKEN/);
 });
+
+import {readAutomationIdentity,buildPrAutomationTrace} from '../lib/agent-director/pr-automation-trace.mjs';
+test('automation trace rejects invalid, stale and foreign receipts and distinguishes observers',()=>{
+ const H='a'.repeat(40),B='b'.repeat(40),M='c'.repeat(40);
+ const origin='HH-Automation: mycoach-20\nHH-Run: mycoach-20-20261128T120000Z';
+ const pr={number:1,user:{login:'andylitvinov-design'},body:origin,head:{sha:H},base:{sha:B},merged:false};
+ const at='2026-11-28T12:01:00Z',observedAt='2026-11-28T12:11:00Z';
+ const e={schema:'HH_PR_TRACE_V1',automation_id:'mycoach-20',run_id:'mycoach-20-20261128T120000Z',pr:1,event:'STAGE_BLOCKED',stage:'REPAIR',at,head_sha:H,base_sha:B,outcome:'HOLD',reason_code:'NO_SOURCE_WRITE_AUTHORIZATION',next_action:'Verify signed task authorization',evidence_key:'aabbcc'};
+ const comment=(event,login='andylitvinov-design',id=1)=>({id,user:{login},body:'<!-- HH_PR_TRACE_V1 -->\n'+JSON.stringify(event)});
+ const build=(comments,extra={})=>buildPrAutomationTrace({pr,comments,commentsComplete:true,observedAt,...extra});
+ assert.equal(readAutomationIdentity(origin).automationId,'mycoach-20');
+ assert.equal(readAutomationIdentity(origin+'\nHH-Run: other'),null);
+ assert.equal(readAutomationIdentity(origin.replace('mycoach-20-2026','mycoach-00-2026')),null);
+ assert.equal(build([comment(e)]).current.reportedWaitMinutes,10);
+ assert.equal(build([comment(e),comment(e,'andylitvinov-design',2)]).events.length,1);
+ assert.equal(build([comment({...e,pr:2})]).events.length,0);
+ assert.equal(build([comment(e,'untrusted')]).events.length,0);
+ assert.equal(build([comment({...e,head_sha:B})]).current,null);
+ assert.equal(build([comment({...e,base_sha:H})]).current,null);
+ assert.equal(build([comment(e)],{pr:{...pr,merged:true,merge_commit_sha:M}}).current,null);
+ assert.equal(build([comment({...e,stage:'LIVE',merge_sha:M})],{pr:{...pr,merged:true,merge_commit_sha:M},productionVerified:true}).current,null);
+ assert.equal(build([comment({...e,stage:'LIVE',merge_sha:M})],{pr:{...pr,merged:true,merge_commit_sha:M}}).current.stage,'LIVE');
+ assert.equal(build([comment({...e,reason_code:null})]).events.length,0);
+ assert.equal(build([comment({...e,evidence_url:'https://evil.example'})]).events[0].evidenceUrl,null);
+ assert.equal(build([comment({...e,event:'MERGED',outcome:'OBSERVED',stage:'MERGE'})]).events[0].outcome,'OBSERVED');
+});

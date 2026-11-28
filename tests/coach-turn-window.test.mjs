@@ -244,7 +244,7 @@ test('context never uses assistant text or duplicates recent entries and has no 
  assert.match(knownOpening,/coachOpeningTurn\(/)
  assert.match(knownOpening,/!commitCompletedClientTurn\(requestId,message,/)
  assert.doesNotMatch(knownOpening,/fetch\(|appFetch\(|setTurns\(/)
-  // The sixth exit is the local verified-course opening handoff, not another
+  // Two extra exits are first-party name correction and confirmation. The course exit is the local verified-course opening handoff, not another
   // provider call or unguarded write. Keep the safety/boundary and commit gates.
   const handoff=send.slice(send.indexOf('if(courseGateOpeningAfter('),send.indexOf('if(greetingIdentity.name&&!openingProgress.completed'))
   assert.match(handoff,/!coachingBrainSafety\(currentInput\)&&!coachingBrainBoundary\(currentInput\)/)

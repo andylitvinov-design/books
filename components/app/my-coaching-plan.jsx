@@ -6,6 +6,7 @@ import {useSearchParams} from 'next/navigation'
 import {appFetch} from '@/lib/app/client-fetch'
 import MyCoachContext from './my-coach-context'
 import MyCoachDraftArchive from './my-coach-draft-archive'
+import CoachSessionArchiveHeader from './coach-session-archive-header'
 import CourseArchiveReview from './course-archive-review'
 import MyCoachSavedProfileV3 from './my-coach-saved-profile-v3'
 import DaybookDailySettings from './daybook-daily-settings'
@@ -487,7 +488,7 @@ export default function MyCoachingPlan({accountId,locale='en'}){
    {reportError&&<p className={styles.inlineError} role="alert">{t.reportError}</p>}
    {protocolError&&<p className={styles.inlineError} role="alert">{protocolError}</p>}
    {visibleProtocols.map(protocol=><article key={protocol.id} className={styles.reportCard} data-my-coach-saved-protocol={protocol.id}>
-    <div className={styles.reportTop}><div><span>{protocolCopy[lang].transcript}</span><h2>{protocolCopy[lang].title} · {protocol.personaId}</h2><small>{formatDate(protocol.completedAt,lang)} · {protocol.turns?.length||0} {lang==='ru'?'реплик':lang==='es'?'turnos':'turns'}</small></div></div>
+    <CoachSessionArchiveHeader protocol={protocol} locale={lang} reviewed/>
     {isGoalReviewedResult(protocol.courseSessionId)?<><SavedGoalResults protocol={protocol} locale={lang} onDownload={()=>exportProtocol(protocol,false,'results')}/><details className={styles.reportDetails}><summary>{protocolCopy[lang].title} <ChevronDown size={16}/></summary><SavedProtocolOverview protocol={protocol} locale={lang}/></details></>:<SavedProtocolOverview protocol={protocol} locale={lang}/>} 
    <SavedProtocolCheckin protocol={protocol} locale={lang}/>
     {protocol.clientSummary&&<div className={styles.reportSection}><b>{lang==='ru'?'Мой итог':lang==='es'?'Mi conclusión':'My takeaway'}</b><p>{protocol.clientSummary}</p></div>}
@@ -496,7 +497,7 @@ export default function MyCoachingPlan({accountId,locale='en'}){
       <button type="button" className={styles.primaryButton} onClick={()=>{if(window.confirm(({en:'This file contains private conversation text. Keep it secure and share only with explicit permission. Download?',ru:'Файл содержит личный диалог. Храните его безопасно и передавайте только с явного разрешения. Скачать?',es:'El archivo contiene un diálogo privado. Guárdalo de forma segura y compártelo solo con permiso explícito. ¿Descargar?'})[lang]))downloadCoachQualityTranscript(protocol)}}>{({en:'Export private QA transcript (JSON)',ru:'Скачать стенограмму для анализа (JSON)',es:'Exportar transcripción privada (JSON)'})[lang]}</button>
      <button type="button" className={styles.primaryButton} onClick={()=>exportProtocol(protocol,false,'transcript')}><Download size={16}/>{({en:'Download transcript PDF',ru:'Скачать стенограмму PDF',es:'Descargar transcripción PDF'})[lang]}</button>
      {(protocol.turns||[]).map((turn,index)=><div className={styles.reportSection} key={index}>
-      <b>{turn.role==='user'?({en:'You',ru:'Вы',es:'Tú'}[lang]):protocolCopy[lang].coach}</b>
+      <b>{turn.role==='user'?({en:'You',ru:'Вы',es:'Tú'}[lang]):turn.authorPersonaId||protocolCopy[lang].coach}</b>
       <p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{turn.content}</p>
       {turn.interrupted===true&&<small>{lang==='ru'?'Ответ перебит (мог быть услышан не полностью)':lang==='es'?'Respuesta interrumpida':'Reply interrupted; may not have been fully heard'}</small>}
      </div>)}
