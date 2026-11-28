@@ -92,7 +92,87 @@ async function readPinnedPackageEvidence({github,owner,repo,pr,testedBase,paths}
  }catch{return undefined;}
 }
 
-async function assessBaseFreshness({github,owner,repo,pr,verifiedRunBase,classifierBase,decideRoute,baseAdvancePolicy}){
+
+const READY_V3_PREFIX='HH_MERGE_READY_V3:';
+const READY_V3_WORKFLOW='.github/workflows/hh-pr-core-release.yml';
+const READY_V3_STEPS=['Pin exact production base for shallow checkout',
+ 'Validate exact-head risk and required specialist workflows',
+ 'Confirm one-runner Core and independent specialist release evidence'];
+function parseMergeReadyV3(log){
+ if(typeof log!=='string'||!log.length||log.length>24*1024*1024)return null;
+ const lines=log.split(/\r?\n/).map(l=>l.replace(/^\d{4}-\d\d-\d\dT[\d:.]+Z[ \t]+/,'').trim());
+ const hits=lines.filter(l=>l.startsWith(READY_V3_PREFIX));
+ if(hits.length!==1||hits[0].length>150000)return null;
+ try{
+  const x=JSON.parse(hits[0].slice(READY_V3_PREFIX.length));
+  const positive=n=>Number.isSafeInteger(n)&&n>0;
+  const path=p=>typeof p==='string'&&/^\.github\/workflows\/[a-z0-9._-]+\.ya?ml$/i.test(p);
+  if(x?.schema!=='HH_MERGE_READY_V3'||typeof x.repo!=='string'||!positive(x.pr)||
+     !positive(x.run_id)||!positive(x.run_attempt)||
+     ![x.head,x.tested_base,x.tested_merge,x.accepted_base,x.policy_base].every(v=>typeof v==='string'&&SHA.test(v))||
+     !Array.isArray(x.required)||x.required.length>300||x.required.some(p=>!path(p))||
+     new Set(x.required).size!==x.required.length||!Array.isArray(x.evidence)||
+     x.evidence.length!==x.required.length||
+     new Set(x.evidence.map(e=>e?.path)).size!==x.required.length||
+     x.evidence.some(e=>!x.required.includes(e?.path)||!positive(e.run_id)||!positive(e.jobs)||
+       (e.prior_head!==undefined&&(!SHA.test(e.prior_head)||e.prior_head===x.head))))return null;
+  const checkout=lines.flatMap((l,i)=>l==='[command]/usr/bin/git log -1 --format=%H'?[i]:[]);
+  if(checkout.length!==1||lines[checkout[0]+1]!==x.tested_merge)return null;
+  return x;
+ }catch{return null;}
+}
+
+// Optional fast path. Trust the exact completed Actions job/attempt, not PR
+// comments or artifacts supplied by candidate code. Verify the checkout
+// parents and byte-identical Core workflow against the protected policy
+// before using its receipt. If the protected target/policy moved, or any
+// evidence is unavailable, the existing full freshness path remains active.
+async function verifiedMergeReadyV3({github,owner,repo,pr,run,jobs,target}){
+ const full=owner+'/'+repo;
+ if(full!=='andylitvinov-design/books'||!SHA.test(target||'')||
+    pr?.state!=='open'||pr.draft!==false||pr.mergeable!==true||pr.mergeable_state==='dirty'||
+    pr.base?.ref!=='codex/public-book-library'||pr.head?.repo?.full_name!==full||
+    !SHA.test(pr.head?.sha||'')||!Number.isSafeInteger(pr.number)||
+    run?.name!=='HH PR core release gate'||String(run?.path||'').split('@')[0]!==READY_V3_WORKFLOW||
+    run.event!=='pull_request'||run.status!=='completed'||run.conclusion!=='success'||
+    run.head_branch!==pr.head.ref||run.repository?.full_name!==full||run.head_repository?.full_name!==full||
+    !Number.isSafeInteger(run.id)||run.id<1||!Number.isSafeInteger(run.run_attempt)||run.run_attempt<1||
+    !Array.isArray(run.pull_requests)||!Array.isArray(jobs)||jobs.length!==2)return null;
+ const associated=run.pull_requests.length===1&&run.pull_requests[0]?.number===pr.number&&
+   run.pull_requests[0]?.head?.sha===pr.head.sha&&run.pull_requests[0]?.head?.ref===pr.head.ref&&
+   run.pull_requests[0]?.base?.ref==='codex/public-book-library';
+ if(!associated&&!(run.pull_requests.length===0&&run.head_sha===pr.head.sha))return null;
+ const successful=name=>{
+  const xs=jobs.filter(j=>j?.name===name);const j=xs[0];
+  return xs.length===1&&Number.isSafeInteger(j.id)&&j.id>0&&j.run_id===run.id&&
+    j.status==='completed'&&j.conclusion==='success'?j:null;
+ };
+ const core=successful('core-lint-types-build'),gate=successful('hh-merge-check');
+ if(!core||!gate||!READY_V3_STEPS.every(name=>gate.steps?.filter(s=>s.name===name&&
+    s.status==='completed'&&s.conclusion==='success').length===1))return null;
+ try{
+  const reply=(await github.request('GET /repos/{owner}/{repo}/actions/jobs/{job_id}/logs',
+    {owner,repo,job_id:gate.id})).data;
+  const x=parseMergeReadyV3(reply);
+  if(!x||x.repo!==full||x.pr!==pr.number||x.head!==pr.head.sha||
+     x.run_id!==run.id||x.run_attempt!==run.run_attempt||
+     x.accepted_base!==target||x.policy_base!==target)return null;
+  const workflow=async ref=>{
+    const f=(await github.rest.repos.getContent({owner,repo,path:READY_V3_WORKFLOW,ref})).data;
+    return f?.type==='file'&&f.path===READY_V3_WORKFLOW&&SHA.test(f.sha||'')?f.sha:null;
+  };
+  const refs=[...new Set([x.tested_base,x.tested_merge,target])];
+  const [commit,...blobs]=await Promise.all([
+    github.rest.git.getCommit({owner,repo,commit_sha:x.tested_merge}).then(z=>z.data),
+    ...refs.map(workflow)]);
+  if(commit?.sha!==x.tested_merge||!Array.isArray(commit.parents)||commit.parents.length!==2||
+     commit.parents[0]?.sha!==x.tested_base||commit.parents[1]?.sha!==x.head||
+     !blobs[0]||blobs.some(sha=>sha!==blobs[0]))return null;
+  return x;
+ }catch{return null;}
+}
+
+async function assessBaseFreshness({github,owner,repo,pr,verifiedRunBase,classifierBase,decideRoute,baseAdvancePolicy,readReadyReceipt}){
  const fail=reason=>({ok:false,reason});
  if(!Number.isSafeInteger(pr?.number)||pr.number<1||!SHA.test(pr.base?.sha||'')||
     !Number.isSafeInteger(pr.changed_files)||pr.changed_files<0||pr.changed_files>300)return fail('INVALID_PR_EVIDENCE');
@@ -100,6 +180,16 @@ async function assessBaseFreshness({github,owner,repo,pr,verifiedRunBase,classif
   const branch=(await github.rest.repos.getBranch({owner,repo,branch:'codex/public-book-library'})).data;
   const actual=branch?.commit?.sha;if(!SHA.test(actual||''))return fail('CURRENT_BASE_UNAVAILABLE');
   if(classifierBase!==actual||typeof decideRoute!=='function')return fail('CLASSIFIER_BASE_STALE');
+  if(branch.protected===true&&typeof readReadyReceipt==='function'){
+   let receipt=null;
+   try{receipt=await readReadyReceipt(actual);}catch{/* legacy path */}
+   if(receipt?.accepted_base===actual&&receipt?.policy_base===actual&&receipt?.head===pr.head?.sha&&
+      receipt?.pr===pr.number&&receipt?.repo===owner+'/'+repo){
+    const final=(await github.rest.repos.getBranch({owner,repo,branch:'codex/public-book-library'})).data;
+    if(final?.protected!==true||final?.commit?.sha!==actual)return fail('BASE_MOVED_DURING_CHECK');
+    return {ok:true,reason:'MERGE_READY_V3_VERIFIED',base:actual};
+   }
+  }
   const files=[];
   for(let page=1;page<=3;page++){
    const rows=(await github.rest.pulls.listFiles({owner,repo,pull_number:pr.number,per_page:100,page})).data;
@@ -340,4 +430,4 @@ async function loadTrustedClassifier(workspace){
  const baseAdvancePolicy=Object.fromEntries(names.map(name=>[name,impact[name]]));
  return {classifierBase,decideRoute:mod.decideRoute,baseAdvancePolicy};
 }
-module.exports={readPinnedPackageEvidence,assessBaseFreshness,coreRunBase,coreRunBaseForCheck,loadTrustedClassifier,verifiedDetachedCiMediaAdvance,verifiedIndependentPublicRasterAdvance};
+module.exports={parseMergeReadyV3,verifiedMergeReadyV3,readPinnedPackageEvidence,assessBaseFreshness,coreRunBase,coreRunBaseForCheck,loadTrustedClassifier,verifiedDetachedCiMediaAdvance,verifiedIndependentPublicRasterAdvance};
