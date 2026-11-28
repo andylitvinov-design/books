@@ -206,6 +206,31 @@
     result.append(section);
   }
 
+
+  const agentSample=new Map();
+  const agentIds=['mycoach-00','mycoach-10','mycoach-20','mycoach-30','mycoach-40','mycoach-50','triage-15','merge-35','repair-45','live-05','manual-chat','UNKNOWN'];
+  const agentMetrics=[['created','PR'],['commits','Коммиты'],['diagnosed','Диагностика'],['ci','CI'],['armed','ARM'],['merged','Merge'],['live','LIVE'],['blocked','HOLD'],['observed','Наблюдения']];
+  function renderAgentTrace(data){
+    const t=data.automation_trace,section=elt('section','hh-pr-audit-events');
+    section.append(elt('h3',null,'Автоматизации 6+4 · авторство и блокировка'),elt('p','hh-pr-audit-foot',data.journey?.stop_reason||'Причина не подтверждена'));
+    if(t?.schema!=='HH_PR_MONITOR_AUTOMATION_V1'){section.append(elt('p',null,'Нет данных атрибуции — UNKNOWN'));result.append(section);return;}
+    if(!data.stale){agentSample.set(data.pr_number,t);if(agentSample.size>40)agentSample.delete(agentSample.keys().next().value);}
+    section.append(elt('p',null,'Создал PR: '+(t.origin?.actor||'UNKNOWN')+(t.origin?.run?' · '+t.origin.run:'')));
+    const addLink=(row,url,label)=>{const href=link(url);if(href){const a=elt('a',null,label);a.href=href;a.target='_blank';a.rel='noopener noreferrer';row.append(a);}};
+    if(t.current){const c=t.current,row=elt('p',null,'Текущий blocker по записи: '+c.stage+' · '+c.reason+' · '+c.actor+' · '+fmtDate(c.at));addLink(row,c.url,' Следующее действие / источник');section.append(row);}
+    else section.append(elt('p','hh-pr-audit-foot','Актуальная запись агента о блокировке отсутствует; см. независимый статус GitHub.'));
+    const details=elt('details','hh-pr-audit-events');details.append(elt('summary',null,'Коммиты и действия · '+t.commits.length+' / '+t.events.length));
+    for(const c of t.commits){const row=elt('p',null,c.actor+' · '+c.sha.slice(0,12)+(c.run?' · '+c.run:''));addLink(row,'https://github.com/andylitvinov-design/books/commit/'+c.sha,' GitHub');details.append(row);}
+    for(const e of t.events){const row=elt('p',null,e.actor+' · '+e.event+' · '+(e.outcome==='OBSERVED'?'Чужой результат':e.outcome==='DONE'?'Действие по заявлению':e.outcome)+(e.reason?' · '+e.reason:'')+' · '+fmtDate(e.at));addLink(row,e.url,' Источник');details.append(row);}
+    section.append(details);
+    const sample=elt('details','hh-pr-audit-events');sample.append(elt('summary',null,'Вклад агентов · просмотрено '+agentSample.size+' PR в сессии'));
+    const totals=new Map();
+    for(const report of agentSample.values())for(const c of report.credits||[]){const k=c.metric+':'+c.key;if(!totals.has(k))totals.set(k,{metric:c.metric,actors:new Set()});totals.get(k).actors.add(c.actor);}
+    for(const actor of agentIds){const counts={};for(const c of totals.values()){const id=c.actors.size===1?[...c.actors][0]:'UNKNOWN';if(id===actor)counts[c.metric]=(counts[c.metric]||0)+1;}const row=elt('div','hh-pr-audit-interval');row.append(elt('strong',null,actor),elt('p',null,agentMetrics.map(([k,label])=>label+': '+(counts[k]||'—')).join(' · ')));sample.append(row);}
+    sample.append(elt('p','hh-pr-audit-foot','Только уникальные наблюдаемые события просмотренных PR, не полная статистика 24ч. — не доказанный ноль. Маркировка агента не криптографическая подпись; наблюдения не считаются ремонтом.'));
+    section.append(sample,elt('p','hh-pr-audit-foot','Покрытие: комментарии '+(t.coverage.comment_page_complete?'страница полная':'частично')+'; коммиты '+t.coverage.commits_observed+' / '+(t.coverage.expected_commits??'—')+'.'));result.append(section);
+  }
+
   function render(data){
     result.replaceChildren();
     const line=elt('div','hh-pr-audit-summary');
@@ -260,6 +285,7 @@
 
     renderRepairCycles(data.repair_cycles);
     renderTaskOutcomes(data.task_outcomes);
+    renderAgentTrace(data);
 
     if(data.source?.history_partial){
       result.append(elt('p','hh-pr-audit-alert',

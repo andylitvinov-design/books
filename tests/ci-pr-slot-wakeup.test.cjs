@@ -1,171 +1,93 @@
 'use strict';
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const {admission,trustedEvent,run}=require('../scripts/ci-pr-slot-wakeup.cjs');
-const NOW=Date.parse('2026-11-01T18:30:00Z');
-const event={eventName:'workflow_run',repo:{owner:'andylitvinov-design',repo:'books'},payload:{
-  workflow_run:{name:'HH PR core release gate',path:'.github/workflows/hh-pr-core-release.yml',
-    event:'pull_request',status:'completed',conclusion:'success',
-    repository:{full_name:'andylitvinov-design/books'}}}};
-test('only authenticated same-repo successful Core PR completion can wake slots',()=>{
-  assert.equal(trustedEvent(event),true);
-  assert.equal(trustedEvent({...event,payload:{workflow_run:{...event.payload.workflow_run,conclusion:'failure'}}}),false);
-  assert.equal(trustedEvent({...event,eventName:'pull_request_target'}),false);
-  assert.equal(trustedEvent({...event,payload:{workflow_run:{...event.payload.workflow_run,path:'untrusted.yml'}}}),false);
-  assert.equal(trustedEvent({...event,payload:{workflow_run:{...event.payload.workflow_run,repository:{full_name:'external/repo'}}}}),false);
+const {trustedEvent,hasDurableBacklog,run}=require('../scripts/ci-pr-slot-wakeup.cjs');
+const REPO='andylitvinov-design/books';
+const event={eventName:'workflow_run',ref:'refs/heads/codex/bootstrap-books',
+ repo:{owner:'andylitvinov-design',repo:'books'},payload:{workflow_run:{
+  name:'HH PR core release gate',path:'.github/workflows/hh-pr-core-release.yml',
+  event:'pull_request',status:'completed',conclusion:'success',
+  repository:{full_name:REPO},head_repository:{full_name:REPO},
+  id:1234,run_attempt:2,head_branch:'fix/example',head_sha:'a'.repeat(40)}}};
+const variant=delta=>({...event,payload:{workflow_run:{...event.payload.workflow_run,...delta}}});
+const core={info(){},warning(){},summary:{addHeading(){return this},addCodeBlock(){return this},async write(){}}};
+const empty={ci:{nodes:[]},repair:{nodes:[]},conflict:{nodes:[]}};
+function fixture(backlog=empty,dispatchResult={}){
+ const calls={queries:0,dispatch:0,watchdog:0};
+ const github={graphql:async()=>{calls.queries++;return backlog},
+  rest:{actions:{createWorkflowDispatch:async()=>{calls.watchdog++;throw Error('WATCHDOG_HOP_FORBIDDEN')}}}};
+ const dispatchRun=async args=>{
+  calls.dispatch++;assert.equal(args.github,github);assert.equal(args.context,event);
+  assert.equal(args.dryRun,false);
+  assert.deepEqual(Object.keys(args).sort(),['context','core','dryRun','github']);
+  return {schema:'HH_CONTROL_DISPATCH_V1',dispatchAccepted:1,dispatchReceiptsConfirmed:1,
+   reason:'DISPATCH_ACCEPTED',blocked:{},...dispatchResult};
+ };
+ return {calls,github,dispatchRun};
+}
+test('only trusted protected-branch completed same-repository Core success signals a refill',()=>{
+ assert.equal(trustedEvent(event),true);
+ for(const bad of [variant({conclusion:'failure'}),variant({status:'in_progress'}),
+  variant({path:'untrusted.yml'}),variant({head_repository:{full_name:'external/repo'}}),
+  variant({head_repository:null}),variant({id:0}),variant({run_attempt:0}),
+  variant({head_sha:'bad'}),{...event,ref:'refs/heads/untrusted'},
+  {...event,eventName:'pull_request_target'}])assert.equal(trustedEvent(bad),false);
 });
-test('normal capacity and safe emergency rescue under global CI overload',()=>{
-  assert.equal(admission(0,0,[],NOW),'DISPATCH');
-  assert.equal(admission(11,5,[],NOW),'DISPATCH');
-  assert.equal(admission(12,0,[],NOW),'DISPATCH_STALE_CI');
-  assert.equal(admission(0,6,[],NOW),'DISPATCH_STALE_CI');
-  assert.equal(admission(19,133,[{event:'schedule',status:'completed',created_at:new Date(NOW-14*60_000).toISOString()}],NOW),'CI_BUSY');
-  assert.equal(admission(19,133,[{event:'schedule',status:'completed',created_at:new Date(NOW-15*60_000).toISOString()}],NOW),'DISPATCH_STALE_CI');
-  assert.equal(admission(19,133,[{event:'schedule',status:'completed',created_at:new Date(NOW-16*60_000).toISOString()}],NOW),'DISPATCH_STALE_CI');
-  assert.equal(admission(19,133,[{event:'schedule',status:'completed',created_at:new Date(NOW-60*60_000).toISOString(),updated_at:new Date(NOW-8*60_000).toISOString()}],NOW),'WATCHDOG_RECENT');
-  assert.equal(admission(0,null,[],NOW),'CAPACITY_UNKNOWN');
-  assert.equal(admission(19,133,null,NOW),'WATCHDOG_HISTORY_UNVERIFIED');
-  assert.equal(admission(19,133,[{event:'workflow_dispatch',status:'queued',created_at:new Date(NOW-90*60_000).toISOString()}],NOW),'WATCHDOG_ALREADY_ACTIVE');
+test('successful Core with a durable backlog dispatches immediately in the same job',async()=>{
+ const f=fixture({...empty,repair:{nodes:[{number:42}]}});
+ const outcome=await run({...f,core,context:event});
+ assert.equal(outcome.decision,'DIRECT_DISPATCH_ACCEPTED');
+ assert.equal(outcome.dispatched,1);assert.equal(outcome.receiptsConfirmed,1);
+ assert.equal(outcome.core_run_id,1234);assert.equal(outcome.core_run_attempt,2);
+ assert.deepEqual(f.calls,{queries:1,dispatch:1,watchdog:0});
 });
-test('non-reconcile Watchdog dispatches cannot block a genuine event-driven refill',()=>{
- const modes=['HH watchdog / dry run','HH watchdog / completion wake',
-  'HH watchdog / direct handoff'];
- for(const title of modes){
-  assert.equal(admission(0,0,[{
-   event:'workflow_dispatch',display_title:title,status:'in_progress',
-   created_at:new Date(NOW-30_000).toISOString()
-  }],NOW),'DISPATCH',title+' cannot occupy reconcile cooldown');
-  assert.equal(admission(0,0,[{
-   event:'workflow_dispatch',display_title:title,status:'completed',
-   created_at:new Date(NOW-60_000).toISOString()
-  }],NOW),'DISPATCH',title+' cannot mark reconcile recent');
+test('idle queue or invalid backlog creates no work',async()=>{
+ const f=fixture();assert.equal(await hasDurableBacklog(f.github,'andylitvinov-design','books'),false);
+ assert.equal((await run({...f,core,context:event})).decision,'NO_ACTIONABLE_BACKLOG');
+ assert.equal(f.calls.dispatch,0);assert.equal(f.calls.watchdog,0);
+ const invalid=fixture({ci:{nodes:[]}});
+ assert.equal((await run({...invalid,core,context:event})).decision,'BACKLOG_UNVERIFIED_WATCHDOG_FALLBACK');
+ assert.deepEqual(invalid.calls,{queries:1,dispatch:0,watchdog:0});
+});
+test('actual dispatcher capacity or hold is preserved without a duplicate CI or Watchdog wake',async()=>{
+ const f=fixture({...empty,ci:{nodes:[{number:42}]}},{dispatchAccepted:0,
+  dispatchReceiptsConfirmed:0,reason:'NO_SAFE_DISPATCH',blocked:{WORKER_BUSY:1}});
+ const outcome=await run({...f,core,context:event});
+ assert.equal(outcome.decision,'NO_SAFE_DISPATCH_WATCHDOG_FALLBACK');
+ assert.equal(outcome.dispatched,0);assert.deepEqual(outcome.blocked,{WORKER_BUSY:1});
+ assert.deepEqual(f.calls,{queries:1,dispatch:1,watchdog:0});
+});
+test('ambiguous dispatcher delivery is never automatically retried',async()=>{
+ const f=fixture({...empty,repair:{nodes:[{number:42}]}});
+ let n=0;const outcome=await run({...f,core,context:event,dispatchRun:async()=>{n++;throw Error('ambiguous')}});
+ assert.equal(outcome.decision,'DIRECT_HANDOFF_UNVERIFIED_WATCHDOG_FALLBACK');
+ assert.equal(n,1);assert.equal(f.calls.watchdog,0);
+});
+test('foreign event does not query or dispatch',async()=>{
+ const f=fixture({...empty,ci:{nodes:[{number:42}]}});
+ assert.equal((await run({...f,core,context:variant({repository:{full_name:'external/repo'}})})).decision,'UNTRUSTED_OR_UNRELATED_EVENT');
+ assert.deepEqual(f.calls,{queries:0,dispatch:0,watchdog:0});
+});
+test('canonical dispatcher admits strict green event only as a live queue refill',async()=>{
+ const {trustedContext,run:dispatch}=require('../scripts/ci-pr-queue-dispatcher.cjs');
+ assert.equal(trustedContext(event),true);
+ assert.equal(trustedContext(variant({path:'untrusted.yml'})),false);
+ for(const options of [{focusPrNumber:42},{manualTarget:{prNumber:42,expectedSha:'a'.repeat(40)}},
+  {inventorySnapshot:[]},{ownerProof:{}},{watchdogEvidence:{}}]){
+  const outcome=await dispatch({github:{},core,context:event,...options});
+  assert.equal(outcome.reason,'CORE_SUCCESS_REFILL_MUST_USE_LIVE_QUEUE');
+  assert.equal(outcome.dispatchAccepted,0);
  }
- assert.equal(admission(0,0,[{
-  event:'workflow_dispatch',display_title:'HH watchdog / reconcile',
-  status:'completed',created_at:new Date(NOW-30_000).toISOString()
- }],NOW),'WATCHDOG_RECENT');
- assert.equal(admission(0,0,[{
-  event:'workflow_dispatch',display_title:'HH PR 10-minute watchdog',
-  status:'queued',created_at:new Date(NOW-30_000).toISOString()
- }],NOW),'WATCHDOG_ALREADY_ACTIVE',
- 'legacy unlabelled dispatch remains conservative during rollout');
- assert.equal(admission(0,0,[{
-  event:'schedule',display_title:'HH PR 10-minute watchdog',
-  status:'queued',created_at:new Date(NOW-30_000).toISOString()
- }],NOW),'WATCHDOG_ALREADY_ACTIVE');
 });
-
-test('queued, running or just-completed watchdog prevents duplicate dispatch',()=>{
-  assert.equal(admission(0,0,[{status:'queued',created_at:new Date(NOW-50000).toISOString()}],NOW),'WATCHDOG_ALREADY_ACTIVE');
-  assert.equal(admission(0,0,[{status:'completed',created_at:new Date(NOW-100000).toISOString()}],NOW),'WATCHDOG_RECENT');
-  assert.equal(admission(0,0,[{status:'completed',created_at:new Date(NOW-11*60_000).toISOString()}],NOW),'DISPATCH');
-  assert.equal(admission(0,0,[{event:'workflow_run',status:'in_progress',created_at:new Date(NOW).toISOString()}],NOW),'DISPATCH');
-  assert.equal(admission(0,0,[{event:'schedule',status:'in_progress',created_at:new Date(NOW).toISOString()}],NOW),'WATCHDOG_ALREADY_ACTIVE');
-  assert.equal(admission(0,0,[{event:'workflow_dispatch',status:'completed',created_at:new Date(NOW-4*60_000).toISOString()}],NOW),'WATCHDOG_RECENT');
-  assert.equal(admission(0,0,[{status:'completed'}],NOW),'WATCHDOG_HISTORY_UNVERIFIED');
-});
-test('trusted empty slot dispatches exactly once with real dry_run=false',async()=>{
-  let calls=0;
-  const github={graphql:async()=>({ci:{nodes:[{number:42}]},repair:{nodes:[]},conflict:{nodes:[]}}),rest:{actions:{
-    listWorkflowRunsForRepo:async({status})=>({data:{total_count:status==='queued'?0:1}}),
-    createWorkflowDispatch:async p=>{calls++;assert.equal(p.inputs.dry_run,'false');}
-  }},request:async()=>({data:{workflow_runs:[]}})};
-  const core={info:()=>{},summary:{addHeading(){return this},addCodeBlock(){return this},async write(){}}};
-  const r=await run({github,core,context:event,now:NOW});
-  assert.equal(r.decision,'DISPATCH');assert.equal(r.dispatched,1);assert.equal(calls,1);
-});
-test('busy CI does not dispatch even on trusted Core completion',async()=>{
-  let calls=0;
-  const github={rest:{actions:{
-    listWorkflowRunsForRepo:async({status})=>({data:{total_count:status==='queued'?31:15}}),
-    createWorkflowDispatch:async()=>{calls++;}
-  }},request:async()=>({data:{workflow_runs:[{
-    event:'workflow_dispatch',status:'completed',
-    created_at:new Date(NOW-14*60_000).toISOString()
-  }]}})};
-  const core={info:()=>{},summary:{addHeading(){return this},addCodeBlock(){return this},async write(){}}};
-  const r=await run({github,core,context:event,now:NOW});
-  assert.equal(r.decision,'CI_BUSY');assert.equal(calls,0);
-});
-
-// A Core success wrapper is not a real watchdog reconciliation run.
-test('slot wakeup inspects only real schedule and workflow_dispatch runs',async()=>{
-  const events=[];let calls=0;
-  const github={graphql:async()=>({ci:{nodes:[{number:42}]},repair:{nodes:[]},conflict:{nodes:[]}}),rest:{actions:{
-    listWorkflowRunsForRepo:async()=>({data:{total_count:0}}),
-    createWorkflowDispatch:async arg=>{calls++;assert.equal(arg.inputs.dry_run,'false')}
-  }},request:async(_route,args)=>{events.push(args.event);return {data:{workflow_runs:[]}}}};
-  const core={info:()=>{},summary:{addHeading(){return this},addCodeBlock(){return this},async write(){}}};
-  const result=await run({github,core,context:event,now:NOW});
-  assert.deepEqual(events,['schedule','workflow_dispatch']);
-  assert.equal(result.decision,'DISPATCH');assert.equal(calls,1);
-});
-
-// The high-load incident had 19 running and 133 queued Actions, while native
-// schedule events were several hours old. One bounded event-driven rescue must
-// still be permitted, without editing a PR or bypassing exact-HEAD admission.
-test('stale Watchdog executes one real rescue dispatch despite a saturated CI queue',async()=>{
-  let calls=0;
-  const github={graphql:async()=>({ci:{nodes:[{number:42}]},repair:{nodes:[]},conflict:{nodes:[]}}),rest:{actions:{
-    listWorkflowRunsForRepo:async({status})=>({data:{total_count:status==='queued'?133:19}}),
-    createWorkflowDispatch:async p=>{
-      calls++;
-      assert.equal(p.workflow_id,'hh-pr-ten-minute-watchdog.yml');
-      assert.equal(p.ref,'codex/bootstrap-books');
-      assert.equal(p.inputs.dry_run,'false');
-    }
-  }},request:async(_route,args)=>({data:{workflow_runs:[{
-    event:args.event,status:'completed',
-    created_at:new Date(NOW-95*60_000).toISOString()
-  }]}})};
-  const core={info:()=>{},summary:{addHeading(){return this},addCodeBlock(){return this},async write(){}}};
-  const result=await run({github,core,context:event,now:NOW});
-  assert.equal(result.decision,'DISPATCH_STALE_CI');
-  assert.equal(result.dispatched,1);
-  assert.equal(calls,1);
-});
-
-test('green Core without an actionable queue does not allocate a second Watchdog',async()=>{
- const {hasDurableBacklog}=require('../scripts/ci-pr-slot-wakeup.cjs');
- const none={ci:{nodes:[]},repair:{nodes:[]},conflict:{nodes:[]}};
- let searches=0,dispatches=0;
- const github={graphql:async q=>{
-  searches++;assert.match(q,/hh:ci-needed/);assert.match(q,/hh:repair-needed/);
-  return none;
- },rest:{actions:{
-  listWorkflowRunsForRepo:async()=>({data:{total_count:0}}),
-  createWorkflowDispatch:async()=>{dispatches++;}
- }},request:async()=>({data:{workflow_runs:[]}})};
- assert.equal(await hasDurableBacklog(github,'andylitvinov-design','books'),false);
- const core={info:()=>{},warning:()=>{},summary:{addHeading(){return this},addCodeBlock(){return this},async write(){}}};
- const result=await run({github,core,context:event,now:NOW});
- assert.equal(result.decision,'NO_ACTIONABLE_BACKLOG');
- assert.equal(result.backlog,false);
- assert.equal(dispatches,0);assert.equal(searches,2);
-});
-test('incomplete queue evidence does not create a speculative success-triggered Watchdog',async()=>{
- let dispatches=0;
- const github={graphql:async()=>({ci:{nodes:[]}}),
-  rest:{actions:{
-   listWorkflowRunsForRepo:async()=>({data:{total_count:0}}),
-   createWorkflowDispatch:async()=>{dispatches++;}
-  }},request:async()=>({data:{workflow_runs:[]}})};
- const core={info:()=>{},warning:()=>{},summary:{addHeading(){return this},addCodeBlock(){return this},async write(){}}};
- const result=await run({github,core,context:event,now:NOW});
- assert.equal(result.decision,'BACKLOG_UNVERIFIED');
- assert.equal(dispatches,0);
-});
-
-// A saturated queue and missed schedule are not themselves proof of work.
-test('stale cron under saturation never dispatches without proven backlog',async()=>{
-  let dispatched=0,checked=0;
-  const github={graphql:async()=>{checked++;return {ci:{nodes:[]},repair:{nodes:[]},conflict:{nodes:[]}}},
-    rest:{actions:{listWorkflowRunsForRepo:async({status})=>({data:{total_count:status==='queued'?133:19}}),
-      createWorkflowDispatch:async()=>{dispatched++}}},
-    request:async()=>({data:{workflow_runs:[{event:'schedule',status:'completed',
-      created_at:new Date(NOW-16*60_000).toISOString()}]}})};
-  const core={info:()=>{},warning:()=>{},summary:{addHeading(){return this},addCodeBlock(){return this},async write(){}}};
-  const result=await run({github,core,context:event,now:NOW});
-  assert.equal(result.decision,'NO_ACTIONABLE_BACKLOG');
-  assert.equal(result.backlog,false);assert.equal(checked,1);assert.equal(dispatched,0);
+test('same existing Core listener, shared writer and scheduled recovery',()=>{
+ const fs=require('node:fs');
+ const native=fs.readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
+ const slot=native.split('\n  core-slot-wakeup:\n')[1].split('\n  recover-interrupted-core:\n')[0];
+ const watchdog=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+ assert.match(slot,/group: hh-control-tower-single-writer/);
+ assert.match(slot,/Refill durable PR queue directly on successful Core completion/);
+ assert.match(slot,/scripts\/ci-pr-slot-wakeup\.cjs/);
+ assert.doesNotMatch(slot,/createWorkflowDispatch|HH_AUTOMERGE_TOKEN|contents: write/);
+ assert.match(watchdog,/schedule:/);
+ assert.doesNotMatch(watchdog,/- 'HH PR core release gate'/);
 });

@@ -111,7 +111,11 @@ test('delivery/execution reconciliation never equates classification with worker
  a.equal(taskLifecycle([bot(taskBody(x)),receipt('RESERVED')],x).state,'RESERVED_DELIVERY_UNVERIFIED');
  a.equal(taskLifecycle([bot(taskBody(x)),receipt('CLAIMED')],x).state,'EXECUTOR_CLAIMED_NOT_COMPLETED');
  a.equal(taskLifecycle([bot(taskBody(x)),receipt('FAILED')],x).state,'REPAIR_FAILED_REDIAGNOSE');
- a.equal(taskLifecycle([bot(taskBody(x)),receipt('PUBLISHED')],x).state,'SOURCE_PUBLISHED_VERIFY_PENDING');
+ a.equal(taskLifecycle([bot(taskBody(x)),receipt('PUBLISHED')],x).state,'TERMINAL_WITHOUT_SOURCE_PROOF');
+ a.equal(taskLifecycle([bot(taskBody(x)),receipt('PREPARED')],x).state,'PREPARED_NOT_PUBLISHED');
+ a.equal(taskLifecycle([bot(taskBody(x)),receipt('DONE')],x).state,'TERMINAL_WITHOUT_SOURCE_PROOF');
+ const published=bot(receipt('PUBLISHED').body.replace('"state":"PUBLISHED"','"state":"PUBLISHED","source_published":true,"new_sha":"'+ 'd'.repeat(40)+'"'));
+ a.equal(taskLifecycle([bot(taskBody(x)),published],x).state,'SOURCE_PUBLISHED_VERIFY_PENDING');
  a.equal(taskLifecycle([bot(taskBody(x)),{body:receipt('CLAIMED').body}],x).state,'CLASSIFIED_NOT_DELIVERED');
 });
 test('concrete executor selection remains diagnostic until signed dispatch and worker claim',()=>{
@@ -317,4 +321,22 @@ test('current production Mandala Core contract has a real guarded source path',(
  const external=classifyRedCiError({pr,jobs:[{name:'hh-merge-check',conclusion:'failure',
   steps:[{name:step,conclusion:'failure'}]}]});
  a.equal(repairableCoreTestFailure(external),false);
+});
+
+
+test('verified failed Specialist is routed with exact workflow path, never grants source authority',()=>{
+ const files=['.github/workflows/hh-public-services-production.yml'];
+ const classification=classifyRedCiError({pr,jobs:[{name:'hh-merge-check',conclusion:'failure',steps:[{name:'Validate exact-head risk and required specialist workflows',conclusion:'failure'}]}],coreRoot:'RELEASE_GATE_ONLY',verifiedSpecialistWorkflows:files});
+ const x=makeCoreTask({pr,run,classification,root:'RELEASE_GATE_ONLY',now});
+ a.deepEqual(x.failed_specialist_workflows,files);
+ a.equal(x.strategy_code,'SPECIALIST_TRIAGE');
+ a.equal(x.next_action,'VERIFY_INDEPENDENT_SPECIALIST_CHECK');
+ a.equal(x.source_write_authorized,false);a.equal(x.execution_authorized,false);
+ a.equal(x.executor_kind,'owner_review');
+ a.ok(taskBody(x).includes(files[0]));
+ a.equal(taskStatus([bot(taskBody(x))],x),'ALREADY_RECORDED');
+ const invalid=makeCoreTask({pr,run,classification:{...classification,failed_specialist_workflows:['../secret']},root:'RELEASE_GATE_ONLY',now});
+ a.equal(invalid.failed_specialist_workflows,undefined);
+ a.equal(invalid.strategy_code,'RELEASE_POLICY_TRIAGE');
+ a.equal(invalid.execution_authorized,false);
 });

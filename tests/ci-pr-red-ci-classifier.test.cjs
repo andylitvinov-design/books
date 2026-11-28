@@ -157,6 +157,7 @@ test('modern embedded hh-merge-check diagnoses verified Specialist, not arbitrar
   verifiedSpecialistWorkflows:['.github/workflows/hh-public-services-production.yml']});
  assert.equal(signed.category,'TEST_FAILURE');
  assert.equal(signed.reason_code,'VERIFIED_REQUIRED_SPECIALIST_FAILURE');
+ assert.deepEqual(signed.failed_specialist_workflows,['.github/workflows/hh-public-services-production.yml']);
  assert.equal(signed.execution_authorized,false);
  const missing=classifyRedCiError({pr:PR,jobs,coreRoot:'RELEASE_GATE_ONLY'});
  assert.equal(missing.category,'BASE_OR_CI_ROUTING');

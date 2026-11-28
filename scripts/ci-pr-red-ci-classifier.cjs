@@ -56,6 +56,7 @@ function makeResult(category, evidence, confidence, details = {}) {
     failed_job: first.job || null,
     failed_step: first.step || null,
     evidence_code: details.evidenceCode || null,
+    ...(details.failedSpecialistWorkflows?{failed_specialist_workflows:details.failedSpecialistWorkflows}:{}),
     recommended_action: policy.action,
     recommended_status: details.recommendedStatus || policy.recommended_status,
     responsible_role: policy.responsible_role,
@@ -144,7 +145,8 @@ function classifyRedCiError({
        typeof path==='string' && /^\.github\/workflows\/[a-z0-9._-]+\.ya?ml$/.test(path))){
     return makeResult('TEST_FAILURE',evidence,0.98,{
       reasonCode:'VERIFIED_REQUIRED_SPECIALIST_FAILURE',
-      evidenceCode:'EXACT_GITHUB_SPECIALIST_TERMINAL_LOG'
+      evidenceCode:'EXACT_GITHUB_SPECIALIST_TERMINAL_LOG',
+      failedSpecialistWorkflows:[...new Set(verifiedSpecialistWorkflows)].sort()
     });
   }
   if(specialistProofFailure){

@@ -1,24 +1,24 @@
 'use strict';
-// Trusted, read-only admission + single workflow_dispatch; never executes PR code.
-// Fall back to at most one real reconcile every ten minutes when cron is delayed.
-const MAX_ACTIVE=12,MAX_QUEUED=6,COOLDOWN_MS=10*60_000;
-// Global CI saturation must not suppress the only working watchdog backstop.
-const STALE_RESCUE_MS=15*60_000;
+// Successful Core is a queue-capacity signal, NOT permission to edit any PR.
+// Reuse the existing serialized dispatcher in the native Core event runner.
+// Watchdog remains periodic recovery; no extra Watchdog or Core dispatch here.
 const CORE='HH PR core release gate';
 const PATH='.github/workflows/hh-pr-core-release.yml';
 const REPO='andylitvinov-design/books';
 function trustedEvent(context) {
   const e=context?.payload?.workflow_run;
   return context?.eventName==='workflow_run' &&
+    context?.ref==='refs/heads/codex/bootstrap-books' &&
     context?.repo?.owner+'/'+context?.repo?.repo===REPO &&
     e?.name===CORE && String(e.path||'').split('@')[0]===PATH &&
     e.event==='pull_request' && e.status==='completed' &&
     e.conclusion==='success' && e.repository?.full_name===REPO &&
-    (!e.head_repository?.full_name || e.head_repository.full_name===REPO);
+    e.head_repository?.full_name===REPO &&
+    Number.isSafeInteger(e.id)&&e.id>0 &&
+    Number.isSafeInteger(e.run_attempt)&&e.run_attempt>0 &&
+    typeof e.head_branch==='string'&&e.head_branch.length>0 &&
+    /^[a-f0-9]{40}$/i.test(e.head_sha||'');
 }
-// Core success already wakes native AutoMerge. A second Watchdog run is useful
-// only when it can drain an existing trusted CI/Repair queue. This is one
-// read-only GraphQL request, never another PR/source mutation.
 async function hasDurableBacklog(github,owner,repo){
   if(typeof github?.graphql!=='function')throw Error('BACKLOG_QUERY_UNAVAILABLE');
   const names=[['ci','hh:ci-needed'],['repair','hh:repair-needed'],
@@ -40,88 +40,52 @@ async function hasDurableBacklog(github,owner,repo){
   return false;
 }
 
-function admission(active,queued,runs,now=Date.now()) {
-  if(!Number.isSafeInteger(active)||!Number.isSafeInteger(queued)||
-     active<0||queued<0)return 'CAPACITY_UNKNOWN';
-  if(!Array.isArray(runs)||runs.length>10)return 'WATCHDOG_HISTORY_UNVERIFIED';
-  let latestReconcileAt=null;
-  for(const r of runs){
-    // Successful Core callbacks create many no-op workflow_run wrappers.
-    // Only a real scheduled/manual Watchdog reconcile occupies this slot.
-    if(r?.event && !['schedule','workflow_dispatch'].includes(r.event))continue;
-    // A trusted run-name on the DEFAULT BRANCH distinguishes non-reconcile
-    // workflow_dispatch calls. They may finish workers or perform dry-run
-    // diagnostics, but must not create a false ten-minute reconcile cooldown.
-    // Older unlabelled dispatches remain conservatively treated as reconcile.
-    if(r?.event==='workflow_dispatch' && [
-      'HH watchdog / dry run',
-      'HH watchdog / completion wake',
-      'HH watchdog / direct handoff',
-    ].includes(r.display_title))continue;
-    if(['queued','in_progress','pending','requested','waiting'].includes(r.status))return 'WATCHDOG_ALREADY_ACTIVE';
-    // A completed reconciliation cools down after its real exit, not its queued start.
-    const t=Date.parse((r.status==='completed' && (r.updated_at||r.created_at)) || r.created_at||'');
-    if(!Number.isFinite(t)||t>now+60_000)return 'WATCHDOG_HISTORY_UNVERIFIED';
-    latestReconcileAt=latestReconcileAt===null?t:Math.max(latestReconcileAt,t);
-    if(now-t>=-60_000&&now-t<COOLDOWN_MS)return 'WATCHDOG_RECENT';
-  }
-  if(active>=MAX_ACTIVE||queued>=MAX_QUEUED){
-    // Do not wake into ordinary CI congestion. If every real scheduled/manual
-    // reconciliation finished at least 15 minutes ago (or none ever arrived),
-    // allow one guarded rescue dispatch. Queued/running Watchdog and the cooldown above
-    // still block duplicates. Actual Worker/exact-HEAD admission is unchanged.
-    return latestReconcileAt===null||now-latestReconcileAt>=STALE_RESCUE_MS
-      ?'DISPATCH_STALE_CI':'CI_BUSY';
-  }
-  return 'DISPATCH';
-}
-async function run({github,core,context,now=Date.now()}){
-  const report={decision:'UNVERIFIED',active:null,queued:null,backlog:null,dispatched:0};
+
+async function run({github,core,context,dispatchRun=null}){
+  const e=context?.payload?.workflow_run;
+  const report={schema:'HH_CORE_DIRECT_QUEUE_REFILL_V1',decision:'UNVERIFIED',
+    core_run_id:null,core_run_attempt:null,event_head_sha:null,
+    backlog:null,dispatched:0,receiptsConfirmed:0,reason:null,blocked:{}};
   const write=async()=>{
     core.info('HH_SLOT_WAKEUP '+JSON.stringify(report));
-    await core.summary.addHeading('HH Core CI freed-slot wakeup')
+    await core.summary.addHeading('HH Core CI direct queue refill')
       .addCodeBlock(JSON.stringify(report,null,2)).write();
     return report;
   };
   if(!trustedEvent(context)){report.decision='UNTRUSTED_OR_UNRELATED_EVENT';return write();}
-  const {owner,repo}=context.repo;
-  const [active,queued,scheduled,dispatched]=await Promise.all([
-    github.rest.actions.listWorkflowRunsForRepo({owner,repo,status:'in_progress',per_page:1}),
-    github.rest.actions.listWorkflowRunsForRepo({owner,repo,status:'queued',per_page:1}),
-    github.request('GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',{
-      owner,repo,workflow_id:'hh-pr-ten-minute-watchdog.yml',event:'schedule',per_page:5
-    }),
-    github.request('GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',{
-      owner,repo,workflow_id:'hh-pr-ten-minute-watchdog.yml',event:'workflow_dispatch',per_page:5
-    })
-  ]);
-  report.active=active?.data?.total_count??null;
-  report.queued=queued?.data?.total_count??null;
-  // Fail closed when either real-reconcile inventory is missing.
-  const sched=scheduled?.data?.workflow_runs, manual=dispatched?.data?.workflow_runs;
-  const realHistory=Array.isArray(sched)&&Array.isArray(manual)?[...sched,...manual]:null;
-  report.decision=admission(report.active,report.queued,realHistory,now);
-  // For ordinary successful Core events, no queue means no reason to scan
-  // the entire repository a second time. Emergency stale-cron rescue remains.
-  // A stale schedule by itself is not evidence of actionable PR work.
-  // Reuse the same read-only backlog proof even in saturated Actions queues.
-  if(report.decision==='DISPATCH'||report.decision==='DISPATCH_STALE_CI'){
-    try{
-      report.backlog=await hasDurableBacklog(github,owner,repo);
-      if(!report.backlog)report.decision='NO_ACTIONABLE_BACKLOG';
-    }catch(error){
-      report.decision='BACKLOG_UNVERIFIED';
-      core.warning('HH_SLOT_WAKEUP '+String(error?.message||error).slice(0,140));
-    }
+  report.core_run_id=e.id;
+  report.core_run_attempt=e.run_attempt;
+  report.event_head_sha=e.head_sha;
+  try{
+    report.backlog=await hasDurableBacklog(github,context.repo.owner,context.repo.repo);
+  }catch(error){
+    report.decision='BACKLOG_UNVERIFIED_WATCHDOG_FALLBACK';
+    core.warning('HH_SLOT_WAKEUP '+String(error?.message||error).slice(0,140));
+    return write();
   }
-  if(report.decision==='DISPATCH'||report.decision==='DISPATCH_STALE_CI'){
-    // Workflow dispatch is the GITHUB_TOKEN recursion exception.
-    await github.rest.actions.createWorkflowDispatch({
-      owner,repo,workflow_id:'hh-pr-ten-minute-watchdog.yml',
-      ref:'codex/bootstrap-books',inputs:{dry_run:'false'}
-    });
-    report.dispatched=1;
+  if(!report.backlog){report.decision='NO_ACTIONABLE_BACKLOG';return write();}
+  try{
+    // Capacity and reservation decisions are made by the canonical dispatcher
+    // from current GitHub evidence, not by the finished Core event.
+    // Never pass an owner target, a PR snapshot, or a fabricated event.
+    const dispatch=dispatchRun||require('./ci-pr-queue-dispatcher.cjs').run;
+    const result=await dispatch({github,core,context,dryRun:false});
+    if(result?.schema!=='HH_CONTROL_DISPATCH_V1'||
+       !Number.isSafeInteger(result.dispatchAccepted)||result.dispatchAccepted<0)
+      throw Error('DIRECT_DISPATCH_RESULT_UNVERIFIED');
+    report.dispatched=result.dispatchAccepted;
+    report.receiptsConfirmed=Number.isSafeInteger(result.dispatchReceiptsConfirmed)?
+      result.dispatchReceiptsConfirmed:0;
+    report.reason=typeof result.reason==='string'?result.reason:null;
+    report.blocked=result.blocked||{};
+    report.decision=report.dispatched?'DIRECT_DISPATCH_ACCEPTED':
+      'NO_SAFE_DISPATCH_WATCHDOG_FALLBACK';
+  }catch(error){
+    // Ambiguous delivery is never retried here. Durable reservations and
+    // periodic reconciliation decide whether any subsequent retry is safe.
+    report.decision='DIRECT_HANDOFF_UNVERIFIED_WATCHDOG_FALLBACK';
+    core.warning('HH_SLOT_WAKEUP '+String(error?.message||error).slice(0,140));
   }
   return write();
 }
-module.exports={admission,trustedEvent,hasDurableBacklog,run};
+module.exports={trustedEvent,hasDurableBacklog,run};
