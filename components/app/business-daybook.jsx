@@ -12,6 +12,7 @@ import {ProgramStartLink} from './clarity-program'
 import {programOnboardingPath} from '@/lib/app/program-daybook-entry.mjs'
 import css from './business-daybook.module.css'
 import DaybookWeekReports from './daybook-week-reports'
+import CoachingCourseDashboard from './coaching-course-dashboard'
 const COPY={
  ru:{title:'Дневник роста бизнеса',intro:'8 сессий: стратегическое проектирование и практическая трансформация.',back:'В профиль',week:'Сессия',tasks:'3 практики сессии',completed:'Выполнено',open:'Открыть',save:'Сохранить и завершить',retry:'Повторить сохранение',saving:'Сохраняем…',saved:'Сохранено и проверено',loading:'Загружаем личный дневник…',failed:'Не удалось подтвердить сохранение. Повторите попытку; черновик остаётся здесь.',loadError:'Не удалось загрузить записи. Повторите попытку.',login:'Войти в личный кабинет',load:'Повторить',answer:'Мой ответ и результат',progress:'Прогресс самостоятельной работы',next:'Продолжить',done:'Все 24 практики завершены',private:'Записи приватны; они не передаются автоматически. Самостоятельные задания не означают оплаченную или проведённую консультацию.',offer:'Обсудить с бизнес-консультантом',offerHint:'Формат, стоимость и время согласуются отдельно.',discard:'Есть несохранённые ответы. Выйти и удалить черновики?'},
  en:{title:'Business Growth Daybook',intro:'8 sessions: strategic design and practical transformation.',back:'Back to profile',week:'Session',tasks:'3 session practices',completed:'Completed',open:'Open',save:'Save and complete',retry:'Retry save',saving:'Saving…',saved:'Saved and verified',loading:'Loading your private daybook…',failed:'Save not confirmed. Retry; your draft remains here.',loadError:'Could not load your entries. Try again.',login:'Sign in to your cabinet',load:'Retry',answer:'My answer and result',progress:'Self-guided progress',next:'Continue',done:'All 24 practices completed',private:'Entries stay private and are not shared automatically. Self-guided tasks do not mean a paid or delivered consultation.',offer:'Discuss with a business consultant',offerHint:'Format, price and time are agreed separately.',discard:'Unsaved answers remain. Leave and discard drafts?'},
@@ -83,11 +84,10 @@ export default function BusinessDaybook({locale='en',initialWeek=null}){
   }finally{if(token===generation.current){flight.current=false;setBusy(false)}}
  }
  return <main className={css.page} data-cabinet-theme="daybook" data-business-daybook>
-  <header className={css.brand}><Link href={root+'/app/portrait'}><ArrowLeft size={20} aria-hidden="true"/>{t.back}</Link><span>Holistic House</span></header>
-  <section className={css.hero}><span><BriefcaseBusiness size={18} aria-hidden="true"/> BUSINESS · DAYBOOK</span><h1>{t.title}</h1><p>{t.intro}</p></section>
+  {phase!=='ready'&&<><header className={css.brand}><Link href={root+'/app/portrait'}><ArrowLeft size={20} aria-hidden="true"/>{t.back}</Link><span>Holistic House</span></header>
+  <section className={css.hero}><span><BriefcaseBusiness size={18} aria-hidden="true"/> BUSINESS · DAYBOOK</span><h1>{t.title}</h1><p>{t.intro}</p></section></>}
   {phase!=='ready'?<section className={css.canvas} aria-live="polite"><p>{phase==='signed-out'?t.login:phase==='error'||phase==='locked-error'?t.loadError:t.loading}</p>{phase==='signed-out'?<ProgramStartLink locale={lang} program="business" className={css.action}>{t.login}</ProgramStartLink>:phase==='error'||phase==='locked-error'?<button className={css.action} type="button" onClick={()=>void(phase==='locked-error'?guardRef.current?.verify():load())}>{t.load}</button>:null}</section>:<>
-   <section className={css.summary}><div><strong>{t.progress}</strong><p>{progress.completed} / {progress.total}</p><progress max={progress.total} value={progress.completed} aria-label={t.progress}/></div><div className={css.ring} aria-label={t.progress+': '+progress.percent+'%'} role="img"><svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="26" fill="none" stroke="#e8d1a8" strokeWidth="7"/>{progress.percent>0&&<circle cx="32" cy="32" r="26" fill="none" stroke="#087652" strokeWidth="7" pathLength="100" strokeDasharray={progress.percent+' 100'} transform="rotate(-90 32 32)"/>}</svg><b>{progress.percent}%</b></div></section>
-   <nav className={css.weeks} aria-label={t.week}>{syllabus.map((item,i)=><button key={item[0]} type="button" aria-pressed={week===i+1} disabled={locked} onClick={()=>selectWeek(i+1)}><span>{t.week} {i+1}</span><span className={css.weekTitle}>{item[0]}</span><small>{progress.weeks[i]===3?<CheckCircle2 size={17} aria-label={t.completed}/>:progress.weeks[i]+' / 3'}</small></button>)}</nav>
+   <CoachingCourseDashboard locale={lang} accountId={account} program="business" title={t.title} sessions={syllabus.map(([title,description])=>[title,description])} selected={week} onSelect={selectWeek} practiceCounts={progress.weeks.map(done=>({done,total:3}))} locked={locked} selfGuided backHref={root+'/my-page'}>
    <section className={css.canvas}><h2>{syllabus[week-1][0]}</h2><p>{syllabus[week-1][1]}</p>
     <Link className={css.premium} href={root+'/services/business-consulting#request-session'}><BriefcaseBusiness size={22} aria-hidden="true"/><span><strong>{t.offer}</strong><small>{t.offerHint}</small></span><ArrowRight size={18} aria-hidden="true"/></Link>
     <h3>{t.tasks} <span>{progress.weeks[week-1]} / 3</span></h3>
@@ -107,6 +107,7 @@ export default function BusinessDaybook({locale='en',initialWeek=null}){
    {archive.length>0&&<details className={css.archive} data-business-legacy-archive><summary>{ARCHIVE_COPY[lang]} · {archive.length}</summary>
      {archive.map(item=><article key={item.tag}><strong>{item.title} — {item.task}</strong><p>{item.text}</p></article>)}
    </details>}
+   </CoachingCourseDashboard>
   </>}
  </main>
 }
