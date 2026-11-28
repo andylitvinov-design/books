@@ -767,6 +767,32 @@ test('V3 readiness fast path is bound to authenticated exact run, merge parents,
  const fast=await assess({github,owner,repo,pr:p,classifierBase:target,decideRoute:()=>{throw Error('not needed');},
    readReadyReceipt:async()=>{reads++;return verifiedMergeReadyV3(args);}});
  assert.equal(fast.reason,'MERGE_READY_V3_VERIFIED');assert.equal(lists,0);assert.equal(reads,1);
+ // The gate may have accepted a newer target using unchanged protected
+ // policy code. Its old policy SHA is not itself stale evidence.
+ const oldPolicy={...x,policy_base:old};
+ const delta={status:'ahead',behind_by:0,ahead_by:1,total_commits:1,
+  base_commit:{sha:old},merge_base_commit:{sha:old},commits:[{sha:target}],
+  files:[{filename:'components/my-coach-live-dialogue.jsx',status:'modified'}]};
+ let policyDelta=delta;
+ const unchanged={...github,rest:{...github.rest,repos:{...github.rest.repos,
+  compareCommits:async()=>({data:policyDelta})}}};
+ value=oldPolicy;
+ assert.deepEqual(await verifiedMergeReadyV3({...args,github:unchanged}),
+  {...oldPolicy,verified_policy_equivalent:true});
+ assert.equal((await assess({github:unchanged,owner,repo,pr:p,classifierBase:target,decideRoute:()=>{throw Error('not needed');},
+   readReadyReceipt:async()=>verifiedMergeReadyV3({...args,github:unchanged})})).reason,'MERGE_READY_V3_VERIFIED');
+ assert.equal(lists,0);
+ for(const filename of ['scripts/ci-specialist-aggregate.mjs','lib/ci/production-base-impact.mjs',
+   '.github/workflows/hh-pr-core-release.yml','package-lock.json','tests/ci-specialist-wait.test.mjs']){
+  policyDelta={...delta,files:[...delta.files,{filename,status:'modified'}]};
+  assert.equal(await verifiedMergeReadyV3({...args,github:unchanged}),null,filename);
+ }
+ for(const bad of [{...delta,commits:[]},{...delta,status:'diverged'},
+   {...delta,files:[...delta.files,delta.files[0]]},
+   {...delta,files:[{filename:'components/a.jsx',status:'renamed',previous_filename:'components/b.jsx'}]}]){
+  policyDelta=bad;assert.equal(await verifiedMergeReadyV3({...args,github:unchanged}),null);
+ }
+ value=x;
  for(const bad of [{...x,head:old},{...x,accepted_base:old},{...x,policy_base:old},
    {...x,run_attempt:1},{...x,required:[workflow]},{...x,run_id:99}]){
   value=bad;assert.equal(await verifiedMergeReadyV3(args),null);
