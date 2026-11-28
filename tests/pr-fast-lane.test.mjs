@@ -990,8 +990,9 @@ test('Core lint executes once with a full safety fallback before mandatory Next 
   assert.ok(lintStep >= 0 && buildStep > lintStep, 'Hard-gated ESLint precedes production build');
   assert.match(scope, /npx --no-install eslint "\$\{files\[@\]\}"/);
   const fullLint=scope.split('if [[ "$full_lint" == true ]]; then')[1]?.split('elif (( ${#files[@]} > 0 )); then')[0] || '';
-  assert.match(fullLint, /^\s*(?:# [^\n]+\n\s*)*npm run lint\s*$/);
-  assert.doesNotMatch(fullLint, /--concurrency/);
+  assert.match(fullLint, /^\s*(?:#[^\n]*\n\s*)*npm run lint\s*$/);
+  assert.doesNotMatch(scope, /npm run lint -- --concurrency/);
+  assert.doesNotMatch(fullLint, /\|\|\s*true|continue-on-error/);
   assert.match(scope, /if \[\[ "\$EVENT_NAME" != pull_request \|\| -z "\$BASE_SHA" \]\]; then\s+npm run lint\s+exit 0/);
   for (const sensitive of ['eslint.config.*','.eslintrc*','package.json','package-lock.json','tsconfig.json']) {
     assert.ok(scope.includes(sensitive), 'Missing whole-repository lint fallback: '+sensitive);
