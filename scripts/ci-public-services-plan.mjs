@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
-import { matchesTrigger, parsePrTrigger } from '../lib/ci/specialist-aggregate.mjs';
+import { matchesTrigger, parsePrTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists } from '../lib/ci/specialist-aggregate.mjs';
 import { SHARED_COACH_DISPATCHER, verifiedCoachOnlySharedRouting } from '../lib/ci/coach-only-impact.mjs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -1106,8 +1106,65 @@ export function planPrivatePractitionerMediaRows(rows) {
     build:true,browser:true,metrics:false,cases:'verify-public-services-production.mjs'};
 }
 
-function main() {
-  const plan = planPublicServicesEvent();
+
+// Reuse the SAME protected aggregate's owner proof rather than a second,
+// weaker filename allowlist. It proves guarded Coach-only dispatcher edits,
+// additive server dependencies, unchanged public selectors and independently
+// required Coach/App/IA/Billing owners. All actual public, shared, unknown or
+// unverified changes retain the legacy full plan. No PR-number exception.
+export async function refinePublicServicesPlan(plan, env = process.env, {
+  git = execFileSync, loadPolicy = () => import('./ci-specialist-aggregate.mjs'),
+} = {}) {
+  if (plan?.mode !== 'full' || env.GITHUB_EVENT_NAME !== 'pull_request' ||
+      env.GITHUB_BASE_REF !== 'codex/public-book-library') return plan;
+  const base = env.HH_PUBLIC_VERIFIED_TESTED_BASE, head = env.HH_PUBLIC_HEAD_SHA;
+  const merge = env.HH_PUBLIC_VERIFIED_MERGE, eventBase = env.HH_PUBLIC_BASE_SHA;
+  if ([base, head, merge, eventBase].some(x => !/^[0-9a-f]{40}$/.test(x || '')) ||
+      env.HH_PUBLIC_VERIFIED_EVENT_BASE !== eventBase ||
+      env.HH_PUBLIC_VERIFIED_HEAD !== head || env.GITHUB_SHA !== merge) return plan;
+  const opts = { encoding: 'utf8', maxBuffer: 4 * 1024 * 1024,
+    stdio: ['ignore', 'pipe', 'pipe'] };
+  const read = args => String(git('git', args, opts));
+  try {
+    if (read(['rev-parse', 'HEAD']).trim() !== merge ||
+        read(['rev-parse', 'HEAD^1']).trim() !== base ||
+        read(['rev-parse', 'HEAD^2']).trim() !== head) return plan;
+    // Never run a candidate-modified aggregate or any of its CI library
+    // dependencies as the authority to remove its own browser checks.
+    read(['diff', '--quiet', base, merge, '--', 'scripts/ci-specialist-aggregate.mjs', 'lib/ci']);
+    const policy = await loadPolicy();
+    if (typeof policy.independentDispatcherAdvisories !== 'function' ||
+        typeof policy.loadTrustedTypescript !== 'function') return plan;
+    const files = policy.worktreeSources(base);
+    files.testedMergeSha = merge;
+    const rows = policy.checkoutChangedRows(base);
+    const changed = rows.map(row => row.filename);
+    if (!changed.includes(SHARED_COACH_DISPATCHER)) return plan;
+    const packageImpact = classifyPackageImpact({changed,
+      basePackage: files.basePackage, currentPackage: files.currentPackage});
+    const baselineExpected = expectedWorkflows({...files, changed, packageImpact});
+    const routed = resolveExpectedSpecialists({...files, changed, expected:baselineExpected});
+    // Replacement owners still have to be selected by the real aggregate.
+    const publicWorkflow = '.github/workflows/hh-public-services-production.yml';
+    if (routed.delegated.some(row => row.replacement === publicWorkflow)) return plan;
+    const parser = policy.loadTrustedTypescript(base);
+    if (!parser) return plan;
+    const advisory = policy.independentDispatcherAdvisories(files, rows, routed.expected,
+      (side, path) => read(['show', (side === 'base' ? base : merge) + ':' + path]), parser);
+    if (!advisory.has(publicWorkflow)) return plan;
+    // Retain ordinary consent/service source tests in this job. The aggregate
+    // independently requires the affected real private/billing/browser owners.
+    return { mode:'contracts', reason:'PROTECTED_COMPOSED_COACH_OWNERS',
+      build:false, browser:false, metrics:false, cases:'none' };
+  } catch {
+    // Old protected policy, missing parser, incomplete evidence and git errors
+    // never turn a required browser run into a false successful skip.
+    return plan;
+  }
+}
+
+async function main() {
+  const plan = await refinePublicServicesPlan(planPublicServicesEvent());
   const summary = 'Public Services impact: ' + plan.mode +
     ' (' + plan.reason + '); build=' + plan.build +
     ', browser=' + plan.browser + ', metrics=' + plan.metrics +
@@ -1125,8 +1182,8 @@ function main() {
   if (process.env.GITHUB_STEP_SUMMARY) {
     appendFileSync(process.env.GITHUB_STEP_SUMMARY, '### Public Services exact-PR scope\n' +
       summary + '\n' +
-      'Unclassified, payment, middleware, manifest and application changes always run full E2E.\n');
+      'Unverified shared/public runtime changes retain full E2E; proven independent ownership retains mandatory affected specialists.\n');
   }
 }
 
-if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) main();
+if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) await main();

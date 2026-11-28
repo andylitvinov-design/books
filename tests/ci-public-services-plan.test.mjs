@@ -5,7 +5,7 @@ import { parsePrTrigger } from '../lib/ci/specialist-aggregate.mjs';
 import { requiresRealMediaWebKit } from '../lib/ci/merge-check-light.mjs';
 import test from 'node:test';
 import { approvedTelegramPresentation } from '../lib/crm/telegram-presentation.mjs';
-import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr, publicPlaywrightEngines, isTrustedMandalaOwnerPath, isTrustedCoreCiOwnerPath, verifiedCriticalPublicCases, REVIEWED_VOICE_2629_DELTA, REVIEWED_PHRASES_3006_DELTA , exactReleaseProofAddition, EXACT_RELEASE_PROOF_BLOBS, planPrivatePractitionerMediaRows, PRIVATE_PRACTITIONER_MEDIA_OWNERS, PRIVATE_PRACTITIONER_MEDIA_REVIEWED_ADDITIONS } from '../scripts/ci-public-services-plan.mjs';
+import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, refinePublicServicesPlan, requiresPublicServicesHeavyPr, publicPlaywrightEngines, isTrustedMandalaOwnerPath, isTrustedCoreCiOwnerPath, verifiedCriticalPublicCases, REVIEWED_VOICE_2629_DELTA, REVIEWED_PHRASES_3006_DELTA , exactReleaseProofAddition, EXACT_RELEASE_PROOF_BLOBS, planPrivatePractitionerMediaRows, PRIVATE_PRACTITIONER_MEDIA_OWNERS, PRIVATE_PRACTITIONER_MEDIA_REVIEWED_ADDITIONS } from '../scripts/ci-public-services-plan.mjs';
 
 const workflow = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 const verifyPinnedPublicBrowsers = src => {
@@ -1518,7 +1518,7 @@ test('private practitioner meditation is publicly smoke-tested without unrelated
 test('private media declarations initialize before CLI main to avoid hidden full-suite routing',()=>{
   const src=readFileSync(new URL('../scripts/ci-public-services-plan.mjs',import.meta.url),'utf8');
   const declaration=src.indexOf('const privatePractitionerFiles = new Set(');
-  const entry=src.indexOf('\nfunction main() {');
+  const entry=src.indexOf('\nasync function main() {');
   const execute=src.lastIndexOf('main();');
   assert.ok(declaration>=0 && entry>declaration && execute>entry,
     'private media ownership constants must be initialized before direct CLI invocation');
@@ -1950,4 +1950,67 @@ test('Public Services parallel acceptance preserves both shards and manual full 
       assert.deepEqual(combined.sort(), [...locales].sort());
     }
   }
+});
+
+
+test('Public Services uses protected composed ownership only for the exact verified merge', async () => {
+  const base='a'.repeat(40),head='b'.repeat(40),merge='c'.repeat(40);
+  const env={GITHUB_EVENT_NAME:'pull_request',GITHUB_BASE_REF:'codex/public-book-library',
+    GITHUB_SHA:merge,HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head,
+    HH_PUBLIC_VERIFIED_EVENT_BASE:base,HH_PUBLIC_VERIFIED_TESTED_BASE:base,
+    HH_PUBLIC_VERIFIED_HEAD:head,HH_PUBLIC_VERIFIED_MERGE:merge};
+  const plan={mode:'full',reason:'ADDED_REMOVED_OR_UNSAFE_DIFF_STATUS',
+    build:true,browser:true,metrics:true,cases:'all'};
+  let loaded=0;
+  const dispatcher='app/api/app/[...path]/route.js';
+  const publicOwner='.github/workflows/hh-public-services-production.yml';
+  const ownerSource=workflow('hh-public-services-production.yml');
+  const sources=new Map([[publicOwner,ownerSource]]);
+  const pkg=readFileSync(new URL('../package.json',import.meta.url),'utf8');
+  const mockGit=(_bin,args)=>{
+    if(args[0]==='rev-parse')return ({HEAD:merge,'HEAD^1':base,'HEAD^2':head})[args[1]];
+    if(args[0]==='diff'&&args[1]==='--quiet')return '';
+    if(args[0]==='show')return args[1];
+    throw Error('unexpected git request');
+  };
+  const fakePolicy={
+    worktreeSources:()=>({base:sources,current:sources,basePackage:pkg,currentPackage:pkg}),
+    checkoutChangedRows:()=>[{status:'M',filename:dispatcher}],
+    loadTrustedTypescript:()=>({trusted:true}),
+    independentDispatcherAdvisories:(files,rows,expected,readSource,parser)=>{
+      assert.equal(files.testedMergeSha,merge);
+      assert.equal(rows[0].filename,dispatcher);
+      assert.equal(readSource('base',dispatcher),base+':'+dispatcher);
+      assert.equal(readSource('merge',dispatcher),merge+':'+dispatcher);
+      assert.ok(parser.trusted);
+      return new Set([publicOwner]);
+    },
+  };
+  const deps={git:mockGit,loadPolicy:async()=>{loaded++;return fakePolicy}};
+  const refined=await refinePublicServicesPlan(plan,env,deps);
+  assert.deepEqual(refined,{mode:'contracts',reason:'PROTECTED_COMPOSED_COACH_OWNERS',
+    build:false,browser:false,metrics:false,cases:'none'});
+  assert.equal(requiresPublicServicesHeavyPr(refined),false);
+  assert.equal(loaded,1);
+  for(const bad of [
+    {...env,GITHUB_EVENT_NAME:'workflow_dispatch'},
+    {...env,GITHUB_BASE_REF:'main'},
+    {...env,HH_PUBLIC_VERIFIED_HEAD:''},
+    {...env,GITHUB_SHA:head},
+  ])assert.strictEqual(await refinePublicServicesPlan(plan,bad,deps),plan);
+  assert.equal(loaded,1);
+  const changedPolicy={...deps,git:(bin,args)=>{
+    if(args[0]==='diff')throw Error('policy changed');
+    return mockGit(bin,args);
+  }};
+  assert.strictEqual(await refinePublicServicesPlan(plan,env,changedPolicy),plan);
+  assert.equal(loaded,1);
+  for(const overrides of [
+    {independentDispatcherAdvisories:()=>new Set()},
+    {loadTrustedTypescript:()=>null},
+    {checkoutChangedRows:()=>[{status:'M',filename:'app/api/payments/route.js'}]},
+  ])assert.strictEqual(await refinePublicServicesPlan(plan,env,
+    {...deps,loadPolicy:async()=>({...fakePolicy,...overrides})}),plan);
+  assert.strictEqual(await refinePublicServicesPlan(plan,env,
+    {...deps,loadPolicy:async()=>{throw Error('old base policy')}}),plan);
 });
