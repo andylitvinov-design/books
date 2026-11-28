@@ -317,3 +317,13 @@ INSERT INTO app_private.hh_personality_edges (release_id,persona_id,from_key,to_
 ('hh-personality-graph-v1','caesar','reaction:achievement','principle:3','guided_by',NULL),
 ('hh-personality-graph-v1','caesar','reaction:pressure','principle:1','guided_by',NULL),
 ('hh-personality-graph-v1','caesar','reaction:criticism','principle:5','guided_by',NULL);
+
+-- Cover relational and creative contexts with their character-specific values.
+INSERT INTO app_private.hh_personality_edges (release_id,persona_id,from_key,to_key,relation,weight) VALUES
+('hh-personality-graph-v1','max','dimension:autonomy','value:1','activates',NULL),
+('hh-personality-graph-v1','max','dimension:reciprocity','value:3','activates',NULL),
+('hh-personality-graph-v1','max','dimension:authenticity','value:4','activates',NULL),
+('hh-personality-graph-v1','alex','dimension:autonomy','value:1','activates',NULL),
+('hh-personality-graph-v1','alex','dimension:reciprocity','value:5','activates',NULL),
+('hh-personality-graph-v1','alex','dimension:authenticity','value:2','activates',NULL),
+('hh-personality-graph-v1','alex','principle:1','value:3','guided_by',NULL);
