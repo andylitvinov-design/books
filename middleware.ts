@@ -321,6 +321,7 @@ export async function middleware(request: NextRequest) {
   const ownerAvatarPilotOrigin = ownerAvatarPilotPage ? (() => {
     let extra=''
     try{const u=new URL(process.env.HH_COACH_AVATAR_LIVEKIT_ORIGIN||'');if(u.protocol==='wss:'&&!u.username&&!u.password&&!u.port&&u.pathname==='/'&&!u.search&&!u.hash)extra=' '+u.origin+' https://'+u.host}catch{}
+    try{const storage=new URL(process.env.HH_APP_SUPABASE_URL||'');if(storage.protocol==='https:'&&/^[a-z0-9]{20}\.supabase\.co$/.test(storage.hostname)&&!storage.port&&!storage.username&&!storage.password&&storage.pathname==='/'&&!storage.search&&!storage.hash)extra+=' '+storage.origin}catch{}
     return ' wss://api.simli.ai https://api.simli.ai wss://*.livekit.cloud https://*.livekit.cloud'+extra
   })() : ''
   const ownerSimliDialoguePage = /^\/(en|ru|es)\/(?:app\/messages|coaching\/sessions)\/?$/.test(pathname) &&
