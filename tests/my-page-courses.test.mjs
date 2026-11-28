@@ -108,8 +108,11 @@ test('approved compact My Page dashboard preserves owner-scoped data and real co
 import {selectLastCoachSession} from '../lib/app/my-page-session-history.mjs'
 test('Last Session includes active saved drafts without claiming review or leaking transcript',()=>{
  const reviewed={id:'a',personaId:'mira',completedAt:'2026-11-25T10:00:00Z',provenance:'client_reviewed_dialogue',turns:[{content:'PRIVATE'}]}
- const draft={id:'b',personaId:'max',updatedAt:'2026-11-26T10:00:00Z',turnCount:3,durationSeconds:120,courseSessionId:'life_direction'}
+ const draft={id:'b',personaId:'max',updatedAt:'2026-11-26T10:00:00Z',startedAt:'2026-11-26T09:58:00Z',turnCount:3,durationSeconds:120,courseSessionId:'life_direction'}
  assert.equal(selectLastCoachSession([], [draft]).status,'draft')
+ assert.equal(selectLastCoachSession([], [draft]).startedAt,draft.startedAt)
+ assert.equal(selectLastCoachSession([], [{...draft,startedAt:'2026-11-27'}]).startedAt,null)
+ assert.equal(selectLastCoachSession([], [{...draft,startedAt:undefined}]).startedAt,null)
  assert.equal(selectLastCoachSession([reviewed], [draft]).id,'b')
  assert.equal(selectLastCoachSession([reviewed], [{...draft,id:'a'}]).status,'reviewed')
  assert.equal(selectLastCoachSession(null, [{...draft,turnCount:0}]),null)
