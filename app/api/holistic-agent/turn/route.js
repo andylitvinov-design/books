@@ -428,6 +428,25 @@ export async function POST(request) {
         suggestions:[],usedSavedTestEvidence:false,usedSavedVideoHistory:false,browserModelAllowed:false,
         decision:{status:'clarify',message:reply,question:null,suggestions:[]}});
     }
+    // Public-knowledge Gemini is optional presentation, not a second Director.
+    // Exact topic allowlist + verified eligibility; no private text leaves us.
+    const publicGemini=body.mode==="rules"&&safety.status==="clear"&&!recentUnsafe&&
+      !judgmentPriority&&body.judgmentContext==null&&body.judgmentChoice==null&&
+      body.usePrivateProfile!==true&&body.usePrivateHistory!==true&&
+      body.useAgentMemory!==true&&body.preferredFormat==null&&
+      (!body.chosenAxes||body.chosenAxes.length===0)&&
+      body.selectedGoal==null&&(!stateEvent||stateEvent.type==="ordinary")&&
+      body.journeyPath==null&&body.companionMode==null
+      ?await waveGeminiPublicReply({message:body.message,locale:body.locale,history:body.history,
+        eligible:waveGeminiPublicEligibility(actor.wavePublicGeminiEligibility),
+        reserve:()=>consumeRateBatch(config,waveGeminiPublicQuota(actor.id)),
+        signal:AbortSignal.timeout(8000)}):null;
+    if(publicGemini)return await finish({
+      status:"clarify",reply:publicGemini.reply,modelUsed:true,source:publicGemini.source,
+      memorySaved:false,userAuthorized:true,suggestions:[],
+      usedSavedTestEvidence:false,usedSavedVideoHistory:false,browserModelAllowed:false,
+      decision:{status:"clarify",message:publicGemini.reply,question:null,suggestions:[]},
+    });
     // Three owner-selected conversational journeys in the EXISTING Messenger.
     // They are not clinical diagnosis, booking authority, consent, or a second
     // state machine. Safety, signed choices, factual tasks and provider gates
@@ -499,24 +518,6 @@ export async function POST(request) {
       mindRole:null,modelUsed:false,memorySaved:false,userAuthorized:true,suggestions:[],
       usedSavedTestEvidence:false,usedSavedVideoHistory:false,browserModelAllowed:false,
       decision:{status:'clarify',message:complaint.reply,question:null,suggestions:[]}});
-    // Public-knowledge Gemini is optional presentation, not a second Director.
-    // Exact topic allowlist + verified eligibility; no private text leaves us.
-    const publicGemini=body.mode==="rules"&&safety.status==="clear"&&!recentUnsafe&&
-      !judgmentPriority&&body.judgmentContext==null&&body.judgmentChoice==null&&
-      body.usePrivateProfile!==true&&body.usePrivateHistory!==true&&
-      body.useAgentMemory!==true&&body.preferredFormat==null&&
-      (!body.chosenAxes||body.chosenAxes.length===0)&&
-      body.selectedGoal==null&&(!stateEvent||stateEvent.type==="ordinary")
-      ?await waveGeminiPublicReply({message:body.message,locale:body.locale,
-        eligible:waveGeminiPublicEligibility(actor.wavePublicGeminiEligibility),
-        reserve:()=>consumeRateBatch(config,waveGeminiPublicQuota(actor.id)),
-        signal:AbortSignal.timeout(8000)}):null;
-    if(publicGemini)return await finish({
-      status:"clarify",reply:publicGemini.reply,modelUsed:true,source:publicGemini.source,
-      memorySaved:false,userAuthorized:true,suggestions:[],
-      usedSavedTestEvidence:false,usedSavedVideoHistory:false,browserModelAllowed:false,
-      decision:{status:"clarify",message:publicGemini.reply,question:null,suggestions:[]},
-    });
     // Native Wave precedes catalog lookups and optional remote inference for
     // narrow conversation/FAQ intents. Safety, signed choices, consent and
     // existing stateful journeys above this point remain authoritative.

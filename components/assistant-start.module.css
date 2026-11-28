@@ -22,3 +22,31 @@
 .card:focus-visible,.ask:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
 @media(max-width:355px){.root{padding-inline:7px;gap:7px}.hero{min-height:198px}.copy{padding-left:9px}.copy small{font-size:9px}.cards{gap:5px}.card{min-height:132px;padding:4px}.art{height:52px}.card strong{font-size:11px}.ask{font-size:13px}}
 @media(min-width:761px){.hero{min-height:280px}.card{min-height:180px}.art{height:100px}.root{max-width:740px;margin-inline:auto;width:100%}}
+
+
+/* 27 Nov approved chat-first mock: one shared photo-led welcome. */
+.root{position:relative;gap:10px;padding:0 8px 9px;background:radial-gradient(ellipse at 100% 2%,#e5e8c9 0%,transparent 44%),linear-gradient(145deg,#fffaf3,#faf2e6);box-sizing:border-box}
+.hero{min-height:clamp(215px,62vw,290px);border-radius:0;overflow:hidden;background:radial-gradient(ellipse at 95% 10%,#d9e4b7,transparent 62%),linear-gradient(105deg,#fff9ef,#f5e8d2)}
+.portrait{width:65%;object-position:50% 29%;mask-image:linear-gradient(90deg,transparent 0%,#000 34%);-webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 34%)}
+.hero:before{background:linear-gradient(90deg,#fff9f0 0%,#fff9f0ee 23%,#fff9f0b5 40%,transparent 65%),linear-gradient(0deg,#faf2e6 0%,transparent 17%)}
+.copy{max-width:54%;padding:12px 0 14px 13px;gap:8px}
+.copy h2{font-size:clamp(21px,5.7vw,32px);line-height:1.06;text-wrap:balance;overflow-wrap:normal;hyphens:auto}
+.copy h2 em{font-size:clamp(37px,10vw,52px);margin-bottom:7px}
+.copy p{font-weight:510;line-height:1.35;color:#435550}
+.copy small{font-size:10px;line-height:1.25}
+.cards{position:relative;gap:7px}
+.card{box-sizing:border-box;min-height:clamp(143px,42vw,190px);border-radius:20px;padding:4px 4px 8px;gap:6px;border:1px solid #d3e6d0;box-shadow:0 4px 12px #725b3920;background:linear-gradient(145deg,#f6fcf1,#e1f2dd)}
+.card[data-hh-assistant-service="reiki"]{background:linear-gradient(145deg,#fffaf1,#fff0d8)}
+.card[data-hh-assistant-service="clarity"]{background:linear-gradient(145deg,#fff6ff,#eee2f7)}
+.art{height:clamp(65px,19vw,100px);border-radius:15px;background:#e8ead9}
+.art>img{mask-image:linear-gradient(#000 78%,#000b);-webkit-mask-image:linear-gradient(#000 78%,#000b)}
+.art>span{width:34px;height:34px;left:5px;top:5px;background:#0e956f;color:#fff;box-shadow:0 2px 6px #315b3420}
+.card[data-hh-assistant-service="reiki"] .art>span{background:#cf982d}
+.card[data-hh-assistant-service="clarity"] .art>span{background:#9c58b8}
+.card strong{padding:1px 4px;font-size:clamp(11px,3.5vw,16px);line-height:1.14;overflow-wrap:break-word}
+.arrow{width:32px;height:32px;background:#cce8ce}
+.card[data-hh-assistant-service="reiki"] .arrow{background:#f8dfb1}
+.card[data-hh-assistant-service="clarity"] .arrow{background:#e1cbed}
+.ask{width:max-content;max-width:100%;min-height:44px;padding:8px 21px;background:linear-gradient(115deg,#e9f3d8,#e0edd3);box-shadow:0 3px 7px #68654b18}
+@media(max-width:355px){.root{padding-inline:5px;gap:7px}.hero{min-height:205px}.copy{padding-left:8px;max-width:56%}.copy h2{font-size:20px}.copy small{font-size:9px}.cards{gap:5px}.card{min-height:138px}.art{height:61px}.card strong{font-size:11px}}
+@media(min-width:761px){.hero{min-height:300px}.card{min-height:180px}.art{height:100px}}

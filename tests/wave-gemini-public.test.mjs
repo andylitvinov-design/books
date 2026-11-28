@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {waveGeminiPublicTopic,waveGeminiPublicEligibility,waveGeminiPublicQuota,waveGeminiPublicReadiness,waveGeminiPublicReply} from '../lib/holistic-support/wave-gemini-public.mjs';
+import {waveGeminiPublicTopic,waveGeminiPublicIntent,waveGeminiPublicEligibility,waveGeminiPublicQuota,waveGeminiPublicReadiness,waveGeminiPublicReply} from '../lib/holistic-support/wave-gemini-public.mjs';
 const env={HH_WAVE_GEMINI_PUBLIC_ENABLED:'true',HH_WAVE_GEMINI_FREE_BILLING_DISABLED_CONFIRMED:'true',HH_MY_COACH_GEMINI_FREE_ENABLED:'true',HH_MY_COACH_GEMINI_FREE_TIER_CONFIRMED:'true',HH_MY_COACH_GEMINI_FREE_DATA_APPROVED:'true',HH_GEMINI_FREE_API_KEY:'AIza'+'X'.repeat(35)};
 test('exact public topic, not personal content or money journey',()=>{
  assert.equal(waveGeminiPublicTopic('Что такое коучинг?','ru'),'coaching');
@@ -100,4 +100,27 @@ test('readiness is authenticated, no-store and never implies modelUsed; UI attri
  assert.doesNotMatch(get,/waveGeminiPublicReply\(|consumeRateBatch\(|fetch\(|apiKey/);
  const ui=readFileSync(new URL('../components/holistic-agent-chat.tsx',import.meta.url),'utf8');
  assert.ok(ui.includes('used==="gemini-free-public"&&data.modelUsed===true?"Gemini · Free API"'));
+});
+
+test('public follow-ups use only finite topic and intent, never raw conversation',async()=>{
+ const history=[{role:'user',text:'What is coaching?'},{role:'assistant',text:'PRIVATE_ASSISTANT_SENTINEL'}];
+ assert.deepEqual(waveGeminiPublicIntent('Give an example','en',history),{topic:'coaching',kind:'example'});
+ assert.deepEqual(waveGeminiPublicIntent('Explain more simply','en',[...history,{role:'user',text:'Give an example'},{role:'assistant',text:'another answer'}]),{topic:'coaching',kind:'simple'});
+ assert.deepEqual(waveGeminiPublicIntent('Приведи пример','ru',[{role:'user',text:'Что такое коучинг?'}]),{topic:'coaching',kind:'example'});
+ assert.deepEqual(waveGeminiPublicIntent('Dame un ejemplo','es',[{role:'user',text:'¿Qué es el coaching?'}]),{topic:'coaching',kind:'example'});
+ assert.equal(waveGeminiPublicIntent('Give an example','en',[]),null);
+ assert.equal(waveGeminiPublicIntent('Give an example','en',[...history,{role:'user',text:'My private medical history'}]),null);
+ assert.equal(waveGeminiPublicIntent('Give an example about my divorce','en',history),null);
+ const out=await waveGeminiPublicReply({message:'Give an example',locale:'en',history,eligible:true,env,reserve:async()=>{},fetcher:async(url,options)=>{
+  assert.ok(options.body.includes('impersonal, illustrative example'));
+  for(const privateText of ['PRIVATE_ASSISTANT_SENTINEL','What is coaching?','Give an example'])assert.ok(!options.body.includes(privateText));
+  return {ok:true,json:async()=>({candidates:[{finishReason:'STOP',content:{parts:[{text:JSON.stringify({reply:'A coaching conversation can explore a general goal and possible actions.'})}]}}]})};
+ }});
+ assert.equal(out?.modelUsed,true);
+});
+test('public intelligence precedes generic entry but not active journey or friend',()=>{
+ const route=readFileSync(new URL('../app/api/holistic-agent/turn/route.js',import.meta.url),'utf8');
+ assert.ok(route.indexOf('const publicGemini=')<route.indexOf('const entryNavigation='));
+ assert.match(route,/body\.journeyPath==null&&body\.companionMode==null/);
+ assert.match(route,/waveGeminiPublicReply\(\{message:body\.message,locale:body\.locale,history:body\.history/);
 });

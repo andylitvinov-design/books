@@ -1195,3 +1195,17 @@
 .root[data-chat-skin="messenger"]:has(:global([data-hh-assistant-start]))>.thread{overflow-y:auto!important;overflow-x:hidden!important;min-height:0!important;max-height:none!important;background:#faf3e8!important}
 .pageHelpMore{margin:0 8px 5px;padding:4px 8px;border:1px solid #dfdfd2;border-radius:12px;background:#fffaf2;color:#285c4d}
 .pageHelpMore>summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font:650 13px/1.3 system-ui}
+
+
+/* Approved large two-row welcome composer, not a second form. Preserve consent,
+   active dictation and the established conversation's compact composer. */
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form[data-landing-composer]:not([data-gemini-pending="true"]):not([data-voice-onboarding="true"]):not(:has(:global([data-hh-dictation-active="true"]))){
+ position:relative;display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:4px;box-sizing:border-box;width:100%;height:auto!important;min-height:100px!important;margin:0;padding:8px 10px!important;border:1px solid #e7dfd3;border-radius:25px;background:#fffdf9;box-shadow:0 4px 12px #65543a18;
+}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form[data-landing-composer]:not([data-gemini-pending="true"]):not([data-voice-onboarding="true"]):not(:has(:global([data-hh-dictation-active="true"])))>textarea{
+ order:0;flex:none!important;box-sizing:border-box;width:100%!important;height:48px!important;min-height:48px!important;max-height:88px!important;padding:8px 7px!important;font-size:16px!important;line-height:1.3;resize:none;background:transparent;border:0;box-shadow:none;
+}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form[data-landing-composer]:not([data-gemini-pending="true"]):not([data-voice-onboarding="true"]):not(:has(:global([data-hh-dictation-active="true"])))>.actions{
+ position:static!important;display:flex!important;flex-wrap:wrap;justify-content:flex-start;align-items:center;gap:6px;min-width:0;margin:0;order:1;
+}
+.root[data-compact][data-chat-skin="messenger"] :global([data-hh-ai-inline-composer]) .form[data-landing-composer]:not([data-gemini-pending="true"]):not([data-voice-onboarding="true"]) .actions button[type="submit"]{order:10;margin-left:auto!important;width:46px!important;min-width:46px!important;height:46px!important;min-height:46px!important}
