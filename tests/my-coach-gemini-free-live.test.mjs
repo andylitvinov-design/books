@@ -51,6 +51,8 @@ test('all twelve personas, locked voice candidates, RU/EN/ES and separate audio-
   assert.equal(setup.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName,lockedCoachSessionVoice(personaId,locale)||voiceName)
   assert.match(setup.systemInstruction.parts[0].text,/the server owns coaching method/)
   assert.match(setup.systemInstruction.parts[0].text,/never replace a profile rating or completed profile with a GROW question/)
+  assert.match(setup.systemInstruction.parts[0].text,/FORWARD DIALOGUE INVARIANT: ordinary fatigue/)
+  assert.match(setup.systemInstruction.parts[0].text,/After unclear speech ask for a brief clarification, not an exit choice/)
   assert.equal(setup.responseModalities[0],'AUDIO')
  }
  for(const key of ['consent','voiceConsent','trainingUseConsent']){
