@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { positionComposerPopover } from "@/lib/holistic-support/composer-popover-placement.mjs";
 import {Mic, Paperclip, Plus, Send, ImageIcon, Phone, X, Video} from "lucide-react";
+import WaveGeminiAccess from "@/components/wave-gemini-access";
 import {MessengerAiLanding} from "@/components/app/messenger-ai-landing";
 import {AssistantStart} from "@/components/assistant-start";
 import {MessengerVoiceNote} from "@/components/app/messenger-voice-note";
@@ -2233,6 +2234,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
               <summary>{locale==="ru"?"Настройки голоса":locale==="es"?"Ajustes de voz":"Voice settings"}</summary>
               {voiceControls}
             </details>}
+            {authenticated&&<WaveGeminiAccess locale={locale}/>}
             <details className={styles.alchemistTools} data-hh-alchemist-tools>
               <summary>{locale==="ru"?"Другие возможности Ali":locale==="es"?"Más posibilidades de Ali":"More ways Ali can help"}</summary>
               <MessengerSixProjects locale={locale} onSelect={id=>{closeComposerMenu();startProject(id);}}/>
