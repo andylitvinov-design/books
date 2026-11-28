@@ -412,7 +412,7 @@ test('Clarity relay never converts a rating without exact method consent into ve
  for(const course of ['clarity_day_1','clarity_day_2']){
   const schema=coachCourseProtocolSchema(course,'en',{scenarioVersion:clarityScenarioVersion(course)})
   const consent=schema.checkpoints.find(f=>f.id===(course==='clarity_day_1'?'balance_consent':'inner_consent'))
-  const rating=schema.checkpoints.find(f=>f.id.startsWith(course==='clarity_day_1'?'outer_':'inner_'))
+  const rating=schema.checkpoints.find(f=>f.id!==consent.id&&f.id.startsWith(course==='clarity_day_1'?'outer_':'inner_'))
   const quote=course==='clarity_day_1'?'5':'5 / 8'
   const m=(role,content)=>({role,content,coachId:'mira',visitId:'visit'})
   const sequence=[m('assistant',rating.question),m('user',quote),m('assistant',checkpointConfirmation(rating.question,quote,'en')),m('user','yes'),m('assistant','Thank you')]
