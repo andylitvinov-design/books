@@ -443,6 +443,55 @@ export async function awaitPositiveMergeability(api, ctx, target, sleep = delay)
   return null;
 }
 
+// A final gate reads the protected target before and after the impact proof.
+// If it moved in that tiny window, repeat ONLY the read-only freshness proof.
+// Keep the exact same executed Core/Specialist evidence and never retry a
+// confirmed source failure or a changed PR HEAD as a harmless base advance.
+export async function verifyStableProtectedBase(api, ctx, verify, initialPr, sleep = delay) {
+  let live = initialPr;
+  const isBaseError = error => String(error?.message || error).includes(
+    'PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
+  for (let attempt=0; attempt<4; attempt++) {
+    const target = await api.target();
+    let failure;
+    try { await verify(live, true, target); }
+    catch (error) { if (!isBaseError(error)) throw error; failure=error; }
+    const after = await api.target();
+    if (after === target) {
+      if (failure) throw failure;
+      return target;
+    }
+    console.log('CI_FINAL_BASE_RETRY: protected target advanced during freshness proof; retain executed jobs');
+    if (attempt<3) {
+      await sleep(250*(attempt+1));
+      live=await api.pr(ctx.number);
+      assertSame(live,ctx,false);
+    }
+  }
+  throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
+}
+
+// Advisory only: identify a moving target early without cancelling actual
+// required specialists, or making a preliminary result a merge authorization.
+export async function observeProtectedBaseDrift(api, ctx, changed, previous) {
+  try {
+    const target=await api.target();
+    if (!/^[0-9a-f]{40}$/.test(target || '') || target===previous) return previous;
+    if (target===ctx.base) return target;
+    const diff=await api.compare(ctx.base,target);
+    const rows=Array.isArray(diff?.files)?diff.files:[];
+    const paths=new Set(changed);
+    console.log('CI_BASE_ADVANCE_PREVIEW:'+JSON.stringify({
+      tested_base:ctx.base,observed_base:target,head:ctx.head,
+      compare_status:diff?.status??null,ahead_by:diff?.ahead_by??null,
+      reported_file_rows:rows.length,overlap:rows.filter(row=>paths.has(row?.filename)||
+        paths.has(row?.previous_filename)).map(row=>row.filename).slice(0,30),
+      target_paths:rows.slice(0,30).map(row=>row?.filename),advisory_only:true,
+    }));
+    return target;
+  } catch { return previous; } // final authoritative proof still fails closed
+}
+
 function assertSame(pr, ctx, requireCurrentBase = false) {
   const reason = classifyPrState(pr, ctx, requireCurrentBase);
   if (reason) throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:' + reason);
@@ -673,13 +722,13 @@ export async function verify(api,ctx,files,options={}) {
   const approvedBaseChanges = new Set();
   const approvedPresentationBases = new Set();
   const approvedDisjointBases = new Set();
-  async function verifyCurrentBase(live, allowMergeabilityRetry = true) {
+  async function verifyCurrentBase(live, allowMergeabilityRetry = true, observedTarget) {
     assertSame(live, ctx, false);
     if (!requireCurrentBase) return;
     // GitHub's pull_request.base.sha is an event/PR snapshot and can lag the
     // protected branch after a verified merge checkout has been created.
     // Compare against the actual production ref while keeping HEAD exact.
-    const liveBaseSha = typeof api.target === 'function' ? await api.target() : live.base.sha;
+    const liveBaseSha = observedTarget ?? (typeof api.target === 'function' ? await api.target() : live.base.sha);
     if (!/^[0-9a-f]{40}$/.test(liveBaseSha)) {
       throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
     }
@@ -991,7 +1040,13 @@ export async function verify(api,ctx,files,options={}) {
   // only after these specialist outcomes are terminal.
   const sensitiveFreshnessInterval = 90_000;
   let nextSensitiveFreshnessCheck = start + sensitiveFreshnessInterval;
+  let nextDriftPreview = start + sensitiveFreshnessInterval, previewedBase=ctx.base;
   for (;;) {
+    if (requireCurrentBase && deferBaseUntilSpecialists && now() >= nextDriftPreview &&
+        typeof api.target === 'function' && typeof api.compare === 'function') {
+      previewedBase=await observeProtectedBaseDrift(api,ctx,changed,previewedBase);
+      nextDriftPreview=now()+sensitiveFreshnessInterval;
+    }
     if (requireCurrentBase && !deferBaseUntilSpecialists && now() >= nextSensitiveFreshnessCheck) {
       // Fresh PR identity/HEAD and production ref; existing exception logic
       // still admits only exhaustively verified, disjoint BASE advances.
@@ -1208,7 +1263,14 @@ export async function verify(api,ctx,files,options={}) {
     job_evidence_ms:now()-evidenceStart, evidence_parallelism:3,
   }));
   const fresh=await api.pr(ctx.number);
-  await verifyCurrentBase(fresh);
+  // Preserve independently authenticated terminal job evidence even when
+  // the final target genuinely needs reconciliation. This receipt is NOT a
+  // green gate or authorization to reuse a different source tree.
+  console.log('CI_FINAL_SPECIALIST_EVIDENCE:'+JSON.stringify({head:ctx.head,tested_base:ctx.base,
+    executed:executed.map(x=>({name:x.name,run_id:x.run_id,jobs:x.jobs})),reused:state.reused||[]}));
+  if (requireCurrentBase && typeof api.target === 'function')
+    await verifyStableProtectedBase(api,ctx,verifyCurrentBase,fresh,sleep);
+  else await verifyCurrentBase(fresh);
   const reused=state.reused||[];
   if(reused.length){
     const latest=inspectWorkflowRuns({expected:reused.map(x=>x.name),runs:await api.runs(ctx.head),pr:fresh});
