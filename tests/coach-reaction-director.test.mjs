@@ -362,7 +362,7 @@ test('all public personas have protected original or explicit neutral-only/still
  assert.equal(coachPresentationOpening('unknown'),null)
  const source=readFileSync(new URL('../components/my-coach-motion-media.jsx',import.meta.url),'utf8')
  assert.ok(source.includes('protectedCoachPresence(personaId,REACTION_V4_RELEASED)'))
- assert.ok(source.includes('const opening=originalOpening&&Math.min(originalOpening.width,originalOpening.height)>=768?originalOpening:null'))
+ assert.ok(source.includes('const opening=presentationActive?coachPresentationOpening(personaId):null'))
  assert.ok(source.includes('openingDone!==personaId'))
  assert.ok(source.includes('setOpeningDone(personaId)'))
 })
@@ -497,18 +497,23 @@ test('quality hold retains the HD camera and does not return to legacy video',()
 })
 
 
-test('all four 480px public originals are bypassed for screened same-camera HD presence',()=>{
+test('restore all six original greetings before the current HD presence, irrespective of source resolution',()=>{
  const src=readFileSync(new URL('../components/my-coach-motion-media.jsx',import.meta.url),'utf8')
- assert.ok(src.includes('const opening=originalOpening&&Math.min(originalOpening.width,originalOpening.height)>=768?originalOpening:null'))
- for(const [coach,id] of Object.entries({mira:'MIR-01',sofia:'SOF-02',max:'MAX-01',alex:'ALX-01'})){
+ assert.ok(src.includes('const opening=presentationActive?coachPresentationOpening(personaId):null'))
+ assert.doesNotMatch(src,/Math\.min\(originalOpening\.width/)
+ assert.ok(src.includes('openingActive?opening:presentation'))
+ assert.ok(src.includes('qualityScreenedPublicPresence(personaId,REACTION_V4_RELEASED,pinnedPresentation)'))
+ for(const [coach,id] of Object.entries({mira:'MIR-A01',sofia:'SOF-02',max:'MAX-A01',alex:'ALX-A01',merlin:'MER-A01',harry:'HAR-01'})){
   const original=coachPresentationOpening(coach)
-  assert.equal(original.width,480)
-  const pinned=protectedCoachPresence(coach,REACTION_V4_RELEASED)
-  const hd=qualityScreenedPresentation(pinned,releasedReactionMedia(coach,REACTION_V4_RELEASED,pinned.group))
-  assert.equal(hd.id,id);assert.ok(hd.width>=1080);assert.equal(hd.anchorHash,pinned.anchorHash)
+  assert.ok(original?.videoBlob&&original?.posterBlob)
+  assert.ok(coachPresentationMetadataMatches(original,{videoWidth:original.width,videoHeight:original.height,duration:124/24}))
+  const hd=qualityScreenedPublicPresence(coach,REACTION_V4_RELEASED,protectedCoachPresence(coach,REACTION_V4_RELEASED))
+  assert.equal(hd.id,id)
+  assert.ok(hd.width>=1080)
+  assert.notEqual(original.src,hd.src)
  }
- for(const coach of ['merlin','harry'])assert.ok(Math.min(coachPresentationOpening(coach).width,coachPresentationOpening(coach).height)>=768)
-
+ assert.equal(coachPresentationOpening('genie'),null)
+ assert.equal(coachPresentationOpening('caesar'),null)
 })
 
 

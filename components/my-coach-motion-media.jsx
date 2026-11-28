@@ -40,12 +40,12 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
   const presentationActive=isCoachPresentationContext(context,presentationLoop)
   const pinnedPresentation=useMemo(()=>presentationActive?protectedCoachPresence(personaId,REACTION_V4_RELEASED):null,[presentationActive,personaId])
   const presentation=useMemo(()=>qualityScreenedPublicPresence(personaId,REACTION_V4_RELEASED,pinnedPresentation),[pinnedPresentation,personaId])
-  // All four 480x672 originals can visibly soften on Retina and have
-  // unverified opening-to-HD pose seams. Preserve their immutable assets,
-  // but start public portraits directly in the screened HD presence.
-  // Keep approved higher-resolution Merlin/Harry performances unchanged.
-  const originalOpening=presentationActive?coachPresentationOpening(personaId):null
-  const opening=originalOpening&&Math.min(originalOpening.width,originalOpening.height)>=768?originalOpening:null
+  // Owner 2026-11-28: original acting is additive, never replaced by HD.
+  // Play the exact approved opening once, then the current screened HD loop.
+  // Native resolution is not an eligibility criterion for a pinned original.
+  // Existing decoded-layer handoff retains the outgoing frame; media-level
+  // pose/color matching is a separate remaster, not a crossfade of faces.
+  const opening=presentationActive?coachPresentationOpening(personaId):null
   const openingActive=Boolean(opening&&openingDone!==personaId)
   const activePresentation=openingActive?opening:presentation
   // Lock the released HD camera for the whole session. Exhaustion holds its
