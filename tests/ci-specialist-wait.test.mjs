@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { verify, requiresCurrentProductionBase, classifyPrState, diagnoseAggregateError, awaitPositiveMergeability } from '../scripts/ci-specialist-aggregate.mjs';
 import { inspectJobs, trustedRequiredJobs, inspectWorkflowRuns } from '../lib/ci/specialist-aggregate.mjs';
-import { safeComposedIndependentAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeIndependentRouterPolicyAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeStandaloneVideoAfterSpecialistScopeAdvance, safeNonOverlappingProductAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeComposedIndependentAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeIndependentRouterPolicyAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeStandaloneVideoAfterSpecialistScopeAdvance, safeNonOverlappingProductAdvance, safeIndependentMixedCandidateAdvance } from '../lib/ci/production-base-impact.mjs';
 
 const repo = 'andylitvinov-design/books', head = 'a'.repeat(40), base = 'b'.repeat(40);
 const path = '.github/workflows/mobile.yml';
@@ -1202,4 +1202,93 @@ test('owner loose-base policy: actual #5682 protected delta does not discard suc
   await assert.rejects(()=>verify({...api,pr:async()=>({...exact,mergeable:false})},args,candidateSources,{maxWaitMs:0}),/MERGE_CONFLICT/);
   await assert.rejects(()=>verify({...api,pr:async()=>({...exact,mergeable:null})},args,candidateSources,{maxWaitMs:0}),/PRODUCTION_BASE_CHANGED/);
   await assert.rejects(()=>verify({...api,pr:async()=>({...exact,head:{...exact.head,sha:target}})},args,candidateSources,{maxWaitMs:0}),/PR_HEAD_CHANGED/);
+});
+
+
+test('reviewed public readiness delta preserves unrelated exact-HEAD CI including additive server deps',()=>{
+ const old="bd14ab3837799aa2188ce8158d77b11c672bc003",live="86a1145511fbfba7cf9a0896de760b9d82c89f96";
+ const delta={
+  "status": "ahead",
+  "ahead_by": 1,
+  "behind_by": 0,
+  "total_commits": 1,
+  "base_commit": {
+    "sha": "bd14ab3837799aa2188ce8158d77b11c672bc003"
+  },
+  "merge_base_commit": {
+    "sha": "bd14ab3837799aa2188ce8158d77b11c672bc003"
+  },
+  "commits": [
+    {
+      "sha": "86a1145511fbfba7cf9a0896de760b9d82c89f96"
+    }
+  ],
+  "files": [
+    {
+      "filename": "components/shamanica-business-content.tsx",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "changes": 3,
+      "patch": "@@ -178,7 +178,8 @@ export function ShamanicaBusinessContent({locale}:{locale:PublicLocale}){\n   const index=BUSINESS_SERVICES.indexOf(id);\n   return t.services[index>=0?index:0];\n  };\n- return <div className={styles.root} data-shamanica-business>\n+ // Mark this client component only after its DOM ref has committed (not during SSR).\n+ return <div className={styles.root} data-shamanica-business ref={node=>{if(node)node.dataset.businessHydrated=\"true\";}}>\n   <details className={styles.quizDrawer} data-business-extras><summary>{locale===\"ru\"?\"Подобрать решение · 3 вопроса\":locale===\"es\"?\"Encontrar solución · 3 preguntas\":\"Find my approach · 3 questions\"}<ArrowRight size={17} aria-hidden=\"true\"/></summary>\n   <section id=\"business-quiz\" className={styles.quiz} data-business-quiz data-quiz-step={step+1} aria-labelledby=\"business-quiz-heading\">\n    <div className={styles.quizTop}>"
+    },
+    {
+      "filename": "scripts/verify-public-services-production.mjs",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 2,
+      "changes": 6,
+      "patch": "@@ -137,6 +137,9 @@ try {\n   await page.goto(origin+\"/\"+locale+\"/shamanica/business\",{waitUntil:\"domcontentloaded\",timeout:75000});\n   const section=page.locator(\"[data-shamanica-business]\");\n   await visible(section);\n+  // The native disclosure can open before React hydration and be reset when\n+  // the client subtree commits. Wait for this component, not router internals.\n+  await expect(section).toHaveAttribute(\"data-business-hydrated\",\"true\",{timeout:30000});\n   await expect(page.locator(\"[data-sitewide-antistress-banner]\")).toHaveCount(0);\n   await expect(page.locator(\"[data-hh-ihelp-trigger]:visible\")).toHaveCount(0);\n   await expect(page.locator(\"[data-shamanica-ihelp-trigger]\")).toBeVisible();\n@@ -195,8 +198,7 @@ try {\n   assert.ok(m.dockTop>=0&&m.dockBottom<=m.viewportHeight+2,\n     \"Business fixed dock must remain inside viewport \"+locale+\"/\"+width+\" \"+JSON.stringify(m));\n   if(locale===\"ru\"&&width===390)await page.screenshot({path:output+\"/shamanica-business-ru-390.png\",fullPage:false});\n-  await expect.poll(()=>page.evaluate(()=>history.pushState.toString().includes(\"__NA\")),\n-   {timeout:30000,message:\"Business quiz hydration\"}).toBe(true);\n+  await expect(shelves.locator('[data-business-shelf=\"express\"]')).toBeVisible();\n   await shelves.locator('[data-business-shelf=\"express\"]').click();\n   await expect(shelves).toHaveAttribute(\"data-expanded\",\"true\");\n   await expect(shelves.locator('[data-business-second-level=\"express\"] [data-business-subservice]')).toHaveCount(5);"
+    }
+  ]
+};
+ const clone=x=>JSON.parse(JSON.stringify(x));
+ const paths=['components/my-coach-live-dialogue.jsx','supabase/migrations/coaching.sql','.github/workflows/hh-personal-coaching-session.yml','package.json','package-lock.json','tests/coach-new.test.mjs'];
+ const a={name:'hh',dependencies:{react:'19.0.0'},scripts:{'test:app':'node --conditions=react-server --test tests/coach-old.integration.mjs && npm run test:monetization'}};
+ const b=clone(a);b.dependencies.ws='8.23.0';b.scripts['test:app']=b.scripts['test:app'].replace(' &&',' tests/coach-new.test.mjs &&');
+ const l={lockfileVersion:3,packages:{'':{dependencies:a.dependencies},'node_modules/react':{version:'19.0.0',integrity:'sha512-fixture'}}};
+ const m=clone(l);m.packages[''].dependencies=b.dependencies;m.packages['node_modules/ws']={version:'8.23.0',integrity:'sha512-fixture'};
+ const proof={basePackage:JSON.stringify(a),currentPackage:JSON.stringify(b),baseLock:JSON.stringify(l),currentLock:JSON.stringify(m)};
+ const accept=(d=delta,p=paths,e=proof)=>safeNonOverlappingProductAdvance(d,old,live,p,e);
+ assert.equal(accept(),true);
+ assert.equal(accept(delta,['components/another-feature.jsx'],{}),true);
+ assert.equal(accept(delta,paths,{}),false);
+ for(const p of ['components/shamanica-business-content.tsx','components/mandatory-messenger-actions.tsx','app/[locale]/layout.tsx','lib/ci/production-base-impact.mjs','.github/workflows/hh-pr-core-release.yml'])assert.equal(accept(delta,[...paths,p]),false,p);
+ for(const altered of [{...delta,commits:[]},{...delta,status:'diverged'},{...delta,files:[delta.files[0]]},{...delta,files:[...delta.files,{filename:'lib/auth/session.js',status:'modified'}]},{...delta,files:[{...delta.files[0],patch:delta.files[0].patch+'\\n+ unknown()'},delta.files[1]]},{...delta,files:[{...delta.files[0],status:'renamed'},delta.files[1]]}])assert.equal(accept(altered),false);
+ const upgraded=clone(m);upgraded.packages['node_modules/react'].version='20.0.0';assert.equal(accept(delta,paths,{...proof,currentLock:JSON.stringify(upgraded)}),false);
+ const bad=clone(b);bad.scripts['test:app']=bad.scripts['test:app'].split(' &&')[0];assert.equal(accept(delta,paths,{...proof,currentPackage:JSON.stringify(bad)}),false);
+ const injected=clone(b);injected.scripts.prebuild='echo bypass';assert.equal(accept(delta,paths,{...proof,currentPackage:JSON.stringify(injected)}),false);
+});
+
+
+test('mixed tested candidate: independent protected domain is not stale just because PR has API, migration or feature workflow', async () => {
+  const target='d'.repeat(40);
+  const candidate=['app/api/app/clarity-course/route.js','components/my-coach-live-dialogue.jsx',
+    'supabase/migrations/coaching.sql','.github/workflows/hh-personal-coaching-session.yml'];
+  const rows=['components/shamanica-business-content.tsx','components/tarot-deck.jsx',
+    'tests/shamanica-business.test.mjs'].map(filename=>({filename,status:'modified'}));
+  const delta={status:'ahead',ahead_by:3,behind_by:0,total_commits:3,
+    base_commit:{sha:base},merge_base_commit:{sha:base},
+    commits:[{sha:'e'.repeat(40)},{sha:'f'.repeat(40)},{sha:target}],files:rows};
+  const yes=(d=delta,p=candidate,e)=>safeIndependentMixedCandidateAdvance(d,base,target,p,e);
+  assert.equal(yes(),true);
+  assert.equal(yes(delta,[...candidate,'components/shamanica-intro.jsx']),false);
+  assert.equal(yes(delta,[...candidate,'package-lock.json']),false);
+  assert.equal(yes(delta,[...candidate,'lib/ci/production-base-impact.mjs']),false);
+  for (const filename of [candidate[0],'components/my-coach-intro.jsx','lib/auth/permissions.mjs',
+    'lib/app/generic.js','app/api/other/route.js','components/shared/toolbar.jsx',
+    '.github/workflows/hh-pr-core-release.yml','package.json','unknown.txt']) {
+    assert.equal(yes({...delta,files:[...rows,{filename,status:'modified'}]}),false,filename);
+  }
+  for(const invalid of [{commits:[]},{status:'diverged'},{files:[...rows,rows[0]]},
+    {files:[{...rows[0],status:'renamed',previous_filename:'old.jsx'}]},
+    {files:[{...rows[0],status:'removed'}]}]) assert.equal(yes({...delta,...invalid}),false);
+  // The actual final Specialist verifier reuses exact-HEAD evidence, never a
+  // changed HEAD or an explicit GitHub conflict.
+  const exact={...pr,mergeable:true,base:{...pr.base,sha:target}};
+  const files={base:new Map(),current:new Map(),changedRows:candidate.map(filename=>({filename,status:'M'}))};
+  const api={pr:async()=>exact,target:async()=>target,compare:async()=>delta,runs:async()=>[],jobs:async()=>[]};
+  assert.equal((await verify(api,ctx,files,{maxWaitMs:0})).head,head);
+  await assert.rejects(()=>verify({...api,pr:async()=>({...exact,mergeable:false})},ctx,files,{maxWaitMs:0}),/MERGE_CONFLICT/);
+  await assert.rejects(()=>verify({...api,pr:async()=>({...exact,head:{...exact.head,sha:target}})},ctx,files,{maxWaitMs:0}),/PR_HEAD_CHANGED/);
 });
