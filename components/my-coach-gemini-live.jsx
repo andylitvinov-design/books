@@ -517,7 +517,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(!value||r.ended)return
     const preceding=r.history.slice(-10)
     // Do not associate a still-speaking or stale segment with a completed caption.
-    const audioParts=r.bargeDetector.userActive?(r.speechReviewBuffer?.invalidate(),null):r.speechReviewBuffer?.take()
+    const audioClip=r.bargeDetector.userActive?(r.speechReviewBuffer?.invalidate(),null):r.speechReviewBuffer?.takeClip()
+    const audioParts=audioClip?.parts
     const decision=propsRef.current.onInputFinal?.(value,{source:'speech',reviewAvailable:Boolean(audioParts)&&propsRef.current.speechReviewConsent===true})
     if(decision?.transcriptReview){
       if(propsRef.current.speechReviewConsent===true&&audioParts){
@@ -525,7 +526,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
         r.speechReviewQueue??=createSpeechReviewQueue({request:requestSpeechReview,onResult:(id,text)=>{
           if(runtime.current===r&&!r.ended&&propsRef.current.speechReviewConsent===true&&propsRef.current.speechReviewProvider===reviewProvider)propsRef.current.onSpeechReviewCandidate?.(id,r.paused?'':text)
         }})
-        if(!r.speechReviewQueue.offer({id:decision.transcriptReview,parts:audioParts,locale:r.locale,provider:reviewProvider,long:process.env.NEXT_PUBLIC_HH_MY_COACH_STT_LONG_REVIEW_ENABLED==='true'&&reviewProvider!=='gemini'}))propsRef.current.onSpeechReviewCandidate?.(decision.transcriptReview,'')
+        if(!r.speechReviewQueue.offer({id:decision.transcriptReview,parts:audioParts,capturedAt:audioClip.capturedAt,locale:r.locale,provider:reviewProvider,long:process.env.NEXT_PUBLIC_HH_MY_COACH_STT_LONG_REVIEW_ENABLED==='true'&&reviewProvider!=='gemini'}))propsRef.current.onSpeechReviewCandidate?.(decision.transcriptReview,'')
       }else propsRef.current.onSpeechReviewCandidate?.(decision.transcriptReview,'')
       r.lastAssistantTurnFinished=false;r.pendingDirectorHint='';return false
     }

@@ -92,3 +92,26 @@ test('long candidate must not be silently truncated',async()=>{
  assert.equal(q.offer({id:1,parts:[new Uint8Array(3200)]}),true)
  await new Promise(r=>setTimeout(r,20));assert.deepEqual(results,[[1,'']]);q.cancel()
 })
+
+test('capture timestamps retire stale pre-roll and reject resumed speech',()=>{
+ const b=createSpeechReviewBuffer({long:true})
+ b.append(new Uint8Array(3200).fill(1),false,1000)
+ b.append(new Uint8Array(6400).fill(2),true,5000)
+ const clip=b.takeClip(5100);assert.equal(clip.parts.length,1);assert.equal(clip.capturedAt,4800)
+ b.append(new Uint8Array(6400),true,10000);b.append(new Uint8Array(6400),true,14000)
+ assert.equal(b.takeClip(14100),null)
+ b.append(new Uint8Array(6400),true,20000);assert.equal(b.takeClip(19000),null)
+})
+test('suspended scheduler cannot send expired audio or promote late responses',async()=>{
+ let time=100000,next=0,calls=0,complete;const tasks=new Map(),results=[]
+ const q=createSpeechReviewQueue({now:()=>time,schedule:(fn)=>{const id=++next;tasks.set(id,fn);return id},unschedule:id=>tasks.delete(id),request:()=>{calls++;return new Promise(resolve=>{complete=resolve})},onResult:(...x)=>results.push(x)})
+ const parts=[new Uint8Array(3200)]
+ assert.equal(q.offer({id:1,parts,capturedAt:time-49000}),false)
+ assert.equal(q.offer({id:2,parts,capturedAt:time-35000}),true)
+ time+=9000;for(const fn of [...tasks.values()])fn()
+ assert.equal(calls,0);assert.deepEqual(results,[[2,'']])
+ tasks.clear();assert.equal(q.offer({id:3,parts,capturedAt:time-35000}),true)
+ for(const fn of [...tasks.values()])fn()
+ assert.equal(calls,1);time+=13000;complete('late');await Promise.resolve()
+ assert.deepEqual(results,[[2,''],[3,'']]);q.cancel()
+})
