@@ -271,7 +271,7 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
           await expect(header.locator('select')).toBeVisible()
           await expect(header.getByRole('button',{name:'iHelp',exact:true})).toBeVisible()
           await header.screenshot({path:evidence+'/header-'+engine+'-'+locale+'-home-'+width+'.png'})
-          const bottom=await assertUnifiedBottomNavigation(page,{locale,label,active:'coach',visible:width<760})
+          const bottom=await assertUnifiedBottomNavigation(page,{locale,label,active:'coach',visible:true})
           if(width<760)await bottom.screenshot({path:evidence+'/bottom-'+engine+'-'+locale+'-home-'+width+'.png'})
           pass('My Coach home alias: '+label)
           continue

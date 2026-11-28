@@ -25,22 +25,36 @@ const median = values => {
   return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
 };
 
-// Measure actual canonical documents: legacy /?lang=ru is a 308 redirect.
+// Measure each public entry, including the exact approved same-origin My Coach redirect.
+// Keep legacy production measurable until the batched release is live; reject other redirects.
 for (const suffix of ['/', '/ru', '/es']) {
   const url = new URL(suffix, base);
   const measurements = [];
   for (let i = 0; i < samples; i++) {
     const start = performance.now();
-    const response = await fetch(url, {
+    const request = target => fetch(target, {
       headers: { accept: 'text/html', 'user-agent': 'HolisticHouse-TTFB-Audit/1.0' },
       redirect: 'manual',
       signal: AbortSignal.timeout(15000),
     });
+    let response = await request(url);
+    const entryStatus = response.status;
+    let canonical = url;
+    if ([307, 308].includes(entryStatus)) {
+      const expected = new URL((suffix === '/' ? '/en' : suffix) + '/my-coach', base);
+      const location = response.headers.get('location');
+      if (!location || new URL(location, url).href !== expected.href) {
+        throw new Error(`Unexpected public entry redirect ${url.pathname}: ${location}`);
+      }
+      await response.body?.cancel();
+      canonical = expected;
+      response = await request(canonical);
+    }
     const ttfbMs = Math.round(performance.now() - start);
     const htmlPayload = analyzePublicHtmlPayload(await response.text());
     if (response.status !== 200) throw new Error(`Canonical public page ${url.pathname} returned HTTP ${response.status}`);
     measurements.push({
-      ttfbMs,
+      ttfbMs, entryStatus, canonicalPage: canonical.href,
       vercelCache: response.headers.get('x-vercel-cache') ?? 'unknown',
       cacheControl: response.headers.get('cache-control') ?? 'unspecified',
       ...htmlPayload,
@@ -73,7 +87,8 @@ for (const suffix of ['/', '/ru', '/es']) {
     for (const warning of budgetWarnings) console.error(`::warning title=Public HTML payload::${url.pathname}: ${warning}`);
   }
   console.log(JSON.stringify({
-    page: url.toString(), capturedAtUtc: new Date().toISOString(),
+    page: url.toString(), canonicalPage: measurements[0].canonicalPage,
+    entryStatus: measurements[0].entryStatus, capturedAtUtc: new Date().toISOString(),
     firstRequestTtfbMs: measurements[0].ttfbMs,
     warmTtfbMedianMs: Math.round(median(warm)),
     warmTtfbMaximumMs: Math.max(...warm),
@@ -92,6 +107,6 @@ for (const suffix of ['/', '/ru', '/es']) {
     medianRscHtmlSharePct: Math.round((medianRscBytes / medianHtmlBytes) * 1000) / 10,
     htmlWarnBytes, inlineWarnBytes, budgetWarnings,
     samples: measurements,
-    note: 'TTFB is header latency only. HTML size is decoded UTF-8, not compressed transfer bytes. Next RSC scripts include JavaScript escaping/overhead; decoded Flight counts only confidently parsed [1, string] chunks, and is not a full semantic component attribution. Public marker buckets are heuristic: a chunk with multiple markers is counted as mixed; chunks without markers are unattributed. No Flight content is logged. Not a browser LCP measurement.',
+    note: 'TTFB is time to final document headers, including the approved entry redirect when present. HTML size is decoded UTF-8, not compressed transfer bytes. Next RSC scripts include JavaScript escaping/overhead; decoded Flight counts only confidently parsed [1, string] chunks, and is not a full semantic component attribution. Public marker buckets are heuristic: a chunk with multiple markers is counted as mixed; chunks without markers are unattributed. No Flight content is logged. Not a browser LCP measurement.',
   }, null, 2));
 }

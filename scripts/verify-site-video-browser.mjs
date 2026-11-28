@@ -173,8 +173,23 @@ try {
     await expect(block.locator('iframe')).toHaveAttribute('data-video-playback', 'youtube')
   }
   let russianPresentationVerified = false
+  let coachHomeVerified = 0
   for (const home of ['/?full=1', '/ru?full=1']) {
     await navigate(home)
+    const locale = home.startsWith('/ru') ? 'ru' : 'en'
+    const canonical = '/' + locale + '/my-coach'
+    if (!live || new URL(page.url()).pathname === canonical) {
+      // Candidate and updated production must expose the actual catalog, never the retired video/composer.
+      await expect(page).toHaveURL(url => url.pathname === canonical)
+      const catalog = page.locator('[data-my-coach-catalog]')
+      await expect(catalog).toHaveCount(1)
+      await expect(catalog).toHaveAttribute('lang', locale)
+      await expect(catalog.locator('[data-my-coach-hero]')).toBeVisible()
+      await expect(page.locator('[data-video-slot="home-intro"], [data-video-slot="home-presentation"], [data-home-dialogue-entry], [data-home-intent-form]')).toHaveCount(0)
+      await expect(page.locator('[data-unified-dock-item="coach"]')).toHaveAttribute('aria-current', 'page')
+      coachHomeVerified++
+      continue
+    }
     // The withdrawn 2026-10-01 intro remains retired; this is a different
     // owner-approved 2026-10-30 presentation, not an old HeyGen fallback.
     await expect(page.locator('[data-video-slot="home-intro"]')).toHaveCount(0)
@@ -216,7 +231,9 @@ try {
     // the lower catalogue, never before Ali's main composer is interactive.
   }
   pass(`${live ? 'Production' : 'Local'}: withdrawn intros hidden; EN publication gate checked`)
-  if (russianPresentationVerified) {
+  if (coachHomeVerified === 2) {
+    pass(`${live ? 'Production' : 'Local'}: EN/RU aliases open My Coach; retired Home video and composer absent`)
+  } else if (russianPresentationVerified) {
     pass(`${live ? 'Production' : 'Local'}: approved RU presentation click-to-iframe verified`)
   } else {
     const skipped = 'SKIPPED: production RU presentation slot absent; click-to-iframe not verified'
