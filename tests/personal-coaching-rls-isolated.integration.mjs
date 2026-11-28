@@ -252,6 +252,73 @@ if(!isolated){
           const privileges=(await db.query("select has_table_privilege('anon',$1,'SELECT') as anon_read,has_table_privilege('authenticated',$1,'SELECT') as authenticated_read,has_table_privilege('authenticated',$1,'INSERT') as authenticated_write",[table])).rows[0]
           assert.deepEqual(privileges,{anon_read:false,authenticated_read:false,authenticated_write:false})
         }
+        // Cross-transport exclusion uses the same account lock in both directions.
+        const {reserveOrdinaryGeminiWindowInTransaction}=await import('../lib/app/clarity-course-runs.js')
+        const directTable='app_private.coaching_direct_live_windows'
+        const D='10000000-0000-4000-8000-000000000004'
+        const actorD={id:D,claims:{sub:D}}
+        const direct=actor=>transaction(config,actor,c=>reserveOrdinaryGeminiWindowInTransaction(c,actor))
+        await db.query('insert into app.accounts(id,status,onboarding_state) values ($1,$2,$2)',[D,'active'])
+        const directAt=await direct(actorD)
+        const directExpiry=(await as(D,c=>c.query('select possible_expires_at_ms from '+directTable))).rows[0].possible_expires_at_ms
+        assert.equal(Number(directExpiry),directAt+21*60*1000)
+        assert.equal((await as(A,c=>c.query('select * from '+directTable+' where account_id=$1',[D]))).rowCount,0)
+        await assert.rejects(()=>reserve(actorD,candidate(6)),{code:'CLARITY_CREDENTIAL_BUSY'})
+        await assert.rejects(()=>direct(actorA),{code:'CLARITY_CREDENTIAL_BUSY'})
+        assert.equal((await as(A,c=>c.query('select * from '+directTable))).rowCount,0)
+        await db.query('update '+directTable+' set possible_expires_at_ms=1 where account_id=$1',[D])
+        const crossRace=await Promise.allSettled([direct(actorD),reserve(actorD,candidate(6))])
+        assert.equal(crossRace.filter(x=>x.status==='fulfilled').length,1)
+        assert.equal(crossRace.find(x=>x.status==='rejected').reason.code,'CLARITY_CREDENTIAL_BUSY')
+        await assert.rejects(()=>as(D,c=>c.query('delete from '+directTable)),/permission denied/i)
+        await db.query("update app.accounts set status='inactive' where id=$1",[D])
+        assert.equal((await as(D,c=>c.query('select * from '+directTable))).rowCount,0)
+        await db.query('delete from app.accounts where id=$1',[D])
+        assert.equal((await db.query('select * from '+directTable+' where account_id=$1',[D])).rowCount,0)
+        const directPrivileges=(await db.query("select has_table_privilege('anon',$1,'SELECT') as anon_read,has_table_privilege('authenticated',$1,'INSERT') as authenticated_write",[directTable])).rows[0]
+        assert.deepEqual(directPrivileges,{anon_read:false,authenticated_write:false})
+        // Rehearse Goal's exact proposed schema with the real reviewed archive migration.
+        // No production connections or real client data are used.
+        await db.query(await readFile(new URL('../supabase/migrations/20261122133522_hh_my_coach_durable_protocol_archive_v1_20261122.sql',import.meta.url),'utf8'))
+        await db.query(await readFile(new URL('../docs/coaching/goal-course-storage.proposal.sql',import.meta.url),'utf8'))
+        const goals='app_private.goal_course_runs',goalDays='app_private.goal_course_run_sessions',goalResults='app_private.goal_course_result_records',archive='app_private.my_coach_protocol_records'
+        const gA='71000000-0000-4000-8000-000000000001',gB='71000000-0000-4000-8000-000000000002'
+        const eA='72000000-0000-4000-8000-000000000001',eB='72000000-0000-4000-8000-000000000002'
+        const resultId='73000000-0000-4000-8000-000000000001'
+        const addGoal=(owner,run,entitlement)=>as(owner,c=>c.query('insert into '+goals+'(account_id,id,goal_id,entitlement_id,revision,payload_ciphertext) values($1,$2,$2,$3,0,$4)',[owner,run,entitlement,'synthetic sealed run']))
+        const bindGoal=(owner,run,day,protocol)=>as(owner,c=>c.query('insert into '+goalDays+'(account_id,course_run_id,course_day,protocol_id) values($1,$2,$3,$4)',[owner,run,day,protocol]))
+        const saveSource=(owner,protocol)=>as(owner,c=>c.query('insert into '+archive+'(account_id,protocol_id,protocol_ciphertext) values($1,$2,$3)',[owner,protocol,'synthetic sealed archive']))
+        const saveResult=(owner,run,day,protocol)=>as(owner,c=>c.query('insert into '+goalResults+'(account_id,id,course_run_id,course_day,protocol_id,revision,source_hash,payload_ciphertext) values($1,$2,$3,$4,$5,1,$6,$7)',[owner,resultId,run,day,protocol,'a'.repeat(64),'synthetic sealed result']))
+        await addGoal(A,gA,eA);await addGoal(B,gB,eB)
+        await assert.rejects(()=>addGoal(B,gA,eA),/unique constraint/i)
+        await bindGoal(A,gA,1,p1);await bindGoal(B,gB,1,p2)
+        await assert.rejects(()=>bindGoal(B,gA,2,p3),/foreign key/i)
+        await assert.rejects(()=>bindGoal(A,gA,9,p3),/check constraint/i)
+        await assert.rejects(()=>saveResult(A,gA,1,p1),/foreign key/i)
+        await saveSource(A,p1);await saveSource(B,p2)
+        await assert.rejects(()=>saveResult(A,gA,1,p2),/foreign key/i)
+        await assert.rejects(()=>saveResult(B,gA,1,p1),/foreign key/i)
+        await saveResult(A,gA,1,p1);await saveResult(B,gB,1,p2)
+        await assert.rejects(()=>saveResult(A,gA,1,p1),/unique constraint/i)
+        for(const table of [goals,goalDays,goalResults]){
+          assert.equal((await as(B,c=>c.query('select * from '+table+' where account_id=$1',[A]))).rowCount,0)
+          const privileges=(await db.query("select has_table_privilege('anon',$1,'SELECT') as anon_read,has_table_privilege('authenticated',$1,'SELECT') as authenticated_read,has_table_privilege('authenticated',$1,'INSERT') as authenticated_write",[table])).rows[0]
+          assert.deepEqual(privileges,{anon_read:false,authenticated_read:false,authenticated_write:false})
+        }
+        assert.equal((await as(A,c=>c.query('select protocol_id from '+goalResults))).rows[0].protocol_id,p1)
+        await assert.rejects(()=>as(A,c=>c.query('update '+goalResults+' set payload_ciphertext=$1',['tamper'])),/permission denied/i)
+        await assert.rejects(()=>as(A,c=>c.query('update '+goals+' set entitlement_id=$1',[eB])),/permission denied/i)
+        await db.query("update app.accounts set status='inactive' where id=$1",[B])
+        for(const table of [goals,goalDays,goalResults])assert.equal((await as(B,c=>c.query('select * from '+table))).rowCount,0)
+        await db.query("update app.accounts set status='active' where id=$1",[B])
+        // Removing the reviewed source removes its derived result, but not the course.
+        assert.equal((await as(A,c=>c.query('delete from '+archive+' where protocol_id=$1',[p1]))).rowCount,1)
+        assert.equal((await as(A,c=>c.query('select * from '+goalResults))).rowCount,0)
+        assert.equal((await as(A,c=>c.query('select * from '+goals))).rowCount,1)
+        assert.equal((await as(B,c=>c.query('select * from '+goalResults))).rowCount,1)
+        // Account deletion cascades through the run, day bindings, result and source.
+        await db.query('delete from app.accounts where id=$1',[B])
+        for(const table of [goals,goalDays,goalResults,archive])assert.equal((await db.query('select * from '+table+' where account_id=$1',[B])).rowCount,0)
       }finally{await closeDatabase()}
     }finally{await db.end()}
   })

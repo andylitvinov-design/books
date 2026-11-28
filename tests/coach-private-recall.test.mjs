@@ -82,7 +82,7 @@ for(const locale of ['ru','en','es']){assert.ok(coachReturningSalutation('Hello 
 assert.equal(projectPrivateCoachRecall(null,{...draft,protocol:{...draft.protocol,turns:[{role:'user',content:'I want to rest today'},{role:'user',content:'Remember our previous session'}]}}).lastWords,'I want to rest today')
 assert.ok(storage.includes('hasPreviousProtocol:Boolean(record||draft)'))
 assert.ok(ui.includes('view=greeting-identity&includeContext=true'))
-assert.ok(ui.includes('if(saveToAccount&&greetingIdentity.hasPreviousProtocol&&!protocolIdRef.current)'))
+assert.ok(ui.includes('if(!clarityCourseDay(id)&&saveToAccount&&greetingIdentity.hasPreviousProtocol&&!protocolIdRef.current)'))
 assert.equal((ui.match(/void loadPrivateRecall\(conversationLang\)/g)||[]).length,1)
 assert.ok(!ui.includes('[turns,speechPreview,streamingPreview,privateRecall]'))
 const transcriptStart=ui.indexOf('data-coach-live-transcript')

@@ -4,6 +4,7 @@ import {clarityCourseId,clarityCourseDay,clarityReturnHref,clarityCoachHref,clar
 import {useEffect,useRef,useState} from 'react'
 import {flushSync} from 'react-dom'
 import {appFetch,getCabinetBootstrap} from '@/lib/app/client-fetch'
+import {validBoundClarityStart} from '@/lib/coach-course-session-progress.mjs'
 import {coachLiveReviewedEntryInput} from '@/lib/coaching/coach-live-memory-note.mjs'
 import MyCoachContext from '@/components/app/my-coach-context'
 import Link from 'next/link'
@@ -2241,7 +2242,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       if(!response.ok||!Array.isArray(result?.drafts))throw Error('RESUME_LOAD')
       if(!draftMountedRef.current||protocolOwnerRef.current!==owner||protocolStartedRef.current)return
       const items=result.drafts.filter(row=>getCoachPersona(row?.personaId)&&Number.isInteger(row.turnCount)&&row.turnCount>0&&(!courseRunId||row.courseRunId===courseRunId)&&(!clarityDay||((row?.personaId===personaId||(clarityDay&&(row?.crossCoach===true||row?.relayHandoff===true)))&&row.courseSessionId===clarityCourseId(clarityDay))))
-      setResumeList(previous=>({owner,items:cursor&&previous?.owner===owner?[...new Map([...previous.items,...items].map(x=>[x.id,x])).values()]:items,cursor:result.nextCursor||null}))
+      const boundStart=!cursor&&!result.nextCursor&&result.drafts.length===0&&validBoundClarityStart(result.boundStart,courseRunId,clarityCourseId(clarityDay))?result.boundStart:null
+      setResumeList(previous=>({owner,items:cursor&&previous?.owner===owner?[...new Map([...previous.items,...items].map(x=>[x.id,x])).values()]:items,cursor:result.nextCursor||null,boundStart}))
     }catch{if(draftMountedRef.current)setResumeError(true)}
     finally{if(draftMountedRef.current)setResumeBusy(false)}
   }
@@ -2452,8 +2454,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const browseTitle=keepCoachTab?({ru:'Открыть в новой вкладке, сохранив разговор',en:'Open in a new tab and keep your conversation',es:'Abrir en otra pestaña y conservar la conversación'})[lang]:undefined
   const browseProps=keepCoachTab?{target:'_blank',rel:'noopener noreferrer',title:browseTitle,onClick:pauseForNavigation}:{onClick:interceptSessionExit}
   function enterCoachingFromGreeting(id=INTRODUCTORY_COACH_SESSION_ID,{privateProfile=false}={}){
-    if(greetingIdentity.status==='loading'||entryMemoryGrant?.status==='loading'||courseRunId)return
+    if(greetingIdentity.status==='loading'||entryMemoryGrant?.status==='loading')return
+    if(courseRunId&&(privateProfile||resumeBusy||resumeError||resumeList?.owner!==protocolOwnerRef.current||resumeList?.cursor||resumeList?.items.length!==0||!validBoundClarityStart(resumeList.boundStart,courseRunId,id)))return
     if(resumeInFlight.current||(clarityCourseDay(id)&&!protocolOwnerRef.current))return
+    // The exact next-day receipt was issued by the private server lookup.
+    if(courseRunId)protocolIdRef.current=resumeList.boundStart.protocolId
     clarityTimeLimit.current=false
     setClarityHomeworkAccepted(false)
     if(clarityCourseDay(id)){engineManuallySelectedRef.current=true;setCoachEngine('gemini_live_free')}
@@ -2484,7 +2489,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(privateProfile){toggleComposer();return}
     // The private entry read has settled. Keep Play in the original gesture
     // and leave the owner-only archive preview closed until explicitly requested.
-    if(saveToAccount&&greetingIdentity.hasPreviousProtocol&&!protocolIdRef.current)
+    // Clarity's first protocol is allocated by the authenticated relay. A
+    // local UUID (even for a returning client) would reject its first ACK.
+    if(!clarityCourseDay(id)&&saveToAccount&&greetingIdentity.hasPreviousProtocol&&!protocolIdRef.current)
       protocolIdRef.current=crypto.randomUUID()
     if(liveVoiceSelected&&liveVoiceReady&&!busy&&!paused&&!replaying){
       speechRef.current?.startSession?.()
@@ -2589,6 +2596,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       draftCourses={resumeList?.owner===protocolOwnerRef.current?resumeList.items.map(item=>item.courseSessionId):[]}
       savedSessions={resumeList?.owner===protocolOwnerRef.current?resumeList.items:[]}
       resumeLookupReady={Boolean(resumeList&&resumeList.owner===protocolOwnerRef.current)} resumeBusy={resumeBusy} resumeError={resumeError}
+      boundStart={resumeList?.owner===protocolOwnerRef.current?resumeList.boundStart:null}
       resumeCursor={resumeList?.owner===protocolOwnerRef.current?resumeList.cursor:null} onResumeSession={restorePrivateDraft} onReloadSessions={()=>loadPrivateResume()} canResume={canResumeWithSelectedCoach}
       resumeControl={protocolOwnerReady&&<div data-coach-resume-choices style={{padding:12}}>
         {greetingIdentity.entryMemoryEnabled&&<>

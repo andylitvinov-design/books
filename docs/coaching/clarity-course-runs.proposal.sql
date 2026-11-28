@@ -93,5 +93,26 @@ create policy clarity_credential_update on app_private.clarity_live_credential_w
  using(account_id=(select auth.uid()) and (select app_private.account_active()))
  with check(account_id=(select auth.uid()) and (select app_private.account_active()));
 -- No DELETE or account reassignment privilege. Account deletion cascades.
--- All live transports still need a common account credential exclusion rule
--- and trusted observation/consent integration before production activation.
+-- A direct Gemini token is not server-observed; retain its maximum possible
+-- validity rather than trusting a browser stop. Multiple ordinary direct
+-- tokens retain their existing quota policy, but cannot overlap Clarity.
+create table app_private.coaching_direct_live_windows (
+ account_id uuid primary key references app.accounts(id) on delete cascade,
+ possible_expires_at_ms bigint not null check(possible_expires_at_ms>0)
+);
+alter table app_private.coaching_direct_live_windows enable row level security;
+alter table app_private.coaching_direct_live_windows force row level security;
+revoke all on app_private.coaching_direct_live_windows from public,anon,authenticated;
+grant select,insert on app_private.coaching_direct_live_windows to hh_app_backend;
+grant update(possible_expires_at_ms) on app_private.coaching_direct_live_windows to hh_app_backend;
+create policy coaching_direct_window_select on app_private.coaching_direct_live_windows for select to hh_app_backend
+ using(account_id=(select auth.uid()) and (select app_private.account_active()));
+create policy coaching_direct_window_insert on app_private.coaching_direct_live_windows for insert to hh_app_backend
+ with check(account_id=(select auth.uid()) and (select app_private.account_active()));
+create policy coaching_direct_window_update on app_private.coaching_direct_live_windows for update to hh_app_backend
+ using(account_id=(select auth.uid()) and (select app_private.account_active()))
+ with check(account_id=(select auth.uid()) and (select app_private.account_active()));
+-- Direct-window tracking must be active for the full 21-minute possible
+-- lifetime before enabling Clarity. Other providers and shared daily
+-- consent/observation still require their own trusted adapter.
+

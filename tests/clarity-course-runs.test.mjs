@@ -211,11 +211,15 @@ test('expired observation recovery pauses the same logical session without charg
 test('stale connection recovery uses owner lock, database time and CAS, never a browser event route',()=>{
  const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
  const store=read('lib/app/clarity-course-runs.js')
- const recovery=store.slice(store.indexOf('export async function recoverExpiredClarityRun('),store.indexOf('// Called by existing draft/report adapters'))
- assert.match(recovery,/recoverExpiredClarityRun\(config,actor,runId\)/)
+ const wrapper=store.slice(store.indexOf('export async function recoverExpiredClarityRun('),store.indexOf('// Called by existing draft/report adapters'))
+ assert.match(wrapper,/return clarityRunSummary\(await readClarityRunForRelay\(config,actor,runId\)\)/)
+ const recovery=store.slice(store.indexOf('export async function readClarityRunForRelay('),store.indexOf('export async function listClarityRuns('))
  assert.match(recovery,/requireEnabled\(\)/)
  assert.match(recovery,/await lockCourseOwner\(db,actor\)/)
- assert.match(recovery,/await read\(db,actor,config,runId,true\)/)
+ assert.match(recovery,/await read\(db,actor,config,id,true\)/)
+ assert.match(recovery,/row\.lease_id!==segment\.connectionId/)
+ assert.match(recovery,/row\.course_run_id!==id/)
+ assert.match(recovery,/Math\.min\(closed,expires\)>now/)
  assert.match(recovery,/const now=await serverStamp\(db\)/)
  assert.match(recovery,/expireClarityRunObservation\(before,now\)/)
  assert.match(recovery,/if\(after!==before\)await writeClock\(db,actor,config,before,after\)/)
@@ -307,4 +311,28 @@ test('credential retirement is private, exact-lease, owner-locked, and cannot le
  assert.match(store,/if\(!row\|\|row.provider_closed_at_ms!==null\)throw conflict\(\)/)
  assert.match(relay,/retireLease:binding=>retireClarityCredential\(config,actor,binding\)/)
  assert.doesNotMatch(read('app/api/app/clarity-course/runs/route.js'),/retireClarityCredential/)
+})
+
+
+test('bound day eligibility requires reviewed prior protocols and rejects a preexisting archive or draft',async()=>{
+ const source=readFileSync(new URL('../lib/app/clarity-course-runs.js',import.meta.url),'utf8')
+ const code=source.slice(source.indexOf('async function canStartBoundDay('),source.indexOf('export async function readClarityBoundStart('))
+ const canStart=new Function(code+'\nreturn canStartBoundDay')()
+ const actor={id:'owner'},run={protocolIds:[id(91),id(92),id(93)],clock:{days:[{day:1,status:'time_limit',elapsedMs:1200000},{day:2,status:'not_started',elapsedMs:0},{day:3,status:'not_started',elapsedMs:0}]}}
+ const records=new Set([run.protocolIds[0]]),drafts=new Set()
+ const db={query:async(sql,args)=>{
+  assert.equal(args[0],actor.id)
+  assert.match(sql,/account_id=\$1 and protocol_id=\$2/)
+  const set=sql.includes('my_coach_protocol_drafts')?drafts:records
+  return {rows:set.has(args[1])?[{protocol_id:args[1]}]:[]}
+ }}
+ assert.equal(await canStart(db,actor,run,2),true)
+ assert.equal(await canStart(db,actor,run,3),false)
+ records.clear();assert.equal(await canStart(db,actor,run,2),false)
+ records.add(run.protocolIds[0]);records.add(run.protocolIds[1]);assert.equal(await canStart(db,actor,run,2),false)
+ records.delete(run.protocolIds[1]);drafts.add(run.protocolIds[1]);assert.equal(await canStart(db,actor,run,2),false)
+ drafts.clear();assert.equal(await canStart(db,actor,run,2),true)
+ assert.match(source,/if\(run.clock.days\[day-1\]\?\.status==='not_started'&&!await canStartBoundDay\(db,actor,run,day\)\)throw conflict\(\)/)
+ const draftsSource=readFileSync(new URL('../lib/app/my-coach-protocol-drafts.js',import.meta.url),'utf8')
+ assert.match(draftsSource,/courseRunId&&!cursor&&!hasMore&&drafts.length===0\?await readClarityBoundStart/)
 })

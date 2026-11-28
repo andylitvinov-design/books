@@ -490,3 +490,27 @@ test('retired grant and clock stores cannot be activated by cumulative relay env
  assert.equal((clock.match(/if\(!clarityClockStorageEnabled\(\)\)return null/g)||[]).length,2)
  assert.match(clock,/if\(!clarityClockStorageEnabled\(\)\)throw new AppError/)
 })
+
+
+test('returning client starts fresh Clarity with server-allocated protocol, without changing ordinary coaching',async()=>{
+ const {createClarityRelayClient,projectClarityPanelClock}=await import('../lib/coaching/clarity-relay-client.mjs')
+ const page=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const start=page.slice(page.indexOf('  function enterCoachingFromGreeting('),page.indexOf('  const motionPhase='))
+ const allocate=start.match(/if\(!clarityCourseDay\(id\)&&saveToAccount&&greetingIdentity\.hasPreviousProtocol&&!protocolIdRef\.current\)\s+protocolIdRef\.current=crypto\.randomUUID\(\)/)?.[0]
+ assert.ok(allocate)
+ assert.equal((start.match(/protocolIdRef\.current=crypto\.randomUUID\(\)/g)||[]).length,1)
+ const apply=new Function('id','clarityCourseDay','saveToAccount','greetingIdentity','protocolIdRef','crypto',allocate)
+ const ref={current:null},localId=id(91),runId=id(92),protocolId=id(93),visitId=id(94)
+ const day=topic=>/^clarity_day_[123]$/.test(topic)?Number(topic.slice(-1)):null
+ apply('clarity_day_1',day,true,{hasPreviousProtocol:true},ref,{randomUUID:()=>localId})
+ assert.equal(ref.current,null)
+ const selection={accountId:owner,runId:null,protocolId:ref.current,day:1,personaId:'mira',minimumElapsedMs:0}
+ const client=createClarityRelayClient({...selection,body})
+ client.receive(JSON.stringify({type:'hh_clarity_selection',runId,day:1,protocolId}))
+ client.receive(JSON.stringify({type:'hh_clarity_ready',decision:'start'}))
+ client.consent({foreground:true,explicitPlay:true})
+ const ack=client.receive(JSON.stringify({type:'hh_clarity_clock',day:1,elapsedMs:0,status:'active',visitId,coachId:'mira'}))
+ assert.equal(projectClarityPanelClock({selection,owner,ack}).protocolId,protocolId)
+ apply('introductory',day,true,{hasPreviousProtocol:true},ref,{randomUUID:()=>localId})
+ assert.equal(ref.current,localId)
+})

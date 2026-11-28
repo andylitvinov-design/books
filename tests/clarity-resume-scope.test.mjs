@@ -20,7 +20,8 @@ test('scope is owner-filtered before pagination, exact on resume and passed thro
  assert.ok(store.includes('clarityResumeMatches(binding,input.courseRunId)'))
  assert.ok(route.includes("courseRunId:params.get('courseRunId')"))
  assert.ok(ui.includes('item.courseRunId?{courseRunId:item.courseRunId}'))
- assert.ok(ui.includes("if(greetingIdentity.status==='loading'||entryMemoryGrant?.status==='loading'||courseRunId)return"))
+ assert.ok(ui.includes("if(greetingIdentity.status==='loading'||entryMemoryGrant?.status==='loading')return"))
+ assert.match(ui,/if\(courseRunId&&\(privateProfile\|\|resumeBusy\|\|resumeError\|\|resumeList\?\.owner!==protocolOwnerRef\.current\|\|resumeList\?\.cursor\|\|resumeList\?\.items.length!==0\|\|!validBoundClarityStart\(resumeList.boundStart,courseRunId,id\)\)\)return/)
  assert.ok(read('components/app/clarity-run-catalog.jsx').includes("clarityCoachHref('/'+locale+'/my-coach',day.day,run.id)"))
 })
 

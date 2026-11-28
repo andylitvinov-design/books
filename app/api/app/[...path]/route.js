@@ -1,5 +1,6 @@
 import {clarityCourseDay} from '@/lib/coaching/clarity-course.mjs'
 import {clarityCourseEnabled,clarityReserve,clarityConfirm,clarityRelease} from '@/lib/app/clarity-course-access.js'
+import {reserveOrdinaryGeminiLiveWindow} from '@/lib/app/clarity-course-runs.js'
 import { NextResponse, after } from 'next/server'
 import { REIKI_CONSENT_COOKIE, reikiConsentCookieOptions, reikiConsentProof, validReikiConsent } from '@/lib/academy/reiki-oauth-consent.js'
 import { randomUUID } from 'node:crypto'
@@ -1229,10 +1230,11 @@ async function handle(request, { params }) {
         ownerTrial:practitionerEmailAllowed(actor),
       })
       await consumeRateBatch(config,liveQuota.attempts)
+      const directWindowNow=await reserveOrdinaryGeminiLiveWindow(config,actor)
       const grant=clarityCourseDay(start.courseSessionId)?await clarityReserve(config,actor,start.courseSessionId):null
       let token
       try{token=await issueGeminiFreeLiveToken(vendor,start,{
-        signal:AbortSignal.any([request.signal,AbortSignal.timeout(12000)])})}
+        now:directWindowNow,signal:AbortSignal.any([request.signal,AbortSignal.timeout(12000)])})}
       catch(error){
         if(grant)await clarityRelease(config,actor,grant).catch(()=>{})
         // Fixed allowlist only: NEVER log API key, token, URL, personal data,
