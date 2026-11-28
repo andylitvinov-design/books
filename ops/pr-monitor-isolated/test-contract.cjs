@@ -521,3 +521,19 @@ test('agent evidence is explicit opt-in and separate from confirmed commit/merge
  assert.equal(prReport({...p,state:'closed',merged_at:at,merge_commit_sha:M},[],[],null,[c({...e,event:'MERGED',stage:'MERGE',merge_sha:M})],now).mergeActor,'UNKNOWN');
  assert.equal(prReport(p,[],[],{total_count:1,check_runs:[{id:1,name:'hh-merge-check',head_sha:M,status:'completed',conclusion:'success'}]},null,now).stage,'UNKNOWN');
 });
+
+
+test('agent registry uses GitHub since, rejects an old first page and bounds recent PR pages',()=>{
+ const source=read('agents-performance.js');
+ const scope={module:{exports:{}}};new vm.Script(source).runInNewContext(scope);
+ const {registryPath,registryPage,recentPages,recentRows}=scope.module.exports;
+ const now=Date.parse('2026-11-28T14:14:00Z');
+ assert.equal(registryPath(now),'/api/agent-trace-registry?since=2026-11-27T14%3A14%3A00.000Z');
+ assert.equal(registryPage([{created_at:'2026-10-21T16:09:25Z'}],now),false);
+ assert.equal(registryPage([{created_at:'2026-10-21T16:09:25Z',updated_at:'2026-11-28T13:18:15Z'}],now),true);
+ assert.equal(registryPage([],now),true);assert.equal(registryPage(null,now),false);
+ assert.deepEqual(Array.from(recentPages(47)),[1]);assert.deepEqual(Array.from(recentPages(101)),[1,2]);assert.deepEqual(Array.from(recentPages(200)),[2]);assert.deepEqual(Array.from(recentPages(347,250)),[2,3]);
+ const rows=recentRows([Array.from({length:100},(_,i)=>({id:i+1})),Array.from({length:21},(_,i)=>({id:i+101}))],'id');
+ assert.equal(rows.length,100);assert.equal(rows[0].id,22);assert.equal(rows.at(-1).id,121);
+ assert.match(source,/get\(routes\.registry\(now\)\)/);assert.match(source,/get\(routes\.checks\(sha\(p\.head\.sha\)\)\),readRegistry\(\)/);
+});
