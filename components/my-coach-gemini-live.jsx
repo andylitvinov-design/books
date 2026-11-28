@@ -130,6 +130,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   liveContextAccess='',contextRevision=0,localRecoveryTurns=[],onUnconfirmedInput,
   privateGreetingText='',onPrivateGreeting,onPrivateRecallRequest,
   methodSession=null,prepareMethodSession,speechReviewConsent=false,onSpeechReviewCandidate,
+  expressIntro=false,onExpressDeadline,
 },ref){
   const lang=safeLocale(locale),t=ui[lang]
   const [phase,setPhase]=useState('idle')
@@ -142,7 +143,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     elapsedSeconds,outputMuted,onSessionStart,onVoiceStateChange,onMicLevel,onInputInterim,
     onInputFinal,onOutputInterim,onOutputFinal,onInterrupted,
     onDirectorProgress,onOpeningProgress,onNotice,openingPrior,allowOpeningPrior,
-    liveContextAccess,contextRevision,localRecoveryTurns,onUnconfirmedInput,methodSession,prepareMethodSession,privateGreetingText,onPrivateGreeting,onPrivateRecallRequest,speechReviewConsent,onSpeechReviewCandidate}
+    liveContextAccess,contextRevision,localRecoveryTurns,onUnconfirmedInput,methodSession,prepareMethodSession,privateGreetingText,onPrivateGreeting,onPrivateRecallRequest,speechReviewConsent,onSpeechReviewCandidate,expressIntro,onExpressDeadline}
 
   const notify=text=>{
     setNotice(text)
@@ -152,6 +153,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   // provider response, bearer URL, WebSocket event reason or sensitive keys.
   const errorNotice=error=>({
     GEMINI_LIVE_LIMIT:t.rateLimit,
+    GEMINI_LIVE_EXPRESS_USED:({en:'Your free chat with this coach has already been used.',ru:'Бесплатный чат с этим коучем уже использован.',es:'Ya usaste el chat gratuito con este coach.'})[lang],
     GEMINI_LIVE_LOGIN:t.login,
     GEMINI_LIVE_PROVIDER_ACCESS:t.providerAccess,
     GEMINI_LIVE_PROVIDER_SETUP:t.providerSetup,
@@ -197,6 +199,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     silence(r)
     try{if(r.context)r.context.onstatechange=null;void r.context?.close?.().catch?.(()=>{})}catch{}
     if(r.timer)clearTimeout(r.timer)
+    if(r.expressClosingTimer)clearTimeout(r.expressClosingTimer)
     if(r.reconnectTimer)clearTimeout(r.reconnectTimer)
     if(r.greetingTimer)clearTimeout(r.greetingTimer)
     if(r.sidebandTimer)clearTimeout(r.sidebandTimer)
@@ -227,6 +230,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   function pauseSession({disconnect=false}={}){
     const r=runtime.current
     if(!r||r.ended)return false
+    if(r.expressIntro){stop();return true}
     // Parent and transport both observe lifecycle events. A duplicate pause
     // must not repeatedly release hardware or invalidate a stable parked socket.
     if(r.paused&&!r.resumeInFlight&&!disconnect)return true
@@ -447,10 +451,11 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     }
   }
   function sendSocket(r,packet){
-    if(r.ended||!r.socket||r.socket.readyState!==1)return false
+    if(r.ended||!r.socket||r.socket.readyState!==1||(r.expressIntro&&Date.now()>=r.expressDeadline))return false
     try{r.socket.send(JSON.stringify(packet));return true}catch{return false}
   }
   async function checkpoint(r,message,preceding=null){
+    if(r.expressIntro)return
     const text=audioTranscription(message).slice(0,1200)
     if(!text||r.ended)return
     const p=propsRef.current
@@ -888,7 +893,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(r.ended)return
     let frame
     try{frame=readGeminiLiveServerMessage(packet)}catch{notify(t.failure);return}
-    if(frame.resumable!==null){
+    if(!r.expressIntro&&frame.resumable!==null){
       r.checkpointCurrent=frame.resumable
       if(frame.resumable)r.resumeHandle=frame.resumeHandle
     }
@@ -898,13 +903,13 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       r.interrupted=false
       if(!r.sessionStarted){
         r.sessionStarted=true
-        propsRef.current.onSessionStart?.()
+        propsRef.current.onSessionStart?.(r.expressIntro?r.expressDeadline:undefined)
       }
       // One Play-triggered app control event. It is never a human statement,
       // consent, name or archived memory; do not repeat it on reconnect.
       if(!r.introSent){
         r.introSent=true
-        if(!sendSocket(r,r.continuing?geminiLiveContinueMessage():geminiLiveStartMessage())){notify(t.failure);stop();return}
+        if(!sendSocket(r,r.expressIntro?geminiLiveTextMessage('[APPLICATION EXPRESS START EVENT — NOT HUMAN SPEECH] Begin the short welcome.'):r.continuing?geminiLiveContinueMessage():geminiLiveStartMessage())){notify(t.failure);stop();return}
         phaseChange('thinking')
         r.replyWatch?.touch()
         r.greetingTimer=setTimeout(()=>{
@@ -1148,7 +1153,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       if(r.ended||r.socket!==socket)return
       try{
         const setup=geminiLiveSetupForToken(token,r)
-        if(resume)setup.setup.sessionResumption={handle}
+        if(r.expressIntro)delete setup.setup.sessionResumption
+        else if(resume)setup.setup.sessionResumption={handle}
         if(!sendSocket(r,setup))throw Error('SETUP_SEND_FAILED')
       }catch(error){if(resume||r.paused)failPausedResume(r,{denied:error?.message!=='SETUP_SEND_FAILED'});else{notify(t.setupInvalid);stop()}}
     }
@@ -1168,6 +1174,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       // A complete reply already received from Gemini belongs to the current
       // conversation. Let its queued PCM finish before replacing the socket.
       const denied=event?.code===1008
+      if(r.expressIntro){const completed=r.sessionStarted&&Date.now()>=r.expressDeadline;stop();if(completed)propsRef.current.onExpressDeadline?.();else notify(t.connection);return}
       if(r.paused){parkPausedSocket(r,denied);notify(r.resumeUnavailable?t.resumeUnavailable:t.resumeRetry);return}
       if(!denied&&r.reconnects<3&&r.resumeHandle&&r.stream?.active!==false&&
          Date.parse(r.liveToken?.expiresAt)>Date.now()){
@@ -1224,17 +1231,18 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       throw Error('GEMINI_LIVE_UNAVAILABLE')
     if(r.ended)throw Error('GEMINI_LIVE_UNAVAILABLE')
     let response
-    try{response=await fetch('/api/app/my-coach/live-token',{
+    try{response=await fetch(r.expressIntro?'/api/app/my-coach/express-token':'/api/app/my-coach/live-token',{
       method:'POST',credentials:'same-origin',cache:'no-store',
       signal:r.abort.signal,headers:{'Content-Type':'application/json',...(r.methodSession?{'X-HH-Account-ID':r.methodSession.accountId}:{})},
       body:JSON.stringify({personaId:r.personaId,locale:r.locale,
         ...(r.methodSession?{methodId:r.methodSession.methodId,methodSessionId:r.methodSession.methodSessionId}:{}),
-        settings:r.settings,courseSessionId:r.courseSessionId,voiceName:r.voiceName,consent:true,
+        settings:r.settings,...(r.expressIntro?{}:{courseSessionId:r.courseSessionId}),voiceName:r.voiceName,consent:true,
         voiceConsent:true,trainingUseConsent:true}),
     })}
     catch{throw Error('GEMINI_LIVE_TOKEN_NETWORK')}
     if(response.status===429)throw Error('GEMINI_LIVE_LIMIT')
     if(response.status===401)throw Error('GEMINI_LIVE_LOGIN')
+    if(r.expressIntro&&response.status===409)throw Error('GEMINI_LIVE_EXPRESS_USED')
     if(!response.ok){
       const fault=await response.json().catch(()=>null)
       const reason=typeof fault?.error==='string'?fault.error:''
@@ -1253,6 +1261,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     const data=await response.json().catch(()=>null)
     if(data?.schema!=='HH_GEMINI_LIVE_FREE_TOKEN_V1'||!data.token||!data.model)
       throw Error('GEMINI_LIVE_UNAVAILABLE')
+    if(r.expressIntro&&(data.expressIntro!==true||!Number.isFinite(Date.parse(data.expiresAt))||Date.parse(data.expiresAt)<=Date.now()||Date.parse(data.expiresAt)-Date.now()>120000))throw Error('GEMINI_LIVE_UNAVAILABLE')
     return data
   }
   function watchMicrophone(r){
@@ -1288,6 +1297,12 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       stage='token'
       const token=await getToken(r)
       if(r.ended)return
+      if(r.expressIntro){
+        r.expressDeadline=Date.parse(token.expiresAt)
+        r.expressClosingTimer=setTimeout(()=>{if(!r.ended&&r.ready)sendSocket(r,geminiLiveTextMessage('[APPLICATION EXPRESS CLOSING EVENT — NOT HUMAN SPEECH] Briefly thank the person without asking another question.'))},Math.max(0,r.expressDeadline-Date.now()-20000))
+        r.timer=setTimeout(()=>{if(r.ended)return;const completed=r.sessionStarted;stop();if(completed)propsRef.current.onExpressDeadline?.()},Math.max(0,r.expressDeadline-Date.now()))
+        connect(r,token);return
+      }
       connect(r,token)
       r.timer=setTimeout(()=>{
         if(r.ended)return
@@ -1362,7 +1377,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       pendingContext:'',pendingDirectorHint:'',latestDirectorHint:'',sidebandTimer:null,
       bargeDetector:new GeminiLiveBargeDetector(),pendingMic:[],
       reconnects:0,voiceName:p.voiceName,locale:p.locale,personaId:p.personaId,
-      settings:p.settings,courseSessionId:p.courseSessionId,allowOpeningPrior:p.allowOpeningPrior===true,
+      settings:p.settings,courseSessionId:p.courseSessionId,expressIntro:p.expressIntro,allowOpeningPrior:p.allowOpeningPrior===true,
       methodSession:p.methodSession,prepareMethodSession:p.prepareMethodSession,methodCheckpointQueue:Promise.resolve(),
       openingPrior:p.allowOpeningPrior===true?p.openingPrior:null,
       speechReviewBuffer:createSpeechReviewBuffer(),speechReviewQueue:null,
@@ -1479,7 +1494,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     // Changing persona, language, voice or consent must never silently keep
     // streaming captured audio under the previous server-locked token.
     if(runtime.current)stop()
-  },[personaId,lang,voiceName,courseSessionId,enabled])
+  },[personaId,lang,voiceName,courseSessionId,enabled,expressIntro])
   const label=phase==='paused'?t.continue:phase==='speaking'?t.interrupt:phase==='idle'?t.start:
     phase==='loading'?t.connecting:phase==='thinking'?t.thinking:({ru:'Пауза',en:'Pause',es:'Pausa'})[lang]
   return <div className={styles.root} data-my-coach-voice={phase}
@@ -1508,7 +1523,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
           phase==='listening'?t.listening:phase==='speaking'?t.speaking:t.thinking}
       </span>}
     {notice&&<p className={styles.note} role="status">{notice}</p>}
-    {personaId==='caesar'&&process.env.NEXT_PUBLIC_HH_SIMLI_OWNER_DIALOGUE_PILOT==='true'&&<SimliDialoguePilot ref={simliPilotRef} target="coach" locale={lang}
+    {!expressIntro&&personaId==='caesar'&&process.env.NEXT_PUBLIC_HH_SIMLI_OWNER_DIALOGUE_PILOT==='true'&&<SimliDialoguePilot ref={simliPilotRef} target="coach" locale={lang}
       phase={phase} blocked={!enabled||Boolean(liveContextAccess)||phase==='paused'}
       revision={personaId+'|'+lang+'|'+voiceName+'|'+contextRevision}/>}
   </div>

@@ -51,6 +51,7 @@ import {coachSessionOpeningAudioPath,startDirectCoachIntroAudio} from '@/lib/per
 import CoachingAvatar from '@/components/app/coaching-avatar'
 import MyCoachMotionMedia from '@/components/my-coach-motion-media'
 import MyCoachGreetingGate from './my-coach-greeting-gate'
+import CoachExpressPanel from './my-coach-express-panel'
 import {markCoachGreetingConnected} from '@/lib/coaching/coach-greeting-visit.mjs'
 import MyCoachCourseJourney from './my-coach-course-journey'
 import {DEFAULT_COACH_COURSE_SESSION_ID,INTRODUCTORY_COACH_SESSION_ID,coachCourseFocusLabel,COACH_PROGRAM_GROUPS} from '@/lib/coaching/coach-course-journey.mjs'
@@ -274,6 +275,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   // Public greeting remains a separate, free pre-session screen. No Google
   // token, microphone or coaching clock starts until the user opts in.
   const [greetingAccepted,setGreetingAccepted]=useState(false)
+  const [expressOpen,setExpressOpen]=useState(false)
   const [selectedMethod,setSelectedMethod]=useState(()=>methodPreference&&resolveCoachMethodId(personaId,methodPreference)||'')
   const [methodSession,setMethodSession]=useState(null)
   const methodHandshake=useRef(null)
@@ -2309,9 +2311,17 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         </Link>
       </div>
     </header>
-    {!greetingAccepted&&<MyCoachGreetingGate
+    {expressOpen&&<CoachExpressPanel key={personaId+'-'+conversationLang} personaId={personaId} locale={conversationLang} name={name} voiceName={selectedGeminiVoice} settings={settings} onClose={()=>setExpressOpen(false)}/>}
+    {!greetingAccepted&&!expressOpen&&<MyCoachGreetingGate
       personaId={personaId} locale={conversationLang} name={name}
-      methodId={visibleMethodId} onStart={enterCoachingFromGreeting} entryPending={greetingIdentity.status==='loading'} accountSaving={protocolOwnerReady}
+      methodId={visibleMethodId} onStart={enterCoachingFromGreeting} expressAvailable onExpressStart={async({personaId:expressPersonaId})=>{
+        const response=await fetch('/api/app/my-coach/express-token?personaId='+encodeURIComponent(expressPersonaId),{credentials:'same-origin',cache:'no-store'})
+        if(!response.ok)return false
+        const status=await response.json()
+        if(status.used)return 'used'
+        if(!status.available)return false
+        setExpressOpen(true);return true
+      }} entryPending={greetingIdentity.status==='loading'} accountSaving={protocolOwnerReady}
       selectedMethod={selectedMethod} onMethodSelect={setSelectedMethod}
       methodSelectionEnabled={protocolOwnerReady}
       privateProfileEnabled={protocolOwnerReady&&profileV3Enabled}

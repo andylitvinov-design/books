@@ -1030,3 +1030,5 @@ test('course protocol panel renders the actual grouped checkpoints, not a compet
  assert.ok(card.includes('data-coach-opening-name'))
  assert.ok(card.includes('data-coach-profile-checklist'))
 })
+
+import './coach-express-intro.test.mjs'
