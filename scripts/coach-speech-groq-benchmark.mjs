@@ -1,5 +1,5 @@
-// Explicit benchmark only. Reuse merged Gemini CLI's input validation through the Python corpus checker.
-import {readFile,realpath,writeFile,open} from 'node:fs/promises'
+// Explicit synthetic-only benchmark. Validate the same corpus format as the Gemini CLI.
+import {readFile,realpath,open} from 'node:fs/promises'
 import {resolve,dirname,basename} from 'node:path'
 import {createHash} from 'node:crypto'
 import {performance} from 'node:perf_hooks'
