@@ -70,3 +70,57 @@ test('lifetime account and coach claim is durable and only verified admin is exe
  assert.ok(schema.includes('primary key(account_id,persona_id)'))
  assert.ok(schema.includes('force row level security'))
 })
+
+
+import {GEMINI_FREE_LIVE_MODEL,geminiFreeLiveConfig,expressLiveApproved,normalizeExpressLiveStart,issueGeminiFreeLiveToken} from '../lib/coaching/gemini-live-free.mjs'
+import {GEMINI_COACH_VOICE_OPTIONS,lockedCoachSessionVoice} from '../lib/coaching/gemini-voice-catalog.mjs'
+const syntheticKey='AIza'+'A'.repeat(36)
+const syntheticEnv={
+ HH_GEMINI_FREE_API_KEY:syntheticKey,HH_MY_COACH_GEMINI_FREE_ENABLED:'true',
+ HH_MY_COACH_GEMINI_FREE_TIER_CONFIRMED:'true',HH_MY_COACH_GEMINI_FREE_DATA_APPROVED:'true',
+ HH_MY_COACH_GEMINI_LIVE_FREE_ENABLED:'true',HH_COACHING_BRAIN_ENABLED:'true',
+ HH_COACHING_LIVE_VOICE_ENABLED:'true',HH_COACHING_LIVE_VOICE_APPROVED:'true',
+ HH_MY_COACH_EXPRESS_FREE_APPROVED:'true',
+}
+test('express remains disabled unless every existing Free gate and dedicated approval is enabled',()=>{
+ assert.equal(expressLiveApproved(syntheticEnv),true)
+ for(const key of Object.keys(syntheticEnv)){
+  const env={...syntheticEnv};delete env[key]
+  assert.equal(expressLiveApproved(env),false,key)
+ }
+ assert.equal(expressLiveApproved({...syntheticEnv,HH_GEMINI_PAID_API_KEY:syntheticKey}),false)
+})
+test('express token requests are one-use, 120s capped, locked to character and isolated from course state (mock provider)',async()=>{
+ const now=1795100000000
+ for(const personaId of ['mira','max','sofia','alex','merlin','harry','genie','caesar'])
+ for(const locale of ['en','ru','es']){
+  const voiceName=GEMINI_COACH_VOICE_OPTIONS[personaId][0]
+  const body={personaId,locale,settings:{},voiceName,consent:true,voiceConsent:true,trainingUseConsent:true}
+  const input=normalizeExpressLiveStart(body)
+  assert.equal(input.courseSessionId,null)
+  for(const field of ['courseSessionId','openingPrior','allowOpeningPrior'])
+   assert.throws(()=>normalizeExpressLiveStart({...body,[field]:null}))
+  for(const field of ['consent','voiceConsent','trainingUseConsent'])
+   assert.throws(()=>normalizeExpressLiveStart({...body,[field]:false}))
+  let count=0
+  const token=await issueGeminiFreeLiveToken(geminiFreeLiveConfig(syntheticEnv),input,{now,fetcher:async(url,options)=>{
+   count++
+   assert.equal(url,'https://generativelanguage.googleapis.com/v1beta/auth_tokens')
+   const request=JSON.parse(options.body),setup=request.bidiGenerateContentSetup
+   assert.equal(request.uses,1)
+   assert.equal(Date.parse(request.expireTime)-now,120000)
+   assert.equal(Date.parse(request.newSessionExpireTime)-now,20000)
+   assert.ok(request.fieldMask.split(',').includes('sessionResumption'))
+   assert.equal(Object.hasOwn(setup,'sessionResumption'),false)
+   assert.equal(setup.model,'models/'+GEMINI_FREE_LIVE_MODEL)
+   assert.equal(setup.generationConfig.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName,lockedCoachSessionVoice(personaId,locale)||voiceName)
+   assert.match(setup.systemInstruction.parts[0].text,/nonpersonal general topics/)
+   return {ok:true,status:200,json:async()=>({name:'auth_tokens/synthetic-express-test'})}
+  }})
+  assert.equal(count,1)
+  assert.equal(token.expressIntro,true)
+  assert.equal(Date.parse(token.expiresAt)-now,120000)
+  assert.equal(Object.hasOwn(token,'audioProfile'),false)
+  assert.equal(JSON.stringify(token).includes(syntheticKey),false)
+ }
+})
