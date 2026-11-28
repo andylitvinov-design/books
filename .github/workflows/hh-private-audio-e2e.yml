@@ -55,6 +55,9 @@ on:
       # Keep all voice, transcript/protocol, shared auth and post-merge media checks.
       - '!app/api/app/my-coach/qa/**'
       - '!app/api/app/my-coach/rating/**'
+      # Verified engine capability metadata does not read/write recordings.
+      # Auth/account/rate/voice/protocol and postmerge media coverage stay live.
+      - '!app/api/app/my-coach/engines/route.js'
   push:
     branches: ['codex/public-book-library']
     paths:
