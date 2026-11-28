@@ -1929,3 +1929,23 @@ test('CI-only Public Services plus Home/Practice lint policy does not build the 
   }
   assert.equal(planPublicServicesEvent({GITHUB_EVENT_NAME:'workflow_dispatch'}).cases,'all');
 });
+
+// WebKit can defer offscreen loading=lazy artwork even when decode() is called.
+test('Home real photo acceptance scrolls into view before checking natural dimensions and decode',()=>{
+ const source=readFileSync(new URL('../scripts/verify-home-consultation-first-screen.mjs',import.meta.url),'utf8');
+ // The old Samir homepage is being replaced by My Coach in #5845. A future
+ // explicit route migration may remove this complete old-photo contract,
+ // but while the legacy check exists it must not silently swallow failures.
+ if(!source.includes('data-home-dialogue-entry'))return;
+ const start=source.indexOf("const photos=root.locator('img')");
+ const end=source.indexOf('name+": real photo assets loaded',start);
+ assert.ok(start>=0&&end>start,'legacy page must still check every real photo');
+ const block=source.slice(start,end);
+ assert.ok(block.indexOf('scrollIntoViewIfNeeded')<block.indexOf('img.complete&&img.naturalWidth>0'));
+ assert.ok(block.indexOf('img.complete&&img.naturalWidth>0')<block.indexOf('await img.decode()'));
+ assert.match(block,/photoCount>0/);
+ assert.match(block,/graphics\.length,photoCount/);
+ assert.match(block,/img\.width>0&&img\.height>0/);
+ assert.match(block,/throw new Error\(name\+"\: actual photo failed to load\/decode/);
+ assert.doesNotMatch(block,/catch\s*\{\s*\}|loading\s*=/);
+});
