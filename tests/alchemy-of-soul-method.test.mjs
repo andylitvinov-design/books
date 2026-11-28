@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
 test("Alchemy of the Soul and Psycho-homeopathy are one canonical offer with four agreed method stages", () => {
-  const detail = read("components/core-service-detail.tsx");
+  const detail = read("components/core-service-detail.tsx") + read("components/core-offer-data.ts");
   const offers = read("data/core-service-offers.ts");
   const cards = read("components/services-solutions.tsx");
   const route = read("app/[locale]/services/alchemy-of-soul/page.tsx");

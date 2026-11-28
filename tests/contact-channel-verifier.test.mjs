@@ -268,20 +268,27 @@ test('both core-service scripts explicitly open the uniquely scoped chooser with
 
 test('actual core JSX has one footer section with one chooser and the matching service draft', () => {
   const exports = {};
+  const offerData = {};
+  const compiledOfferData = ts.transpileModule(read('components/core-offer-data.ts'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
+  runInNewContext(compiledOfferData, { exports: offerData });
   let pathname;
   const modules = {
     'react/jsx-runtime': { jsx, jsxs: jsx },
-    react: { useEffect: () => {}, useState: initial => [initial === null ? pathname : initial, () => {}] },
+    react: { useEffect: () => {}, useId: () => 'capture-panel', useState: initial => [initial === null ? pathname : initial, () => {}] },
     'next/navigation': { usePathname: () => pathname },
     '@/lib/public-lead-capture': publicLead,
     '@/components/consultation-choice-capture': { ConsultationChoiceCapture: () => null },
     '@/components/acquisition-event-link': { AcquisitionEventLink: props => jsx('a', props) },
     'next/image': { default: () => null },
+    '@/components/static-portrait': { StaticPortrait: () => null },
+    '@/lib/public-card-artwork': { cardArtworkUrl: value => value, hasCardArtwork: () => false },
+    '@/components/compact-lead-capture': { CompactLeadCapture: props => jsx('compact-lead', props) },
     'next/link': { default: props => jsx('a', props) },
-    'lucide-react': Object.fromEntries(['ArrowLeft', 'ArrowRight', 'ArrowUpRight', 'Check', 'ShieldCheck'].map(name => [name, () => null])),
+    'lucide-react': Object.fromEntries(['ArrowLeft', 'ArrowRight', 'ArrowUpRight', 'Check', 'ShieldCheck', 'ChevronDown', 'MessageCircle', 'Send', 'ShoppingBag'].map(name => [name, () => null])),
     '@/components/contact-channel-chooser': { ContactChannelChooser: props => jsx('contact-chooser', props) },
     '@/lib/whatsapp-enquiry': enquiries,
     '@/components/service-video-showcase': { ServiceVideoShowcase: () => null },
+    '@/components/core-offer-data': offerData,
     './core-service-detail.module.css': { default: {} },
     './sitewide-lead-capture.module.css': { default: {} },
   };
@@ -292,10 +299,10 @@ test('actual core JSX has one footer section with one chooser and the matching s
   const compiledSitewide = ts.transpileModule(read('components/sitewide-lead-capture.tsx'), { fileName: 'sitewide.tsx', compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   runInNewContext(compiledSitewide, { exports: sitewide, require: name => { assert.ok(Object.hasOwn(modules, name), name); return modules[name]; } });
   const nodes = tree => !tree || typeof tree !== 'object' ? [] : Array.isArray(tree) ? tree.flatMap(nodes) : [tree, ...nodes(tree.props.children)];
-  for (const locale of ['en', 'ru']) for (const kind of ['dao', 'alchemy', 'hypnotherapy']) {
+  for (const locale of ['en', 'ru', 'es']) for (const kind of ['dao', 'alchemy', 'hypnotherapy']) {
     const tree = exports.CoreServiceDetail({ locale, kind });
-    const footer = nodes(tree).filter(node => node.type === 'section' && [node.props.children].flat().some(child => child?.type === 'details'));
-    assert.equal(footer.length, 1, 'section:has(> details) selects exactly the footer');
+    const footer = nodes(tree).filter(node => node.type === 'section' && node.props['data-core-visual-screen'] === 'final-capture');
+    assert.equal(footer.length, 1, 'the final capture section appears exactly once');
     const choosers = nodes(footer).filter(node => node.type === 'contact-chooser');
     assert.equal(choosers.length, 1, 'footer scope excludes the hero chooser');
     const title = nodes(tree).find(node => node.type === 'h1').props.children;
@@ -306,6 +313,10 @@ test('actual core JSX has one footer section with one chooser and the matching s
     for (const chooser of nodes(tree).filter(node => node.type === 'contact-chooser')) assert.equal(chooser.props.whatsappUrl, expected);
     pathname = '/' + locale + '/services/' + slug;
     const fallback = sitewide.SitewideLeadCapture();
+    if (kind === 'dao') {
+      assert.equal(fallback, null, 'Dedicated free profile suppresses duplicate global capture');
+      continue;
+    }
     if (kind === 'alchemy') {
       assert.equal(fallback, null, 'Dedicated Alchemy form suppresses duplicate global capture');
       assert.match(read('components/alchemy-soul-lead-form.tsx'), /data-alchemy-lead-form="single"/);
@@ -313,9 +324,9 @@ test('actual core JSX has one footer section with one chooser and the matching s
       continue;
     }
     assert.equal(fallback.props['data-core-service-capture'], kind);
-    const fallbackChoosers = nodes(fallback).filter(node => node.type === 'contact-chooser');
-    assert.equal(fallbackChoosers.length, 1);
-    assert.equal(fallbackChoosers[0].props.whatsappUrl, expected, 'Hydrated sitewide draft must exactly match the named core service');
+    const fallbackCaptures = nodes(fallback).filter(node => node.type === 'compact-lead');
+    assert.equal(fallbackCaptures.length, 1);
+    assert.equal(fallbackCaptures[0].props.serviceTitle, detail.title, 'Hydrated sitewide capture retains the named core service');
   }
 });
 
