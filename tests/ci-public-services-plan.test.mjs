@@ -5,7 +5,7 @@ import { parsePrTrigger } from '../lib/ci/specialist-aggregate.mjs';
 import { requiresRealMediaWebKit } from '../lib/ci/merge-check-light.mjs';
 import test from 'node:test';
 import { approvedTelegramPresentation } from '../lib/crm/telegram-presentation.mjs';
-import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, refinePublicServicesPlan, requiresPublicServicesHeavyPr, publicPlaywrightEngines, isTrustedMandalaOwnerPath, isTrustedCoreCiOwnerPath, verifiedCriticalPublicCases, REVIEWED_VOICE_2629_DELTA, REVIEWED_PHRASES_3006_DELTA , exactReleaseProofAddition, EXACT_RELEASE_PROOF_BLOBS, planPrivatePractitionerMediaRows, PRIVATE_PRACTITIONER_MEDIA_OWNERS, PRIVATE_PRACTITIONER_MEDIA_REVIEWED_ADDITIONS } from '../scripts/ci-public-services-plan.mjs';
+import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, refinePublicServicesPlan, publicServicesDependencyFree, requiresPublicServicesHeavyPr, publicPlaywrightEngines, isTrustedMandalaOwnerPath, isTrustedCoreCiOwnerPath, verifiedCriticalPublicCases, REVIEWED_VOICE_2629_DELTA, REVIEWED_PHRASES_3006_DELTA , exactReleaseProofAddition, EXACT_RELEASE_PROOF_BLOBS, planPrivatePractitionerMediaRows, PRIVATE_PRACTITIONER_MEDIA_OWNERS, PRIVATE_PRACTITIONER_MEDIA_REVIEWED_ADDITIONS } from '../scripts/ci-public-services-plan.mjs';
 
 const workflow = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 const verifyPinnedPublicBrowsers = src => {
@@ -2013,4 +2013,38 @@ test('Public Services uses protected composed ownership only for the exact verif
     {...deps,loadPolicy:async()=>({...fakePolicy,...overrides})}),plan);
   assert.strictEqual(await refinePublicServicesPlan(plan,env,
     {...deps,loadPolicy:async()=>{throw Error('old base policy')}}),plan);
+});
+
+
+test('independent Public Services routing never installs unrelated app dependencies or browser caches',()=>{
+  const eligible={mode:'contracts',reason:'PROTECTED_COMPOSED_COACH_OWNERS',
+    build:false,browser:false,metrics:false,cases:'none'};
+  for(const reason of ['INDEPENDENT_OWNER_OR_CORE','PROTECTED_COMPOSED_COACH_OWNERS','EXACT_MY_COACH_ONLY_SHARED_API'])
+    assert.equal(publicServicesDependencyFree({...eligible,reason}),true);
+  for(const changes of [
+    {mode:'full'}, {mode:'focused'}, {build:true}, {browser:true}, {metrics:true},
+    {cases:'verify-service-cart-browser.mjs'}, {reason:'MODIFIED_PUBLIC_TESTS_ONLY'},
+    {reason:'EXISTING_NODE_SOURCE_TESTS_ONLY'}, {reason:'MANUAL_OR_NON_PR_EVENT'},
+    {reason:'ADDED_REMOVED_OR_UNSAFE_DIFF_STATUS'}, {reason:'UNKNOWN'},
+  ])assert.equal(publicServicesDependencyFree({...eligible,...changes}),false);
+  const yaml=workflow('hh-public-services-production.yml');
+  assert.ok(!yaml.includes('cache: npm'),'do not restore the package cache before routing');
+  for(const name of [
+    'Resolve npm cache only for dependent Public Services checks',
+    'Restore npm package cache only when application dependencies are needed',
+    'Load original checksum-verified FFmpeg for npm ci',
+    'Install SHA-verified FFmpeg into package after npm ci',
+    'Holistic Support first screen, private handoff and Coaching Lounge contracts',
+    'Energy Love Business inline focus regression',
+    'Canonical Homeopathy / Alchemy service routing regression',
+  ]){
+    const step=yaml.split('      - name: '+name+'\n')[1]?.split('\n      - ')[0];
+    assert.ok(step?.includes("steps.scope.outputs.dependency_free != 'true'"),name);
+  }
+  assert.match(yaml,/run: npm ci --include=dev --no-audit --no-fund\n        if: .*dependency_free/);
+  const smoke=yaml.split('      - name: Fast public consent, service and Reiki contract tests\n')[1]?.split('\n      - ')[0];
+  assert.ok(smoke?.includes('tests/public-service-enquiries.test.mjs'));
+  assert.ok(!smoke?.includes("steps.scope.outputs.dependency_free != 'true'"),
+    'protected composed owner routes still execute dependency-free consent/booking tests');
+  assert.match(yaml,/steps.scope.outputs.pr_heavy == 'true'/);
 });

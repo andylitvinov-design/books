@@ -1163,6 +1163,16 @@ export async function refinePublicServicesPlan(plan, env = process.env, {
   }
 }
 
+// Only proven independently owned routes can avoid the entire application
+// install. The remaining public smoke tests import local/Node modules only.
+// Focused/full, modified public tests, unknown reasons and manual QA keep npm.
+export function publicServicesDependencyFree(plan) {
+  return plan?.mode === 'contracts' && plan.build === false &&
+    plan.browser === false && plan.metrics === false && plan.cases === 'none' &&
+    ['INDEPENDENT_OWNER_OR_CORE','PROTECTED_COMPOSED_COACH_OWNERS',
+      'EXACT_MY_COACH_ONLY_SHARED_API'].includes(plan.reason);
+}
+
 async function main() {
   const plan = await refinePublicServicesPlan(planPublicServicesEvent());
   const summary = 'Public Services impact: ' + plan.mode +
@@ -1175,6 +1185,7 @@ async function main() {
       ['mode=' + plan.mode, 'reason=' + plan.reason, 'build=' + plan.build,
         'browser=' + plan.browser, 'metrics=' + plan.metrics,
         'release_proof=' + (plan.releaseProof === true),
+        'dependency_free=' + publicServicesDependencyFree(plan),
         'pr_heavy=' + requiresPublicServicesHeavyPr(plan),
         'engines=' + publicPlaywrightEngines(plan),
         'cases=' + plan.cases].join('\n') + '\n');
