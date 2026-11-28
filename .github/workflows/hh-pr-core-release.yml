@@ -517,13 +517,11 @@ jobs:
             if [[ "$f" =~ \.(cjs|mjs|js|jsx|ts|tsx)$ && -f "$f" ]]; then files+=("$f"); fi
           done < <(git diff --name-only -z "$BASE_SHA" HEAD)
           if [[ "$full_lint" == true ]]; then
-            # Same whole-repository ESLint, two bounded workers on the free runner.
-            # If a manifest changes the CLI/script or downgrades ESLint, retain the original command.
-            if node -e 'const v=require("eslint/package.json").version.split(".").map(Number); process.exit(require("./package.json").scripts.lint==="eslint ."&&v[0]===9&&v[1]>=34?0:1)'; then
-              npm run lint -- --concurrency 2
-            else
-              npm run lint
-            fi
+            # eslint-config-next uses FlatCompat and @rushstack/eslint-patch.
+            # Its worker-mode initialization fails on ESLint 9.39.4 (PR #5701).
+            # Keep full coverage using the original serial CLI until the actual
+            # locked configuration is proven compatible with worker execution.
+            npm run lint
           elif (( ${#files[@]} > 0 )); then
             npx --no-install eslint "${files[@]}"
           else
