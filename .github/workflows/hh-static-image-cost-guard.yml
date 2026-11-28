@@ -41,6 +41,9 @@ on:
       - "package.json"
       # Keep shared caches fresh on the exact production input changes.
       - "package-lock.json"
+      - "tsconfig.json"
+      - ".github/actions/ci-ffmpeg-static/action.yml"
+      - "scripts/vercel-static-media-cache.mjs"
       - "scripts/generate-scenario-melodies.mjs"
       - "scripts/generate-mandala-melodies.mjs"
       - "lib/mandala/scenario-audio-catalog.mjs"
@@ -84,7 +87,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: public/audio/mandala/scenarios
-          key: hh-core-media-v1-${{ runner.os }}-${{ hashFiles('scripts/generate-scenario-melodies.mjs', 'scripts/generate-mandala-melodies.mjs', 'lib/mandala/scenario-audio-catalog.mjs', 'package-lock.json') }}
+          key: hh-core-media-v1-${{ runner.os }}-${{ hashFiles('scripts/generate-scenario-melodies.mjs', 'scripts/generate-mandala-melodies.mjs', 'lib/mandala/scenario-audio-catalog.mjs', 'scripts/vercel-static-media-cache.mjs', '.github/actions/ci-ffmpeg-static/action.yml') }}
       # Include TypeScript incremental metadata in the same production-only
       # cache. PR builds may RESTORE it but never publish a shared artifact.
       - name: Restore trusted Next compiler cache

@@ -264,7 +264,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: public/audio/mandala/scenarios
-          key: hh-core-media-v1-${{ runner.os }}-${{ hashFiles('scripts/generate-scenario-melodies.mjs', 'scripts/generate-mandala-melodies.mjs', 'lib/mandala/scenario-audio-catalog.mjs', 'package-lock.json') }}
+          key: hh-core-media-v1-${{ runner.os }}-${{ hashFiles('scripts/generate-scenario-melodies.mjs', 'scripts/generate-mandala-melodies.mjs', 'lib/mandala/scenario-audio-catalog.mjs', 'scripts/vercel-static-media-cache.mjs', '.github/actions/ci-ffmpeg-static/action.yml') }}
       - name: Restore trusted production Next compiler cache
         if: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'codex/public-book-library' && steps.impact.outputs.full == 'true' }}
         uses: actions/cache/restore@v4

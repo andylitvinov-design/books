@@ -332,7 +332,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: public/audio/mandala/scenarios
-          key: hh-core-media-v1-${{ runner.os }}-${{ hashFiles('scripts/generate-scenario-melodies.mjs', 'scripts/generate-mandala-melodies.mjs', 'lib/mandala/scenario-audio-catalog.mjs', 'package-lock.json') }}
+          key: hh-core-media-v1-${{ runner.os }}-${{ hashFiles('scripts/generate-scenario-melodies.mjs', 'scripts/generate-mandala-melodies.mjs', 'lib/mandala/scenario-audio-catalog.mjs', 'scripts/vercel-static-media-cache.mjs', '.github/actions/ci-ffmpeg-static/action.yml') }}
       - name: Generate original first-party melody masters
         if: steps.policy.outputs.policy_only != 'true'
         run: node scripts/generate-mandala-melodies.mjs
