@@ -205,7 +205,8 @@ test('non-reconcile completions do not suppress stale-cron recovery; active and 
  const {watchdogCronDecision}=require('../scripts/ci-pr-control-tower-wakeup.cjs');
  const old=new Date(NOW-60*60_000).toISOString(),recent=new Date(NOW-60_000).toISOString();
  const scheduled={id:81,status:'completed',created_at:old,updated_at:old};
- const manual={id:82,status:'completed',created_at:recent,updated_at:recent};
+ const manual={id:82,status:'completed',created_at:recent,updated_at:recent,
+  event:'workflow_dispatch',head_branch:'codex/bootstrap-books',repository:{full_name:'andylitvinov-design/books'}};
  for(const display_title of ['HH watchdog / dry run','HH watchdog / completion wake','HH watchdog / direct handoff']){
   const completed={...manual,display_title};
   assert.equal(watchdogCronDecision([scheduled],[completed],NOW),'WAKE_STALE_WATCHDOG');
@@ -331,4 +332,43 @@ test('protected default push calls existing Watchdog only when cron is stale',as
    summary:{production:33},now:NOW})).decision,'NOT_ELIGIBLE');
  }
  assert.equal(dispatches,1,'never dispatch from an untrusted context');
+});
+
+// Regression: completed helper-only runs must not mask hours of missed cron.
+test('completed trusted auxiliary Watchdog runs do not create reconcile cooldown',()=>{
+ const {watchdogCronDecision}=require('../scripts/ci-pr-control-tower-wakeup.cjs');
+ const old=new Date(NOW-4*3600000).toISOString();
+ const recent=new Date(NOW-60000).toISOString();
+ const schedule=[{id:801,status:'completed',created_at:old,updated_at:old}];
+ const aux={id:802,event:'workflow_dispatch',head_branch:'codex/bootstrap-books',
+  repository:{full_name:'andylitvinov-design/books'},status:'completed',
+  created_at:recent,updated_at:recent};
+ for(const display_title of ['HH watchdog / dry run','HH watchdog / completion wake','HH watchdog / direct handoff']){
+  const run={...aux,display_title};
+  assert.equal(watchdogCronDecision(schedule,[run],NOW),'WAKE_STALE_WATCHDOG');
+  assert.equal(watchdogCronDecision(schedule,[{...run,status:'in_progress'}],NOW),'WATCHDOG_ALREADY_RUNNING');
+  assert.equal(watchdogCronDecision(schedule,[{...run,head_branch:'other'}],NOW),'WATCHDOG_MANUAL_RECENT');
+  assert.equal(watchdogCronDecision(schedule,[{...run,repository:{full_name:'other/books'}}],NOW),'WATCHDOG_MANUAL_RECENT');
+ }
+ assert.equal(watchdogCronDecision(schedule,[{...aux,display_title:'HH watchdog / reconcile'}],NOW),'WATCHDOG_MANUAL_RECENT');
+ assert.equal(watchdogCronDecision(schedule,[{...aux,display_title:'unknown'}],NOW),'WATCHDOG_MANUAL_RECENT');
+ assert.equal(watchdogCronDecision(schedule,[{...aux,display_title:'HH watchdog / PM #42 / req'}],NOW),'WATCHDOG_MANUAL_RECENT');
+ assert.equal(watchdogCronDecision(schedule,[{...aux,display_title:'HH watchdog / dry run',repository:undefined}],NOW),'WATCHDOG_MANUAL_RECENT');
+});
+test('bounded default-branch history distinguishes auxiliary runs without extra list requests',async()=>{
+ const {wakeStaleWatchdog}=require('../scripts/ci-pr-control-tower-wakeup.cjs');
+ const context={repo:{owner:'andylitvinov-design',repo:'books'},ref:'refs/heads/codex/bootstrap-books',eventName:'schedule'};
+ const old=new Date(NOW-4*3600000).toISOString(),recent=new Date(NOW-60000).toISOString();
+ const aux={id:902,event:'workflow_dispatch',head_branch:'codex/bootstrap-books',repository:{full_name:'andylitvinov-design/books'},status:'completed',display_title:'HH watchdog / completion wake',created_at:recent,updated_at:recent};
+ let reads=0,dispatches=0;
+ const invoke=async(total,runs)=>wakeStaleWatchdog({context,summary:{production:2},now:NOW,github:{rest:{actions:{
+  listWorkflowRuns:async(args)=>{reads++;assert.equal(args.branch,'codex/bootstrap-books');assert.equal(args.per_page,args.event==='schedule'?5:20);
+    return {data:args.event==='schedule'?{total_count:1,workflow_runs:[{id:901,status:'completed',created_at:old,updated_at:old}]}:{total_count:total,workflow_runs:runs}};},
+  createWorkflowDispatch:async()=>{dispatches++;return {status:204};}
+ }}}});
+ const recovered=await invoke(1,[aux]);assert.equal(recovered.decision,'EVENT_WATCHDOG_WAKE_ACCEPTED');assert.equal(recovered.auxiliaryCompleted,1);assert.equal(dispatches,1);assert.equal(reads,2);
+ const burst=Array.from({length:20},(_,i)=>({...aux,id:1000+i}));
+ assert.equal((await invoke(21,burst)).decision,'WATCHDOG_HISTORY_UNVERIFIED');assert.equal(dispatches,1);assert.equal(reads,4);
+ const actual={...aux,id:2000,display_title:'HH watchdog / reconcile'};
+ assert.equal((await invoke(2,[aux,actual])).decision,'WATCHDOG_MANUAL_RECENT');assert.equal(dispatches,1);assert.equal(reads,6);
 });

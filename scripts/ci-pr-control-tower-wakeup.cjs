@@ -105,9 +105,23 @@ async function relayCompletionWake({github,context,wait=waitForWorkerCompletion,
 // Retain active-run protection and the existing manual cooldown for true outages.
 const WATCHDOG_CRON_GRACE_MS=26*60_000;
 const WATCHDOG_MANUAL_COOLDOWN_MS=11*60_000;
+const WATCHDOG_MANUAL_HISTORY_LIMIT=20;
+const AUXILIARY_WATCHDOG_RUN_NAMES=new Set([
+  'HH watchdog / dry run',
+  'HH watchdog / completion wake',
+  'HH watchdog / direct handoff',
+]);
+// Only trusted default-branch metadata proves a completed helper did not
+// perform full reconciliation. Active and unknown runs remain conservative.
+function completedAuxiliaryWatchdog(run){
+  return run?.status==='completed' && run.event==='workflow_dispatch' &&
+    run.head_branch===DEFAULT &&
+    run.repository?.full_name==='andylitvinov-design/books' &&
+    AUXILIARY_WATCHDOG_RUN_NAMES.has(run.display_title);
+}
 function watchdogCronDecision(schedule,manual,now){
   if(!Number.isFinite(now)||!Array.isArray(schedule)||!Array.isArray(manual)||
-     schedule.length>5||manual.length>5)return 'WATCHDOG_HISTORY_UNVERIFIED';
+     schedule.length>5||manual.length>WATCHDOG_MANUAL_HISTORY_LIMIT)return 'WATCHDOG_HISTORY_UNVERIFIED';
   const active=new Set(['queued','in_progress','pending','requested','waiting']);
   const valid=run=>run&&Number.isSafeInteger(run.id)&&
     ['completed',...active].includes(run.status)&&
@@ -119,11 +133,7 @@ function watchdogCronDecision(schedule,manual,now){
   if(lastCron!==null&&(lastCron>now+60_000||now-lastCron<WATCHDOG_CRON_GRACE_MS))
     return lastCron>now+60_000?'WATCHDOG_CLOCK_UNVERIFIED':'WATCHDOG_CRON_HEALTHY';
   const recent=manual.some(run=>{
-    // A finished explicit worker refill, relay or dry run is not a real
-    // reconcile. It must not continually suppress recovery of a missing cron.
-    // Active runs above still block; unknown/legacy titles remain conservative.
-    if(['HH watchdog / dry run','HH watchdog / completion wake',
-        'HH watchdog / direct handoff'].includes(run.display_title))return false;
+    if(completedAuxiliaryWatchdog(run))return false;
     const completed=Date.parse(run.updated_at||run.created_at);
     return completed>now+60_000||
       now-completed<WATCHDOG_MANUAL_COOLDOWN_MS;
@@ -161,21 +171,31 @@ async function wakeStaleWatchdog({github,context,summary,dryRun=false,
   try{
     const read=async event=>{
       const response=await github.rest.actions.listWorkflowRuns({
-        owner,repo,workflow_id:WATCHDOG,event,per_page:5});
+        owner,repo,workflow_id:WATCHDOG,event,branch:DEFAULT,
+        per_page:event==='schedule'?5:WATCHDOG_MANUAL_HISTORY_LIMIT});
+      const limit=event==='schedule'?5:WATCHDOG_MANUAL_HISTORY_LIMIT;
       const data=response?.data;
       if(!Number.isSafeInteger(data?.total_count)||data.total_count<0||
-         !Array.isArray(data.workflow_runs)||data.workflow_runs.length>5||
+         !Array.isArray(data.workflow_runs)||data.workflow_runs.length>limit||
          data.total_count<data.workflow_runs.length||
          (data.total_count>0&&!data.workflow_runs.length))
         throw Error('INCOMPLETE_WATCHDOG_EVENT_HISTORY');
-      return data.workflow_runs;
+      return {runs:data.workflow_runs,total:data.total_count};
     };
-    const [schedule,manual]=await Promise.all([read('schedule'),read('workflow_dispatch')]);
+    const [scheduled,dispatched]=await Promise.all([read('schedule'),read('workflow_dispatch')]);
+    const schedule=scheduled.runs,manual=dispatched.runs;
+    info.auxiliaryCompleted=manual.filter(completedAuxiliaryWatchdog).length;
     const last=schedule.length?Math.max(...schedule.map(x=>Date.parse(x.created_at||''))):null;
     if(last!==null&&Number.isFinite(last)&&last<=now)
       info.cronAgeMinutes=Math.floor((now-last)/60_000);
     info.decision=watchdogCronDecision(schedule,manual,now);
     if(info.decision!=='WAKE_STALE_WATCHDOG')return report();
+    // A burst of recent helper calls may hide a real recent dispatch beyond
+    // the bounded page. Fail closed rather than initiate another poll.
+    if(dispatched.total>manual.length && manual.length>0 &&
+       manual.every(run=>now-Date.parse(run.created_at)<WATCHDOG_MANUAL_COOLDOWN_MS)){
+      info.decision='WATCHDOG_HISTORY_UNVERIFIED';return report();
+    }
     // The controller's single-writer job serializes all wake decisions.
     // GITHUB_TOKEN workflow_dispatch is an allowed Actions recursion exception.
     await github.rest.actions.createWorkflowDispatch({owner,repo,workflow_id:WATCHDOG,
