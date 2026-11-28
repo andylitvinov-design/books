@@ -97,7 +97,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
  const lang=words[locale]?locale:'en',t=words[lang]
  const router=useRouter(),query=useSearchParams()
  const persona=getCoachPersona(personaId)
- const [program,setProgram]=useState(()=>clarityDay||courseRunId?'clarity':COACH_COMPARISON_IDS.includes(query?.get('greetingProgram'))?query.get('greetingProgram'):'clarity')
+ const [program,setProgram]=useState(()=>clarityDay||courseRunId?'clarity':businessDaybookCoachSession(initialBusinessCourseId)?'business':COACH_COMPARISON_IDS.includes(query?.get('greetingProgram'))?query.get('greetingProgram'):'clarity')
  const course=getCoachProgramComparison(lang).programs.find(item=>item.id===program)
  const ui=screenWords[lang],presentation=courseLaunchPresentation(lang,course)
  const progress=useCourseSessionProgress(program,course.count,course.available&&!courseRunId,accountSaving)
@@ -142,6 +142,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
    // Public course preference only; retain it across the existing Google return.
    const url=new URL(window.location.href)
    url.searchParams.set('greetingProgram',id)
+   url.searchParams.delete('businessCourse')
    window.history.replaceState(window.history.state,'',url.pathname+url.search+url.hash)
  }
  function switchCoach(direction){
@@ -157,7 +158,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
    player.current=null
    setGreetingStarted(false);setPhase('preview');setError('');setAudioActive(false)
    // Existing route remounts MyCoachLiveDialogue by persona ID. Do not start Live here.
-   router.push(href+'&greetingProgram='+encodeURIComponent(program))
+   router.push(href+'&greetingProgram='+encodeURIComponent(program)+(businessDaybookCoachSession(readyTopic)?'&businessCourse='+encodeURIComponent(readyTopic):''))
  }
  function beginSwipe(event){
    if(event.target.closest?.('button,a,input,select,[role=dialog]')||!canSwitch||switching.current||chosen.current||event.touches.length!==1){
