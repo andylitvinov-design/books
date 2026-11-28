@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { verify, requiresCurrentProductionBase, classifyPrState, diagnoseAggregateError, awaitPositiveMergeability, verifiedPriorSpecialistEvidence, reusePriorSpecialistState, revalidateAfterTrustedPolicyAdvance } from '../scripts/ci-specialist-aggregate.mjs';
 import { createRequire } from 'node:module';
-import { verifyStableProtectedBase, observeProtectedBaseDrift, independentPackageOnlyAdvisories, verifiedCoachDispatcherIsolation, independentDispatcherAdvisories, provenNonApplicableWorkflows, withCompletedSpecialistEvidence } from '../scripts/ci-specialist-aggregate.mjs';
+import { verifyStableProtectedBase, observeProtectedBaseDrift, independentPackageOnlyAdvisories, verifiedCoachDispatcherIsolation, independentDispatcherAdvisories, provenNonApplicableWorkflows, withCompletedSpecialistEvidence, mergeReadyReceipt } from '../scripts/ci-specialist-aggregate.mjs';
 import { inspectJobs, trustedRequiredJobs, inspectWorkflowRuns } from '../lib/ci/specialist-aggregate.mjs';
 import { safeComposedIndependentAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeIndependentRouterPolicyAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeStandaloneVideoAfterSpecialistScopeAdvance, safeNonOverlappingProductAdvance, safeIndependentMixedCandidateAdvance, normalizeIdenticalProtectedOverlap, safeDetachedBenchmarkAdvance, safeTrustedPolicyAdvance, safeAdditiveProtectedProductAdvance } from '../lib/ci/production-base-impact.mjs';
 
@@ -1691,4 +1691,43 @@ test('moving protected base permits complete additive same-feature changes and c
   {...rows[1],patch:'@@ -1 +1 @@\n-old\n+new'}, {...rows[1],previous_filename:'old.js'}])
   assert.equal(yes([rows[0],invalid,rows[2]]),false);
  assert.equal(safeAdditiveProtectedProductAdvance({...d,commits:[]},base,target,paths),false);
+});
+
+test('positive mergeability accepts a stale PR base snapshot only with exact GitHub merge parents',async()=>{
+ const target='c'.repeat(40),merge='d'.repeat(40);
+ const stale={...pr,mergeable:true,merge_commit_sha:merge};
+ const proof={sha:merge,parents:[{sha:target},{sha:ctx.head}]};
+ let reads=0,waits=[];
+ const api={pr:async()=>stale,target:async()=>target,commit:async sha=>{reads++;assert.equal(sha,merge);return proof;}};
+ assert.equal(await awaitPositiveMergeability(api,ctx,target,async ms=>{waits.push(ms);}),stale);
+ assert.equal(reads,1);assert.deepEqual(waits,[1000]);
+ for(const bad of [{...proof,sha:base},{...proof,parents:[{sha:base},{sha:ctx.head}]},
+  {...proof,parents:[{sha:target},{sha:base}]},{...proof,parents:[...proof.parents,{sha:base}]},null]){
+  assert.equal(await awaitPositiveMergeability({...api,commit:async()=>bad},ctx,target,async()=>{}),null);
+ }
+ assert.equal(await awaitPositiveMergeability({...api,commit:async()=>{throw Error('not yet indexed');}},ctx,target,async()=>{}),null);
+ let targetReads=0;
+ assert.equal(await awaitPositiveMergeability({...api,target:async()=>++targetReads===1?target:base},ctx,target,async()=>{}),null);
+ await assert.rejects(()=>awaitPositiveMergeability({...api,pr:async()=>({...stale,mergeable:false})},ctx,target,async()=>{}),/MERGE_CONFLICT/);
+ await assert.rejects(()=>awaitPositiveMergeability({...api,pr:async()=>({...stale,head:{...stale.head,sha:base}})},ctx,target,async()=>{}),/PR_HEAD_CHANGED/);
+});
+
+test('Merge Ready V3 emits only complete exact-head and accepted-base evidence',()=>{
+ const merge='d'.repeat(40),target='c'.repeat(40),files={testedMergeSha:merge};
+ const env={GITHUB_RUN_ID:'41',GITHUB_RUN_ATTEMPT:'2'};
+ const result={head,base,acceptedBase:target,expected:[path],
+  executed:[{name:path,run_id:51,jobs:2}],reused:[]};
+ const x=mergeReadyReceipt(ctx,files,result,env);
+ assert.equal(x.schema,'HH_MERGE_READY_V3');assert.equal(x.head,head);
+ assert.equal(x.tested_base,base);assert.equal(x.accepted_base,target);
+ assert.equal(x.tested_merge,merge);assert.equal(x.run_attempt,2);
+ assert.deepEqual(x.required,[path]);assert.deepEqual(x.evidence,[{path,run_id:51,jobs:2}]);
+ for(const bad of [{...result,acceptedBase:null},{...result,head:target},{...result,base:target},
+   {...result,executed:[]},{...result,executed:[{...result.executed[0],jobs:0}]},
+   {...result,expected:[path,path]},{...result,policyRevalidatedAgainst:merge}])
+  assert.equal(mergeReadyReceipt(ctx,files,bad,env),null);
+ assert.equal(mergeReadyReceipt(ctx,{},result,env),null);
+ assert.equal(mergeReadyReceipt(ctx,files,result,{...env,GITHUB_RUN_ATTEMPT:'0'}),null);
+ const reused=mergeReadyReceipt(ctx,files,{...result,executed:[],reused:[{name:path,run_id:51,jobs:2,prior_head:target}]},env);
+ assert.equal(reused.evidence[0].prior_head,target);
 });
