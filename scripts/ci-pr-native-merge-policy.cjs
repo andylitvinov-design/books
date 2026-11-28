@@ -150,7 +150,8 @@ async function verifiedQueuedDuplicateChecks({github,owner,repo,pr,expectedHead,
    const row=byPath.get(String(current.run.path||'').split('@')[0]);
    if(!row||!SHA.test(row.prior_head||'')||row.prior_head===expectedHead||
       !Number.isSafeInteger(row.run_id)||row.run_id<1||
-      !Number.isSafeInteger(row.prior_gate_run)||row.prior_gate_run<1)continue;
+      !Number.isSafeInteger(row.prior_gate_run)||row.prior_gate_run<1||
+      !Number.isSafeInteger(row.prior_run_attempt)||row.prior_run_attempt<1)continue;
    const [prior,currentCommit,oldCommit]=await Promise.all([
     github.rest.actions.getWorkflowRun({owner,repo,run_id:row.run_id}).then(x=>x.data),
     github.rest.git.getCommit({owner,repo,commit_sha:expectedHead}).then(x=>x.data),
@@ -160,7 +161,7 @@ async function verifiedQueuedDuplicateChecks({github,owner,repo,pr,expectedHead,
       prior.head_branch!==pr.head.ref||prior.status!=='completed'||prior.conclusion!=='success'||
       String(prior.path||'').split('@')[0]!==row.name||
       !prior.pull_requests?.some(p=>p.number===pr.number&&p.base?.ref===PROD)||
-      !Number.isSafeInteger(prior.run_attempt)||prior.run_attempt<1||
+      prior.run_attempt!==row.prior_run_attempt||
       currentCommit?.sha!==expectedHead||oldCommit?.sha!==row.prior_head||
       !SHA.test(currentCommit.tree?.sha||'')||currentCommit.tree.sha!==oldCommit.tree?.sha)continue;
    const jobs=(await github.request('GET /repos/{owner}/{repo}/actions/runs/{run_id}/attempts/{attempt_number}/jobs',
@@ -172,6 +173,17 @@ async function verifiedQueuedDuplicateChecks({github,owner,repo,pr,expectedHead,
   }
  }catch{/* Unavailable or ambiguous proof preserves the existing wait. */}
  return approved;
+}
+
+// Shared by the hourly fallback as well as the event-driven native guard.
+// A verified receipt covers only its exact queued job, not every check name.
+async function verifyQueuedQualityDuplicates({github,owner,repo,pr,expectedHead,expectedBase,checks,pending}){
+ if(!Array.isArray(pending))return false;
+ if(!pending.length)return true;
+ if(!pending.every(c=>QUEUED.has(c.status)&&Number.isSafeInteger(c.id)&&
+   c.head_sha===expectedHead&&c.app?.id===15368&&c.app?.slug==='github-actions'))return false;
+ const approved=await verifiedQueuedDuplicateChecks({github,owner,repo,pr,expectedHead,expectedBase,checks,pending});
+ return pending.every(c=>approved.has(c.id));
 }
 
 async function auditIndependentDomainChecks({github,owner,repo,expectedHead,expectedBase,pr}){
@@ -291,4 +303,4 @@ async function auditNativeMerge({github,owner,repo,number,expectedHead,expectedB
    'MERGE_PREFLIGHT_EVIDENCE_UNAVAILABLE');
  }
 }
-module.exports={PROD,HOLDS,REVIEW_QUERY,sameHead,repairCanary,mergeable,held,inspectReviews,auditNativeMerge,auditIndependentDomainChecks,verifiedQueuedDuplicateChecks,CRITICAL_DOMAIN_CHECKS};
+module.exports={PROD,HOLDS,REVIEW_QUERY,sameHead,repairCanary,mergeable,held,inspectReviews,auditNativeMerge,auditIndependentDomainChecks,verifiedQueuedDuplicateChecks,verifyQueuedQualityDuplicates,CRITICAL_DOMAIN_CHECKS};
