@@ -4,7 +4,7 @@ import { verify, requiresCurrentProductionBase, classifyPrState, diagnoseAggrega
 import { createRequire } from 'node:module';
 import { verifyStableProtectedBase, observeProtectedBaseDrift, independentPackageOnlyAdvisories, verifiedCoachDispatcherIsolation, independentDispatcherAdvisories, provenNonApplicableWorkflows, withCompletedSpecialistEvidence } from '../scripts/ci-specialist-aggregate.mjs';
 import { inspectJobs, trustedRequiredJobs, inspectWorkflowRuns } from '../lib/ci/specialist-aggregate.mjs';
-import { safeComposedIndependentAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeIndependentRouterPolicyAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeStandaloneVideoAfterSpecialistScopeAdvance, safeNonOverlappingProductAdvance, safeIndependentMixedCandidateAdvance, normalizeIdenticalProtectedOverlap, safeDetachedBenchmarkAdvance, safeTrustedPolicyAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeComposedIndependentAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeIndependentRouterPolicyAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeStandaloneVideoAfterSpecialistScopeAdvance, safeNonOverlappingProductAdvance, safeIndependentMixedCandidateAdvance, normalizeIdenticalProtectedOverlap, safeDetachedBenchmarkAdvance, safeTrustedPolicyAdvance, safeAdditiveProtectedProductAdvance } from '../lib/ci/production-base-impact.mjs';
 
 const repo = 'andylitvinov-design/books', head = 'a'.repeat(40), base = 'b'.repeat(40);
 const path = '.github/workflows/mobile.yml';
@@ -1661,4 +1661,34 @@ test('a newly protected policy can finish the current waiting gate without old o
  elapsed=0;handOff=0;
  await assert.rejects(()=>verify(api,ctx,source,{...opts,tryProtectedPolicy:async()=>{handOff++;return null;}}),/RUNNING_TIMEOUT/);
  assert.equal(handOff,1,'unapproved policy does not restart or extend original wait');
+});
+
+test('moving protected base permits complete additive same-feature changes and current trusted policy without a rebuild',()=>{
+ const target='d'.repeat(40);
+ const make=(filename,lines,status='added')=>({filename,status,additions:lines.length,deletions:0,changes:lines.length,
+   patch:'@@ -0,0 +1,'+lines.length+' @@\n'+lines.map(l=>'+'+l).join('\n')});
+ const rows=[
+  make('lib/coaching/coach-personality-example.mjs',['export const story="example"']),
+  make('lib/coaching/persona-registry.mjs',["import {story} from './coach-personality-example.mjs'"],'modified'),
+  make('tests/coach-personality-example.test.mjs',["import test from 'node:test'"]),
+ ];
+ const d={status:'ahead',ahead_by:1,behind_by:0,total_commits:1,base_commit:{sha:base},
+   merge_base_commit:{sha:base},commits:[{sha:target}],files:rows};
+ const paths=['components/my-coach-live-dialogue.jsx','lib/coaching/clarity-course.mjs','tests/ci-coaching-rls-guard.test.mjs'];
+ const yes=(files=rows,p=paths)=>safeAdditiveProtectedProductAdvance({...d,files},base,target,p);
+ assert.equal(yes(),true);
+ assert.equal(safeNonOverlappingProductAdvance(d,base,target,paths),true);
+ const policy={...d,files:[...rows,{filename:'scripts/ci-specialist-aggregate.mjs',status:'modified'}]};
+ assert.equal(safeTrustedPolicyAdvance(policy,base,target,paths),true);
+ assert.equal(safeNonOverlappingProductAdvance(policy,base,target,paths),true);
+ assert.equal(yes(rows,[...paths,rows[0].filename]),false);
+ assert.equal(yes(rows,[...paths,'package-lock.json']),false);
+ assert.equal(yes(rows,[...paths,'lib/ci/production-base-impact.mjs']),false);
+ for(const file of ['app/api/app/auth/route.js','lib/auth/permissions.mjs','package.json',
+  'supabase/migrations/critical.sql','components/shared/navigation.jsx','app/[locale]/layout.tsx',
+  '.github/workflows/hh-pr-core-release.yml'])assert.equal(yes([...rows,make(file,['changed'])]),false,file);
+ for(const invalid of [{...rows[1],deletions:1,changes:2},{...rows[1],patch:null},
+  {...rows[1],patch:'@@ -1 +1 @@\n-old\n+new'}, {...rows[1],previous_filename:'old.js'}])
+  assert.equal(yes([rows[0],invalid,rows[2]]),false);
+ assert.equal(safeAdditiveProtectedProductAdvance({...d,commits:[]},base,target,paths),false);
 });
