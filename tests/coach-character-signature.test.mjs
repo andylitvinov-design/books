@@ -1,3 +1,4 @@
+import './coach-biographies.test.mjs';
 import './coach-personality-core.test.mjs'
 import './coach-personality-core-wiring.test.mjs'
 import test from 'node:test'
