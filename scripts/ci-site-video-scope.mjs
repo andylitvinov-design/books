@@ -174,6 +174,63 @@ export function verifiedCompletedCoreBuild(identity, read) {
   return null;
 }
 
+
+// A SHA change alone is not a source change. Reuse only an actual previous
+// successful build of the SAME source and proposed merge trees on the SAME
+// protected base. Current lint, tests, Specialist and native merge still run.
+// Never chain reused/skipped builds or trust PR-authored proof.
+export function verifiedEquivalentPriorCoreBuild(identity, previousHead, read) {
+  if(!identity||!SHA.test(previousHead||'')||previousHead===identity.head||
+     ![identity.head,identity.base,identity.merge].every(x=>SHA.test(x||''))||
+     !positiveId(identity.pr)||!/^[\w.-]+\/[\w.-]+$/.test(identity.repo||'')||
+     typeof read!=='function') return null;
+  try {
+    const root='/repos/'+identity.repo, prefix=root+'/actions';
+    const getCommit=sha=>{
+      const c=read(root+'/git/commits/'+sha);
+      if(c?.sha!==sha||!SHA.test(c.tree?.sha||''))throw Error('UNVERIFIED_TREE');
+      return c;
+    };
+    const source=getCommit(identity.head), previous=getCommit(previousHead);
+    if(source.tree.sha!==previous.tree.sha)return null;
+    const currentMerge=getCommit(identity.merge);
+    if(currentMerge.parents?.length!==2||currentMerge.parents[0]?.sha!==identity.base||
+       currentMerge.parents[1]?.sha!==identity.head)return null;
+    const listed=read(prefix+'/workflows/hh-pr-core-release.yml/runs?event=pull_request&head_sha='+previousHead+'&per_page=10');
+    if(!Array.isArray(listed?.workflow_runs)||listed.workflow_runs.length>10)return null;
+    const candidates=listed.workflow_runs.filter(run=>positiveId(run.id)&&positiveId(run.run_attempt)&&
+      run.event==='pull_request'&&run.head_sha===previousHead&&
+      run.repository?.full_name===identity.repo&&run.head_repository?.full_name===identity.repo&&
+      String(run.path||'').split('@')[0]===CORE_WORKFLOW).sort((a,b)=>b.id-a.id||b.run_attempt-a.run_attempt);
+    const run=candidates[0];
+    if(!run)return null;
+    const inventory=read(prefix+'/runs/'+run.id+'/attempts/'+run.run_attempt+'/jobs?per_page=100');
+    if(!Array.isArray(inventory?.jobs)||inventory.total_count!==inventory.jobs.length||inventory.jobs.length>100)return null;
+    const jobs=inventory.jobs.filter(job=>job.name==='core-lint-types-build');
+    if(jobs.length!==1)return null;
+    const job=jobs[0];
+    if(!positiveId(job.id)||job.run_id!==run.id||job.status!=='completed'||
+       job.conclusion!=='success'||!Array.isArray(job.steps))return null;
+    for(const name of [CORE_BUILD_STEP,'Verify bounded shallow scope ancestry before PR routing']){
+      const steps=job.steps.filter(step=>step.name===name);
+      if(steps.length!==1||steps[0].status!=='completed'||steps[0].conclusion!=='success')return null;
+    }
+    const log=read(prefix+'/jobs/'+job.id+'/logs',true);
+    if(typeof log!=='string'||log.length>24*1024*1024)return null;
+    const lines=log.split(/\r?\n/).map(line=>line.replace(/^\d{4}-\d\d-\d\dT[\d:.]+Z\s+/,''));
+    const markers=lines.filter(line=>line.startsWith(CORE_IDENTITY+' '));
+    if(markers.length!==1)return null;
+    const fields=markers[0].trim().split(' ');
+    if(fields.length!==7||!SHA.test(fields[4]||''))return null;
+    const oldIdentity={...identity,head:previousHead,merge:fields[4]};
+    if(!exactCoreIdentityLog(log,oldIdentity,run))return null;
+    const oldMerge=getCommit(oldIdentity.merge);
+    if(oldMerge.parents?.length!==2||oldMerge.parents[0]?.sha!==identity.base||
+       oldMerge.parents[1]?.sha!==previousHead||oldMerge.tree.sha!==currentMerge.tree.sha)return null;
+    return {runId:run.id,attempt:run.run_attempt,jobId:job.id,previousHead,mergeTree:currentMerge.tree.sha};
+  }catch{return null;}
+}
+
 function coreBuildReader() {
   const deadline=Date.now()+10_000;
   return (endpoint,raw=false)=>{
@@ -188,7 +245,15 @@ function coreBuildReader() {
 }
 
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href===import.meta.url){
-  if(process.argv[2]==='--core-plan'){
+  if(process.argv[2]==='--previous-core-proof'){
+    const proof=verifiedEquivalentPriorCoreBuild(exactCoreBuildIdentity(),
+      process.env.HH_PREVIOUS_HEAD_SHA,coreBuildReader());
+    if(proof){
+      console.log('HH_EQUIVALENT_HEAD_CORE_BUILD_REUSED: '+JSON.stringify(proof));
+      if(process.env.GITHUB_STEP_SUMMARY)appendFileSync(process.env.GITHUB_STEP_SUMMARY,
+        'Prior real Core build reused on identical source and merge trees: run '+proof.runId+'\n');
+    }else process.exitCode=1;
+  } else if(process.argv[2]==='--core-plan'){
     console.log(exactCoreBuildIdentity()?'REUSE_CANDIDATE':'INDEPENDENT_BUILD');
   } else if(process.argv[2]==='--core-proof'){
     const proof=verifiedCompletedCoreBuild(exactCoreBuildIdentity(),coreBuildReader());
