@@ -6355,3 +6355,22 @@
  .studio[data-active-workspace="video"][data-hh-mirror-advanced="false"]:has([data-hh-mirror-screen="topic"]) .quickBuilder{gap:5px!important}
  .studio[data-active-workspace="video"] [data-hh-mirror-screen="topic"] [data-hh-mirror-quiz-card]{height:112px!important}
 }
+
+/* Desktop advanced Studio: actual DOM order follows Goal / Topic / Format / Styles.
+   Personal remains concept-first and reuses the current phrase editor. */
+.desktopStepLabel{display:none}
+.mobileStepLabel{display:contents}
+@media(min-width:760px){
+  .desktopStepLabel{display:inline}
+  .mobileStepLabel{display:none}
+  .studio[data-video-advanced-open="true"] .quickBuilder{width:100%;max-width:1040px;margin-inline:auto;gap:16px}
+  .studio[data-video-advanced-open="true"] .quickBuilder>.quickSection{width:100%;min-width:0;box-sizing:border-box;padding:20px 24px;border-radius:21px}
+  .studio[data-video-advanced-open="true"] .quickBuilder [data-video-goal-topic-chips]{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:100%;min-width:0}
+  .studio[data-video-advanced-open="true"] .quickBuilder [data-video-goal-topic-chips] button{min-width:0;min-height:52px;white-space:normal;overflow-wrap:anywhere;text-align:left}
+  .studio[data-video-advanced-open="true"] .quickBuilder .quickStyles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;overflow:visible;min-width:0}
+  .studio[data-video-advanced-open="true"] .quickBuilder .quickStyles button{min-width:0}
+  .studio [data-video-desktop-phrase-step]{padding:20px;gap:14px;scroll-margin-top:86px}
+  .studio [data-video-desktop-phrase-step] [data-video-ideas-scroll]{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));max-height:none;overflow:visible;gap:8px}
+  .studio [data-video-desktop-phrase-step] [data-video-idea-phrase]{min-height:52px}
+}
+@media(min-width:981px){.studio[data-video-advanced-open="true"] .quickBuilder .quickStyles{grid-template-columns:repeat(6,minmax(0,1fr))}}

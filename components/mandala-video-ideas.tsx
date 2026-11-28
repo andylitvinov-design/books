@@ -23,6 +23,7 @@ type Props={
  generating:boolean;onChange:Dispatch<SetStateAction<AffirmationSettings>>;
  onPendingChange:Dispatch<SetStateAction<boolean>>;onPreview:()=>void;onCreate:()=>void;onGenerate:()=>void;status?:string;
  onRecord:()=>void;onResetPreview:()=>void;
+ onExplicitSelection?:(signature:string)=>void;
 };
 
 const wording={
@@ -121,7 +122,7 @@ const scaleValues=["small","medium","large"] as const;
 const cleanPhrase=sanitizeIdeaPhrase;
 
 export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePicker=false,creationPriceCredits=null,phraseMode="personalized",preserveApprovedConcept=false,goalType=null,selectedTopicId=null,active,disabled,settings,generating,
- onChange,onPendingChange,onPreview,onCreate,onGenerate,status,onRecord,onResetPreview}:Props){
+ onChange,onPendingChange,onPreview,onCreate,onGenerate,status,onRecord,onResetPreview,onExplicitSelection}:Props){
  const t=wording[locale];
  const [phraseLocale,setPhraseLocale]=useState<VideoLocale>(()=>settings.ideasDraft?.locale??locale);
  const [languageNotice,setLanguageNotice]=useState("");
@@ -262,6 +263,7 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,languagePick
   // The editor and renderer receive a single projection of the selected text.
   // Stop an old playback frame before repainting at 0 with the new phrases.
   const plan=planIdeaSelection(candidates,indices,suggested,signature);
+  onExplicitSelection?.(signature);
   onResetPreview();
   onChange(old=>({...old,...plan.settingsPatch,ideasDraft:{...plan.editor,locale:outputLocale},motion:"rise",
    visibility:old.visibility.length?old.visibility:["large"]}));

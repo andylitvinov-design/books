@@ -5,6 +5,8 @@ export interface SingleVideoTextTrackInput {
   affirmationsEnabled?: boolean;
   affirmationLines?: readonly string[];
   affirmationVisibility?: readonly string[];
+  /** Desktop visitor-selected phrases outrank automatically generated storyboard captions. */
+  preferSelectedAffirmations?: boolean;
   timelineCaptions?: readonly { text?: string | null }[] | null;
   storyboardCaptions?: readonly string[];
   captionMode?: string;

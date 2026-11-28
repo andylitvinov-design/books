@@ -2676,6 +2676,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
     setMeditationFocus(focus);
   },[]);
   const [affirmations,setAffirmations] = useState<AffirmationSettings>(defaultAffirmations);
+  const [desktopPhraseSignature,setDesktopPhraseSignature]=useState<string|null>(null);
   const [voiceGenerating,setVoiceGenerating] = useState(false);
   const [voicePreferences,setVoicePreferences] = useState<AffirmationVoicePreferences>({voiceId:"maya",language:locale,bed:"none"});
   const [suggestion,setSuggestion] = useState("");
@@ -3312,6 +3313,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
   const singleTextSource=pickSingleVideoTextSource({
     affirmationsEnabled:affirmations.enabled,affirmationLines,
     affirmationVisibility:affirmations.visibility,timelineCaptions:timelineTextClips,
+    preferSelectedAffirmations:extraTextChoice==="personal"&&desktopPhraseSignature!==null&&
+      desktopPhraseSignature===affirmations.ideasDraft?.signature,
     storyboardCaptions:cinematicPlan?.version===FREE_FILM_PLAN_VERSION
       ?cinematicPlan.shots.map(shot=>shot.overlayText||""):[],
     captionMode,caption,wish,
@@ -8140,8 +8143,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
           <div data-video-goal-quiz-topic-stage
             hidden={goalQuizState.audience==="self"&&goalQuizState.step!==3}>
           <div className={videoStyles.quickSectionHeading} data-video-goal-topic-title>
-            <h3><Sparkles size={21} aria-hidden="true"/>{locale==="ru"?"3. Выберите тему":
-              locale==="es"?"3. Elige el tema":"3. Choose a topic"}</h3>
+            <h3><Sparkles size={21} aria-hidden="true"/><span className={videoStyles.desktopStepLabel}>{locale==="ru"?"2. Выберите тему":locale==="es"?"2. Elige el tema":"2. Choose a topic"}</span><span className={videoStyles.mobileStepLabel}>{locale==="ru"?"3. Выберите тему":locale==="es"?"3. Elige el tema":"3. Choose a topic"}</span></h3>
           </div>
           <div data-video-director-topic-controls className={videoStyles.quickTopicHost}/>
           </div>
@@ -8167,6 +8169,101 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
             {notice?<p className={videoStyles.quickStatus} role="status" aria-live="polite" data-video-stage-status>{notice}</p>:null}
           </div>
         </section>
+        <section className={videoStyles.quickSection} data-video-quick-tier data-workspace-section="video" data-video-quick-section="2" aria-labelledby="quick-tier-title">
+          <div className={videoStyles.quickSectionHeading}>
+            <h3 id="quick-tier-title"><Film size={21} aria-hidden="true"/><span className={videoStyles.desktopStepLabel}>{locale==="ru"?"3. Формат и качество":locale==="es"?"3. Formato y calidad":"3. Format & quality"}</span><span className={videoStyles.mobileStepLabel}>{practiceCopy.formats}</span></h3>
+          </div>
+
+          <div className={videoStyles.quickFormatGrid} role="group" aria-label={practiceCopy.formats}>
+            {/* A single real first-party 16:9 master remains mounted when the
+                expanded product changes; paid formats are only previews. */}
+            <div className={videoStyles.quickFormatStack} data-video-practice-accordion>
+              {formatPracticeOrder.map(format=>{
+                const Icon=format==="video"?Film:format==="meditation"?AudioLines:BarChart3;
+                const price=draftFormatPrices[format][practiceLevels[format]];
+                const selected=practiceType===format;
+                return <article key={format} className={videoStyles.quickFormatCard}
+                  data-video-practice-card={format} data-selected={selected}>
+                  <button type="button" className={videoStyles.quickFormatTitle}
+                    data-video-practice-pick={format} aria-pressed={selected}
+                    aria-expanded={selected} aria-controls={"video-practice-details-"+format}
+                    disabled={recording||preparing}
+                    onClick={()=>{
+                      if(selected)return;
+                      premiumVideoRef.current?.pause();
+                      setPracticeType(format);
+                      setPreviewPlaying(false);
+                    }}>
+                    <Icon size={18} aria-hidden="true"/>
+                    <span className={videoStyles.quickFormatTitleLabel}>
+                      <strong>{practiceCopy.names[format]}</strong>
+                      {selected?<small>{practiceCopy.durations[format]}</small>:null}
+                    </span>
+                    {!selected?<span className={videoStyles.quickFormatFrom}>
+                      {price===null?practiceCopy.noQuote:price===0?"$0":"$"+price.toFixed(2)}
+                    </span>:null}
+                    <ChevronDown className={videoStyles.quickFormatChevron} size={16} aria-hidden="true"/>
+                  </button>
+                  <div className={videoStyles.quickFormatDetails}
+                    id={"video-practice-details-"+format} data-video-practice-details={format}
+                    hidden={!selected}>
+                    <ul className={videoStyles.quickFormatBenefits}>
+                      {practiceCopy.features[format].map(feature=><li key={feature}>{feature}</li>)}
+                    </ul>
+                    <div className={videoStyles.quickFormatControls}>
+                      <div className={videoStyles.quickFormatQuality} role="group"
+                        aria-label={practiceCopy.names[format]}>
+                        {formatQualityOrder.map(level=><button type="button" key={level}
+                          data-video-quality-option={format+"-"+level}
+                          aria-pressed={selected&&practiceLevels[format]===level}
+                          disabled={recording||preparing||draftFormatPrices[format][level]===null}
+                          onClick={()=>{
+                            setPracticeType(format);
+                            setPracticeLevels(previous=>({...previous,[format]:level}));
+                          }}>{practiceCopy.quality[level]}</button>)}
+                      </div>
+                      <div className={videoStyles.quickFormatPrice} data-video-practice-price={format}
+                        aria-live="polite">
+                        <strong>{price===null?practiceCopy.noQuote:price===0?
+                          "$0":"$"+price.toFixed(2)}</strong>
+                        <small>{price===0?practiceCopy.free:practiceCopy.draft}</small>
+                      </div>
+                    </div>
+                  </div>
+                </article>;
+              })}
+            </div>
+          </div>
+          <p className={videoStyles.quickTierNote} role="note">{practiceCopy.note}</p>
+        </section>
+
+        <section className={videoStyles.quickSection} data-workspace-section="video" data-video-quick-section="4"
+          aria-labelledby="quick-visual-title">
+          <div className={videoStyles.quickSectionHeading}>
+            <div><h3 id="quick-visual-title"><Film size={21} aria-hidden="true"/><span className={videoStyles.desktopStepLabel}>{locale==="ru"?"4. Видеостиль":locale==="es"?"4. Estilo de vídeo":"4. Video styles"}</span><span className={videoStyles.mobileStepLabel}>{practiceCopy.stylesTitle}</span></h3>
+              <p>{quick.visualHelp}</p></div>
+            <button type="button" className={videoStyles.quickEdit}
+              onClick={event=>{event.preventDefault();openQuickDetailed("video-templates");}}>{quick.edit}<ArrowRight size={16} aria-hidden="true"/></button>
+          </div>
+          <div className={videoStyles.quickStyles} role="group" aria-label={quick.visual}>
+            {quickStylePosters.map((poster,index)=><button type="button" key={poster}
+              data-video-quick-style={index} data-video-quick-scene={quickStyleSceneIds[theme][index]}
+              aria-pressed={quickStyleIndex===index}
+              disabled={recording||preparing||!quickStyleFilmFor(theme,index)} onClick={()=>quickPickStyle(index)}>
+              {/* Curated first-party film artwork; no remote image requests. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={quickStyleFilmFor(theme,index)?.poster||
+                quickCanvasPoster(quickStyleSceneIds[theme][index] as LocalSceneId)}
+                loading="lazy" alt=""/>
+              <span>{theme==="money"?
+                moneyTemplateLabels[quickStyleSceneIds[theme][index] as MoneySceneId]?.[locale]||quick.styles[index]:
+                otherVideoScenes[theme as OtherTheme].find(scene=>scene.id===quickStyleSceneIds[theme][index])?.label[locale]||quick.styles[index]}</span>
+            </button>)}
+          </div>
+          <small className={videoStyles.quickHint}>{quick.sceneHint}</small>
+          
+        </section>
+
         {/* Original verified AI Director from #2913: open only from the free-help
             chip, keep the default iPhone design and a single MediaRecorder. */}
         {videoIHelpOpen&&<button type="button" tabIndex={-1}
@@ -8784,32 +8881,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
           {locale==="ru"?"Подобрать программу":locale==="es"?"Crear programa":"Build my plan"}<ArrowRight size={19} aria-hidden="true"/>
         </button>
       </section> : null}
-        <section className={videoStyles.quickSection} data-workspace-section="video" data-video-quick-section="4"
-          aria-labelledby="quick-visual-title">
-          <div className={videoStyles.quickSectionHeading}>
-            <div><h3 id="quick-visual-title"><Film size={21} aria-hidden="true"/>{practiceCopy.stylesTitle}</h3>
-              <p>{quick.visualHelp}</p></div>
-            <button type="button" className={videoStyles.quickEdit}
-              onClick={event=>{event.preventDefault();openQuickDetailed("video-templates");}}>{quick.edit}<ArrowRight size={16} aria-hidden="true"/></button>
-          </div>
-          <div className={videoStyles.quickStyles} role="group" aria-label={quick.visual}>
-            {quickStylePosters.map((poster,index)=><button type="button" key={poster}
-              data-video-quick-style={index} data-video-quick-scene={quickStyleSceneIds[theme][index]}
-              aria-pressed={quickStyleIndex===index}
-              disabled={recording||preparing||!quickStyleFilmFor(theme,index)} onClick={()=>quickPickStyle(index)}>
-              {/* Curated first-party film artwork; no remote image requests. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={quickStyleFilmFor(theme,index)?.poster||
-                quickCanvasPoster(quickStyleSceneIds[theme][index] as LocalSceneId)}
-                loading="lazy" alt=""/>
-              <span>{theme==="money"?
-                moneyTemplateLabels[quickStyleSceneIds[theme][index] as MoneySceneId]?.[locale]||quick.styles[index]:
-                otherVideoScenes[theme as OtherTheme].find(scene=>scene.id===quickStyleSceneIds[theme][index])?.label[locale]||quick.styles[index]}</span>
-            </button>)}
-          </div>
-          <small className={videoStyles.quickHint}>{quick.sceneHint}</small>
-          
-        </section>
         <details className={videoStyles.quickSection} data-workspace-section="video" data-video-procedural-options>
           <summary style={{display:"flex",alignItems:"center",gap:8,minHeight:44,cursor:"pointer",fontWeight:700,color:"#18533e"}}>
             <Sparkles size={17} aria-hidden="true"/>
@@ -8986,6 +9057,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
               if(id===activeIdeasGoalId)return;
               const next=personalGoalOptions.goals.find(goal=>goal.id===id);
               if(!next)return;
+              setDesktopPhraseSignature(null);
               setIdeasGoalChoice({contextKey:personalGoalOptions.contextKey,id});
               setIdeasProfile({...DEFAULT_VIDEO_GOAL_PROFILE});setIdeasProfileConfirmed(false);setAxesScreenOpen(false);
               setPersonalPhrasesOpen(false);applyPurposePhrases(next.type,"",true);
@@ -9080,7 +9152,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
                 setActiveWorkspace("editor");setMontagePanel(extraTextChoice==="support"?"text":"promo");
               }
             }}/>
-          {extraTextChoice==="personal"&&personalPhrasesOpen ? <div data-video-personal-phrases
+          {extraTextChoice==="personal"&&personalPhrasesOpen ? <div data-video-personal-phrases data-video-desktop-phrase-step
             className={personalStyles.personalPhrases}>
             <section className={textChoiceStyles.prompt}
               data-video-text-personal-refinement>
@@ -9116,6 +9188,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
             <MandalaVideoIdeas key={"personal-phrases-"+theme} locale={locale} theme={theme}
               requestText={montagePersonalGoal||wish} profile={ideasProfileConfirmed?ideasProfile:undefined}
               languagePicker phraseMode="personalized"
+              onExplicitSelection={signature=>{
+                setDesktopPhraseSignature(window.matchMedia("(min-width:760px)").matches?signature:null);
+              }}
               preserveApprovedConcept={Boolean(approvedVideoConcept)&&personalPhrasesOpen}
               goalType={chosenIdeaGoal?.type||null}
               selectedTopicId={selectedConceptTopic?.topicId||null}
@@ -9904,73 +9979,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl: personalFrameUrl, pho
           {activeWorkspace==="video" ? deepCharacterPhotoPane : null}
         </section>
 
-        <section className={videoStyles.quickSection} data-video-quick-tier data-workspace-section="video" data-video-quick-section="2" aria-labelledby="quick-tier-title">
-          <div className={videoStyles.quickSectionHeading}>
-            <h3 id="quick-tier-title"><Film size={21} aria-hidden="true"/>{practiceCopy.formats}</h3>
-          </div>
-
-          <div className={videoStyles.quickFormatGrid} role="group" aria-label={practiceCopy.formats}>
-            {/* A single real first-party 16:9 master remains mounted when the
-                expanded product changes; paid formats are only previews. */}
-            <div className={videoStyles.quickFormatStack} data-video-practice-accordion>
-              {formatPracticeOrder.map(format=>{
-                const Icon=format==="video"?Film:format==="meditation"?AudioLines:BarChart3;
-                const price=draftFormatPrices[format][practiceLevels[format]];
-                const selected=practiceType===format;
-                return <article key={format} className={videoStyles.quickFormatCard}
-                  data-video-practice-card={format} data-selected={selected}>
-                  <button type="button" className={videoStyles.quickFormatTitle}
-                    data-video-practice-pick={format} aria-pressed={selected}
-                    aria-expanded={selected} aria-controls={"video-practice-details-"+format}
-                    disabled={recording||preparing}
-                    onClick={()=>{
-                      if(selected)return;
-                      premiumVideoRef.current?.pause();
-                      setPracticeType(format);
-                      setPreviewPlaying(false);
-                    }}>
-                    <Icon size={18} aria-hidden="true"/>
-                    <span className={videoStyles.quickFormatTitleLabel}>
-                      <strong>{practiceCopy.names[format]}</strong>
-                      {selected?<small>{practiceCopy.durations[format]}</small>:null}
-                    </span>
-                    {!selected?<span className={videoStyles.quickFormatFrom}>
-                      {price===null?practiceCopy.noQuote:price===0?"$0":"$"+price.toFixed(2)}
-                    </span>:null}
-                    <ChevronDown className={videoStyles.quickFormatChevron} size={16} aria-hidden="true"/>
-                  </button>
-                  <div className={videoStyles.quickFormatDetails}
-                    id={"video-practice-details-"+format} data-video-practice-details={format}
-                    hidden={!selected}>
-                    <ul className={videoStyles.quickFormatBenefits}>
-                      {practiceCopy.features[format].map(feature=><li key={feature}>{feature}</li>)}
-                    </ul>
-                    <div className={videoStyles.quickFormatControls}>
-                      <div className={videoStyles.quickFormatQuality} role="group"
-                        aria-label={practiceCopy.names[format]}>
-                        {formatQualityOrder.map(level=><button type="button" key={level}
-                          data-video-quality-option={format+"-"+level}
-                          aria-pressed={selected&&practiceLevels[format]===level}
-                          disabled={recording||preparing||draftFormatPrices[format][level]===null}
-                          onClick={()=>{
-                            setPracticeType(format);
-                            setPracticeLevels(previous=>({...previous,[format]:level}));
-                          }}>{practiceCopy.quality[level]}</button>)}
-                      </div>
-                      <div className={videoStyles.quickFormatPrice} data-video-practice-price={format}
-                        aria-live="polite">
-                        <strong>{price===null?practiceCopy.noQuote:price===0?
-                          "$0":"$"+price.toFixed(2)}</strong>
-                        <small>{price===0?practiceCopy.free:practiceCopy.draft}</small>
-                      </div>
-                    </div>
-                  </div>
-                </article>;
-              })}
-            </div>
-          </div>
-          <p className={videoStyles.quickTierNote} role="note">{practiceCopy.note}</p>
-        </section>
 
         {/* Mobile-first montage: the first screen is for video preferences, not timeline editing. */}
         <section className={[videoStyles.quickSection,videoStyles.basicStudio].join(" ")}

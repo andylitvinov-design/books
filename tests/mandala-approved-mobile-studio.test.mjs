@@ -17,15 +17,15 @@ test("the existing public editor retains one real video renderer and the new com
     "one original H264 film master feeds preview and recording");
   assert.match(page, /<MandalaMeditationClient/,"canonical Mandala route must mount this editor");
   const order=["data-video-quick-builder",'<nav className={videoStyles.quickVideoNav} data-video-quick-controls',
-    "data-video-quick-section=\"1\"","data-video-live-stage","data-video-mandala-hero",
-    "data-video-mini-source","data-video-quick-live-preview",
-    "data-video-therapy-banner",
+    "data-video-quick-section=\"1\"","data-video-topic-section","data-video-quick-tier","data-video-practice-accordion",
     '<section className={videoStyles.quickSection} data-workspace-section="video" data-video-quick-section="4"',
     "data-video-quick-scene={quickStyleSceneIds[theme][index]}",
+    "data-video-live-stage","data-video-mandala-hero",
+    "data-video-mini-source","data-video-quick-live-preview",
+    "data-video-therapy-banner",
     "<section className={videoStyles.quickPhraseSection} data-workspace-section=\"phrases\" data-video-quick-phrases",
     "<section className={videoStyles.quickMusicSection} data-workspace-section=\"video\" data-video-quick-audio-choices",
     "data-video-scene-library",'id="video-templates"',"data-free-film-compilation-catalog",
-    "data-video-quick-tier","data-video-practice-accordion",
     "data-video-quick-personal","data-video-quick-generate","data-video-quick-legacy",
     "data-video-quick-section=\"3\"","data-video-quick-section=\"5\"",
     "data-video-quick-section=\"6\""];
@@ -56,8 +56,13 @@ test("the existing public editor retains one real video renderer and the new com
 test("shared widescreen preview and mutually exclusive format accordion keep paid formats gated",()=>{
   const source=read("components/mandala-free-video-studio.tsx");
   const css=read("components/mandala-video-mobile.module.css");
-  const stage=source.slice(source.indexOf('data-video-live-stage'),source.indexOf('data-video-quick-tier'));
-  const tier=source.slice(source.indexOf('data-video-quick-tier'),source.indexOf('data-video-quick-personal',source.indexOf('data-video-quick-tier')));
+  const tierStart=source.indexOf('data-video-quick-tier');
+  const stylesStart=source.indexOf('<section className={videoStyles.quickSection} data-workspace-section="video" data-video-quick-section="4"',tierStart);
+  const stageStart=source.indexOf('data-video-live-stage',stylesStart);
+  const editorStart=source.indexOf('data-video-basic-editor',stageStart);
+  assert.ok(tierStart>=0&&stylesStart>tierStart&&stageStart>stylesStart&&editorStart>stageStart);
+  const tier=source.slice(tierStart,stylesStart);
+  const stage=source.slice(stageStart,editorStart);
   assert.match(stage,/data-video-mandala-hero/);
   assert.match(stage,/data-mandala-cinematic-canvas/);
   assert.match(stage,/data-video-quick-live-preview/);
@@ -65,7 +70,7 @@ test("shared widescreen preview and mutually exclusive format accordion keep pai
     "one real source MP4 is the miniature below the one Canvas stage");
   assert.match(stage,/data-video-scene-library[\s\S]*?id="video-templates"[\s\S]*?data-free-film-compilation-catalog/);
   assert.doesNotMatch(tier,/data-video-quick-live-preview/,
-    "the format section is now the full-width accordion below the media library");
+    "the format section is a single accordion before the media library");
   assert.match(tier,/data-video-practice-accordion/);
   assert.match(tier,/formatPracticeOrder\.map\(format=>/);
   assert.match(tier,/data-video-practice-card=\{format\}/);
