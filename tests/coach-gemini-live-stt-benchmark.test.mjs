@@ -1,3 +1,4 @@
+import './coach-speech-live-compare.test.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {mkdtempSync,rmSync,writeFileSync,readFileSync} from 'node:fs'
