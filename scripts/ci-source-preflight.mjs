@@ -7,6 +7,7 @@ import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
+import { classifyPackageImpact } from '../lib/ci/specialist-aggregate.mjs';
 
 const MAX_FILES = 3000;
 const MAX_FINDINGS = 100;
@@ -49,15 +50,22 @@ const fullPublicTypecheckDelegation=paths=>Array.isArray(paths)&&paths.every(pat
   FULL_MEDIA_EDITOR_ONLY.has(path)||
   (FULL_PUBLIC_PRESENTATION.test(path)&&!FULL_PRIVILEGED_DOMAIN.test(path)));
 
-export function mayDelegateTypesToNext(paths,{eventName,route,ciOnly,nextConfig}={}) {
+export function mayDelegateTypesToNext(paths,{eventName,route,ciOnly,nextConfig,additiveTestRegistration=false}={}) {
+  // The only manifest exception is an exact BASE-proven addition to existing
+  // mandatory prebuild test groups. All prior source rules remain unchanged.
+  const manifestException=additiveTestRegistration===true&&Array.isArray(paths)&&
+    paths.includes('package.json')&&!paths.includes('package-lock.json');
+  const scopedPaths=manifestException?paths.filter(p=>p!=='package.json'):paths;
+  const testsOnly=manifestException&&scopedPaths.length>0&&scopedPaths.every(p=>
+    /^tests\/(?:coach|coaching)-[a-z0-9-]+\.test\.mjs$/.test(p));
   const trustedRoute=route==='CORE'||(route==='FULL'&&
-    fullPublicTypecheckDelegation(paths));
+    (fullPublicTypecheckDelegation(scopedPaths)||testsOnly));
   if(eventName!=='pull_request'||!trustedRoute||ciOnly!=='false'||
       !Array.isArray(paths)||!paths.length||!impactsTypes(paths)||
       typeof nextConfig!=='string'||!nextConfig.includes('export default nextConfig;')||
       /ignoreBuildErrors|ignoreDuringBuilds|\btypescript\s*:/.test(nextConfig)) return false;
   const risky=/^(?:package(?:-lock)?\.json|next(?:-env\.d\.ts|\.config\.[^/]+)|(?:tsconfig|jsconfig)(?:\.[^/]*)?\.json|\.github\/|scripts\/ci-|lib\/ci\/|tests\/ci-|eslint\.config|postcss\.config|babel\.config|\.env|\.npmrc)/;
-  return paths.every(path=>typeof path==='string'&&!risky.test(path)&&
+  return scopedPaths.every(path=>typeof path==='string'&&!risky.test(path)&&
     !path.split('/').some(part=>part==='..'||part==='.') );
 }
 export function rootFingerprint(category, file, code, message) {
@@ -87,6 +95,24 @@ export function summarizeFindings(findings) {
 }
 function git(args) {
   return execFileSync('git', args, {encoding:'utf8', maxBuffer:10*1024*1024,stdio:['ignore','pipe','pipe']});
+}
+// Use the same already reviewed classifier as Core lint, but require exact
+// immutable BASE source and manifest equality before trusting its result.
+// Check the complete diff (including removals) rather than just syntax paths.
+export function verifiedAdditiveTypeRegistration(base, paths) {
+  if(!Array.isArray(paths)||!paths.includes('package.json')) return false;
+  try {
+    const policy='lib/ci/specialist-aggregate.mjs';
+    if(git(['show',base+':'+policy])!==readFileSync(policy,'utf8'))return false;
+    const raw=git(['diff','--no-renames','--name-only','-z',base,'HEAD']);
+    const changed=raw?parsePaths(raw):[];
+    if(JSON.stringify(changed)!==JSON.stringify(paths))return false;
+    if(git(['diff','--name-only','-z','HEAD'])||git(['ls-files','--others','--exclude-standard','-z']))return false;
+    const basePackage=git(['show',base+':package.json']);
+    const currentPackage=git(['show','HEAD:package.json']);
+    if(readFileSync('package.json','utf8')!==currentPackage)return false;
+    return classifyPackageImpact({changed,basePackage,currentPackage}).mode==='core';
+  }catch{return false;}
 }
 function changedPaths(base) {
   if (!base || base.startsWith('-') || /\s/.test(base)) throw Error('BASE_REF_REQUIRED');
@@ -207,6 +233,8 @@ function main() {
   const typecheckDelegated=deferTypesToNext&&mayDelegateTypesToNext(paths,{
     eventName:process.env.GITHUB_EVENT_NAME,route:process.env.HH_PREFLIGHT_ROUTE,
     ciOnly:process.env.HH_PREFLIGHT_CI_ONLY,nextConfig,
+    additiveTestRegistration:process.env.GITHUB_EVENT_NAME==='pull_request'&&
+      verifiedAdditiveTypeRegistration(base,paths),
   });
   const typechecked=fullTypes||(!typecheckDelegated&&impactsTypes(paths));
   if(!findings.length&&typechecked) findings.push(...checkTypes());
