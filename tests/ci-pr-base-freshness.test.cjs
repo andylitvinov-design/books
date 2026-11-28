@@ -686,5 +686,40 @@ test('native freshness mirrors the production-owned ordinary-product loose-base 
  assert.equal((await assess(args)).ok,false);
  const source=require('node:fs').readFileSync('scripts/ci-pr-base-freshness.cjs','utf8');
  assert.ok(source.includes("names.push('safeNonOverlappingProductAdvance')"));
- assert.ok(source.includes("approved('safeNonOverlappingProductAdvance')"));
+ assert.ok(source.includes("approved('safeNonOverlappingProductAdvance',packageEvidence)"));
+});
+
+
+test('native freshness mirrors all protected independent proofs and supplies exact additive package evidence',async()=>{
+ const source='c'.repeat(40), paths=['package.json','package-lock.json','components/my-coach-intro.jsx'];
+ const valid={status:'ahead',behind_by:0,base_commit:{sha:old},merge_base_commit:{sha:old},
+  files:[{filename:'components/tarot-intro.jsx',status:'modified'}]};
+ let sourceAncestor=true, fetched=[], evidence;
+ const github={rest:{repos:{
+  getBranch:async()=>({data:{commit:{sha:head},protected:true}}),
+  compareCommits:async({head:target})=>({data:target===source?
+    {...valid,status:sourceAncestor?'ahead':'diverged'}:valid}),
+  getContent:async({path,ref})=>{
+   fetched.push([path,ref]);const value=JSON.stringify({path,ref});
+   return {data:{type:'file',path,sha:'d'.repeat(40),size:Buffer.byteLength(value),
+      encoding:'base64',content:Buffer.from(value).toString('base64')}};
+  }
+ },pulls:{listFiles:async()=>({data:paths.map(filename=>({filename,status:'modified'}))})}}};
+ const policy={safeDocumentationAdvance:()=>false,safeIndependentCiMaintenanceAdvance:()=>false,
+  verifiedIndependentPublicRasterAdvance:()=>false,
+  safeNonOverlappingProductAdvance:(_d,_b,_l,_p,e)=>{evidence=e;return Boolean(e?.baseLock&&e?.currentLock);}};
+ const args={github,owner:'o',repo:'r',pr:{...pr,changed_files:3,mergeable:true,head:{sha:source}},
+   verifiedRunBase:old,classifierBase:head,decideRoute:()=> 'FULL',baseAdvancePolicy:policy};
+ assert.equal((await assess(args)).ok,true);
+ assert.equal(fetched.length,4);assert.equal(JSON.parse(evidence.baseLock).ref,old);
+ assert.equal(JSON.parse(evidence.currentPackage).ref,source);
+ sourceAncestor=false;fetched=[];
+ assert.equal((await assess(args)).ok,false);assert.equal(fetched.length,0);
+ for(const name of ['safeDetachedCiSourceAdvance','safeUnrelatedPublicLeafAdvance','safeIsolatedFeatureAdvance']){
+  const extra={...policy,safeNonOverlappingProductAdvance:()=>false,
+    [name]:(_d,b,l,p,positive)=>b===old&&l===head&&p.length===3&&
+     (name!=='safeIsolatedFeatureAdvance'||positive===true)};
+  assert.equal((await assess({...args,baseAdvancePolicy:extra})).ok,true,name);
+  assert.equal((await assess({...args,baseAdvancePolicy:extra,pr:{...args.pr,mergeable:false}})).ok,false,name);
+ }
 });
