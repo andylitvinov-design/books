@@ -6,7 +6,7 @@ import {initialCoachMicActivity,stepCoachMicActivity,classifyClientReactionText,
 import {createReactionPlayback} from '../lib/coaching/coach-reaction-playback.mjs'
 import {REACTION_V4_ANCHORS,REACTION_V4_BLOCKS,REACTION_V4_ROOT,REACTION_V5_ALL_BLOCKS,reactionCameraGroup,MAX_COACH_REACTION_FRAMES,coachReactionDurationAllowed,reactionV4File,reactionV4Poster,releasedReactionMedia,COACH_PRESENTATION_LOOPS,isCoachPresentationContext,releasedCoachPresentationLoop,coachPresentationMetadataMatches,coachPresentationOpening,HARRY_PRESENTATION_OPENING,COACH_ORIGINAL_OPENINGS,COACH_PROTECTED_PRESENCE,protectedCoachPresence} from '../lib/coaching/coach-reaction-v4-registry.mjs'
 import {REACTION_V4_RELEASED,REACTION_V5_CAMERA_GROUPS} from '../lib/coaching/coach-reaction-v4-release.mjs'
-import {COACH_REACTION_QUALITY_AUDIT,coachReactionQualityEligible,qualityScreenedReactionMedia,qualityScreenedPresentation,qualityScreenedPublicPresence} from '../lib/coaching/coach-reaction-quality.mjs'
+import {COACH_REACTION_QUALITY_AUDIT,coachReactionQualityEligible,qualityScreenedReactionMedia,qualityScreenedPresentation,qualityScreenedPublicPresence,coachPresentationReturn,COACH_PUBLIC_RETURN_PLAN} from '../lib/coaching/coach-reaction-quality.mjs'
 
 test('speech activity: open microphone alone is not a client turn; hysteresis and expiry',()=>{
  let s=initialCoachMicActivity()
@@ -285,12 +285,12 @@ test('presentation contexts use a stable source independent of greeting audio an
  const layers=read('components/coach-presentation-layers.jsx')
  const css=read('components/my-coach-motion-media.module.css')
  assert.ok(motion.includes('presentationActive?<CoachPresentationLayers key={personaId}'))
- assert.ok(layers.includes("loop={role==='presence'} playsInline preload=\"auto\""))
- assert.ok(layers.includes('onLoadedMetadata={event=>valid(event.currentTarget,clip)}'))
+ assert.ok(layers.includes("loop={videoRole==='presence'} playsInline preload={videoRole==='opening'?'auto':'metadata'}"))
+ assert.ok(layers.includes('onLoadedMetadata={event=>metadata(event.currentTarget,clip,videoRole)}'))
  assert.ok(layers.includes("layer(opening,'opening',openingRef)"))
  assert.ok(layers.includes("layer(presence,'presence',presenceRef)"))
  assert.ok(layers.includes('requestVideoFrameCallback'))
- assert.ok(layers.includes('activeSrcRef.current!==clip.src'))
+ assert.ok(layers.includes('activeRoleRef.current!==videoRole'))
  assert.ok(layers.includes('video.readyState<2'))
  assert.ok(css.includes('.media .video.presentationLayer{opacity:0;transition:none;will-change:auto}'))
  assert.ok(css.includes(".media .video.presentationLayer[data-presentation-visible='true']{opacity:1}"))
@@ -323,11 +323,11 @@ test('Harry plays only the exact original greeting once then the calm primary lo
  assert.equal(coachPresentationOpening('harry',releasedCoachPresentationLoop('harry',['alternate:harry'],'alternate')),opening)
  assert.equal(coachPresentationOpening('mira',loop),COACH_ORIGINAL_OPENINGS.mira)
  const source=readFileSync(new URL('../components/my-coach-motion-media.jsx',import.meta.url),'utf8')
- assert.ok(source.includes('openingActive?opening:presentation'))
+ assert.ok(source.includes('openingActive?opening:returnActive?returnClip:presentation'))
  const layers=readFileSync(new URL('../components/coach-presentation-layers.jsx',import.meta.url),'utf8')
  assert.ok(source.includes('onOpeningDone={finishPresentationOpening}'))
- assert.ok(layers.includes("onEnded={role==='opening'?onOpeningDone:undefined}"))
- assert.ok(layers.includes("loop={role==='presence'}"))
+ assert.ok(layers.includes("if(videoRole==='opening')onOpeningDone()"))
+ assert.ok(layers.includes("loop={videoRole==='presence'}"))
  assert.ok(layers.includes('const renderLayers=enabled||mounted'))
  assert.ok(source.includes('[personaId,presentationActive]'))
 })
@@ -362,7 +362,7 @@ test('all public personas have protected original or explicit neutral-only/still
  assert.equal(coachPresentationOpening('unknown'),null)
  const source=readFileSync(new URL('../components/my-coach-motion-media.jsx',import.meta.url),'utf8')
  assert.ok(source.includes('protectedCoachPresence(personaId,REACTION_V4_RELEASED)'))
- assert.ok(source.includes('const opening=originalOpening&&Math.min(originalOpening.width,originalOpening.height)>=768?originalOpening:null'))
+ assert.ok(source.includes('const opening=presentationActive?coachPresentationOpening(personaId):null'))
  assert.ok(source.includes('openingDone!==personaId'))
  assert.ok(source.includes('setOpeningDone(personaId)'))
 })
@@ -497,18 +497,23 @@ test('quality hold retains the HD camera and does not return to legacy video',()
 })
 
 
-test('all four 480px public originals are bypassed for screened same-camera HD presence',()=>{
+test('restore all six original greetings before the current HD presence, irrespective of source resolution',()=>{
  const src=readFileSync(new URL('../components/my-coach-motion-media.jsx',import.meta.url),'utf8')
- assert.ok(src.includes('const opening=originalOpening&&Math.min(originalOpening.width,originalOpening.height)>=768?originalOpening:null'))
- for(const [coach,id] of Object.entries({mira:'MIR-01',sofia:'SOF-02',max:'MAX-01',alex:'ALX-01'})){
+ assert.ok(src.includes('const opening=presentationActive?coachPresentationOpening(personaId):null'))
+ assert.doesNotMatch(src,/Math\.min\(originalOpening\.width/)
+ assert.ok(src.includes('openingActive?opening:returnActive?returnClip:presentation'))
+ assert.ok(src.includes('qualityScreenedPublicPresence(personaId,REACTION_V4_RELEASED,pinnedPresentation)'))
+ for(const [coach,id] of Object.entries({mira:'MIR-01',sofia:'SOF-02',max:'MAX-01',alex:'ALX-01',merlin:'MER-A01',harry:'HAR-01'})){
   const original=coachPresentationOpening(coach)
-  assert.equal(original.width,480)
-  const pinned=protectedCoachPresence(coach,REACTION_V4_RELEASED)
-  const hd=qualityScreenedPresentation(pinned,releasedReactionMedia(coach,REACTION_V4_RELEASED,pinned.group))
-  assert.equal(hd.id,id);assert.ok(hd.width>=1080);assert.equal(hd.anchorHash,pinned.anchorHash)
+  assert.ok(original?.videoBlob&&original?.posterBlob)
+  assert.ok(coachPresentationMetadataMatches(original,{videoWidth:original.width,videoHeight:original.height,duration:124/24}))
+  const hd=qualityScreenedPublicPresence(coach,REACTION_V4_RELEASED,protectedCoachPresence(coach,REACTION_V4_RELEASED))
+  assert.equal(hd.id,id)
+  assert.ok(hd.width>=1080)
+  assert.notEqual(original.src,hd.src)
  }
- for(const coach of ['merlin','harry'])assert.ok(Math.min(coachPresentationOpening(coach).width,coachPresentationOpening(coach).height)>=768)
-
+ assert.equal(coachPresentationOpening('genie'),null)
+ assert.equal(coachPresentationOpening('caesar'),null)
 })
 
 
@@ -532,18 +537,18 @@ test('Harry catalog preserves the approved native source and avoids 3x mobile ov
 
 test('presentation waits for current playback progress and cannot reveal a failed or stale layer',()=>{
  const src=readFileSync(new URL('../components/coach-presentation-layers.jsx',import.meta.url),'utf8')
- assert.ok(src.includes('epoch!==playbackEpoch.current||failedRef.current[clip.src]'))
- assert.ok(src.includes('video.requestVideoFrameCallback(()=>reveal(video,clip,epoch))'))
+ assert.ok(src.includes('epoch!==playbackEpoch.current||failedRef.current[videoRole]'))
+ assert.ok(src.includes('video.requestVideoFrameCallback((_,metadata)=>reveal(video,clip,videoRole,epoch,metadata?.mediaTime??video.currentTime))'))
  assert.ok(src.includes('video.currentTime-progress.start>=.12'))
  assert.ok(src.includes('progress?.video===video'))
  assert.doesNotMatch(src,/else reveal\(video,clip\)/)
- assert.ok(src.includes('if(visibleRef.current===clip.src){'))
+ assert.ok(src.includes('if(visibleRef.current===failedRole){'))
  assert.doesNotMatch(src,/visibleRef.current===clip.src\|\|clip.src===presence/)
 })
 
 
 test('public presentation selects a stable reviewed neutral camera without changing session policy',()=>{
- const expected={mira:'MIR-A01',max:'MAX-A01',alex:'ALX-A01',sofia:'SOF-02',merlin:'MER-A01',harry:'HAR-01',genie:'SAM-01'}
+ const expected={mira:'MIR-01',max:'MAX-01',alex:'ALX-01',sofia:'SOF-02',merlin:'MER-A01',harry:'HAR-01',genie:'SAM-01'}
  for(const [coach,id] of Object.entries(expected)){
   const pinned=protectedCoachPresence(coach,REACTION_V4_RELEASED)
   const clip=qualityScreenedPublicPresence(coach,REACTION_V4_RELEASED,pinned)
@@ -555,4 +560,34 @@ test('public presentation selects a stable reviewed neutral camera without chang
  assert.equal(qualityScreenedPublicPresence('caesar',REACTION_V4_RELEASED,null),null)
  assert.equal(REACTION_V5_CAMERA_GROUPS.merlin,'alternate')
  assert.equal(protectedCoachPresence('mira',REACTION_V4_RELEASED).id,'MIR-02')
+})
+
+test('measured original returns are one-shot same-camera tails, never a held full dialogue take',()=>{
+ const expected={mira:['MIR-01',128],max:['MAX-01',120],sofia:['SOF-01',120],alex:['ALX-01',119],harry:['HAR-03B',79]}
+ for(const [coach,[id,frame]] of Object.entries(expected)){
+  const opening=coachPresentationOpening(coach)
+  const presence=qualityScreenedPublicPresence(coach,REACTION_V4_RELEASED,protectedCoachPresence(coach,REACTION_V4_RELEASED))
+  const ret=coachPresentationReturn(coach,REACTION_V4_RELEASED,presence,opening)
+  assert.equal(ret.sourceId,id);assert.equal(ret.startTime,frame/24)
+  assert.equal(ret.anchorHash,presence.anchorHash);assert.equal(ret.group,'primary')
+  assert.equal(ret.sha256,REACTION_V5_ALL_BLOCKS[id].sha256)
+  assert.ok(ret.duration>ret.startTime&&ret.duration<=10.2)
+  assert.ok(COACH_PUBLIC_RETURN_PLAN[coach].entryMae<5)
+  assert.equal(coachPresentationReturn(coach,[],presence,opening),null)
+  assert.equal(coachPresentationReturn(coach,REACTION_V4_RELEASED,{...presence,anchorHash:'bad'},opening),null)
+  assert.equal(coachPresentationReturn(coach,REACTION_V4_RELEASED,presence,{...opening,videoBlob:'bad'}),null)
+ }
+ assert.equal(coachPresentationReturn('merlin',REACTION_V4_RELEASED,null,coachPresentationOpening('merlin')),null)
+ const original= releasedReactionMedia('sofia',REACTION_V4_RELEASED,'primary')
+ const screened=qualityScreenedReactionMedia(original)
+ assert.equal(screened.blocks.some(b=>b.id==='SOF-01'),false)
+ assert.equal(screened.heldBlocks.some(b=>b.id==='SOF-01'),true)
+ assert.equal(screened.blocks.length+screened.heldBlocks.length,original.blocks.length)
+ const src=readFileSync(new URL('../components/coach-presentation-layers.jsx',import.meta.url),'utf8')
+ assert.ok(src.includes("layer(returnClip,'return',returnRef)"))
+ assert.ok(src.includes("target.addEventListener('seeked',play)"))
+ assert.ok(src.includes("target.removeEventListener('seeked',play)"))
+ assert.ok(src.includes("mediaTime<clip.startTime-1/48"))
+ assert.ok(src.includes("if(videoRole==='return')onReturnDone()"))
+ assert.ok(src.includes("key={videoRole+':'+clip.src}"))
 })
