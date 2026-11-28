@@ -91,7 +91,7 @@ function CourseProgress({progress,lang}){
 
 // Audio is the existing public, first-party recorded welcome MP3. The video
 // portrait is silent; no fake lip-sync or Gemini/TTS billing is involved.
-export default function MyCoachGreetingGate({personaId,locale='en',name,methodId,onStart,accountSaving=false,entryPending=false,resumeControl,selectedMethod='',onMethodSelect,methodSelectionEnabled=false,privateProfileEnabled=false,draftCourses=[],savedSessions=[],resumeLookupReady=false,resumeBusy=false,resumeError=false,resumeCursor=null,onResumeSession,onReloadSessions}){
+export default function MyCoachGreetingGate({personaId,locale='en',name,methodId,onStart,accountSaving=false,entryPending=false,resumeControl,speechReviewControl,selectedMethod='',onMethodSelect,methodSelectionEnabled=false,privateProfileEnabled=false,draftCourses=[],savedSessions=[],resumeLookupReady=false,resumeBusy=false,resumeError=false,resumeCursor=null,onResumeSession,onReloadSessions}){
  const lang=words[locale]?locale:'en',t=words[lang]
  const router=useRouter(),query=useSearchParams()
  const persona=getCoachPersona(personaId)
@@ -259,6 +259,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
            </ClarityStartLink>:<button type="button" className={styles.mainAction} data-coach-greeting-live-start disabled={gate.busy||entryPending} onClick={()=>chooseSession(INTRODUCTORY_COACH_SESSION_ID)}>
              <Play size={25} fill="currentColor" aria-hidden="true"/><span className={styles.ctaCopy}><strong data-coach-greeting-course-start>{entryLabel(mainEntry)}</strong>{progress?<CourseProgress progress={progress} lang={lang}/>:mainEntry.item&&Number.isFinite(mainEntry.item.durationSeconds)?<span className={styles.ctaProgress}>{entryWords.saved}: {clockText(mainEntry.item.durationSeconds)}</span>:<CourseProgress progress={progress} lang={lang}/>}</span><ChevronRight size={23} aria-hidden="true"/>
            </button>):<p className={styles.unavailable} role="status">{getCoachProgramComparison(lang).copy.preview}</p>)}
+           {greetingStarted&&speechReviewControl}
          </div>
          <div className={styles.courseSelector} data-coach-greeting-course={program}>
            <button type="button" className={styles.courseArrow} data-coach-greeting-course-previous aria-label={ui.previousCourse} onClick={()=>selectProgram(courseLaunchNeighbor(program,-1))}><ChevronLeft size={19} aria-hidden="true"/></button>

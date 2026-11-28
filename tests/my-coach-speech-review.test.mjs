@@ -193,3 +193,13 @@ test('observed model metadata only follows a completed accepted review',async()=
  assert.ok(ui.includes('data-coach-stt-observed-model={lastSpeechReviewModel}'))
  assert.ok(ui.includes('&&text&&actualModel)setLastSpeechReviewModel(actualModel)'))
 })
+
+test('review appears in transcript and optional consent before start',()=>{
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const greeting=readFileSync(new URL('../components/my-coach-greeting-gate.jsx',import.meta.url),'utf8')
+ const feed=ui.slice(ui.indexOf('data-coach-live-transcript'),ui.indexOf('data-coach-private-recall'))
+ for(const value of ['data-coach-visible-speech-review','data-coach-unconfirmed-speech-candidate','data-coach-latest-confirmed-speech','confirmSpeechAmendment(row)'])assert.ok(feed.includes(value))
+ assert.ok(ui.includes('data-coach-preplay-speech-review'))
+ assert.ok(greeting.includes('{greetingStarted&&speechReviewControl}'))
+ assert.ok(ui.includes('[turns,speechPreview,streamingPreview,speechReviewActivity,speechAmendments.length]'))
+})

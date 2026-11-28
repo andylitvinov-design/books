@@ -275,6 +275,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [speechReviews,setSpeechReviews]=useState([])
   const [lastSpeechReviewModel,setLastSpeechReviewModel]=useState('')
   const visibleSpeechReviews=speechReviews.filter(visibleSpeechReview)
+  const speechReviewActivity=visibleSpeechReviews.map(row=>row.id+':'+(row.pending?'pending':row.candidate?'candidate':'review')).join('|')
   const speechReviewSerial=useRef(0)
   const speechDictionaryRef=useRef(null),speechDictionaryRequest=useRef(null)
   const [speechDictionaryState,setSpeechDictionaryState]=useState('off')
@@ -564,7 +565,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     })
     return ()=>controller.abort()
   },[])
-  useEffect(()=>{if(transcriptRef.current)transcriptRef.current.scrollTop=transcriptRef.current.scrollHeight},[turns,speechPreview,streamingPreview])
+  useEffect(()=>{if(transcriptRef.current)transcriptRef.current.scrollTop=transcriptRef.current.scrollHeight},[turns,speechPreview,streamingPreview,speechReviewActivity,speechAmendments.length])
   useEffect(()=>{
     if(['idle','paused','ready'].includes(voiceState.phase)){
       micWaveRef.current?.style.setProperty('--coach-mic-level','0')
@@ -2351,6 +2352,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       personaId={personaId} locale={conversationLang} name={name}
       methodId={visibleMethodId} onStart={enterCoachingFromGreeting} entryPending={greetingIdentity.status==='loading'} accountSaving={protocolOwnerReady}
       selectedMethod={selectedMethod} onMethodSelect={setSelectedMethod}
+      speechReviewControl={protocolOwnerReady&&liveVoiceSelected&&geminiCapabilities.speech_review_free===true&&<label data-coach-preplay-speech-review style={{display:'flex',alignItems:'flex-start',gap:8,fontSize:12,lineHeight:1.35,padding:'6px 0',overflowWrap:'anywhere'}}>
+        <input type="checkbox" checked={activeSpeechReviewConsent&&speechReviewProvider==='groq'} onChange={event=>{setSpeechReviewProvider('groq');setSpeechReviewConsent(event.target.checked);if(!event.target.checked)setSpeechReviewAll(false)}} style={{flex:'none',width:18,height:18}}/>
+        <span>{({ru:'Улучшенная расшифровка (Whisper): отправлять сомнительные фрагменты Groq. Необязательно.',en:'Enhanced transcription (Whisper): send suspect speech clips to Groq. Optional.',es:'Transcripción mejorada (Whisper): enviar fragmentos dudosos a Groq. Opcional.'})[lang]} <a href="https://groq.com/privacy-policy/" target="_blank" rel="noreferrer" style={{color:'inherit',textDecoration:'underline'}}>Groq</a></span>
+      </label>}
       methodSelectionEnabled={protocolOwnerReady}
       privateProfileEnabled={protocolOwnerReady&&profileV3Enabled}
       draftCourses={resumeList?.owner===protocolOwnerRef.current?resumeList.items.map(item=>item.courseSessionId):[]}
@@ -2726,6 +2731,19 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           {speechPreview&&<div className={styles.transcriptInterim} aria-live="off">
             <strong>{t.user} · {captions.listening}</strong><p>{speechPreview}</p>
           </div>}
+        {visibleSpeechReviews.length>0&&<section data-coach-visible-speech-review aria-label={({ru:'Уточнение речи',en:'Speech review',es:'Revisión de voz'})[lang]}>
+          {visibleSpeechReviews.map(row=><div key={row.id} className={styles.transcriptUser} style={{padding:'8px',overflowWrap:'anywhere'}}>
+            <small>{({ru:'Проверьте расшифровку',en:'Review transcription',es:'Revisa la transcripción'})[lang]}: {row.raw}</small>
+            {row.pending&&<small> · {({ru:'Уточняется…',en:'Checking…',es:'Comprobando…'})[lang]}</small>}
+            {row.candidate&&<p data-coach-unconfirmed-speech-candidate><strong>{({ru:'Уточнённый вариант (не подтверждён)',en:'Suggested transcription (unconfirmed)',es:'Transcripción sugerida (sin confirmar)'})[lang]}</strong><br/>{row.provider==='gemini'?'Gemini 3.5 Transcribe':row.model==='whisper-large-v3'?'Whisper Large V3':row.model==='whisper-large-v3-turbo'?'Whisper Large V3 Turbo':'Whisper'}: {row.candidate}</p>}
+            {row.previous&&row.previous!==row.candidate&&<button type="button" onClick={()=>setSpeechReviews(rows=>rows.map(item=>item.id===row.id?{...item,edited:row.previous}:item))}>{({ru:'Прежнее исправление (не проверено по новому аудио)',en:'Previous correction (not verified against new audio)',es:'Corrección anterior (no verificada con el audio nuevo)'})[lang]}: {row.previous}</button>}
+            <textarea rows={2} maxLength={1200} aria-label={({ru:'Правильный текст',en:'Correct transcription',es:'Texto correcto'})[lang]} value={row.edited??row.candidate} onChange={event=>{const text=event.target.value;setSpeechReviews(rows=>rows.map(item=>item.id===row.id?{...item,edited:text}:item))}}/>
+            <button type="button" disabled={row.pending||!(row.edited??row.candidate).trim()||!turns.length||protocolSaving||protocolSaved||protocolSaveLocked||Boolean(courseGate)} onClick={()=>confirmSpeechAmendment(row)}>{({ru:'Подтвердить для протокола',en:'Confirm for transcript',es:'Confirmar para la transcripción'})[lang]}</button>
+            {!row.observationOnly&&<button type="button" disabled={Boolean(draft.trim())||busy||row.pending} onClick={()=>{if(draft.trim())return;setDraft(row.edited??(row.candidate||row.raw));setSpeechReviews(rows=>rows.filter(item=>item.id!==row.id))}}>{({ru:'Уточнить и повторить текстом',en:'Edit and repeat as text',es:'Editar y repetir por texto'})[lang]}</button>}
+            <button type="button" onClick={()=>setSpeechReviews(rows=>rows.filter(item=>item.id!==row.id))}>{({ru:'Скрыть',en:'Dismiss',es:'Descartar'})[lang]}</button>
+          </div>)}
+        </section>}
+          {speechAmendments.length>0&&<div className={styles.transcriptUser} data-coach-latest-confirmed-speech><small>{({ru:'Последнее подтверждённое уточнение',en:'Latest confirmed correction',es:'Última corrección confirmada'})[lang]}</small><p>{speechAmendments.at(-1).text}</p></div>}
           
         </div>
       </section>
@@ -2806,18 +2824,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           </button>
         </form>}
         {activeSpeechReviewConsent&&speechReviewProvider==='groq'&&lastSpeechReviewModel&&<small data-coach-stt-observed-model={lastSpeechReviewModel} role="status">{({ru:'Последняя фоновая расшифровка',en:'Last background transcription',es:'Última transcripción en segundo plano'})[lang]}: {lastSpeechReviewModel==='whisper-large-v3'?'Whisper Large V3':'Whisper Large V3 Turbo'}</small>}
-        {visibleSpeechReviews.length>0&&<section aria-label={({ru:'Уточнение речи',en:'Speech review',es:'Revisión de voz'})[lang]}>
-          {visibleSpeechReviews.map(row=><div key={row.id} style={{padding:'6px 0',overflowWrap:'anywhere'}}>
-            <small>{({ru:'Проверьте расшифровку',en:'Review transcription',es:'Revisa la transcripción'})[lang]}: {row.raw}</small>
-            {row.pending&&<small> · {({ru:'Уточняется…',en:'Checking…',es:'Comprobando…'})[lang]}</small>}
-            {row.candidate&&<p>{row.provider==='gemini'?'Gemini 3.5 Transcribe':row.model==='whisper-large-v3'?'Whisper Large V3':row.model==='whisper-large-v3-turbo'?'Whisper Large V3 Turbo':'Whisper'}: {row.candidate}</p>}
-            {row.previous&&row.previous!==row.candidate&&<button type="button" onClick={()=>setSpeechReviews(rows=>rows.map(item=>item.id===row.id?{...item,edited:row.previous}:item))}>{({ru:'Прежнее исправление (не проверено по новому аудио)',en:'Previous correction (not verified against new audio)',es:'Corrección anterior (no verificada con el audio nuevo)'})[lang]}: {row.previous}</button>}
-            <textarea rows={2} maxLength={1200} aria-label={({ru:'Правильный текст',en:'Correct transcription',es:'Texto correcto'})[lang]} value={row.edited??row.candidate} onChange={event=>{const text=event.target.value;setSpeechReviews(rows=>rows.map(item=>item.id===row.id?{...item,edited:text}:item))}}/>
-            <button type="button" disabled={row.pending||!(row.edited??row.candidate).trim()||!turns.length||protocolSaving||protocolSaved||protocolSaveLocked||Boolean(courseGate)} onClick={()=>confirmSpeechAmendment(row)}>{({ru:'Подтвердить для протокола',en:'Confirm for transcript',es:'Confirmar para la transcripción'})[lang]}</button>
-            {!row.observationOnly&&<button type="button" disabled={Boolean(draft.trim())||busy||row.pending} onClick={()=>{if(draft.trim())return;setDraft(row.edited??(row.candidate||row.raw));setSpeechReviews(rows=>rows.filter(item=>item.id!==row.id))}}>{({ru:'Уточнить и повторить текстом',en:'Edit and repeat as text',es:'Editar y repetir por texto'})[lang]}</button>}
-            <button type="button" onClick={()=>setSpeechReviews(rows=>rows.filter(item=>item.id!==row.id))}>{({ru:'Скрыть',en:'Dismiss',es:'Descartar'})[lang]}</button>
-          </div>)}
-        </section>}
         {error&&<p className={styles.error} role="alert">{error}</p>}
         <details className={styles.sessionMore} id="hh-coach-more-options" open={moreOptionsOpen} onToggle={event=>setMoreOptionsOpen(event.currentTarget.open)}><summary>{lang==='ru'?'Дополнительно':lang==='es'?'Más opciones':'More options'}</summary>
       {!privateTextOnly&&!selectedGeminiEngine&&!liveVoiceSelected&&
