@@ -1376,3 +1376,28 @@ test('prior unified gate reuses every proved same-tree Specialist, not stale or 
  const red=reusePriorSpecialistState({...waiting,missing:[],queued:[],pending:[second+':in_progress'],running:[second+':in_progress'],failed:[path+':failure']},proof);
  assert.deepEqual(red.failed,[path+':failure']);assert.equal(red.reused.length,0);assert.equal(red.pending.length,1);
 });
+
+test('universal moving-base proof treats feature-owned CI regressions as local, not global release policy',()=>{
+  const target='d'.repeat(40);
+  const candidate=['components/my-coach-live-dialogue.jsx','app/api/app/clarity-course/route.js',
+    'tests/ci-coaching-rls-guard.test.mjs','.github/workflows/hh-personal-coaching-session.yml'];
+  const rows=['components/shamanica-business-content.tsx','components/tarot-deck.jsx',
+    'lib/ci/pr-loss-metrics.mjs'].map(filename=>({filename,status:'modified'}));
+  const delta={status:'ahead',ahead_by:2,behind_by:0,total_commits:2,base_commit:{sha:base},
+    merge_base_commit:{sha:base},commits:[{sha:'e'.repeat(40)},{sha:target}],files:rows};
+  const accept=(d=delta,p=candidate)=>safeNonOverlappingProductAdvance(d,base,target,p);
+  assert.equal(accept(),true);
+  // A different, newly named feature is also accepted without a PR ID or exact patch.
+  assert.equal(accept({...delta,files:[{filename:'components/ornithology-detail.jsx',status:'modified'}]}),true);
+  for(const path of ['tests/ci-global-regression.test.mjs','tests/ci-coaching-release-policy.test.mjs',
+    'tests/ci-shamanica-rls-guard.test.mjs','scripts/ci-coaching-rls-guard.mjs','lib/ci/production-base-impact.mjs',
+    '.github/workflows/hh-pr-core-release.yml']) assert.equal(accept(delta,[...candidate,path]),false,path);
+  for(const path of [candidate[0],'components/my-coach-summary.jsx','app/[locale]/layout.tsx',
+    'lib/auth/permissions.mjs','package.json','supabase/migrations/private.sql',
+    '.github/workflows/hh-pr-core-release.yml','lib/ci/production-base-impact.mjs']) {
+    assert.equal(accept({...delta,files:[...rows,{filename:path,status:'modified'}]}),false,path);
+  }
+  assert.equal(accept({...delta,commits:[]}),false);
+  assert.equal(accept({...delta,files:[...rows,rows[0]]}),false);
+  assert.equal(accept({...delta,files:[{...rows[0],status:'renamed',previous_filename:'old.jsx'}]}),false);
+});
