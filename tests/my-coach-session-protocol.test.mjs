@@ -1139,3 +1139,43 @@ test('expanded conversational review is reproducible from the exact transcript, 
   assert.throws(()=>normalizeMyCoachProtocol({...protocol,courseScenarioVersion:undefined,courseFieldReview:review}));
  }
 })
+
+
+// Each registered persona/locale has its own recovery case in the existing
+// coaching release suite. This is a pure checkpoint contract, not a provider
+// or authenticated browser E2E, and does not grant an entitlement.
+import {COACH_PERSONAS as recoveryPersonas,COACH_LOCALES as recoveryLocales} from '../lib/coaching/persona-registry.mjs'
+import {coachDraftDurationExtends as qaRecoveryDuration} from '../lib/personal-coaching/protocol-draft.mjs'
+const recoveryCopy={
+ en:['I want to finish my project.','What would help?','I have a plan.','What is your first step?','I have a different plan.'],
+ ru:['Я хочу закончить проект.','Что поможет?','У меня есть план.','Какой первый шаг?','У меня другой план.'],
+ es:['Quiero terminar mi proyecto.','¿Qué ayudaría?','Tengo un plan.','¿Cuál es tu primer paso?','Tengo otro plan.'],
+}
+for(const {id:personaId} of recoveryPersonas)for(const locale of recoveryLocales){
+ test('recovery contract / '+personaId+' / '+locale,()=>{
+  const [goal,question,pending,reply,changed]=recoveryCopy[locale]
+  const at='2026-11-19T20:00:00.000Z'
+  const before={id,personaId,locale,startedAt:at,durationSeconds:61,turns:[
+   {role:'user',content:goal,locale,capturedAt:at},
+   {role:'assistant',content:question,locale,coachId:personaId,interrupted:true,inference:{provider:'gemini_live_free',model:'synthetic-fixture'}},
+   {role:'user',content:pending,locale,unanswered:true},
+  ]}
+  const after=structuredClone(before)
+  delete after.turns[2].unanswered
+  after.turns.push({role:'assistant',content:reply,locale,coachId:personaId})
+  after.durationSeconds=75
+  assert.equal(draftTranscriptPrefix(before,after),true,'acknowledged prefix and pending turn retained')
+  assert.equal(qaRecoveryDuration(before,after),true,'elapsed time continues')
+  assert.equal(draftTranscriptPrefix(before,structuredClone(before)),true,'same checkpoint retry is compatible')
+  const mutate=fn=>{const copy=structuredClone(after);fn(copy);return copy}
+  assert.equal(draftTranscriptPrefix(before,mutate(x=>{x.id='7afbf841-49a0-46e1-b5c1-124a116efa28'})),false)
+  assert.equal(draftTranscriptPrefix(before,mutate(x=>{x.personaId=personaId==='mira'?'max':'mira'})),false)
+  assert.equal(draftTranscriptPrefix(before,mutate(x=>{x.turns[0].content=changed})),false)
+  assert.equal(draftTranscriptPrefix(before,mutate(x=>{delete x.turns[1].interrupted})),false)
+  assert.equal(draftTranscriptPrefix(before,mutate(x=>{delete x.turns[1].inference})),false)
+  assert.equal(draftTranscriptPrefix(before,mutate(x=>{x.turns[1].coachId='unknown'})),false)
+  assert.equal(draftTranscriptPrefix(before,mutate(x=>{x.turns.pop()})),false,'no imaginary reply')
+  assert.equal(qaRecoveryDuration(before,mutate(x=>{x.durationSeconds=0})),false)
+  assert.equal(qaRecoveryDuration(before,mutate(x=>{delete x.durationSeconds})),false)
+ })
+}
