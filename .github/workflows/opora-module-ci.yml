@@ -29,6 +29,8 @@ on:
       - 'tests/course-test-sequence.test.mjs'
       - '.github/workflows/opora-module-ci.yml'
       - 'scripts/verify-opora-*.mjs'
+      - 'scripts/ci-opora-lock-scope.mjs'
+      - 'tests/ci-opora-lock-scope.test.mjs'
       - 'middleware.ts'
       - 'package-lock.json'
   workflow_dispatch:
@@ -63,6 +65,8 @@ jobs:
         uses: ./.github/actions/ci-ffmpeg-static
         with:
           stage: materialize
+      - name: Verify isolated server dependency scope policy
+        run: node --test tests/ci-opora-lock-scope.test.mjs
       - name: Verify all 14 × EN/RU/ES second-screen skill explanations and unchanged save flow
         run: node --test tests/opora-support-second-screen.test.mjs
       - name: Verify AS-6.0 five channels per day, 14 practical lessons, music and historical sessions
@@ -111,6 +115,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          fetch-depth: 2
       - name: Verify live PR readiness before costly CI
         if: github.event_name == 'pull_request'
         env:
@@ -120,10 +125,31 @@ jobs:
         with:
           node-version: '22'
           cache: npm
+      - name: Prove isolated server dependency scope from immutable tested BASE
+        id: lock_scope
+        shell: bash
+        env:
+          HH_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HH_EVENT_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          full=true
+          if [[ "$GITHUB_EVENT_NAME" == pull_request ]] &&
+             git show HEAD^1:scripts/ci-opora-lock-scope.mjs > "$RUNNER_TEMP/opora-lock-scope.mjs" 2>/dev/null; then
+            result="$(node "$RUNNER_TEMP/opora-lock-scope.mjs")" || result=true
+            if [[ "$result" == false ]]; then full=false; fi
+          fi
+          echo "full=$full" >> "$GITHUB_OUTPUT"
+          if [[ "$full" == false ]]; then
+            echo 'OPORA browser not impacted: isolated reviewed server dependency addition; mandatory module-routing and Core still required. No browser run claimed.' >> "$GITHUB_STEP_SUMMARY"
+          fi
       - name: Stage checksum-verified FFmpeg before npm lifecycle
+        if: steps.lock_scope.outputs.full != 'false'
         uses: ./.github/actions/ci-ffmpeg-static
       - run: npm ci --no-audit --no-fund
+        if: steps.lock_scope.outputs.full != 'false'
       - name: Materialize checksum-verified FFmpeg for package runtime
+        if: steps.lock_scope.outputs.full != 'false'
         uses: ./.github/actions/ci-ffmpeg-static
         with:
           stage: materialize
@@ -133,11 +159,13 @@ jobs:
         if: github.event_name != 'pull_request'
         run: node --test tests/opora-as56-brief-practice.test.mjs tests/opora-as56-browser-fixture.test.mjs tests/opora-as57-calm-morning.test.mjs
       - name: Restore trusted production-owned Playwright browsers (read-only)
+        if: steps.lock_scope.outputs.full != 'false'
         uses: actions/cache/restore@v4
         with:
           path: ~/.cache/ms-playwright
           key: hh-public-browser-blobs-${{ runner.os }}-${{ runner.arch }}-pw1.63.0-v1
       - name: Install isolated browser tools
+        if: steps.lock_scope.outputs.full != 'false'
         run: |
           npm install --prefix /tmp/hh-opora-browser --no-audit --no-fund @playwright/test@1.63.0
           ln -s /tmp/hh-opora-browser/node_modules/@playwright node_modules/@playwright
@@ -149,11 +177,13 @@ jobs:
           fi
           node scripts/ci-playwright-launch-proof.cjs "$HH_TEST_BROWSER"
       - name: Verify hydrated Calm Morning RU/EN/ES at 320, 360, 390 and 430 pixels
+        if: steps.lock_scope.outputs.full != 'false'
         run: node scripts/verify-opora-as56-browser.mjs
       - name: Verify OPORA course-ready mobile viewport and visible Start CTA
+        if: steps.lock_scope.outputs.full != 'false'
         run: node scripts/verify-opora-course-ready-viewport.mjs
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && steps.lock_scope.outputs.full != 'false'
         with:
           name: opora-as56-mobile-${{ matrix.browser }}-${{ github.run_id }}
           path: |
