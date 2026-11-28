@@ -623,7 +623,7 @@ test('#5093: protected BASE drift must not trigger auto-sync before required mac
   path:workflow,id:981,head_branch:pr.head.ref});
  let elapsed=0,polls=0,jobReads=0,baseReads=0,compares=0;
  const api={
-  pr:async()=>mediaPr,target:async()=>{baseReads++;return latest;},
+  pr:async()=>mediaPr,target:async()=>{assert.equal(jobReads,1,'no final target authorization before Mac evidence');baseReads++;return latest;},
   compare:async()=>{compares++;return {
     status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
     base_commit:{sha:base},merge_base_commit:{sha:base},
@@ -642,7 +642,7 @@ test('#5093: protected BASE drift must not trigger auto-sync before required mac
  assert.equal(polls,2,'the real Mac specialist must finish before BASE is considered stale');
  assert.equal(jobReads,1,'successful exact-run macOS job evidence is independently read');
  assert.equal(compares,1,'only final protected BASE comparison can trigger auto-sync');
- assert.equal(baseReads,1,'no early or periodic stale-base branch update while Mac is active');
+ assert.equal(baseReads,2,'two final target reads bracket the same proof after Mac completes');
  let redPolls=0,redBaseReads=0;
  await assert.rejects(()=>verify({...api,
   target:async()=>{redBaseReads++;return latest;},
