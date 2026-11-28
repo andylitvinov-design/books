@@ -867,3 +867,40 @@ test('IA diagnostic source contracts run in mandatory preflight, not twice in ex
   assert.ok(verify.includes('npm run test:app'));
   assert.ok(verify.includes('npm run verify:ia-v2'));
 });
+
+
+test('dedicated Clarity APIs keep focused Core/App/IA/Coach owners, not unrelated Axis or Practice', () => {
+  const endpoints = [
+  "app/api/app/clarity-course/route.js",
+  "app/api/app/clarity-course/clock/route.js",
+  "app/api/app/clarity-course/protocol/route.js",
+  "app/api/app/clarity-course/runs/route.js"
+];
+  const target = 'codex/public-book-library';
+  for (const endpoint of endpoints) {
+    for (const name of ['hh-profile-axis-matching.yml','practice-google-browser.yml']) {
+      const route = parsePrTrigger(workflow(name),name);
+      assert.equal(matchesTrigger(route,[endpoint],target),false,name+': isolated Clarity API');
+      assert.equal(matchesTrigger(route,[endpoint,'app/api/app/[...path]/route.js'],target),true,name+': shared dispatcher remains strict');
+    }
+    for (const name of ['hh-pr-core-release.yml','hh-personal-coaching-session.yml','hh-app-r1.yml','ia-v2.yml']) {
+      assert.equal(matchesTrigger(parsePrTrigger(workflow(name),name),[endpoint],target),true,name+': missing Clarity owner');
+    }
+  }
+  for (const [name, owned] of [['hh-profile-axis-matching.yml','lib/holistic-support/axis-offer-matcher.mjs'],['practice-google-browser.yml','components/app/practice-inner-navigation.jsx']]) {
+    assert.equal(matchesTrigger(parsePrTrigger(workflow(name),name),[endpoints[0],owned],target),true,name+': mixed owned change');
+  }
+});
+
+test('native PR receipts use slim runners; OPORA retains all real unit and browser acceptance', () => {
+  const native = workflow('holistic-house-native.yml');
+  assert.ok(native.includes("github.event_name == 'pull_request' && 'ubuntu-slim' || 'ubuntu-latest'"));
+  assert.ok(native.includes("github.event_name == 'pull_request' && 'ubuntu-slim' || 'macos-15'"));
+  assert.match(native,/native-current-contracts:[\s\S]*?npm run native:check/);
+  const opora = workflow('opora-module-ci.yml');
+  const [unit,browser] = opora.split('  as56-mobile-browser:');
+  for (const file of ['tests/opora-as56-brief-practice.test.mjs','tests/opora-as56-browser-fixture.test.mjs','tests/opora-as57-calm-morning.test.mjs']) assert.ok(unit.includes(file));
+  assert.match(browser,/Validate the isolated AS5\.6 fixture and safety regressions[\s\S]*?if: github\.event_name != 'pull_request'\s+run: node --test/);
+  for (const marker of ['actions/cache/restore@v4','ci-playwright-launch-proof.cjs','node scripts/verify-opora-as56-browser.mjs','node scripts/verify-opora-course-ready-viewport.mjs']) assert.ok(browser.includes(marker));
+  assert.doesNotMatch(browser,/continue-on-error:\s*true/);
+});

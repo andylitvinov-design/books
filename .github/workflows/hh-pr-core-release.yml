@@ -13,6 +13,7 @@ on:
 permissions:
   contents: read
   pull-requests: read
+  actions: read
 concurrency:
   group: hh-pr-core-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
   # Cancel costly older Ready CI when a PR becomes Draft; the new Draft
@@ -47,6 +48,7 @@ jobs:
           EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           GH_TOKEN: ${{ github.token }}
+          HH_PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
           [[ "$EVENT_BASE_SHA" =~ ^[0-9a-f]{40}$ && "$PR_HEAD_SHA" =~ ^[0-9a-f]{40}$ ]] || {
@@ -91,6 +93,9 @@ jobs:
           echo "HH_EVENT_BASE_VERIFIED=$EVENT_BASE_SHA" >> "$GITHUB_ENV"
           echo "HH_TESTED_BASE_VERIFIED=$tested_base" >> "$GITHUB_ENV"
           echo "Bounded shallow scope verified HEAD $tested_head and tested base $tested_base" >> "$GITHUB_STEP_SUMMARY"
+          # Machine-readable checkout identity, emitted before candidate scripts.
+          # Consumers must also independently verify this exact job and its real build step succeeded.
+          printf 'HH_CORE_BUILD_IDENTITY_V1 %s %s %s %s %s %s\n' "$HH_PR_NUMBER" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$(git rev-parse HEAD)" "$tested_head" "$tested_base"
       - name: Verify live PR readiness before costly CI
         if: github.event_name == 'pull_request'
         env:
@@ -428,7 +433,7 @@ jobs:
         run: node --test tests/ci-deterministic-eslint-repair.test.mjs
       - name: Verify specialist ownership and Messenger isolation on CI-policy changes
         if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT')) && (github.event_name != 'pull_request' || steps.diff.outputs.ci_touched == 'true') }}
-        run: node --test tests/ci-workflow-globs.test.mjs tests/workflow-next-route-filters.test.mjs tests/ci-specialist-aggregate.test.mjs tests/ci-growth-course-core-reuse.test.mjs tests/ci-coach-only-impact.test.mjs
+        run: node --test tests/ci-workflow-globs.test.mjs tests/workflow-next-route-filters.test.mjs tests/ci-specialist-aggregate.test.mjs tests/ci-growth-course-core-reuse.test.mjs tests/ci-coach-only-impact.test.mjs tests/ci-site-video-scope.test.mjs
       # Public greeting and motion changes no longer book unrelated private App
       # or storefront E2E. Retain source/persona/media checks in mandatory Core.
       - name: Public Ali greeting + coach motion release contracts
@@ -513,6 +518,10 @@ jobs:
             if [[ "$f" =~ \.(cjs|mjs|js|jsx|ts|tsx)$ && -f "$f" ]]; then files+=("$f"); fi
           done < <(git diff --name-only -z "$BASE_SHA" HEAD)
           if [[ "$full_lint" == true ]]; then
+            # eslint-config-next uses FlatCompat and @rushstack/eslint-patch.
+            # Its worker-mode initialization fails on ESLint 9.39.4 (PR #5701).
+            # Keep full coverage using the original serial CLI until the actual
+            # locked configuration is proven compatible with worker execution.
             npm run lint
           elif (( ${#files[@]} > 0 )); then
             npx --no-install eslint "${files[@]}"
@@ -522,16 +531,44 @@ jobs:
       - name: Mobile Dock Core geometry and iPhone keyboard contracts
         if: ${{ github.event_name == 'pull_request' && steps.fast.outputs.route == 'DOCK' }}
         run: node --test tests/mobile-visual-dock.test.mjs tests/messages-iphone-keyboard-layout.test.mjs
+      - name: Verify equivalent prior HEAD production build
+        id: reuse_build
+        if: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && steps.diff.outputs.docs_only != 'true' && steps.diff.outputs.ci_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT' && steps.fast.outputs.route != 'DOCK' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HH_PR_NUMBER: ${{ github.event.pull_request.number }}
+          HH_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HH_EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HH_PREVIOUS_HEAD_SHA: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          # Missing evidence is a normal real-build fallback. Never execute a
+          # candidate-authored proof script with a workflow-log read token.
+          tested_base="$(git rev-parse HEAD^1)"
+          if [[ "$HH_PREVIOUS_HEAD_SHA" =~ ^[0-9a-f]{40}$ && "$tested_base" == "$HH_EVENT_BASE_SHA" ]] &&
+             git diff --quiet HEAD -- &&
+             git cat-file -e "$tested_base:scripts/ci-site-video-scope.mjs" 2>/dev/null; then
+            mkdir -p "$RUNNER_TEMP/hh-prior-core/scripts" "$RUNNER_TEMP/hh-prior-core/lib/ci"
+            if git show "$tested_base:scripts/ci-site-video-scope.mjs" > "$RUNNER_TEMP/hh-prior-core/scripts/ci-site-video-scope.mjs" &&
+               git show "$tested_base:lib/ci/coach-only-impact.mjs" > "$RUNNER_TEMP/hh-prior-core/lib/ci/coach-only-impact.mjs" &&
+               grep -q 'verifiedEquivalentPriorCoreBuild' "$RUNNER_TEMP/hh-prior-core/scripts/ci-site-video-scope.mjs" &&
+               node "$RUNNER_TEMP/hh-prior-core/scripts/ci-site-video-scope.mjs" --previous-core-proof; then
+              echo 'reused=true' >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+          echo 'reused=false' >> "$GITHUB_OUTPUT"
       # Cache-only fast path: PRs restore base-produced binaries, never publish shared artifacts.
       # A miss safely falls back to the existing full real build and validations.
       - name: Restore production-owned scenario MP3 cache (read-only)
-        if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT' && steps.fast.outputs.route != 'DOCK')) && (steps.diff.outputs.ci_only != 'true') }}
+        if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT' && steps.fast.outputs.route != 'DOCK')) && (steps.diff.outputs.ci_only != 'true') && steps.reuse_build.outputs.reused != 'true' }}
         uses: actions/cache/restore@v4
         with:
           path: public/audio/mandala/scenarios
           key: hh-core-media-v1-${{ runner.os }}-${{ hashFiles('scripts/generate-scenario-melodies.mjs', 'scripts/generate-mandala-melodies.mjs', 'lib/mandala/scenario-audio-catalog.mjs', 'package-lock.json') }}
       - name: Exact proposed release production build and TypeScript check
-        if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT' && steps.fast.outputs.route != 'DOCK')) && (steps.diff.outputs.ci_only != 'true') }}
+        if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT' && steps.fast.outputs.route != 'DOCK')) && (steps.diff.outputs.ci_only != 'true') && steps.reuse_build.outputs.reused != 'true' }}
         # CI-only changes still run Core lint and guard-unit; a full app build
         # adds no coverage for workflow/router/test changes.
         # Changed-file ESLint is already a hard gate above. Preserve full

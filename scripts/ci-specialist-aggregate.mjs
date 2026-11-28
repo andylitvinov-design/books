@@ -8,13 +8,31 @@ import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
-import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance, safeIndependentDomainTestAdvance, safeComposedIndependentAdvance, safeScopedDisjointProductionAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeNonOverlappingProductAdvance, REVALIDATABLE_CI_POLICY_FILES } from '../lib/ci/production-base-impact.mjs';
+import { safeDocumentationAdvance, safeTrustedPolicyAdvance, safeIndependentPublicMediaAdvance, safeIndependentCiMaintenanceAdvance, verifiedIndependentPublicRasterAdvance, safeIndependentPublicPresentationAdvance, safeDisjointPublicSourceAdvance, safeIndependentQaAdvance, safeIndependentDomainTestAdvance, safeComposedIndependentAdvance, safeScopedDisjointProductionAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeNonOverlappingProductAdvance, normalizeIdenticalProtectedOverlap, REVALIDATABLE_CI_POLICY_FILES } from '../lib/ci/production-base-impact.mjs';
 import { classifyStaticUiText, scopedCssIsSafe } from '../lib/ci/fast-static-ui-text.mjs';
 import { requiresRealMediaWebKit } from '../lib/ci/merge-check-light.mjs';
 import {
   TARGET, WORKFLOW_PREFIX, expectedWorkflows, classifyPackageImpact, resolveExpectedSpecialists,
   inspectWorkflowRuns, inspectJobs, trustedConditionalJobs, trustedRequiredJobs, trustedConditionallyInapplicableJobs, validateParameters, classifyReleaseRisk, concurrencyOnlyAdvisory, selfTriggerRemovalAdvisory, isConcurrencyAdvisoryRun,
 } from '../lib/ci/specialist-aggregate.mjs';
+
+// Bounded read-only fan-out: do not serially wait for every completed
+// workflow's jobs API. Preserve original result order and fail closed; finish
+// the current small batch before reporting its first failure, and never start
+// another batch after failure. No API write or synthetic success.
+export async function mapSpecialistEvidence(runs, inspect) {
+  const evidence = [];
+  const width = 3;
+  for (let offset = 0; offset < runs.length; offset += width) {
+    const results = await Promise.allSettled(
+      runs.slice(offset, offset + width).map(async run => inspect(run))
+    );
+    const failure = results.find(result => result.status === 'rejected');
+    if (failure) throw failure.reason;
+    evidence.push(...results.map(result => result.value));
+  }
+  return evidence;
+}
 
 export function worktreeSources(baseSha, cwd = process.cwd()) {
   const baseNames = execFileSync('git', ['ls-tree','-r','--name-only',baseSha,'--',WORKFLOW_PREFIX],
@@ -32,7 +50,13 @@ export function worktreeSources(baseSha, cwd = process.cwd()) {
   // Always compare the immutable base manifest to the exact proposed checkout.
   const basePackage = execFileSync('git', ['show',baseSha + ':package.json'], {cwd,encoding:'utf8',maxBuffer:2e6});
   const currentPackage = readFileSync(join(cwd,'package.json'),'utf8');
-  return {base,current,basePackage,currentPackage};
+  // Immutable merge parent and actual proposed checkout; missing evidence remains strict.
+  let baseLock,currentLock;
+  try {
+    baseLock=execFileSync('git',['show',baseSha+':package-lock.json'],{cwd,encoding:'utf8',maxBuffer:2e6});
+    currentLock=readFileSync(join(cwd,'package-lock.json'),'utf8');
+  } catch { /* no readiness compatibility proof */ }
+  return {base,current,basePackage,currentPackage,baseLock,currentLock};
 }
 
 // Use the exact tested merge checkout, including both sides of renames, rather
@@ -72,7 +96,7 @@ export function githubReader(repo, token, transport = fetch, options = {}) {
   // Never treat an exhausted retry as a passing specialist check.
   const sleep = options.sleep ?? delay;
   const retryDelaysMs = [400, 1200, 2400];
-  async function get(path) {
+  async function get(path, raw = false) {
     const endpoint = path.split('?')[0];
     for (let attempt = 0; ; attempt += 1) {
       let response;
@@ -85,7 +109,14 @@ export function githubReader(repo, token, transport = fetch, options = {}) {
         await sleep(retryDelaysMs[attempt]);
         continue;
       }
-      if (response.ok) return response.json();
+      if (response.ok) {
+        if (!raw) return response.json();
+        const limit=24*1024*1024;
+        if(Number(response.headers?.get('content-length')||0)>limit)throw Error('CI_LOG_TOO_LARGE');
+        const log=await response.text();
+        if(typeof log!=='string'||log.length>limit)throw Error('CI_LOG_TOO_LARGE');
+        return log;
+      }
       // Retryable HTTP 500 and network failures are different from a
       // genuine quota exhaustion. Waiting 0.4/1.2/2.4 seconds cannot reset
       // a primary/secondary GitHub rate window, and multiplied across
@@ -140,6 +171,19 @@ export function githubReader(repo, token, transport = fetch, options = {}) {
       return row;
     },
     jobs: (runId) => pages('/actions/runs/' + runId + '/jobs','jobs',1000),
+    attemptJobs: async (run,attempt) => {
+      if(!Number.isSafeInteger(run)||run<1||!Number.isSafeInteger(attempt)||attempt<1)
+        throw Error('INVALID_CI_ATTEMPT');
+      return pages('/actions/runs/'+run+'/attempts/'+attempt+'/jobs','jobs',100);
+    },
+    commit: sha => {
+      if(!/^[0-9a-f]{40}$/.test(sha||''))throw Error('INVALID_COMMIT_SHA');
+      return get('/git/commits/'+sha);
+    },
+    jobLog: id => {
+      if(!Number.isSafeInteger(id)||id<1)throw Error('INVALID_CI_JOB_ID');
+      return get('/actions/jobs/'+id+'/logs',true);
+    },
     // PR event payloads may retain the base SHA from when the PR was opened.
     // Read the actual protected target ref, not pulls/:number.base.sha.
     target: async () => {
@@ -148,6 +192,28 @@ export function githubReader(repo, token, transport = fetch, options = {}) {
         ref?.ref === 'refs/heads/' + TARGET && /^[0-9a-f]{40}$/.test(ref.object?.sha || '')) : [];
       if (exact.length !== 1) throw Error('PRODUCTION_TARGET_REF_UNAVAILABLE');
       return exact[0].object.sha;
+    },
+    // Resolve a bounded path in the immutable protected Git tree. No recursive
+    // inventory, content download, or reliance on a mutable branch name.
+    entry: async (commit,path) => {
+      const sha=/^[0-9a-f]{40}$/i;
+      const parts=typeof path==='string'?path.split('/'):[];
+      if(!sha.test(commit)||!parts.length||parts.length>12||
+         parts.some(p=>!p||p==='.'||p==='..'||p.includes('\0')||p.includes('\n')))return null;
+      const root=await get('/git/commits/'+commit);
+      if(root?.sha!==commit||!sha.test(root?.tree?.sha||''))return null;
+      let tree=root.tree.sha;
+      for(let i=0;i<parts.length;i++){
+        const page=await get('/git/trees/'+tree);
+        if(page?.sha!==tree||page.truncated!==false||!Array.isArray(page.tree))return null;
+        const matches=page.tree.filter(row=>row.path===parts[i]);
+        if(matches.length!==1||!sha.test(matches[0].sha||''))return null;
+        const row=matches[0];
+        if(i===parts.length-1)return {type:row.type,mode:row.mode,sha:row.sha};
+        if(row.type!=='tree'||row.mode!=='040000')return null;
+        tree=row.sha;
+      }
+      return null;
     },
     compare: (base, head) => get('/compare/' + base + '...' + head + '?per_page=100'),
   };
@@ -440,6 +506,120 @@ export function trustedAdditiveActionlint(base, current) {
   return restored === base;
 }
 
+
+// General, read-only prior HEAD evidence for every applicable Specialist.
+// An exact SHA change alone does not invalidate a previously tested tree.
+// This is NOT a path-name or status-copy waiver: identical source AND
+// proposed merge trees, same protected base, immutable run/attempt identity,
+// actual successful Core + unified gate, and its complete executed-job
+// receipt are mandatory. No candidate workflow may authorize its own reuse.
+const PRIOR_SHA=/^[0-9a-f]{40}$/;
+const PRIOR_CORE='.github/workflows/hh-pr-core-release.yml';
+const priorLines=log=>typeof log==='string'&&log.length<=24*1024*1024
+  ?log.split(/\r?\n/).map(line=>line.replace(/^\d{4}-\d\d-\d\dT[\d:.]+Z[ \t]+/,'').trim()):[];
+function priorCheckout(lines,sha) {
+  const positions=lines.flatMap((line,i)=>line==='[command]/usr/bin/git log -1 --format=%H'?[i]:[]);
+  return positions.length===1&&lines[positions[0]+1]===sha;
+}
+export async function verifiedPriorSpecialistEvidence(api,ctx,pr,files,expected) {
+  const none=new Map();
+  if(![ctx.head,ctx.previousHead,ctx.base,ctx.merge].every(x=>PRIOR_SHA.test(x||''))||
+     ctx.head===ctx.previousHead||!Array.isArray(expected)||!expected.length||
+     files.base?.get(PRIOR_CORE)!==files.current?.get(PRIOR_CORE)||
+     typeof files.base?.get(PRIOR_CORE)!=='string'||
+     !['commit','runs','runsForWorkflow','attemptJobs','jobLog'].every(k=>typeof api[k]==='function'))return none;
+  try{
+    const commit=async sha=>{
+      const c=await api.commit(sha);
+      if(c?.sha!==sha||!PRIOR_SHA.test(c.tree?.sha||''))throw Error('UNVERIFIED_PRIOR_TREE');
+      return c;
+    };
+    const [old,current,merge]=await Promise.all([commit(ctx.previousHead),commit(ctx.head),commit(ctx.merge)]);
+    if(old.tree.sha!==current.tree.sha||merge.parents?.length!==2||
+       merge.parents[0]?.sha!==ctx.base||merge.parents[1]?.sha!==ctx.head)return none;
+    const runs=await api.runsForWorkflow(ctx.previousHead,PRIOR_CORE);
+    if(!Array.isArray(runs)||runs.length>100)return none;
+    const run=runs.filter(x=>x.event==='pull_request'&&x.head_sha===ctx.previousHead&&
+      x.head_branch===pr.head.ref&&x.head_repository?.full_name===ctx.repo&&
+      String(x.path||'').split('@')[0]===PRIOR_CORE&&
+      Number.isSafeInteger(x.id)&&x.id>0&&Number.isSafeInteger(x.run_attempt)&&x.run_attempt>0&&
+      x.pull_requests?.some(p=>p.number===ctx.number&&p.base?.ref===TARGET))
+      .sort((a,b)=>b.id-a.id||b.run_attempt-a.run_attempt)[0];
+    if(!run||run.status!=='completed'||run.conclusion!=='success')return none;
+    const jobs=await api.attemptJobs(run.id,run.run_attempt);
+    if(!Array.isArray(jobs)||!jobs.length||jobs.length>100)return none;
+    const actual=name=>{
+      const found=jobs.filter(j=>j.name===name);
+      const j=found[0];
+      return found.length===1&&j.status==='completed'&&j.conclusion==='success'&&
+        j.run_id===run.id&&Number.isSafeInteger(j.id)&&j.id>0?j:null;
+    };
+    const core=actual('core-lint-types-build'),gate=actual('hh-merge-check');
+    const step=(job,name)=>job?.steps?.filter(x=>x.name===name).length===1&&
+      job.steps.some(x=>x.name===name&&x.status==='completed'&&x.conclusion==='success');
+    if(!core||!gate||!step(core,'Verify bounded shallow scope ancestry before PR routing')||
+       !step(gate,'Pin exact production base for shallow checkout')||
+       !step(gate,'Validate exact-head risk and required specialist workflows')||
+       !step(gate,'Confirm one-runner Core and independent specialist release evidence'))return none;
+    const [coreLog,gateLog]=await Promise.all([api.jobLog(core.id),api.jobLog(gate.id)]);
+    const c=priorLines(coreLog),g=priorLines(gateLog);
+    const marker=c.filter(line=>line.startsWith('HH_CORE_BUILD_IDENTITY_V1 '));
+    if(marker.length!==1)return none;
+    const f=marker[0].split(' '),oldMerge=f[4];
+    if(f.length!==7||f[1]!==String(ctx.number)||f[2]!==String(run.id)||
+       f[3]!==String(run.run_attempt)||!PRIOR_SHA.test(oldMerge||'')||
+       f[5]!==ctx.previousHead||f[6]!==ctx.base||!priorCheckout(c,oldMerge)||
+       !priorCheckout(g,oldMerge))return none;
+    const before=await commit(oldMerge);
+    if(before.parents?.length!==2||before.parents[0]?.sha!==ctx.base||
+       before.parents[1]?.sha!==ctx.previousHead||before.tree.sha!==merge.tree.sha)return none;
+    const receipt=g.filter(line=>line.startsWith('Specialist CI aggregate for PR #'));
+    const header='Specialist CI aggregate for PR #'+ctx.number+' head='+ctx.previousHead+' event_base=';
+    if(receipt.length!==1||!receipt[0].startsWith(header)||
+       !receipt[0].endsWith(' tested_base='+ctx.base)||
+       !PRIOR_SHA.test(receipt[0].slice(header.length,header.length+40)))return none;
+    const counts=g.filter(line=>/^Verified applicable workflows: \d+$/.test(line));
+    if(counts.length!==1)return none;
+    const rows=g.map(line=>/^- (\.github\/workflows\/[a-z0-9._-]+\.ya?ml) \(([1-9]\d*) executed jobs; run ([1-9]\d*)\)$/.exec(line)).filter(Boolean);
+    // A reused prior receipt never becomes an unlimited chain: only actual
+    // executed workflows from a complete original gate qualify.
+    if(rows.length!==Number(counts[0].split(': ')[1])||
+       new Set(rows.map(x=>x[1])).size!==rows.length)return none;
+    // The old unified receipt is not enough if a later attempt of the same
+    // Specialist failed. Inspect the actual prior-HEAD inventory once, using
+    // the same immutable association/ordering rules as the current gate.
+    // Do not synthesize a status or reach behind newer red/pending attempts.
+    const inventory=await api.runs(ctx.previousHead);
+    if(!Array.isArray(inventory)||inventory.length>1000)return none;
+    const oldPr={...pr,head:{...pr.head,sha:ctx.previousHead}};
+    const proofState=inspectWorkflowRuns({expected,runs:inventory,pr:oldPr});
+    const passed=new Map(proofState.passed.map(x=>[x.path.split('@')[0],x]));
+    const result=new Map();
+    for(const row of rows){
+      const name=row[1],jobs=Number(row[2]),runId=Number(row[3]);
+      if(!Number.isSafeInteger(jobs)||!Number.isSafeInteger(runId))return none;
+      const actual=passed.get(name);
+      if(actual?.id===runId&&Number.isSafeInteger(actual.run_attempt)&&actual.run_attempt>0&&
+         expected.includes(name)&&typeof files.base.get(name)==='string'&&
+         files.base.get(name)===files.current.get(name))
+        result.set(name,{name,run_id:runId,jobs,prior_head:ctx.previousHead,prior_gate_run:run.id,
+          prior_run_attempt:actual.run_attempt});
+    }
+    return result;
+  }catch{return none;}
+}
+
+// Never hide a RED or actually running current check. A missing or queued
+// duplicate can use the already executed, same-tree proof instead.
+export function reusePriorSpecialistState(state,prior) {
+  const reusable=new Set([...state.missing,...state.queued.map(x=>x.slice(0,x.lastIndexOf(':')))]
+    .filter(name=>prior.has(name)));
+  const keep=x=>!reusable.has(x.slice(0,x.lastIndexOf(':')));
+  return {...state,missing:state.missing.filter(x=>!reusable.has(x)),
+    queued:state.queued.filter(keep),pending:state.pending.filter(keep),
+    reused:[...reusable].map(name=>prior.get(name))};
+}
+
 export async function verify(api,ctx,files,options={}) {
   // Distinguish an absent workflow from a queued run and genuine execution.
   // Running checks use the long deadline; registered queued checks get a separate,
@@ -517,7 +697,24 @@ export async function verify(api,ctx,files,options={}) {
     if (!approvedBaseChanges.has(liveBaseSha)) {
       // Only a complete, ancestry-proven, documentation-only target advance
       // may pass. Security, runtime, CI, unknown and incomplete diffs stay blocked.
-      const diff = await api.compare(ctx.base, liveBaseSha);
+      const originalDiff = await api.compare(ctx.base, liveBaseSha);
+      const localEntry = options.readTestedEntry ?? (files.testedMergeSha &&
+        /^[0-9a-f]{40}$/.test(files.testedMergeSha) ? path => {
+          const git=(...args)=>execFileSync('git',args,{encoding:'utf8',maxBuffer:65536,stdio:['ignore','pipe','pipe']});
+          if(git('rev-parse','HEAD').trim()!==files.testedMergeSha||
+             git('rev-parse','HEAD^1').trim()!==ctx.base||
+             git('rev-parse','HEAD^2').trim()!==ctx.head)return null;
+          const raw=git('ls-tree','-z',files.testedMergeSha,'--',path);
+          const match=/^(\d{6}) (blob) ([0-9a-f]{40})\t([^\0]+)\0$/.exec(raw);
+          return match&&match[4]===path?{mode:match[1],type:match[2],sha:match[3]}:null;
+        } : null);
+      const normalized=live.mergeable===true&&typeof api.entry==='function'
+        ? await normalizeIdenticalProtectedOverlap(originalDiff,ctx.base,liveBaseSha,changedRows,localEntry,api.entry)
+        : {compare:originalDiff,identical:[]};
+      const diff=normalized.compare;
+      const identicalOnly=normalized.identical.length>0&&diff.files.length===0;
+      if(normalized.identical.length)
+        console.log('CI_BASE_IDENTICAL_BLOBS:'+JSON.stringify(normalized.identical));
       const documentationOnly = safeDocumentationAdvance(diff, ctx.base, liveBaseSha, changed);
       // This option is set ONLY after loading the validator, dependencies and
       // helper from this exact protected production commit (never the PR HEAD).
@@ -611,8 +808,8 @@ export async function verify(api,ctx,files,options={}) {
       // One general loose-base rule for complete non-overlapping ordinary product changes.
       // Preserve the actual tested HEAD and all required specialist outcomes.
       const nonOverlappingProduct = pinnedChangeRows && live.mergeable === true &&
-        safeNonOverlappingProductAdvance(diff, ctx.base, liveBaseSha, changed);
-      if (!documentationOnly && !independentlyRevalidated &&
+        safeNonOverlappingProductAdvance(diff, ctx.base, liveBaseSha, changed, files);
+      if (!identicalOnly && !documentationOnly && !independentlyRevalidated &&
           !isolatedCiPolicy && !unrelatedCiMaintenance && !inertPublicImages &&
           !independentPresentation && !disjointPublicSource && !independentQa &&
           !independentDomainTest && !composedIndependent && !scopedDisjoint && !mixedProtected && !detachedCi && !isolatedFeature && !unrelatedPublicLeaves && !nonOverlappingProduct) {
@@ -622,7 +819,7 @@ export async function verify(api,ctx,files,options={}) {
           typeof api.target === 'function' && maxWait > 0 &&
           (safeComposedIndependentAdvance(diff, ctx.base, liveBaseSha, changed) ||
            safeDetachedCiSourceAdvance(diff, ctx.base, liveBaseSha, changed) ||
-           safeNonOverlappingProductAdvance(diff, ctx.base, liveBaseSha, changed) ||
+           safeNonOverlappingProductAdvance(diff, ctx.base, liveBaseSha, changed, files) ||
            safeIsolatedFeatureAdvance(diff, ctx.base, liveBaseSha, changed, true) ||
            (changedRows.every(row => !row.previous_filename &&
              ['M','A','modified','added'].includes(row.status)) &&
@@ -648,9 +845,13 @@ export async function verify(api,ctx,files,options={}) {
         }));
         throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
       }
+      if (identicalOnly) {
+        approvedDisjointBases.add(liveBaseSha);
+        console.log('CI_BASE_ADVANCE_REUSED: every protected change is already present byte-for-byte in the tested proposed tree');
+      }
       if (nonOverlappingProduct) {
         approvedDisjointBases.add(liveBaseSha);
-        console.log('CI_BASE_ADVANCE_REUSED: ordinary non-overlapping protected product delta; retain exact-HEAD CI without a new build');
+        console.log('CI_BASE_ADVANCE_REUSED: verified independent protected product delta (including mixed candidates); retain exact-HEAD CI without a new build');
       }
       if (unrelatedPublicLeaves) {
         approvedDisjointBases.add(liveBaseSha);
@@ -780,6 +981,7 @@ export async function verify(api,ctx,files,options={}) {
   // Only the single last running Specialist can use the shorter cadence;
   // bound it to 90 seconds to conserve the shared GitHub read-only API.
   let finalWaveSince = null;
+  const priorEvidence=pinnedChangeRows ? await verifiedPriorSpecialistEvidence(api,ctx,pr,files,expected) : new Map();
   const recovered = new Map();
   const probeTimes = new Map();
   const refreshTimes = new Map();
@@ -851,6 +1053,7 @@ export async function verify(api,ctx,files,options={}) {
       }
       state=inspectWorkflowRuns({expected,runs:eligibleRuns([...indexed,...recovered.values()]),pr});
     }
+    state=reusePriorSpecialistState(state,priorEvidence);
     const unregistered = state.observedUnrelated.filter(item => !catalog.has(workflowPath(item)));
     const retiredProblems = state.observedUnrelated.filter(item => retired.has(workflowPath(item)));
     const unexpected = [...new Set([...unregistered, ...retiredProblems])];
@@ -950,8 +1153,9 @@ export async function verify(api,ctx,files,options={}) {
       : finalFast ? Math.min(pollMs, 10_000) : pollMs;
     await sleep(Math.max(1, Math.min(interval, nextDeadline - timestamp)));
   }
-  const executed=[];
-  for (const run of state.passed) {
+  const specialistWaitMs = now() - start;
+  const evidenceStart = now();
+  const executed = await mapSpecialistEvidence(state.passed, async run => {
     const requiredJobs = pinnedChangeRows ? trustedRequiredJobs(files.base.get(run.path)) : [];
     const jobDeadline = Math.min(deadline, now() + jobGrace);
     let jobs;
@@ -997,10 +1201,24 @@ export async function verify(api,ctx,files,options={}) {
       }
       optionalSkipped.push('writer-practical-focused');
     }
-    executed.push({name:run.path,run_id:run.id,jobs:inspectJobs(jobs,run.path,optionalSkipped,requiredJobs)});
-  }
+    return {name:run.path,run_id:run.id,jobs:inspectJobs(jobs,run.path,optionalSkipped,requiredJobs)};
+  });
+  console.log('CI_SPECIALIST_TIMING:' + JSON.stringify({
+    workflows:state.passed.length, wait_ms:specialistWaitMs,
+    job_evidence_ms:now()-evidenceStart, evidence_parallelism:3,
+  }));
   const fresh=await api.pr(ctx.number);
   await verifyCurrentBase(fresh);
+  const reused=state.reused||[];
+  if(reused.length){
+    const latest=inspectWorkflowRuns({expected:reused.map(x=>x.name),runs:await api.runs(ctx.head),pr:fresh});
+    if(latest.failed.length||latest.cancelled.length||latest.interrupted.length||
+       latest.notExecuted.length||latest.uncertain.length||latest.running.length||
+       latest.orphanFailures.length||latest.orphanCancelled.length||latest.orphanInterrupted.length||
+       latest.orphanNotExecuted.length||latest.orphanIncomplete.length)
+      throw Error('CURRENT_SPECIALIST_CHANGED_DURING_PRIOR_EVIDENCE_REUSE');
+    console.log('CI_PRIOR_HEAD_SPECIALIST_REUSED:'+JSON.stringify(reused));
+  }
   // Report non-gating runs for audit; never confuse them with validated CI.
   const advisory={
     nonApplicable:[...state.observedUnrelated.filter(item => !retired.has(workflowPath(item))),
@@ -1009,7 +1227,7 @@ export async function verify(api,ctx,files,options={}) {
     concurrencyOnly:[...concurrencyAdvisory].sort(),
     selfTriggerOnly:[...selfTriggerAdvisory].sort(),
   };
-  return {risk,expected,delegated,executed,advisory,packageImpact,head:ctx.head,base:ctx.base};
+  return {risk,expected,delegated,executed,reused,advisory,packageImpact,head:ctx.head,base:ctx.base};
 }
 
 // Reuse the successful Core and domain jobs for CI-policy-only production
@@ -1135,7 +1353,7 @@ export function diagnoseAggregateError(error) {
   const message = String(error?.message || error || 'unknown');
   const rules = [
     ['PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED','BASE_ADVANCED','Inspect actual overlap, critical/shared changes or incomplete ancestry proof before requesting a new CI wave. Ordinary verified non-overlapping production advances do not require rebasing.'],
-    ['PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PR_HEAD_CHANGED','HEAD_ADVANCED','Discard stale results and run checks on the new PR HEAD.'],
+    ['PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PR_HEAD_CHANGED','HEAD_ADVANCED','Superseded HEAD is not source failure. Verify new HEAD and reuse independently proven identical-tree evidence where available.'],
     ['PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:MERGE_CONFLICT','MERGE_CONFLICT','Resolve the real merge conflict; do not bypass the gate.'],
     ['PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PR_DRAFT','DRAFT_PR','Mark Ready only after the implementation is complete.'],
     ['PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED','PR_STATE_INVALID','Inspect the precise PR state/repository/target reason.'],
@@ -1199,11 +1417,27 @@ async function main() {
   const verifiedBase = verifiedCheckoutBase(env, ctx);
   const testedBase = verifiedBase || ctx.base;
   const files=worktreeSources(testedBase);
-  if (verifiedBase) files.changedRows=checkoutChangedRows(verifiedBase);
+  if (verifiedBase) {
+    files.changedRows=checkoutChangedRows(verifiedBase);
+    files.testedMergeSha=env.GITHUB_SHA;
+  }
   // The verified merge parent is always the trusted tested BASE. Only
   // non-sensitive ordinary paths permit a newer live production BASE; security,
   // payment, privacy, auth, policy and unknown paths still require freshness.
   const checkedCtx={...ctx,base:testedBase};
+  // The immutable synchronize event names the preceding source HEAD.
+  // Never accept a caller-supplied SHA without the matching event identity.
+  if(verifiedBase&&env.GITHUB_EVENT_PATH){
+    try{
+      const event=JSON.parse(readFileSync(env.GITHUB_EVENT_PATH,'utf8'));
+      if(event.action==='synchronize'&&event.pull_request?.number===ctx.number&&
+         event.pull_request?.head?.sha===ctx.head&&event.repository?.full_name===ctx.repo&&
+         PRIOR_SHA.test(event.before||'')){
+        checkedCtx.previousHead=event.before;
+        checkedCtx.merge=env.GITHUB_SHA;
+      }
+    }catch{/* Missing evidence uses the full current-HEAD route. */}
+  }
   let result;
   try {
     result=await verify(api,checkedCtx,files);
@@ -1218,6 +1452,7 @@ async function main() {
   const report='Specialist CI aggregate for PR #' + ctx.number + ' head=' + ctx.head +
     ' event_base=' + ctx.base + ' tested_base=' + testedBase + '\nRisk: ' + result.risk + '\nVerified applicable workflows: ' + result.expected.length +
     '\n' + result.executed.map(x=>'- ' + x.name + ' (' + x.jobs + ' executed jobs; run ' + x.run_id + ')').join('\n') +
+    '\nPreviously executed same-tree workflows reused: ' + JSON.stringify(result.reused||[]) +
     '\nTrusted replacements: ' + result.delegated.map(x=>x.retired + ' => ' + x.replacement).join(', ') +
     '\nPackage impact: ' + result.packageImpact.mode + ' (' + result.packageImpact.reason + ')' +
     '\nTrusted policy revalidated: ' + (result.policyRevalidatedAgainst || 'not required') +

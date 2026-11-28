@@ -37,3 +37,18 @@ test('isolated database privacy and no-provider audio permission checks remain',
     'app/api/live-audio/status/route.js']) assert.ok(audio.includes(must),'Audio guard lost: '+must);
   assert.match(audio,/^  workflow_dispatch:/m);
 });
+
+
+test('media specialists reuse only read-only caches and omit duplicate Next lint, not real runtime evidence',()=>{
+  for (const name of ['hh-live-audio-ci.yml','hh-owner-telegram-video.yml']) {
+    const yaml=read(name);
+    assert.match(yaml,/hh-core-media-v1-/);
+    assert.match(yaml,/hh-core-next-v2-/);
+    assert.equal((yaml.match(/uses: actions\/cache\/restore@v4/g)||[]).length,2);
+    assert.doesNotMatch(yaml,/actions\/cache\/save/);
+    assert.match(yaml,/if \[\[ "\$GITHUB_EVENT_NAME" == pull_request && "\$\{GITHUB_BASE_REF:-\}" == codex\/public-book-library \]\]; then\s+npm run build -- --no-lint\s+else\s+npm run build\s+fi/);
+  }
+  assert.match(read('hh-live-audio-ci.yml'),/Smoke 3 locale HTML and safe disabled status/);
+  assert.match(read('hh-owner-telegram-video.yml'),/node scripts\/verify-telegram-owner-video-media\.mjs/);
+  assert.match(read('hh-owner-telegram-video.yml'),/node scripts\/ensure-owner-video-renderer\.mjs --verify-trace/);
+});

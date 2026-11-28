@@ -6,7 +6,7 @@ import {
   TARGET, parsePrTrigger, matchesTrigger, classifyPackageImpact, expectedWorkflows, resolveExpectedSpecialists, APPROVED_SPECIALIST_REPLACEMENTS, inspectWorkflowRuns, concurrencyOnlyAdvisory, selfTriggerRemovalAdvisory, isConcurrencyAdvisoryRun,
   inspectJobs, trustedConditionalJobs, trustedRequiredJobs, validateParameters,
 } from '../lib/ci/specialist-aggregate.mjs';
-import { verify, githubReader, optionalMandalaMacosSkip, optionalProfileWriterSkip, revalidateAfterTrustedPolicyAdvance, verifiedOptionalOwnerSelectorMigration, trustedAdditiveActionlint, requiresCurrentProductionBase } from '../scripts/ci-specialist-aggregate.mjs';
+import { mapSpecialistEvidence, verify, githubReader, optionalMandalaMacosSkip, optionalProfileWriterSkip, revalidateAfterTrustedPolicyAdvance, verifiedOptionalOwnerSelectorMigration, trustedAdditiveActionlint, requiresCurrentProductionBase } from '../scripts/ci-specialist-aggregate.mjs';
 // Run the focused dependency state/timeout regressions inside the existing
 // Core CI-policy test step; no new hosted workflow or required status.
 import './ci-specialist-wait.test.mjs';
@@ -3381,4 +3381,74 @@ test('required hh-merge-check aggregates BASE-trusted specialists for CORE as we
   assert.match(job||'',/needs: \[scope\]/);
   assert.match(job||'',/Fail closed if mandatory Core failed/);
   assert.match(job||'',/Validate exact-head risk and required specialist workflows/);
+});
+
+
+test('completed specialist jobs use bounded concurrent readback with deterministic evidence order', async () => {
+  const runs = [0,1,2,3,4,5,6];
+  let active=0, maxActive=0;
+  const started=[];
+  const result=await mapSpecialistEvidence(runs, async id => {
+    started.push(id);
+    active++;
+    maxActive=Math.max(maxActive,active);
+    for(let n=0;n<3-id%3;n++) await Promise.resolve();
+    active--;
+    return {id};
+  });
+  assert.equal(maxActive,3);
+  assert.equal(active,0);
+  assert.deepEqual(started,runs);
+  assert.deepEqual(result,runs.map(id=>({id})));
+  assert.deepEqual(await mapSpecialistEvidence([],()=>{throw Error('unexpected');}),[]);
+});
+
+test('a failed specialist readback remains fail closed and prevents the next batch', async () => {
+  const started=[], finished=[];
+  await assert.rejects(mapSpecialistEvidence([0,1,2,3,4], async id => {
+    started.push(id);
+    try {
+      await Promise.resolve();
+      if(id===1)throw Error('SPECIALIST_DEPENDENCY_JOB_CANCELLED');
+      return id;
+    } finally { finished.push(id); }
+  }), /SPECIALIST_DEPENDENCY_JOB_CANCELLED/);
+  assert.deepEqual(started,[0,1,2]);
+  assert.deepEqual(finished.sort(),[0,1,2]);
+});
+
+
+test('batched pure prebuild test registration keeps existing tests and real domain owners', () => {
+  const old={scripts:{
+    prebuild:'node scripts/prepare.mjs && npm run test:coaching:release && npm run test:academy:release',
+    'test:coaching:release':'node --test tests/coach-old.test.mjs',
+    'test:academy:release':'node --test tests/academy-old.test.mjs tests/academy-last.test.mjs'
+  }, dependencies:{next:'15.0.0'}};
+  const next=structuredClone(old);
+  next.scripts['test:coaching:release']='node --test tests/coach-new.test.mjs tests/coach-old.test.mjs tests/coaching-extra.test.mjs';
+  next.scripts['test:academy:release']='node --test tests/academy-old.test.mjs tests/academy-new.test.mjs tests/academy-last.test.mjs';
+  const paths=['package.json','tests/coach-new.test.mjs','tests/coaching-extra.test.mjs','tests/academy-new.test.mjs','lib/coaching/voice.mjs'];
+  const check=(proposal=next,changed=paths,before=old)=>classifyPackageImpact({changed,basePackage:JSON.stringify(before),currentPackage:JSON.stringify(proposal)});
+  assert.deepEqual(check(),{mode:'core',reason:'BATCH_ADDITIVE_PREBUILD_TESTS',workflows:[]});
+  const yaml=pattern=>"on:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths:\n      - 'package.json'\n      - '"+pattern+"'\n";
+  const owners=new Map([
+    ['.github/workflows/hh-live-audio-ci.yml',yaml('lib/live-audio/**')],
+    ['.github/workflows/hh-personal-coaching-session.yml',yaml('lib/coaching/**')],
+  ]);
+  assert.deepEqual(expectedWorkflows({base:owners,current:owners,changed:paths,packageImpact:check()}),['.github/workflows/hh-personal-coaching-session.yml']);
+  for (const mutation of [
+    v=>{v.scripts['test:academy:release']='node --test tests/academy-new.test.mjs tests/academy-last.test.mjs'},
+    v=>{v.scripts['test:academy:release']='node --test tests/academy-last.test.mjs tests/academy-new.test.mjs tests/academy-old.test.mjs'},
+    v=>{v.scripts['test:academy:release']+=' && echo bypass'},
+    v=>{v.scripts['test:academy:release']+=' tests/academy-new.test.mjs'},
+    v=>{v.scripts.prebuild+=' && echo bypass'},
+    v=>{v.scripts['test:monetization']='node --test tests/wallet.test.mjs'},
+    v=>{v.dependencies.next='16.0.0'},
+    v=>{v.scripts['test:coaching:release']+=' tests/billing-new.test.mjs'},
+  ]) {const bad=structuredClone(next);mutation(bad);assert.equal(check(bad).mode,'full');}
+  assert.equal(check(next,paths.slice(0,3)).mode,'full');
+  assert.equal(check(next,[...paths,'package-lock.json']).mode,'full');
+  const before=structuredClone(old),after=structuredClone(next);
+  before.scripts['pretest:academy:release']=after.scripts['pretest:academy:release']='node scripts/side-effect.mjs';
+  assert.equal(check(after,paths,before).mode,'full');
 });

@@ -68,6 +68,7 @@ on:
       - 'tests/psychic-alchemy-intro-video.test.mjs'
       - 'tests/site-video*.mjs'
       - '.github/workflows/holistic-about-video-check.yml'
+      - '.github/workflows/site-video-browser.yml'
   push:
     branches: ['codex/public-book-library']
     paths:
@@ -131,6 +132,10 @@ jobs:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-24.04
     timeout-minutes: 25
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
     services:
       redis:
         image: redis:7-alpine
@@ -165,7 +170,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-          fetch-depth: 0
+          # PR scope needs only the tested merge and its two parents.
+          # Keep full history for manual and production acceptance.
+          fetch-depth: ${{ github.event_name == 'pull_request' && 2 || 0 }}
       - name: Verify live PR readiness before costly CI
         if: github.event_name == 'pull_request'
         env:
@@ -268,16 +275,28 @@ jobs:
           key: hh-core-next-v2-${{ runner.os }}-${{ hashFiles('package-lock.json', 'next.config.ts', 'tsconfig.json') }}
       - name: Build actual application with locked production dependencies
         if: github.event_name != 'pull_request' || steps.impact.outputs.full == 'true'
+        id: core_build
+        env:
+          HH_PR_NUMBER: ${{ github.event.pull_request.number }}
+          HH_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HH_EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          NEXT_TELEMETRY_DISABLED: '1'
         run: |
-          # Dedicated source lint above and mandatory Core already check
-          # production PRs. Keep full Next type checking and compilation.
+          set -euo pipefail
+          # The real isolated browser uses Next DEV, not the production build.
+          # Keep every prebuild asset/test before browser QA. Defer only the
+          # duplicated compile until after browser QA; require exact successful
+          # Core job evidence, otherwise execute the independent full build.
           if [[ "$GITHUB_EVENT_NAME" == pull_request && "${GITHUB_BASE_REF:-}" == codex/public-book-library ]]; then
-            npm run build -- --no-lint
+            if [[ "$(node scripts/ci-site-video-scope.mjs --core-plan)" == REUSE_CANDIDATE ]]; then
+              npm run prebuild
+              echo 'deferred=true' >> "$GITHUB_OUTPUT"
+            else
+              npm run build -- --no-lint
+            fi
           else
             npm run build
           fi
-        env:
-          NEXT_TELEMETRY_DISABLED: '1'
       - name: Exercise editor against isolated Redis
         if: github.event_name != 'pull_request' || steps.impact.outputs.full == 'true'
         run: |
@@ -286,6 +305,21 @@ jobs:
         env:
           NODE_EXTRA_CA_CERTS: /tmp/video-test-cert.pem
           NEXT_TELEMETRY_DISABLED: '1'
+      - name: Resolve exact successful Core build or run independent fallback
+        if: github.event_name == 'pull_request' && steps.impact.outputs.full == 'true' && steps.core_build.outputs.deferred == 'true'
+        env:
+          HH_PR_NUMBER: ${{ github.event.pull_request.number }}
+          HH_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HH_EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          GH_TOKEN: ${{ github.token }}
+          NEXT_TELEMETRY_DISABLED: '1'
+        run: |
+          set -euo pipefail
+          if node scripts/ci-site-video-scope.mjs --core-proof; then
+            echo 'Exact production compilation verified in mandatory Core; real isolated browser completed above.'
+          else
+            npm run build -- --no-lint
+          fi
       - name: Check production read-only after release
         if: github.event_name == 'push'
         run: node scripts/verify-site-video-browser.mjs --live
@@ -354,7 +388,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-          fetch-depth: 0
+          # PR scope needs only the tested merge and its two parents.
+          # Keep full history for manual and production acceptance.
+          fetch-depth: ${{ github.event_name == 'pull_request' && 2 || 0 }}
       - name: Verify live PR readiness before costly CI
         if: github.event_name == 'pull_request'
         env:
