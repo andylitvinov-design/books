@@ -1,9 +1,11 @@
 // Run only after applying the integration in a full production checkout.
 import test from 'node:test';import assert from 'node:assert/strict';
-import {COACH_PERSONALITY_CORE_IDS as ids,getCoachPersonalityCore as get} from '../lib/coaching/coach-personality-core.mjs';
+import {COACH_OPEN_DOMAIN_OPINION_RULE as opinionRule,COACH_PERSONALITY_CORE_IDS as ids,getCoachPersonalityCore as get} from '../lib/coaching/coach-personality-core.mjs';
 import {buildCoachBehaviorPolicy} from '../lib/coaching/persona-registry.mjs';
 import {coachPersonalityTurn,coachPersonalityTurnGuidance} from '../lib/coaching/coach-personality-dialogue.mjs';
 import {withCoachLivePersonality} from '../lib/coaching/coach-personality-live.mjs';
 import {coachAudioDirection} from '../lib/coaching/coach-audio-profiles.mjs';
 test('all 12 canonical identities and 3 locales use core in actual behavior and voice instructions',()=>{for(const id of ids)for(const locale of ['en','ru','es']){assert.ok(buildCoachBehaviorPolicy(id,{},locale).systemInstructions.includes(get(id).success));for(const mode of ['coaching','therapy'])assert.ok(coachAudioDirection(id,locale,mode).includes(get(id).voice))}});
 test('public direct answer uses core; live bounded, mandatory opening excludes cue, distress removes judgment',()=>{for(const id of ids.slice(0,8)){const turn=coachPersonalityTurn({personaId:id,stage:'goal',interventionId:'answer_first'});assert.ok(coachPersonalityTurnGuidance(turn).includes(get(id).competence));const checkpoint={guidance:'Mandatory course text.'};assert.match(withCoachLivePersonality(checkpoint,turn).guidance,/Answer first: your character/);const long='x'.repeat(619);assert.equal(withCoachLivePersonality({guidance:long},turn).guidance,long);assert.doesNotMatch(withCoachLivePersonality({...checkpoint,openingProgress:{completed:false}},turn).guidance,/Answer first: your character/);const distress=coachPersonalityTurn({personaId:id,stage:'goal',interventionId:'answer_first',empathy:{emotion:'fear',evidence:'explicit_current_self_report',certainty:'explicit'}});assert.equal(distress.judgmentGuidance,'')}});
+
+test('open-domain opinion rule reaches actual behavior policy in every persona and language',()=>{for(const id of ids)for(const locale of ['en','ru','es']){const instructions=buildCoachBehaviorPolicy(id,{},locale).systemInstructions;assert.ok(instructions.includes(opinionRule),id+' '+locale)}});
