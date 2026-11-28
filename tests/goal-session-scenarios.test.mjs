@@ -160,3 +160,61 @@ test('explicit expanded conversation version uses the same localized questions a
  }
  assert.throws(()=>normalizeThematicConversationVersion('goal_result',THEMATIC_EXPANDED_VERSION));assert.throws(()=>normalizeThematicConversationVersion('business_strategy','forged'));
 });
+
+import {BUSINESS_DAYBOOK_COACH_IDS,BUSINESS_DAYBOOK_COACH_GROUP,businessDaybookCoachBlueprint,businessDaybookCoachSession} from '../lib/coaching/business-daybook-coach-scenarios.mjs';
+import {BUSINESS_SYLLABUS} from '../lib/app/business-daybook.mjs';
+import {normalizeCoachCourseSessionId} from '../lib/coaching/coach-course-journey.mjs';
+import {safePageAuthReturnPath,pageAuthReturnPath} from '../lib/app/page-auth-continuation.mjs';
+test('eight Business Daybook topics use distinct exact six-stage blueprints without relabeling historical records',()=>{
+ const globalIds=new Set();
+ assert.equal(BUSINESS_DAYBOOK_COACH_IDS.length,8);
+ for(const [i,id] of BUSINESS_DAYBOOK_COACH_IDS.entries()){
+  assert.equal(normalizeCoachCourseSessionId(id),id);
+  assert.equal(thematicScenarioVersion(id),THEMATIC_EXPANDED_VERSION);
+  assert.equal(businessDaybookCoachSession(id).number,i+1);
+  for(const locale of ['en','ru','es']){
+   const b=businessDaybookCoachBlueprint(id,locale),schema=coachCourseProtocolSchema(id,locale,{scenarioVersion:THEMATIC_EXPANDED_VERSION});
+   assert.equal(BUSINESS_DAYBOOK_COACH_GROUP.sessions[i].title[locale],BUSINESS_SYLLABUS[locale][i][0]);
+   assert.equal(b.practiceTasks.length,3);
+   assert.deepEqual(b.practiceTasks.map(x=>x.label),BUSINESS_SYLLABUS[locale][i][2].map(x=>x[0]));
+   assert.equal(b.stages.length,6);
+   assert.equal(b.durationSeconds,1200);
+   assert.deepEqual(b.stages.flatMap(s=>s.fields),schema.checkpoints.map(f=>f.id));
+   assert.deepEqual(schema.checkpoints.map(f=>f.question),b.checkpoints.map(f=>f.question));
+   assert.ok(b.stages.slice(1).every(s=>s.fields.length===1));
+   const instruction=coachCourseLiveInstruction(id,locale,THEMATIC_EXPANDED_VERSION);
+   assert.ok(instruction.includes('COURSE SCENARIO FIRST'));
+   const empty=coachCourseProtocolRows(id,[],null,locale);
+   const view=groupedSessionPosition(openingStagePosition({current:'invitation'},locale),courseStagePosition(empty),{mode:'course',courseId:id,locale});
+   assert.equal(view.rows.length,6);
+   assert.deepEqual(view.rows.map(s=>s.label),b.stages.map(s=>s.label));
+   assert.ok(view.rows.every(s=>s.tone==='gray'));
+   for(const f of schema.checkpoints){
+    assert.ok(instruction.includes(f.question));
+    assert.ok(coachCourseIndependentQuestion(id,locale,f.question,THEMATIC_EXPANDED_VERSION));
+    assert.ok(thematicConversationTimeGuidance(id,locale,b.stages.find(s=>s.fields.includes(f.id)).start*60,THEMATIC_EXPANDED_VERSION).includes(f.id));
+    if(locale==='en'){assert.ok(!globalIds.has(f.id));globalIds.add(f.id)}
+    const quote=({en:'A limited pilot is realistic.',ru:'Реалистична ограниченная проба.',es:'Una prueba limitada es realista.'})[locale];
+    const turns=[{role:'assistant',content:f.question},{role:'user',content:quote},{role:'assistant',content:checkpointConfirmation(f.question,quote,locale)},{role:'user',content:({en:'yes',ru:'да',es:'sí'})[locale]}];
+    const event={fieldId:f.id,status:'confirmed',turnIndex:1,quote,revision:1,binding:{questionTurnIndex:0,confirmationTurnIndex:3}};
+    const review={version:THEMATIC_EXPANDED_REVIEW_VERSION,courseSessionId:id,events:[event]};
+    assert.equal(coachCourseProtocolRows(id,turns,review,locale).find(r=>r.id===f.id).quote,quote);
+    assert.throws(()=>normalizeCoachCourseFieldReview({...review,version:'hh-coach-course-review-v1'},id,turns));
+    assert.throws(()=>normalizeCoachCourseFieldReview({...review,courseSessionId:BUSINESS_DAYBOOK_COACH_IDS[(i+1)%8]},BUSINESS_DAYBOOK_COACH_IDS[(i+1)%8],turns));
+   }
+  }
+ }
+ assert.equal(globalIds.size,40);
+ assert.equal(COACH_PROGRAM_GROUPS.find(g=>g.id==='business').sessions.length,4);
+ assert.equal(businessDaybookCoachSession('business_strategy'),null);
+ assert.throws(()=>normalizeCoachCourseSessionId('business_daybook_9'));
+});
+test('Business topic is retained only in exact same-origin coach OAuth navigation',()=>{
+ const path='/ru/coaching/sessions?coach=mira&businessCourse=business_daybook_8';
+ assert.ok(safePageAuthReturnPath(path,'my-coach-action','ru'));
+ assert.equal(pageAuthReturnPath('https://holistichouse.vercel.app'+path,'my-coach-action','ru'),path);
+ assert.equal(safePageAuthReturnPath(path+'&clarityDay=1','my-coach-action','ru'),false);
+ assert.equal(safePageAuthReturnPath(path.replace('_8','_9'),'my-coach-action','ru'),false);
+ assert.equal(safePageAuthReturnPath(path.replace('coach=mira&',''),'my-coach-action','ru'),false);
+ assert.equal(safePageAuthReturnPath(path,'business-daybook','ru'),false);
+});

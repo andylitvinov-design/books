@@ -13,6 +13,8 @@ import {programOnboardingPath} from '@/lib/app/program-daybook-entry.mjs'
 import css from './business-daybook.module.css'
 import DaybookWeekReports from './daybook-week-reports'
 import CoachingCourseDashboard from './coaching-course-dashboard'
+import {PUBLIC_COACH_PERSONAS,coachSessionHref,localCoachText} from '@/lib/coaching/persona-registry.mjs'
+import {BUSINESS_DAYBOOK_COACH_IDS} from '@/lib/coaching/business-daybook-coach-scenarios.mjs'
 const COPY={
  ru:{title:'Дневник роста бизнеса',intro:'8 сессий: стратегическое проектирование и практическая трансформация.',back:'В профиль',week:'Сессия',tasks:'3 практики сессии',completed:'Выполнено',open:'Открыть',save:'Сохранить и завершить',retry:'Повторить сохранение',saving:'Сохраняем…',saved:'Сохранено и проверено',loading:'Загружаем личный дневник…',failed:'Не удалось подтвердить сохранение. Повторите попытку; черновик остаётся здесь.',loadError:'Не удалось загрузить записи. Повторите попытку.',login:'Войти в личный кабинет',load:'Повторить',answer:'Мой ответ и результат',progress:'Прогресс самостоятельной работы',next:'Продолжить',done:'Все 24 практики завершены',private:'Записи приватны; они не передаются автоматически. Самостоятельные задания не означают оплаченную или проведённую консультацию.',offer:'Обсудить с бизнес-консультантом',offerHint:'Формат, стоимость и время согласуются отдельно.',discard:'Есть несохранённые ответы. Выйти и удалить черновики?'},
  en:{title:'Business Growth Daybook',intro:'8 sessions: strategic design and practical transformation.',back:'Back to profile',week:'Session',tasks:'3 session practices',completed:'Completed',open:'Open',save:'Save and complete',retry:'Retry save',saving:'Saving…',saved:'Saved and verified',loading:'Loading your private daybook…',failed:'Save not confirmed. Retry; your draft remains here.',loadError:'Could not load your entries. Try again.',login:'Sign in to your cabinet',load:'Retry',answer:'My answer and result',progress:'Self-guided progress',next:'Continue',done:'All 24 practices completed',private:'Entries stay private and are not shared automatically. Self-guided tasks do not mean a paid or delivered consultation.',offer:'Discuss with a business consultant',offerHint:'Format, price and time are agreed separately.',discard:'Unsaved answers remain. Leave and discard drafts?'},
@@ -21,10 +23,12 @@ const COPY={
 const ARCHIVE_COPY={ru:'Архив предыдущей программы (4 сессии)',en:'Previous programme archive (4 sessions)',es:'Archivo del programa anterior (4 sesiones)'}
 export default function BusinessDaybook({locale='en',initialWeek=null}){
  const lang=Object.hasOwn(COPY,locale)?locale:'en',t=COPY[lang],syllabus=BUSINESS_SYLLABUS[lang],root='/'+lang
+ const [coachId,setCoachId]=useState('')
+ const coachingCopy=({en:{title:'Discuss this session with an AI coach',choose:'Choose a coach',start:'Open selected coaching session',note:'The coaching dialogue is separate from the three private practices below. Existing session access and consent rules apply.'},ru:{title:'Обсудить эту сессию с ИИ-коучем',choose:'Выберите коуча',start:'Открыть выбранную коучинг-сессию',note:'Диалог с коучем — отдельно от трёх приватных практик ниже. Действуют существующие правила доступа и согласия.'},es:{title:'Comenta esta sesión con un coach de IA',choose:'Elige un coach',start:'Abrir la sesión de coaching elegida',note:'El diálogo es independiente de las tres prácticas privadas. Se mantienen las reglas de acceso y consentimiento.'}})[lang]
  const [account,setAccount]=useState(null),[phase,setPhase]=useState('loading'),[entries,setEntries]=useState([]),[week,setWeek]=useState(1),[step,setStep]=useState(null)
  const [drafts,setDrafts]=useState({}),[pending,setPending]=useState(null),[busy,setBusy]=useState(false),[failed,setFailed]=useState(false),[saved,setSaved]=useState('')
  const owner=useRef(null),generation=useRef(0),saver=useRef(null),flight=useRef(false),guardRef=useRef(null)
- const wipe=useCallback((nextPhase='loading')=>{generation.current++;saver.current?.discard();saver.current=null;guardRef.current?.dispose();owner.current=null;flight.current=false;setAccount(null);setEntries([]);setDrafts({});setPending(null);setBusy(false);setFailed(false);setSaved('');setPhase(nextPhase)},[])
+ const wipe=useCallback((nextPhase='loading')=>{generation.current++;saver.current?.discard();saver.current=null;guardRef.current?.dispose();owner.current=null;flight.current=false;setAccount(null);setCoachId('');setEntries([]);setDrafts({});setPending(null);setBusy(false);setFailed(false);setSaved('');setPhase(nextPhase)},[])
  const load=useCallback(async()=>{
   wipe();const token=generation.current
   try{
@@ -63,6 +67,8 @@ export default function BusinessDaybook({locale='en',initialWeek=null}){
   return()=>{window.removeEventListener('beforeunload',protect);document.removeEventListener('click',click,true)}
  },[hasDrafts,pending,t.discard])
  const progress=businessProgress(entries),archive=legacyBusinessTasks(entries,lang)
+ const businessCourseId=BUSINESS_DAYBOOK_COACH_IDS[week-1]
+ const coachHref=PUBLIC_COACH_PERSONAS.some(p=>p.id===coachId)&&businessCourseId?coachSessionHref(lang,coachId)+'&businessCourse='+encodeURIComponent(businessCourseId):null
  function selectWeek(n){if(locked||phase!=='ready')return;setWeek(n);setStep(null);setSaved('')}
  function selectStep(n){if(locked||phase!=='ready')return;setStep(old=>old===n?null:n);setSaved('')}
  async function saveTask(n){
@@ -90,6 +96,7 @@ export default function BusinessDaybook({locale='en',initialWeek=null}){
    <CoachingCourseDashboard locale={lang} accountId={account} program="business" title={t.title} sessions={syllabus.map(([title,description])=>[title,description])} selected={week} onSelect={selectWeek} practiceCounts={progress.weeks.map(done=>({done,total:3}))} locked={locked} selfGuided backHref={root+'/my-page'}>
    <section className={css.canvas}><h2>{syllabus[week-1][0]}</h2><p>{syllabus[week-1][1]}</p>
     <Link className={css.premium} href={root+'/services/business-consulting#request-session'}><BriefcaseBusiness size={22} aria-hidden="true"/><span><strong>{t.offer}</strong><small>{t.offerHint}</small></span><ArrowRight size={18} aria-hidden="true"/></Link>
+    <section data-business-coach-session={businessCourseId}><h3>{coachingCopy.title}</h3><p>{coachingCopy.note}</p><label>{coachingCopy.choose}<select value={coachId} disabled={locked} onChange={e=>setCoachId(e.target.value)}><option value="">{coachingCopy.choose}</option>{PUBLIC_COACH_PERSONAS.map(p=><option key={p.id} value={p.id}>{localCoachText(p.name,lang)}</option>)}</select></label>{coachHref&&!locked&&<Link className={css.action} href={coachHref} prefetch={false}>{coachingCopy.start}<ArrowRight size={19} aria-hidden="true"/></Link>}</section>
     <h3>{t.tasks} <span>{progress.weeks[week-1]} / 3</span></h3>
     {syllabus[week-1][2].map(([title,description],i)=>{
      const n=i+1,tag=businessTag(week,n),entry=savedBusinessTask(entries,week,n),answer=drafts[tag]??entry?.text??'',open=step===n
