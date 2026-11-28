@@ -24,6 +24,12 @@ on:
       # Dedicated signed-in Coach endpoints have App/IA and Personal Coaching QA.
       # They do not change Axis or Practice return; the shared dispatcher remains covered.
       - '!app/api/app/my-coach/**'
+      # Four dedicated Clarity endpoints have focused coaching + App/IA/Core owners.
+      # Shared dispatch, auth, database and mixed owned changes remain protected.
+      - '!app/api/app/clarity-course/route.js'
+      - '!app/api/app/clarity-course/clock/route.js'
+      - '!app/api/app/clarity-course/protocol/route.js'
+      - '!app/api/app/clarity-course/runs/route.js'
   push:
     branches: ['codex/public-book-library']
     paths:
