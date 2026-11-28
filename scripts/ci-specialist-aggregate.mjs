@@ -1581,8 +1581,9 @@ export async function verify(api,ctx,files,options={}) {
   // green gate or authorization to reuse a different source tree.
   console.log('CI_FINAL_SPECIALIST_EVIDENCE:'+JSON.stringify({head:ctx.head,tested_base:ctx.base,
     executed:executed.map(x=>({name:x.name,run_id:x.run_id,jobs:x.jobs})),reused:state.reused||[]}));
+  let acceptedBase=null;
   if (requireCurrentBase && typeof api.target === 'function')
-    await verifyStableProtectedBase(api,ctx,verifyCurrentBase,fresh,sleep);
+    acceptedBase=await verifyStableProtectedBase(api,ctx,verifyCurrentBase,fresh,sleep);
   else await verifyCurrentBase(fresh);
   const reused=state.reused||[];
   if(reused.length){
@@ -1604,7 +1605,7 @@ export async function verify(api,ctx,files,options={}) {
     packageOnly:[...packageOnlyAdvisory].sort(),
     dispatcherOnly:[...dispatcherAdvisory].sort(),
   };
-  return {risk,expected,delegated,executed,reused,advisory,packageImpact,head:ctx.head,base:ctx.base};
+  return {risk,expected,delegated,executed,reused,advisory,packageImpact,head:ctx.head,base:ctx.base,acceptedBase};
 }
 
 // Reuse the successful Core and domain jobs for CI-policy-only production
@@ -1797,6 +1798,34 @@ export function diagnoseAggregateError(error) {
   return {category,action,symptomKeys:[...new Set(symptoms)].sort().slice(0,30)};
 }
 
+
+// This receipt is emitted ONLY by the protected verifier after every required
+// workflow and the final protected-ref proof succeeds. It is evidence, not a
+// merge permission. The native consumer must authenticate the actual successful
+// job/attempt, immutable checkout and trusted workflow before using it.
+export function mergeReadyReceipt(ctx,files,result,env) {
+  const sha=x=>typeof x==='string'&&/^[0-9a-f]{40}$/.test(x);
+  const pos=x=>Number.isSafeInteger(x)&&x>0;
+  const run=Number(env.GITHUB_RUN_ID),attempt=Number(env.GITHUB_RUN_ATTEMPT);
+  if(!pos(run)||!pos(attempt)||!pos(ctx.number)||!sha(ctx.head)||!sha(ctx.base)||
+     !sha(files.testedMergeSha)||!sha(result?.acceptedBase)||
+     result.head!==ctx.head||result.base!==ctx.base||
+     !Array.isArray(result.expected)||result.expected.length>300||
+     !Array.isArray(result.executed)||!Array.isArray(result.reused)||
+     (result.policyRevalidatedAgainst&&result.policyRevalidatedAgainst!==result.acceptedBase))return null;
+  const validPath=x=>typeof x==='string'&&/^\.github\/workflows\/[a-z0-9._-]+\.ya?ml$/i.test(x);
+  const expected=new Set(result.expected);
+  const evidence=[...result.executed,...result.reused];
+  if(expected.size!==result.expected.length||[...expected].some(x=>!validPath(x))||
+     evidence.length!==expected.size||new Set(evidence.map(x=>x?.name)).size!==expected.size||
+     evidence.some(x=>!expected.has(x?.name)||!pos(x.run_id)||!pos(x.jobs)))return null;
+  return {schema:'HH_MERGE_READY_V3',repo:ctx.repo,pr:ctx.number,head:ctx.head,
+    tested_base:ctx.base,tested_merge:files.testedMergeSha,accepted_base:result.acceptedBase,
+    policy_base:result.policyRevalidatedAgainst||ctx.base,run_id:run,run_attempt:attempt,
+    required:[...expected].sort(),evidence:evidence.map(x=>({path:x.name,run_id:x.run_id,jobs:x.jobs,
+      ...(x.prior_head?{prior_head:x.prior_head}:{})})).sort((a,b)=>a.path.localeCompare(b.path))};
+}
+
 async function main() {
   const env=process.env;
   if (env.GITHUB_EVENT_NAME !== 'pull_request') throw Error('ONLY_PULL_REQUEST_EVENT');
@@ -1851,6 +1880,8 @@ async function main() {
     '\nTrusted policy revalidated: ' + (result.policyRevalidatedAgainst || 'not required') +
     '\nNon-gating CI advisory: ' + JSON.stringify(result.advisory).slice(0,2000);
   console.log(report);
+  const ready=verifiedBase?mergeReadyReceipt(checkedCtx,files,result,env):null;
+  if(ready) console.log('HH_MERGE_READY_V3:'+JSON.stringify(ready));
   if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY,report+'\n');
 }
 
