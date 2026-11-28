@@ -628,7 +628,7 @@ test('voice Director checkpoint keeps the runtime course preference without trea
  assert.ok(server.includes('coachCourseCheckpointGuidance(parsed.input.courseSessionId,body.locale,opening,directive,parsed.input.turns,parsed.input.message)'))
  assert.ok(server.includes('geminiLiveThematicCheckpointGuidance(namePrefix,directive,courseHint)'))
  const output=ui.slice(ui.indexOf('  function commitOutput('),ui.indexOf('  function canSendSideband('))
- assert.ok(output.includes('const requestedSavedContext=Boolean(r.contextSentKey||r.claritySelection?.memorySelection||r.clarityOpeningMemoryStageToken)'))
+ assert.ok(output.includes('const requestedSavedContext=Boolean(r.contextSentKey||r.claritySelection?.memorySelection||r.claritySelection?.materialSelection||r.clarityOpeningMemoryStageToken)'))
  assert.ok(output.includes("if(!r.interrupted&&!requestedSavedContext){r.history.push({role:'assistant',content:value})"))
  assert.ok(output.includes('onOutputFinal?.(value,{interrupted:r.interrupted,requestedSavedContext})'))
 })

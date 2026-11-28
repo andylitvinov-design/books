@@ -2719,6 +2719,16 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
                 return true
               }
               const captured=appendLiveTranscript('user',text)
+              // A bound relay must not keep consuming time when the opening
+              // was declined or the finalized transcript could not be retained.
+              // Safety/boundary responses take precedence over this local guard.
+              if(clarityCourseDay(selectedCourseId)){
+                if(!captured)return true
+                const declined=coachOpeningProgress({turns:turnsRef.current,locale:conversationLang,personaId:openingEvidencePersonaId,...localOpeningScope}).declined
+                if(declined&&!coachingBrainSafety(guard)&&!coachingBrainBoundary(guard)){
+                  setPaused(true);setStreamingPreview('');return true
+                }
+              }
               // Current client corrections/topic changes outrank all old memory.
               if(['correction','topic_shift'].includes(
                 understandCoachingTurn({locale:conversationLang,message:text}).act)){

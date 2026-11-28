@@ -237,8 +237,11 @@ test('fresh reference is checked after committed consent but before audio and up
  assert.equal(f.provider.messages.length,1)
  release('CLIENT-APPROVED REFERENCE DATA (one selected reference). Work')
  await f.relay.settled()
- assert.equal(f.provider.messages[1].clientContent.turnComplete,false)
- assert.equal(f.provider.messages[2].clientContent.turnComplete,true)
+ assert.equal(f.provider.messages.length,2)
+ const first=f.provider.messages[1].clientContent
+ assert.equal(first.turnComplete,true)
+ assert.match(first.turns[0].parts[0].text,/one selected reference/)
+ assert.equal(first.turns[0].parts.length,2)
  f.client.input(audio);assert.deepEqual(f.provider.messages.at(-1),audio)
  const g=fixture({readReference:async()=>{throw Error('stale')}})
  g.ready();g.consent();await g.relay.settled()

@@ -8,7 +8,7 @@ import {createDaybookJournalRepository} from '../lib/app/daybook-journal.js'
 import {createPersonalGoalRepository} from '../lib/app/daybook-personal-goals.js'
 import {createDaybookCoachRepository} from '../lib/app/daybook-coach.js'
 import {issueCoachContextSession} from '../lib/app/coach-context-session.js'
-import {manageCoachContextConsent,buildCoachContextSnapshot,coachContextConsentOptions} from '../lib/app/coach-context-snapshot.js'
+import {manageCoachContextConsent,buildCoachContextSnapshot,coachContextConsentOptions,readCoachEntrySources,readCoachMaterialOpeningNote} from '../lib/app/coach-context-snapshot.js'
 import {appendCoachContextGrant} from '../lib/coaching/context-cloud-grant-writer.mjs'
 import {closeDatabase,transaction} from '../lib/app/database.js'
 const url=process.env.HH_DAYBOOK_COACH_TEST_DATABASE_URL
@@ -32,7 +32,9 @@ const snapshot=(actor=a,selected=session,policyVersion=preview.policyVersion)=>b
 let preview,ticket
 before(async()=>{
  await admin.connect();await initializeCanonicalDaybookSchema(admin)
- for(const file of ['20261120190000_hh_context_cloud_grants.sql','20261123023514_hh_daybook_coach_excerpt_consent_20261123.sql'])
+ await admin.query('create table app.consent_events(id uuid primary key)')
+ for(const file of ['20261120190000_hh_context_cloud_grants.sql','20261123023514_hh_daybook_coach_excerpt_consent_20261123.sql',
+  '20261028161029_hh_account_personal_videos_private_20261028.sql','20261121202614_hh_client_live_photos_v1_20261121.sql'])
   await admin.query(await readFile(new URL('../supabase/migrations/'+file,import.meta.url),'utf8'))
  for(const actor of [a,b]){
   await admin.query("insert into app.accounts values($1,'active','active')",[actor.id])
@@ -108,6 +110,100 @@ test('real backend RLS/append-only privilege and journal session constraints rej
   await assert.rejects(transaction(config,a,db=>db.query(sql)),{code:'42501'})
  assert.equal((await admin.query("select has_table_privilege('anon','app_private.context_cloud_grants','SELECT') as readable")).rows[0].readable,false)
 })
+test('material notes share only the approved excerpt and stop sharing after asset replacement or deletion',async()=>{
+ const videoId=randomUUID(),avatarId=randomUUID()
+ const uploadKey='personal-videos/'+a.id+'/'+videoId+'/master.mp4'
+ const avatarFolder='live-photos/'+a.id+'/'+avatarId+'/'
+ await admin.query(`insert into app_private.personal_videos
+  (id,account_id,theme,scene_id,aspect,duration_seconds,bytes,object_key,status,ready_at)
+  values ($1,$2,'goals','walk','portrait',30,4096,$3,'ready',now())`,[videoId,a.id,uploadKey])
+ await admin.query(`insert into app_private.client_live_photos_v1
+  (id,account_id,client_request_id,motion,orientation,subject,consent_ai,consent_subject,source_key,clip_key,provider_video_id,status,bytes,ready_at)
+  values ($1,$2,$1,'smile','portrait','self',true,true,$3,$4,'synthetic-provider-id','ready',4096,now())`,
+  [avatarId,a.id,avatarFolder+'source.jpg',avatarFolder+'clip.mp4'])
+ const materialSession=issueCoachContextSession(config,a)
+ const topicKey='career_business'
+ const approvedText='This shows the workspace I choose for planning.'
+ const input={...entry,text:approvedText+' Private ending.'}
+ const load=(actor=a,provider='groq',token=materialSession.token)=>readCoachEntrySources(config,actor,provider,env,
+  {topicKey,contextSessionToken:token})
+ for(const material of [{kind:'video',id:videoId},{kind:'avatar',id:avatarId}]){
+  const draft={...input,id:randomUUID(),operationId:randomUUID(),material}
+  await assert.rejects(journal.save(b,draft),{code:'JOURNAL_MATERIAL_UNAVAILABLE'})
+  const result=await journal.save(a,draft)
+  assert.deepEqual(result.entry.material,material)
+  assert.equal(result.entry.materialVersion,undefined)
+  const ticket=await handoff.handle(a,{operation:'issue',kind:'journal',itemId:draft.id,revision:1,coachId:'mira'})
+  const privatePreview=await handoff.handle(a,{operation:'resolve',token:ticket.token,coachId:'mira',contextSessionToken:materialSession.token})
+  assert.equal(privatePreview.source.materialKind,material.kind)
+  assert.equal(privatePreview.source.material,undefined)
+  const review={...reviewInput,itemId:draft.id,topicKey,excerpt:{revision:1,start:0,end:approvedText.length},contextSessionToken:materialSession.token}
+  const materialPreview=await manageCoachContextConsent(config,a,review,env)
+  assert.match(materialPreview.item.sourceRevision,/^journal:2:/)
+  assert.deepEqual(await load(),[])
+  await manageCoachContextConsent(config,a,{...review,operation:'grant',confirmed:true,sourceRevision:materialPreview.item.sourceRevision,
+   policyVersion:materialPreview.policyVersion,reviewToken:materialPreview.reviewToken},env)
+  const shown=await load()
+  assert.deepEqual(shown,[{kind:'journal_excerpt',sourceKind:'selected_daybook_excerpt',text:approvedText}])
+  assert.deepEqual(await load(b,'groq',bSession.token),[])
+  assert.deepEqual(await load(a,'gemini_free'),[])
+  assert.deepEqual(await load(a,'groq',otherSession.token),[])
+  const geminiEnv={...env,HH_COACH_CONTEXT_GEMINI_FREE_POLICY:'synthetic',
+   HH_COACH_CONTEXT_GEMINI_FREE_NOTICE_EN:'synthetic',HH_COACH_CONTEXT_GEMINI_FREE_NOTICE_RU:'synthetic',
+   HH_COACH_CONTEXT_GEMINI_FREE_NOTICE_ES:'synthetic'}
+  const materialScope={itemId:draft.id,topicKey,sourceRevision:materialPreview.item.sourceRevision,contextSessionToken:materialSession.token}
+  assert.equal(await readCoachMaterialOpeningNote(config,a,materialScope,geminiEnv),'')
+  const geminiReview={...review,provider:'gemini_free'}
+  const geminiPreview=await manageCoachContextConsent(config,a,geminiReview,geminiEnv)
+  await manageCoachContextConsent(config,a,{...geminiReview,operation:'grant',confirmed:true,
+   sourceRevision:geminiPreview.item.sourceRevision,policyVersion:geminiPreview.policyVersion,reviewToken:geminiPreview.reviewToken},geminiEnv)
+  const note=await readCoachMaterialOpeningNote(config,a,materialScope,geminiEnv)
+  assert.ok(note.includes(approvedText))
+  assert.ok(!note.includes('Private ending'))
+  assert.equal(await readCoachMaterialOpeningNote(config,b,materialScope,geminiEnv),'')
+  assert.equal(await readCoachMaterialOpeningNote(config,a,{...materialScope,itemId:randomUUID()},geminiEnv),'')
+  if(material.kind==='video')await admin.query("update app_private.personal_videos set ready_at=ready_at+interval '1 second' where id=$1",[material.id])
+  else await admin.query("update app_private.client_live_photos_v1 set status='deleted' where id=$1",[material.id])
+  assert.deepEqual(await load(),[])
+  assert.equal(await readCoachMaterialOpeningNote(config,a,materialScope,geminiEnv),'')
+  await assert.rejects(manageCoachContextConsent(config,a,review,env),{code:'CONTEXT_ITEM_UNAVAILABLE'})
+  assert.deepEqual((await journal.read(a,draft.id)).entry.material,material)
+ }
+})
+
+
+test('a material note bound to a private portrait stops projecting if storage reports a new version',async t=>{
+ const storageConfig={...config,supabaseUrl:'https://synthetic-storage.invalid',secretKey:'synthetic-storage-key'}
+ const storageJournal=createDaybookJournalRepository(storageConfig)
+ const materialSession=issueCoachContextSession(storageConfig,a)
+ const material={kind:'photo',id:'portrait'}
+ const text='The corner in this photo helps me focus.'
+ const note={...entry,id:randomUUID(),operationId:randomUUID(),text,material}
+ let version=1
+ t.mock.method(globalThis,'fetch',async (input,options)=>{
+  const url=new URL(typeof input==='string'?input:input.url)
+  assert.equal(url.origin,storageConfig.supabaseUrl)
+  assert.equal(url.pathname,'/storage/v1/object/list/hh-client-private-media')
+  const body=JSON.parse(options.body)
+  assert.equal(body.search,'portrait.jpg')
+  const rows=body.prefix==='support-photo/'+a.id?
+   [{id:'photo-object',name:'portrait.jpg',updated_at:'2026-11-23T00:00:00Z',metadata:{eTag:String(version)}}]:[]
+  return Response.json(rows)
+ })
+ await assert.rejects(storageJournal.save(b,note),{code:'JOURNAL_MATERIAL_UNAVAILABLE'})
+ await storageJournal.save(a,note)
+ const topicKey='career_business'
+ const review={...reviewInput,itemId:note.id,topicKey,excerpt:{revision:1,start:0,end:text.length},contextSessionToken:materialSession.token}
+ const materialPreview=await manageCoachContextConsent(storageConfig,a,review,env)
+ await manageCoachContextConsent(storageConfig,a,{...review,operation:'grant',confirmed:true,sourceRevision:materialPreview.item.sourceRevision,
+  policyVersion:materialPreview.policyVersion,reviewToken:materialPreview.reviewToken},env)
+ const load=()=>readCoachEntrySources(storageConfig,a,'groq',env,{topicKey,contextSessionToken:materialSession.token})
+ assert.deepEqual(await load(),[{kind:'journal_excerpt',sourceKind:'selected_daybook_excerpt',text}])
+ version++
+ assert.deepEqual(await load(),[])
+ await assert.rejects(manageCoachContextConsent(storageConfig,a,review,env),{code:'CONTEXT_ITEM_UNAVAILABLE'})
+})
+
 test('revoked auth session fails before private reads; real account erasure cascades consent metadata',async()=>{
  await admin.query('delete from auth.sessions where id=$1',[a.claims.session_id])
  await assert.rejects(manageCoachContextConsent(config,a,reviewInput,env),{code:'SIGN_IN_REQUIRED'})

@@ -21,7 +21,7 @@ const COPY={
     private:'Solo se sube cuando pulsas Guardar. Puedes eliminarla cuando quieras. Nunca se comparte automáticamente con profesionales.'}
 }
 
-export default function SupportPhotoCabinet({locale='en'}){
+export default function SupportPhotoCabinet({locale='en',materialAccountId}){
   const t=COPY[locale]||COPY.en
   const [url,setUrl]=useState(null)
   const [preview,setPreview]=useState(null)
@@ -140,6 +140,6 @@ export default function SupportPhotoCabinet({locale='en'}){
     <p style={{margin:'9px 0 0',fontSize:12,color:'#4a675c'}}>{t.private}</p>
     {notice&&<p role="status" style={{fontSize:13,color:'#137557'}}>{notice}</p>}
     {error&&<p role="alert" style={{fontSize:13,color:'#a33639'}}>{error}</p>}
-    <VideoPhotoLibrary locale={locale}/>
+    <VideoPhotoLibrary locale={locale} materialAccountId={materialAccountId}/>
   </section>
 }

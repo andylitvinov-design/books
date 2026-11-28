@@ -145,3 +145,18 @@ test('Therapy initialization timeout rejects stalled authorization and disposes 
  s.input(wire());await enteredOpen;timer();release();await h.settled()
  assert.equal(s.readyState,3);assert.equal(closes,1);assert.equal(s.messages.at(-1).type,'hh_anti_stress_unavailable')
 })
+
+
+test('Therapy carries one scoped material selection without note text or unrelated memory',async()=>{
+ const {createAntiStressRelayClient}=await import('../lib/coaching/anti-stress-relay-client.mjs')
+ const materialSelection={itemId:id(70),topicKey:'body_health',
+  sourceRevision:'journal:2:1:body_health:0:10:'+('a'.repeat(24)),
+  contextSessionToken:id(71)+'.1795100000000.'+'b'.repeat(64)}
+ const control=createAntiStressRelayClient({accountId:owner,sessionId,body,materialSelection})
+ assert.deepEqual(normalizeAntiStressRelayEntry(control.entry,owner).materialSelection,materialSelection)
+ const memorySelection={provider:'gemini_live_free',consent:true,fingerprint:'c'.repeat(64)}
+ for(const bad of [{...materialSelection,text:'raw'}, {...materialSelection,sourceRevision:'journal:1:1:body_health:0:10'},
+  {...materialSelection,topicKey:'finance'},{...materialSelection,contextSessionToken:'invalid'}])
+  assert.throws(()=>normalizeAntiStressRelayEntry(wire({materialSelection:bad}),owner),/INVALID/)
+ assert.throws(()=>normalizeAntiStressRelayEntry(wire({runId:id(1),materialSelection,memorySelection}),owner),/INVALID/)
+})

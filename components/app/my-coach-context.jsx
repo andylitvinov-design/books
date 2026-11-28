@@ -22,9 +22,11 @@ const grantCopy = {
 export default function MyCoachContext(props) {
   return <OwnerCoachContext key={props.accountId + ':' + (props.contextSessionToken || 'account')} {...props}/>
 }
-function OwnerCoachContext({ accountId, locale, domains, contextSessionToken, onGrantChange }) {
+function OwnerCoachContext({ accountId, locale, domains, contextSessionToken, onGrantChange, materialItems, fixedProvider }) {
   const [providerLabel, itemLabel, reviewLabel, allowLabel, revokeLabel, saved, error,
     disclosure, loading, empty] = copy[locale] || copy.en
+  const materialLabel=({en:'Material note',ru:'Запись о материале',es:'Nota sobre el material'})[locale]||'Material note'
+  const materialDisclosure=({en:'Gemini Free receives only the reviewed excerpt for this conversation.',ru:'Gemini Free получает только проверенный фрагмент для этой беседы.',es:'Gemini Free recibe solo el fragmento revisado para esta conversación.'})[locale]
   const alive = useRef(true), requestEpoch = useRef(0)
   useEffect(() => {
     alive.current = true
@@ -36,18 +38,18 @@ function OwnerCoachContext({ accountId, locale, domains, contextSessionToken, on
   const [assessmentChoices, setAssessmentChoices] = useState([])
   const [grants, setGrants] = useState(null)
   const [refresh, setRefresh] = useState(0)
-  const [provider, setProvider] = useState('')
+  const [provider, setProvider] = useState(fixedProvider||'')
   const [itemId, setItemId] = useState('')
   const [preview, setPreview] = useState(null)
   const [status, setStatus] = useState('')
   const [busy, setBusy] = useState(false)
-  const items = domains.flatMap(area => (area.goals || []).filter(goal => ['accepted', 'active', 'in_progress'].includes(goal.status))
+  const items = materialItems ? [...materialItems] : domains.flatMap(area => (area.goals || []).filter(goal => ['accepted', 'active', 'in_progress'].includes(goal.status))
     .flatMap(goal => [
       { itemId: goal.id, category: 'goals', topicKey: area.areaKey, label: goal.title },
       ...(goal.actions || []).filter(action => ['accepted', 'active'].includes(action.status))
         .map(action => ({ itemId: action.id, category: 'actions', topicKey: area.areaKey, label: action.description })),
     ]))
-  items.push(...assessmentChoices.flatMap(result => result.scales.map(scale => ({
+  if(!materialItems)items.push(...assessmentChoices.flatMap(result => result.scales.map(scale => ({
     itemId: result.resultId, category: 'test_results', topicKey: 'personal_growth', scaleKey: scale.key,
     label: `${result.instrument} · ${result.measuredOn} · ${scale.label}`,
   }))))
@@ -113,7 +115,7 @@ function OwnerCoachContext({ accountId, locale, domains, contextSessionToken, on
       if (!alive.current || token !== requestEpoch.current) return
       setPreview(operation === 'review' ? result : null)
       if (operation !== 'review') {
-        onGrantChange?.()
+        onGrantChange?.(operation==='grant'?{itemId,topicKey,sourceRevision:preview.item.sourceRevision,contextSessionToken}:null)
         setStatus(saved)
         setRefresh(value => value + 1)
       }
@@ -153,21 +155,22 @@ function OwnerCoachContext({ accountId, locale, domains, contextSessionToken, on
     aria-labelledby={contextSessionToken ? undefined : 'coach-context-tab'}
     className={styles.contextPanel} aria-busy={busy}>
     {!contextSessionToken&&<MyInnerBalancePreview accountId={accountId} locale={locale}/>}
-    {contextSessionToken&&<DaybookCoachPreview accountId={accountId} locale={locale} domains={domains} contextSessionToken={contextSessionToken} onSelect={selectHandoff}/>}
+    {contextSessionToken&&!materialItems&&<DaybookCoachPreview accountId={accountId} locale={locale} domains={domains} contextSessionToken={contextSessionToken} onSelect={selectHandoff}/>}
     <fieldset disabled={busy}>
-      <label>{providerLabel} <select value={provider} onChange={event => {
+      <label>{providerLabel} <select value={provider} disabled={Boolean(fixedProvider)} onChange={event => {
         requestEpoch.current++; setProvider(event.target.value); setPreview(null)
       }}>
         <option value="">—</option>
         {(providers || []).map(({ provider: id }) => <option key={id} value={id}>{names[id]}</option>)}
       </select></label>
-      <label>{itemLabel} <select value={itemId} onChange={event => {
+      <label>{materialItems?materialLabel:itemLabel} <select value={itemId} onChange={event => {
         requestEpoch.current++; setItemId(event.target.value); setPreview(null)
+        if(materialItems)onGrantChange?.(null)
       }}>
         <option value="">—</option>
         {items.map(row => <option key={keyFor(row)} value={keyFor(row)}>{row.label}</option>)}
       </select></label>
-      <p>{disclosure}</p>
+      <p>{materialItems?materialDisclosure:disclosure}</p>
       <button type="button" disabled={!provider} onClick={()=>void revokeJournal()}>{revokeAll[locale]||revokeAll.en}</button>
       <div className={styles.contextControls}>
         <button type="button" disabled={!item || !canGrant} onClick={() => submit('review')}>{reviewLabel}</button>
