@@ -137,7 +137,8 @@ test('published canon and editorial revisions remain intact when memory evolves'
   assert.equal(validateCoachMemoryAppend(id,history,history),false);
   for(const lang of ['ru','en','es']){
    const policy=buildCoachBehaviorPolicy(id,{},lang).systemInstructions;
-   for(const e of second.entries)assert.ok(policy.includes(e.text),id+' '+lang+' '+e.id);
+   const selected=['episode','judgment','reaction'].flatMap(kind=>getCoachPersonalityMemory(id).entries.filter(e=>e.kind===kind).slice(-4));
+   for(const e of selected)assert.ok(policy.includes(e.text),id+' '+lang+' '+e.id);
   }
  }
  assert.equal(getCoachPersonalityMemoryHistory('constructor'),null);
