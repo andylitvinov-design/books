@@ -4,6 +4,7 @@ import {createRequestAuth} from '@/lib/app/session'
 import {consumeRate} from '@/lib/app/database'
 import {PRIVATE_HEADERS,readBody,safeError} from '@/lib/app/http'
 import {AppError} from '@/lib/assessments/contracts'
+import {projectSpeechDictionary} from '@/lib/personal-coaching/speech-dictionary.mjs'
 import {readMyCoachGreetingIdentity,readMyCoachPreviousContext,saveMyCoachGreetingName,listMyCoachProtocols,saveMyCoachProtocol,deleteMyCoachProtocol} from '@/lib/app/personal-coaching'
 
 export const runtime='nodejs'
@@ -63,6 +64,13 @@ export async function POST(request){
     const input=await readBody(request,1800000)
     if(!input||typeof input!=='object'||Array.isArray(input))
       throw new AppError('MY_COACH_PROTOCOL_INVALID',400)
+    if(input.action==='speech-dictionary'){
+      if(provided!==actor.id)throw new AppError('ACCOUNT_CHANGED',409)
+      if(input.consent!==true||!['ru','en','es'].includes(input.locale)||Object.keys(input).some(key=>!['action','consent','locale'].includes(key)))throw new AppError('MY_COACH_PROTOCOL_INVALID',400)
+      await consumeRate(config,{op:'my-coach-speech-dictionary',actor:actor.id},6,3600)
+      const page=await listMyCoachProtocols(config,actor,{})
+      return auth.apply(NextResponse.json({locale:input.locale,terms:projectSpeechDictionary(page.protocols,input.locale)},{headers:PRIVATE_HEADERS}))
+    }
     await consumeRate(config,{op:'my-coach-protocol',actor:actor.id},15,3600)
     let result
     if(input.action==='set-preferred-name'){

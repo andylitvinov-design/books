@@ -132,7 +132,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   openingPrior=null,allowOpeningPrior=false,
   liveContextAccess='',contextRevision=0,localRecoveryTurns=[],onUnconfirmedInput,
   privateGreetingText='',onPrivateGreeting,onPrivateRecallRequest,clarityOpeningMemoryStageToken='',clarityOpeningMemoryScope=null,
-  methodSession=null,prepareMethodSession,clarityRelaySelection=null,onClarityRelayClock,speechReviewConsent=false,speechReviewProvider='groq',onSpeechReviewCandidate,
+  methodSession=null,prepareMethodSession,clarityRelaySelection=null,onClarityRelayClock,speechReviewConsent=false,speechReviewProvider='groq',speechReviewAll=false,onSpeechReviewCandidate,
 },ref){
   const lang=safeLocale(locale),t=ui[lang]
   const [phase,setPhase]=useState('idle')
@@ -147,7 +147,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     elapsedSeconds,contactElapsedSeconds,outputMuted,onSessionStart,onVoiceStateChange,onMicLevel,onInputInterim,
     onInputFinal,onOutputInterim,onOutputFinal,onInterrupted,
     onDirectorProgress,onOpeningProgress,onNotice,openingPrior,allowOpeningPrior,
-    liveContextAccess,contextRevision,localRecoveryTurns,onUnconfirmedInput,methodSession,prepareMethodSession,privateGreetingText,onPrivateGreeting,onPrivateRecallRequest,clarityRelaySelection,onClarityRelayClock,clarityOpeningMemoryStageToken,clarityOpeningMemoryScope,speechReviewConsent,speechReviewProvider,onSpeechReviewCandidate}
+    liveContextAccess,contextRevision,localRecoveryTurns,onUnconfirmedInput,methodSession,prepareMethodSession,privateGreetingText,onPrivateGreeting,onPrivateRecallRequest,clarityRelaySelection,onClarityRelayClock,clarityOpeningMemoryStageToken,clarityOpeningMemoryScope,speechReviewConsent,speechReviewProvider,speechReviewAll,onSpeechReviewCandidate}
 
   const notify=text=>{
     setNotice(text)
@@ -528,17 +528,18 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(!value||r.ended)return
     const preceding=r.history.slice(-10)
     // Do not associate a still-speaking or stale segment with a completed caption.
-    const audioParts=r.bargeDetector.userActive?(r.speechReviewBuffer?.invalidate(),null):r.speechReviewBuffer?.take()
+    const audioClip=r.bargeDetector.userActive?(r.speechReviewBuffer?.invalidate(),null):r.speechReviewBuffer?.takeClip()
+    const audioParts=audioClip?.parts
     const decision=propsRef.current.onInputFinal?.(value,{source:'speech',reviewAvailable:Boolean(audioParts)&&propsRef.current.speechReviewConsent===true})
     if(decision?.transcriptReview){
-      if(propsRef.current.speechReviewConsent===true&&audioParts){
+      if(propsRef.current.speechReviewConsent===true&&audioParts&&(decision.observationOnly!==true||propsRef.current.speechReviewAll===true)){
         const reviewProvider=propsRef.current.speechReviewProvider
-        r.speechReviewQueue??=createSpeechReviewQueue({request:requestSpeechReview,onResult:(id,text)=>{
-          if(runtime.current===r&&!r.ended&&propsRef.current.speechReviewConsent===true&&propsRef.current.speechReviewProvider===reviewProvider)propsRef.current.onSpeechReviewCandidate?.(id,r.paused?'':text)
+        r.speechReviewQueue??=createSpeechReviewQueue({request:requestSpeechReview,onResult:(id,text,model)=>{
+          if(runtime.current===r&&!r.ended&&propsRef.current.speechReviewConsent===true&&propsRef.current.speechReviewProvider===reviewProvider)propsRef.current.onSpeechReviewCandidate?.(id,r.paused?'':text,r.paused?'':model)
         }})
-        if(!r.speechReviewQueue.offer({id:decision.transcriptReview,parts:audioParts,locale:r.locale,provider:reviewProvider}))propsRef.current.onSpeechReviewCandidate?.(decision.transcriptReview,'')
+        if(!r.speechReviewQueue.offer({id:decision.transcriptReview,parts:audioParts,capturedAt:audioClip.capturedAt,locale:r.locale,provider:reviewProvider,observationOnly:decision.observationOnly===true,long:process.env.NEXT_PUBLIC_HH_MY_COACH_STT_LONG_REVIEW_ENABLED==='true'&&reviewProvider!=='gemini'}))propsRef.current.onSpeechReviewCandidate?.(decision.transcriptReview,'')
       }else propsRef.current.onSpeechReviewCandidate?.(decision.transcriptReview,'')
-      r.lastAssistantTurnFinished=false;r.pendingDirectorHint='';return false
+      if(decision.observationOnly!==true){r.lastAssistantTurnFinished=false;r.pendingDirectorHint='';return false}
     }
     if(decision===true){stop();return true}
     r.history.push({role:'user',content:value})
@@ -1487,7 +1488,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       settings:p.settings,courseSessionId:p.courseSessionId,courseScenarioVersion:p.courseScenarioVersion,allowOpeningPrior:p.allowOpeningPrior===true,
       methodSession:p.methodSession,prepareMethodSession:p.prepareMethodSession,methodCheckpointQueue:Promise.resolve(),
       openingPrior:p.allowOpeningPrior===true?p.openingPrior:null,
-      speechReviewBuffer:createSpeechReviewBuffer(),speechReviewQueue:null,
+      speechReviewBuffer:createSpeechReviewBuffer({long:process.env.NEXT_PUBLIC_HH_MY_COACH_STT_LONG_REVIEW_ENABLED==='true'&&p.speechReviewProvider!=='gemini'}),speechReviewQueue:null,
       abort:new AbortController(),timer:null,reconnectTimer:null,
       resampler:new GeminiLivePcmResampler(context.sampleRate),
       audioGate:new GeminiLiveBargeGate(),claritySelection:clarityDay?p.clarityRelaySelection:null}
@@ -1566,8 +1567,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     hasLiveSession:()=>Boolean(runtime.current?.paused||runtime.current&&!runtime.current.ended),
     isResumeUnavailable:()=>runtime.current?.paused===true&&runtime.current.resumeUnavailable===true}),[startSession])
   useEffect(()=>{
-    const r=runtime.current;r?.speechReviewBuffer?.clear();r?.speechReviewQueue?.cancel();if(r)r.speechReviewQueue=null
-  },[speechReviewConsent,speechReviewProvider])
+    const r=runtime.current;r?.speechReviewBuffer?.clear();r?.speechReviewQueue?.cancel();if(r){r.speechReviewQueue=null;r.speechReviewBuffer=createSpeechReviewBuffer({long:process.env.NEXT_PUBLIC_HH_MY_COACH_STT_LONG_REVIEW_ENABLED==='true'&&speechReviewProvider!=='gemini'})}
+  },[speechReviewConsent,speechReviewProvider,speechReviewAll])
   useEffect(()=>{
     runtime.current?.player?.setMuted(outputMuted)
     if(outputMuted)runtime.current?.privateGreeting?.cancel()

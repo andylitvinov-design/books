@@ -661,7 +661,7 @@ test('Gemini Live is the default and Basic/Pro returns to a two-way Free stream 
  assert.match(toggle,/setGeminiVoiceConsent\(freeTtsReady\)/)
  assert.match(ui,/data-coach-pro-same-tap-disclosure/)
  assert.match(ui,/data-consent-on-play/)
- assert.match(ui,/onSessionStart=\{\(\)=>\{setGeminiLiveConsent\(true\)/)
+ assert.match(ui,/onSessionStart=\{\(\)=>\{setLastSpeechReviewModel\(''\);setGeminiLiveConsent\(true\)/)
  assert.match(ui,/onOutputFinal=\{\(text,details\)=>appendLiveTranscript\('assistant',text,\{interrupted:details\?\.interrupted===true,requestedSavedContext:details\?\.requestedSavedContext===true\}\)\}/)
  const finalTranscript=ui.slice(ui.indexOf('function appendLiveTranscript('),ui.indexOf('function markCoachSpeechInterrupted('))
  assert.match(finalTranscript,/\.\.\.\(interrupted\?\{interrupted:true\}:\{\}\)/)

@@ -95,7 +95,7 @@ test('public coach profile is inline before Play; only real session shows stage 
   assert.match(live,/methodStagePosition\(stageIds,stageChecklistTitles,\s*Math\.max\(0,Math\.min\(stageIds\.length-1,visibleStageIndex\)\),progressValid,/)
   assert.match(live,/data-group-progress/)
   assert.match(live,/stagePosition=\{detailPosition\} progressMode=\{progressMode\}/)
-  assert.match(live,/onSessionStart=\{\(\)=>\{setGeminiLiveConsent\(true\);setSessionClockStarted\(true\);setIntroComplete\(true\)\}\}/)
+  assert.match(live,/onSessionStart=\{\(\)=>\{setLastSpeechReviewModel\(''\);setGeminiLiveConsent\(true\);setSessionClockStarted\(true\);setIntroComplete\(true\)\}\}/)
   assert.match(compact,/export function MyCoachInlineProfile/)
   assert.match(compact,/function CoachProfileSections/)
   assert.equal((compact.match(/<CoachProfileSections profile=\{profile\} personaId=\{personaId\} t=\{t\}\/>/g)||[]).length,2)

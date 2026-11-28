@@ -4,7 +4,8 @@
  * Editing, shot matching and rendering remain local on the original Studio.
  */
 import {NextResponse} from "next/server";
-import {coachSpeechReviewEnabled,isCoachSpeechReviewRequest} from "@/lib/coaching/coach-speech-review-config.mjs";
+import {isBoundedCoachReviewWav} from "@/lib/coaching/coach-speech-review-wav.mjs";
+import {coachSpeechReviewEnabled,isCoachSpeechReviewRequest,coachOrdinarySpeechReviewEnabled} from "@/lib/coaching/coach-speech-review-config.mjs";
 import {shouldUseCoachLargeV3} from "@/lib/coaching/coach-stt-model.mjs";
 import {coachSpeechReviewGlossary} from "@/lib/coaching/coach-speech-review-glossary.mjs";
 import {AppError} from "@/lib/assessments/contracts";
@@ -61,11 +62,20 @@ export async function POST(request){
     // The coach lane is authenticated so a public caller cannot claim its quota.
     const purpose=form.get("purpose");
     const textOnly=output==="text";
+    const reviewScope=form.get("review_scope");
+    if(reviewScope!==null&&(reviewScope!=="ordinary"||purpose!=="my_coach"||!textOnly||!isCoachSpeechReviewRequest({purpose,filename:file.name,review:form.get("review")})))throw new AppError("AUDIO_STT_PURPOSE_INVALID",400);
     if(textOnly&&purpose!==null&&purpose!=="ali_chat"&&purpose!=="my_coach")throw new AppError("AUDIO_STT_PURPOSE_INVALID",400);
     if(purpose==="my_coach"){
       const actor=await createRequestAuth(request,config).verified();
+      if(reviewScope==="ordinary"&&!coachOrdinarySpeechReviewEnabled(process.env))throw new AppError("AUDIO_STT_REVIEW_DISABLED",503);
       if(isCoachSpeechReviewRequest({purpose,filename:file.name,review:form.get("review")})&&(!textOnly||!coachSpeechReviewEnabled(process.env)))
         throw new AppError("AUDIO_STT_REVIEW_DISABLED",503);
+      if(isCoachSpeechReviewRequest({purpose,filename:file.name,review:form.get("review")})){
+        const long=process.env.HH_MY_COACH_STT_LONG_REVIEW_ENABLED==="true";
+        if(file.type!=="audio/wav"||file.size>(long?35:12)*32000+44||
+          !isBoundedCoachReviewWav(new Uint8Array(await file.arrayBuffer()),{long}))
+          throw new AppError("AUDIO_STT_INVALID_FILE",400);
+      }
       await consumeRate(config,{op:"my-coach-stt-free-user-minute",userId:actor.id},8,60);
       await consumeRate(config,{op:"my-coach-stt-free-user-day",userId:actor.id},120,86400);
       await consumeRate(config,{op:"my-coach-stt-free-global-minute"},12,60);
@@ -118,7 +128,8 @@ export async function POST(request){
       if(!text)throw new AppError("AUDIO_STT_EMPTY",422);
       if(purpose==="my_coach"&&isSpeechTranscriptLanguageMismatch({requested:language,detected:result.language,text}))
         throw new AppError("AUDIO_STT_LANGUAGE_MISMATCH",422);
-      return NextResponse.json({version:"hh-audio-dictation-v1",text,provider:"groq_free_confirmed",charged:false,locallyStored:false},{headers:PRIVATE_HEADERS});
+      return NextResponse.json({version:"hh-audio-dictation-v1",text,provider:"groq_free_confirmed",charged:false,locallyStored:false,
+        ...(purpose==="my_coach"?{model:multipart.get("model")}:{})},{headers:PRIVATE_HEADERS});
     }
     const transcript=normalizeTimedTranscript(result);
     if(!transcript)throw new AppError("AUDIO_STT_TIMECODES_UNAVAILABLE",502);

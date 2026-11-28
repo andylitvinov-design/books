@@ -41,8 +41,9 @@ import MyCoachEarlyExit from './my-coach-early-exit'
 import {coachCompletionDestination,coachEarlyExitDestination,coachShouldOfferEarlyExit} from '@/lib/coaching/coach-early-exit.mjs'
 import MyCoachSpeechLoop from './my-coach-speech-loop'
 import MyCoachGeminiLive from './my-coach-gemini-live'
-import {shouldReviewSpeech,speechReviewCandidateText} from '@/lib/coaching/coach-speech-evidence.mjs'
-import {addSpeechAmendment,speechPersonalCorrection} from '@/lib/personal-coaching/speech-amendments.mjs'
+import {shouldReviewSpeech,observeSpeechCandidate,canObserveOrdinarySpeech,visibleSpeechReview} from '@/lib/coaching/coach-speech-evidence.mjs'
+import {addSpeechAmendment} from '@/lib/personal-coaching/speech-amendments.mjs'
+import {archivedSpeechSuggestion} from '@/lib/personal-coaching/speech-dictionary.mjs'
 import MyCoachStagedMemoryControls,{coachContextTopicOptions} from './my-coach-staged-memory-controls'
 import {coachExplicitRecall,privateCoachEntryText,privateCoachRecallText,coachReturningSalutation} from '@/lib/coaching/coach-private-recall.mjs'
 import MyCoachSessionStateCard from './my-coach-session-state-card'
@@ -252,6 +253,7 @@ async function readGeminiEngineStatus(signal){
       gemini_tts_paid:data.gemini_tts_paid===true,
       gemini_live_free:data.gemini_live_free===true,
       speech_review_free:data.speech_review_free===true,
+      speech_review_ordinary:data.speech_review_ordinary===true,
       speech_review_gemini:data.speech_review_gemini===true,
     }}
   }catch{return {kind:'unavailable'}}
@@ -272,14 +274,21 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const persona=getCoachPersona(personaId)
   const [draft,setDraft]=useState('')
   const [speechReviewConsent,setSpeechReviewConsent]=useState(false)
+  const [speechReviewAll,setSpeechReviewAll]=useState(false)
+  const observationBudgetRef=useRef({sessionId:null,count:0})
   const [speechReviewProvider,setSpeechReviewProvider]=useState('groq')
   const geminiReviewOffered=process.env.NEXT_PUBLIC_HH_MY_COACH_GEMINI_TRANSCRIBE_ENABLED==='true'
   const [speechReviews,setSpeechReviews]=useState([])
+  const [lastSpeechReviewModel,setLastSpeechReviewModel]=useState('')
+  const visibleSpeechReviews=speechReviews.filter(visibleSpeechReview)
+  const speechReviewActivity=visibleSpeechReviews.map(row=>row.id+':'+(row.pending?'pending':row.candidate?'candidate':'review')).join('|')
   const speechReviewSerial=useRef(0)
+  const speechDictionaryRef=useRef(null),speechDictionaryRequest=useRef(null)
+  const [speechDictionaryState,setSpeechDictionaryState]=useState('off')
   const speechAmendmentsRef=useRef([])
   const [speechAmendments,setSpeechAmendments]=useState([])
   function restoreSpeechAmendments(value){const rows=value||[];speechAmendmentsRef.current=rows;setSpeechAmendments(rows)}
-  useEffect(()=>{setSpeechReviews([]);setSpeechReviewConsent(false);setSpeechReviewProvider('groq')},[personaId,locale])
+  useEffect(()=>{setSpeechReviews([]);setLastSpeechReviewModel('');setSpeechReviewConsent(false);setSpeechReviewAll(false);setSpeechReviewProvider('groq')},[personaId,locale])
   const [viewExpanded,setViewExpanded]=useState(false)
   // Public greeting remains a separate, free pre-session screen. No Google
   // token, microphone or coaching clock starts until the user opts in.
@@ -296,7 +305,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const engineManuallySelectedRef=useRef(false)
   const [geminiCapabilities,setGeminiCapabilities]=useState({
     gemini_free:false,gemini_paid:false,gemini_tts_free:false,gemini_tts_paid:false,
-    gemini_live_free:false,speech_review_free:false,speech_review_gemini:false,
+    gemini_live_free:false,speech_review_free:false,speech_review_gemini:false,speech_review_ordinary:false,
   })
   const geminiAvailabilityInFlightRef=useRef(false)
   const [geminiConsent,setGeminiConsent]=useState(false)
@@ -316,6 +325,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [speechLocale,setSpeechLocale]=useState(lang)
   useEffect(()=>{setSpeechLocale(lang)},[lang])
   const conversationLang=['en','ru','es'].includes(speechLocale)?speechLocale:lang
+  useEffect(()=>{
+    speechDictionaryRequest.current?.abort();speechDictionaryRequest.current=null;speechDictionaryRef.current=null;setSpeechDictionaryState('off')
+    setSpeechReviews(rows=>rows.map(row=>({...row,previous:''})))
+    return()=>{speechDictionaryRequest.current?.abort();speechDictionaryRequest.current=null;speechDictionaryRef.current=null}
+  },[personaId,conversationLang])
   const [showCaptions,setShowCaptions]=useState(false)
   const [turns,setTurns]=useState([])
   const turnsRef=useRef(turns)
@@ -636,7 +650,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     })
     return ()=>controller.abort()
   },[])
-  useEffect(()=>{if(transcriptRef.current)transcriptRef.current.scrollTop=transcriptRef.current.scrollHeight},[turns,speechPreview,streamingPreview])
+  useEffect(()=>{if(transcriptRef.current)transcriptRef.current.scrollTop=transcriptRef.current.scrollHeight},[turns,speechPreview,streamingPreview,speechReviewActivity,speechAmendments.length])
   useEffect(()=>{
     if(['idle','paused','ready'].includes(voiceState.phase)){
       micWaveRef.current?.style.setProperty('--coach-mic-level','0')
@@ -680,6 +694,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const liveVoiceSelected=coachEngine==='gemini_live_free'
   const speechReviewAvailable=speechReviewProvider==='gemini'?geminiReviewOffered&&geminiCapabilities.speech_review_gemini===true:geminiCapabilities.speech_review_free===true
   const activeSpeechReviewConsent=speechReviewConsent&&speechReviewAvailable
+  const activeOrdinaryReview=activeSpeechReviewConsent&&speechReviewProvider==='groq'&&speechReviewAll&&geminiCapabilities.speech_review_ordinary===true
+  useEffect(()=>{if(!activeSpeechReviewConsent||speechReviewProvider!=='groq')setLastSpeechReviewModel('')},[activeSpeechReviewConsent,speechReviewProvider])
   // Pressing Play affirmatively consents to live voice use, disclosed beside
   // the control. Availability alone never starts streaming or contacts Google.
   const liveVoiceReady=liveVoiceSelected&&geminiCapabilities.gemini_live_free===true
@@ -1457,7 +1473,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       // Explicit discard tombstones the old ID. A later voluntary manual
       // report is a new save decision, never a retry of the erased record.
       protocolSaveSnapshotRef.current=null
-      restoreSpeechAmendments([]);setSpeechReviews([])
+      restoreSpeechAmendments([]);setSpeechReviews([]);setLastSpeechReviewModel('')
       setProtocolSaveLocked(false)
       courseGateRef.current=null;courseGateAttemptRef.current=null;setCourseGate(null);setCourseGateError(false);setCourseFieldReview(null)
       setAutoSaveStatus('discarded')
@@ -1547,6 +1563,23 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(!coachProtocolCanAppend([],next))return
     turnsRef.current=next;setTurns(next);queuePrivateDraft(next)
   }
+  async function toggleSpeechDictionary(enabled){
+    speechDictionaryRequest.current?.abort();speechDictionaryRequest.current=null;speechDictionaryRef.current=null
+    setSpeechReviews(rows=>rows.map(row=>({...row,previous:''})))
+    if(!enabled){setSpeechDictionaryState('off');return}
+    const owner=protocolOwnerRef.current
+    if(!owner){setSpeechDictionaryState('error');return}
+    const controller=new AbortController(),locale=conversationLang
+    speechDictionaryRequest.current=controller;setSpeechDictionaryState('loading')
+    try{
+      const response=await fetch('/api/app/my-coach/protocol',{method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,headers:{'Content-Type':'application/json','X-HH-Account-ID':owner},body:JSON.stringify({action:'speech-dictionary',consent:true,locale})})
+      if(!response.ok)throw Error('DICTIONARY_UNAVAILABLE')
+      const data=await response.json()
+      if(controller.signal.aborted||speechDictionaryRequest.current!==controller||protocolOwnerRef.current!==owner)return
+      if(data.locale!==locale||!Array.isArray(data.terms)||data.terms.length>32)throw Error('DICTIONARY_UNAVAILABLE')
+      speechDictionaryRef.current={owner,locale,terms:data.terms};setSpeechDictionaryState('ready')
+    }catch{if(!controller.signal.aborted&&speechDictionaryRequest.current===controller)setSpeechDictionaryState('error')}
+  }
   function confirmSpeechAmendment(row){
     if(protocolSaved||protocolSaving||protocolSaveSnapshotRef.current||protocolSaveLocked||courseGateRef.current||courseGateAttemptRef.current||courseGateBusyRef.current||profileV3BusyRef.current||profileV3FaultRef.current||(profileV3Ref.current&&!profileV3Ref.current.step.closed)||row.pending||row.sessionId!==protocolIdRef.current||!turnsRef.current.length)return
     const text=String(row.edited??row.candidate??'').trim()
@@ -1611,7 +1644,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const wasPaused=voicePauseRef.current
     voicePauseRef.current=next.phase==='paused'
     setVoiceState(next)
-    if(next.phase==='idle'||next.phase==='paused')setSpeechReviews(rows=>rows.map(row=>row.pending?{...row,pending:false}:row))
+    if(next.phase==='idle'||next.phase==='paused')setSpeechReviews(rows=>rows.filter(row=>!(row.observationOnly&&row.pending&&row.edited==null)).map(row=>row.pending?{...row,pending:false}:row))
     if(!voicePauseRef.current||wasPaused)return
     freezeActiveClock()
     cancelPendingCoachTurn()
@@ -2443,7 +2476,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       protocolIdRef.current=p.id;protocolStartedRef.current=p.startedAt
       protocolOriginPersonaRef.current=p.personaId
       setRestoredCourseRunId(result.courseRunId||null)
-      restoreSpeechAmendments(p.speechAmendments);setSpeechReviews([])
+      restoreSpeechAmendments(p.speechAmendments);setSpeechReviews([]);setLastSpeechReviewModel('')
       initialDraftRevision.current=result.draft.revision
       restoredOpeningScope.current=recoverPrivateOpeningScope(p)
       restoredMethod.current=p.methodId
@@ -2631,6 +2664,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       personaId={personaId} locale={conversationLang} name={name}
       methodId={visibleMethodId} onStart={enterCoachingFromGreeting} entryPending={greetingIdentity.status==='loading'||entryMemoryGrant?.status==='loading'} accountSaving={protocolOwnerReady} clarityDay={clarityDay} courseRunId={courseRunId}
       selectedMethod={selectedMethod} onMethodSelect={setSelectedMethod}
+      speechReviewControl={protocolOwnerReady&&liveVoiceSelected&&geminiCapabilities.speech_review_free===true&&<label data-coach-preplay-speech-review style={{display:'flex',alignItems:'flex-start',gap:8,fontSize:12,lineHeight:1.35,padding:'6px 0',overflowWrap:'anywhere'}}>
+        <input type="checkbox" checked={activeSpeechReviewConsent&&speechReviewProvider==='groq'} onChange={event=>{setSpeechReviewProvider('groq');setSpeechReviewConsent(event.target.checked);if(!event.target.checked)setSpeechReviewAll(false)}} style={{flex:'none',width:18,height:18}}/>
+        <span>{({ru:'Улучшенная расшифровка (Whisper): отправлять сомнительные фрагменты Groq. Необязательно.',en:'Enhanced transcription (Whisper): send suspect speech clips to Groq. Optional.',es:'Transcripción mejorada (Whisper): enviar fragmentos dudosos a Groq. Opcional.'})[lang]} <a href="https://groq.com/privacy-policy/" target="_blank" rel="noreferrer" style={{color:'inherit',textDecoration:'underline'}}>Groq</a></span>
+      </label>}
       methodSelectionEnabled={protocolOwnerReady}
       privateProfileEnabled={protocolOwnerReady&&profileV3Enabled}
       draftCourses={resumeList?.owner===protocolOwnerRef.current?resumeList.items.map(item=>item.courseSessionId):[]}
@@ -2770,7 +2807,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             onPrivateGreeting={capturePrivateLiveSalutation}
             onPrivateRecallRequest={handlePrivateLiveRecall}
             onUnconfirmedInput={text=>setDraft(previous=>previous.trim()?previous:text)}
-            onSessionStart={()=>{setGeminiLiveConsent(true);setSessionClockStarted(true);setIntroComplete(true)}}
+            onSessionStart={()=>{setLastSpeechReviewModel('');setGeminiLiveConsent(true);setSessionClockStarted(true);setIntroComplete(true)}}
             onVoiceStateChange={handleVoiceStateChange}
             onMicLevel={level=>{
               reactionActivity.observe(level)
@@ -2784,7 +2821,12 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             onInputInterim={setSpeechPreview}
             speechReviewConsent={activeSpeechReviewConsent}
             speechReviewProvider={speechReviewProvider}
-            onSpeechReviewCandidate={(id,text)=>setSpeechReviews(rows=>rows.map(row=>row.id===id?{...row,candidate:speechReviewCandidateText(text,row.raw,row.locale),pending:false}:row))}
+            speechReviewAll={activeOrdinaryReview}
+            onSpeechReviewCandidate={(id,text,model)=>{
+              const actualModel=model==='whisper-large-v3'||model==='whisper-large-v3-turbo'?model:''
+              if(activeSpeechReviewConsent&&speechReviewProvider==='groq'&&text&&actualModel)setLastSpeechReviewModel(actualModel)
+              setSpeechReviews(rows=>rows.map(row=>row.id===id?(row.observationOnly&&!activeOrdinaryReview?null:observeSpeechCandidate({...row,model:actualModel},text)):row).filter(Boolean))
+            }}
             onInputFinal={(text,details)=>{
               // A recognized explicit correction stops the current transport before
               // its next reply is accepted. Confirmation is a local text turn;
@@ -2798,7 +2840,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
                 const id=++speechReviewSerial.current
                 if(!protocolIdRef.current)protocolIdRef.current=crypto.randomUUID()
                 const amendmentId=crypto.randomUUID(),sessionId=protocolIdRef.current,afterTurnCount=turnsRef.current.length
-                const previous=speechPersonalCorrection(speechAmendmentsRef.current,turnsRef.current,sessionId,text,conversationLang)
+                const dictionary=speechDictionaryRef.current
+                const previous=archivedSpeechSuggestion({current:speechAmendmentsRef.current,turns:turnsRef.current,sessionId,raw:text,locale:conversationLang,archive:dictionary?.owner===protocolOwnerRef.current&&dictionary?.locale===conversationLang?dictionary.terms:[]})
                 setSpeechReviews(rows=>[...rows,{id,amendmentId,sessionId,afterTurnCount,locale:conversationLang,provider:speechReviewProvider,raw:text,candidate:'',previous,edited:null,pending:details.reviewAvailable===true}])
                 setSpeechPreview('')
                 return {transcriptReview:id}
@@ -2841,6 +2884,18 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
                 if(!coachProtocolCanAppend(turnsRef.current,[handoff]))return false
                 const next=[...turnsRef.current,handoff];turnsRef.current=next;setTurns(next);queuePrivateDraft(next)
                 setStreamingPreview('');return true // transport stops before accepting this model response
+              }
+              // Observe ordinary committed turns only after all existing safety,
+              // recall, name and course handoff logic. No second message or
+              // mutation of the original transcript/evidence.
+              const sessionId=protocolIdRef.current
+              if(captured&&sessionId&&observationBudgetRef.current.sessionId!==sessionId)observationBudgetRef.current={sessionId,count:0}
+              if(captured&&sessionId&&canObserveOrdinarySpeech({enabled:activeOrdinaryReview,source:details?.source,reviewAvailable:details?.reviewAvailable,sensitive:Boolean(recallRequested||candidate),raw:text,count:observationBudgetRef.current.count})&&
+                !['ru','en','es'].some(locale=>coachingBrainSafety({...guard,locale})||coachingBrainBoundary({...guard,locale}))){
+                observationBudgetRef.current.count++
+                const id=++speechReviewSerial.current
+                setSpeechReviews(rows=>[...rows,{id,amendmentId:crypto.randomUUID(),sessionId,afterTurnCount:turnsRef.current.length,locale:conversationLang,provider:'groq',raw:text,candidate:'',previous:'',edited:null,pending:true,observationOnly:true}])
+                return {transcriptReview:id,observationOnly:true}
               }
               return false
             }}
@@ -3016,6 +3071,19 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           {speechPreview&&<div className={styles.transcriptInterim} aria-live="off">
             <strong>{t.user} · {captions.listening}</strong><p>{speechPreview}</p>
           </div>}
+        {visibleSpeechReviews.length>0&&<section data-coach-visible-speech-review aria-label={({ru:'Уточнение речи',en:'Speech review',es:'Revisión de voz'})[lang]}>
+          {visibleSpeechReviews.map(row=><div key={row.id} className={styles.transcriptUser} style={{padding:'8px',overflowWrap:'anywhere'}}>
+            <small>{({ru:'Проверьте расшифровку',en:'Review transcription',es:'Revisa la transcripción'})[lang]}: {row.raw}</small>
+            {row.pending&&<small> · {({ru:'Уточняется…',en:'Checking…',es:'Comprobando…'})[lang]}</small>}
+            {row.candidate&&<p data-coach-unconfirmed-speech-candidate><strong>{({ru:'Уточнённый вариант (не подтверждён)',en:'Suggested transcription (unconfirmed)',es:'Transcripción sugerida (sin confirmar)'})[lang]}</strong><br/>{row.provider==='gemini'?'Gemini 3.5 Transcribe':row.model==='whisper-large-v3'?'Whisper Large V3':row.model==='whisper-large-v3-turbo'?'Whisper Large V3 Turbo':'Whisper'}: {row.candidate}</p>}
+            {row.previous&&row.previous!==row.candidate&&<button type="button" onClick={()=>setSpeechReviews(rows=>rows.map(item=>item.id===row.id?{...item,edited:row.previous}:item))}>{({ru:'Прежнее исправление (не проверено по новому аудио)',en:'Previous correction (not verified against new audio)',es:'Corrección anterior (no verificada con el audio nuevo)'})[lang]}: {row.previous}</button>}
+            <textarea rows={2} maxLength={1200} aria-label={({ru:'Правильный текст',en:'Correct transcription',es:'Texto correcto'})[lang]} value={row.edited??row.candidate} onChange={event=>{const text=event.target.value;setSpeechReviews(rows=>rows.map(item=>item.id===row.id?{...item,edited:text}:item))}}/>
+            <button type="button" disabled={row.pending||!(row.edited??row.candidate).trim()||!turns.length||protocolSaving||protocolSaved||protocolSaveLocked||Boolean(courseGate)} onClick={()=>confirmSpeechAmendment(row)}>{({ru:'Подтвердить для протокола',en:'Confirm for transcript',es:'Confirmar para la transcripción'})[lang]}</button>
+            {!row.observationOnly&&<button type="button" disabled={Boolean(draft.trim())||busy||row.pending} onClick={()=>{if(draft.trim())return;setDraft(row.edited??(row.candidate||row.raw));setSpeechReviews(rows=>rows.filter(item=>item.id!==row.id))}}>{({ru:'Уточнить и повторить текстом',en:'Edit and repeat as text',es:'Editar y repetir por texto'})[lang]}</button>}
+            <button type="button" onClick={()=>setSpeechReviews(rows=>rows.filter(item=>item.id!==row.id))}>{({ru:'Скрыть',en:'Dismiss',es:'Descartar'})[lang]}</button>
+          </div>)}
+        </section>}
+          {speechAmendments.length>0&&<div className={styles.transcriptUser} data-coach-latest-confirmed-speech><small>{({ru:'Последнее подтверждённое уточнение',en:'Latest confirmed correction',es:'Última corrección confirmada'})[lang]}</small><p>{speechAmendments.at(-1).text}</p></div>}
           
         </div>
       </section>
@@ -3098,18 +3166,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             <span>{busy?t.sending:t.send}</span><ArrowRight size={20} aria-hidden="true"/>
           </button>
         </form>}
-        {speechReviews.length>0&&<section aria-label={({ru:'Уточнение речи',en:'Speech review',es:'Revisión de voz'})[lang]}>
-          {speechReviews.map(row=><div key={row.id} style={{padding:'6px 0',overflowWrap:'anywhere'}}>
-            <small>{({ru:'Проверьте расшифровку',en:'Review transcription',es:'Revisa la transcripción'})[lang]}: {row.raw}</small>
-            {row.pending&&<small> · {({ru:'Уточняется…',en:'Checking…',es:'Comprobando…'})[lang]}</small>}
-            {row.candidate&&<p>{row.provider==='gemini'?'Gemini 3.5 Transcribe': 'Whisper'}: {row.candidate}</p>}
-            {row.previous&&row.previous!==row.candidate&&<button type="button" onClick={()=>setSpeechReviews(rows=>rows.map(item=>item.id===row.id?{...item,edited:row.previous}:item))}>{({ru:'Прежнее исправление (не проверено по новому аудио)',en:'Previous correction (not verified against new audio)',es:'Corrección anterior (no verificada con el audio nuevo)'})[lang]}: {row.previous}</button>}
-            <textarea rows={2} maxLength={1200} aria-label={({ru:'Правильный текст',en:'Correct transcription',es:'Texto correcto'})[lang]} value={row.edited??row.candidate} onChange={event=>{const text=event.target.value;setSpeechReviews(rows=>rows.map(item=>item.id===row.id?{...item,edited:text}:item))}}/>
-            <button type="button" disabled={row.pending||!(row.edited??row.candidate).trim()||!turns.length||protocolSaving||protocolSaved||protocolSaveLocked||Boolean(courseGate)} onClick={()=>confirmSpeechAmendment(row)}>{({ru:'Подтвердить для протокола',en:'Confirm for transcript',es:'Confirmar para la transcripción'})[lang]}</button>
-            <button type="button" disabled={Boolean(draft.trim())||busy||row.pending} onClick={()=>{if(draft.trim())return;setDraft(row.edited??(row.candidate||row.raw));setSpeechReviews(rows=>rows.filter(item=>item.id!==row.id))}}>{({ru:'Уточнить и повторить текстом',en:'Edit and repeat as text',es:'Editar y repetir por texto'})[lang]}</button>
-            <button type="button" onClick={()=>setSpeechReviews(rows=>rows.filter(item=>item.id!==row.id))}>{({ru:'Скрыть',en:'Dismiss',es:'Descartar'})[lang]}</button>
-          </div>)}
-        </section>}
+        {activeSpeechReviewConsent&&speechReviewProvider==='groq'&&lastSpeechReviewModel&&<small data-coach-stt-observed-model={lastSpeechReviewModel} role="status">{({ru:'Последняя фоновая расшифровка',en:'Last background transcription',es:'Última transcripción en segundo plano'})[lang]}: {lastSpeechReviewModel==='whisper-large-v3'?'Whisper Large V3':'Whisper Large V3 Turbo'}</small>}
         {error&&<p className={styles.error} role="alert">{error}</p>}
         <details className={styles.sessionMore} id="hh-coach-more-options" open={moreOptionsOpen} onToggle={event=>setMoreOptionsOpen(event.currentTarget.open)}><summary>{lang==='ru'?'Дополнительно':lang==='es'?'Más opciones':'More options'}</summary>
       {!privateTextOnly&&!selectedGeminiEngine&&!liveVoiceSelected&&
@@ -3282,9 +3339,19 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         </label>}
         {liveVoiceSelected&&<>
           <label className={styles.coachEnginePicker}>
-            <input type="checkbox" checked={activeSpeechReviewConsent&&speechReviewProvider==='groq'} disabled={(!(geminiCapabilities.speech_review_free===true)&&!(speechReviewConsent&&speechReviewProvider==='groq'))||speechReviewConsent&&speechReviewProvider==='gemini'||(!speechReviewConsent&&voiceState.phase!=='idle')} onChange={event=>{setSpeechReviewProvider('groq');setSpeechReviewConsent(event.target.checked&&(geminiCapabilities.speech_review_free===true));if(!event.target.checked)setSpeechReviews(rows=>rows.map(row=>({...row,pending:false,candidate:''})))}}/>
+            <input type="checkbox" checked={activeSpeechReviewConsent&&speechReviewProvider==='groq'} disabled={(!(geminiCapabilities.speech_review_free===true)&&!(speechReviewConsent&&speechReviewProvider==='groq'))||speechReviewConsent&&speechReviewProvider==='gemini'||(!speechReviewConsent&&voiceState.phase!=='idle')} onChange={event=>{setSpeechReviewProvider('groq');setSpeechReviewConsent(event.target.checked&&(geminiCapabilities.speech_review_free===true));if(!event.target.checked){setSpeechReviewAll(false);setSpeechReviews(rows=>rows.filter(row=>!row.observationOnly).map(row=>({...row,pending:false,candidate:''})))}}}/>
             <span>{({ru:'Дополнительное распознавание (Groq Whisper Free): сомнительные фрагменты речи отправляются Groq. Условия обработки данных: ',en:'Optional speech review (Groq Whisper Free): suspect speech clips are sent to Groq. Data terms: ',es:'Revisión opcional (Groq Whisper Free): se envían fragmentos dudosos a Groq. Condiciones: '})[lang]}<a href="https://groq.com/privacy-policy/" target="_blank" rel="noreferrer">Groq</a></span>
           </label>
+          {protocolOwnerReady&&<label className={styles.coachEnginePicker} data-coach-archive-speech-dictionary>
+            <input type="checkbox" checked={speechDictionaryState==='ready'||speechDictionaryState==='loading'} onChange={event=>void toggleSpeechDictionary(event.target.checked)}/>
+            <span>{({ru:'Использовать подтверждённые исправления из предыдущих сессий только как подсказки в этом разговоре. Данные не передаются транскриберу.',en:'Use confirmed corrections from previous sessions only as suggestions in this conversation. These terms are not sent to the transcriber.',es:'Usar correcciones confirmadas de sesiones anteriores solo como sugerencias en esta conversación. No se envían al transcriptor.'})[lang]}</span>
+          </label>}
+          {speechDictionaryState==='loading'&&<small role="status">{({ru:'Загружаем подсказки…',en:'Loading suggestions…',es:'Cargando sugerencias…'})[lang]}</small>}
+          {speechDictionaryState==='error'&&<small role="status">{({ru:'Словарь недоступен. Диалог продолжается.',en:'Dictionary unavailable. The conversation continues.',es:'Diccionario no disponible. La conversación continúa.'})[lang]}</small>}
+          {geminiCapabilities.speech_review_ordinary===true&&<label className={styles.coachEnginePicker} data-coach-ordinary-review-consent>
+            <input type="checkbox" checked={activeOrdinaryReview} disabled={!activeSpeechReviewConsent||speechReviewProvider!=='groq'||(!speechReviewAll&&voiceState.phase!=='idle')} onChange={event=>{setSpeechReviewAll(event.target.checked);if(!event.target.checked)setSpeechReviews(rows=>rows.filter(row=>!row.observationOnly))}}/>
+            <span>{({ru:'Проверять также обычные реплики (до 30 за сессию, при доступной квоте): аудио отправляется Groq, совпадения скрываются; исправления только по подтверждению.',en:'Also review ordinary speech (up to 30 per session, within quota): audio is sent to Groq; matching text stays hidden; corrections require confirmation.',es:'Revisar también las frases normales (hasta 30 por sesión, según cuota): se envía audio a Groq; las coincidencias se ocultan; los cambios requieren confirmación.'})[lang]}</span>
+          </label>}
           {geminiReviewOffered&&<label className={styles.coachEnginePicker} data-gemini-transcribe-consent>
             <input type="checkbox" checked={activeSpeechReviewConsent&&speechReviewProvider==='gemini'} disabled={(!(geminiCapabilities.speech_review_gemini===true)&&!(speechReviewConsent&&speechReviewProvider==='gemini'))||speechReviewConsent&&speechReviewProvider==='groq'||(!speechReviewConsent&&voiceState.phase!=='idle')} onChange={event=>{setSpeechReviewProvider('gemini');setSpeechReviewConsent(event.target.checked&&(geminiCapabilities.speech_review_gemini===true));if(!event.target.checked)setSpeechReviews(rows=>rows.map(row=>({...row,pending:false,candidate:''})))}}/>
             <span>{({ru:'Дополнительное распознавание Gemini 3.5 Transcribe: сомнительные фрагменты отправляются Google; бесплатный тариф может использовать данные для улучшения моделей. Необязательно. ',en:'Optional Gemini 3.5 Transcribe: suspect speech clips are sent to Google; free-tier data may be used to improve models. ',es:'Gemini 3.5 Transcribe opcional: los fragmentos dudosos se envían a Google; el nivel gratuito puede usar los datos para mejorar modelos. '})[lang]}<a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noreferrer">Google</a></span>
