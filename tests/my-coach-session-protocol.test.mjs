@@ -1,3 +1,4 @@
+import './coach-early-contact.test.mjs'
 import './my-coach-speech-amendments.test.mjs'
 import './my-coach-speech-evidence.test.mjs'
 import './my-coach-speech-review.test.mjs'

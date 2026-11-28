@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {COACH_EARLY_CONTACT_SECONDS,coachEarlyContactInstruction,coachEarlyTopicReaction} from '../lib/coaching/coach-early-contact.mjs'
 import {coachOpeningTurn} from '../lib/coaching/coach-opening-entry.mjs'
-import {coachSessionOpeningLine,coachOpeningLiveInstruction} from '../lib/coaching/coach-opening-protocol.mjs'
+import {coachSessionOpeningLine,coachOpeningLiveInstruction,coachOpeningNextReply} from '../lib/coaching/coach-opening-protocol.mjs'
 import {COACH_METHOD_IDS,coachMethodStagePlan} from '../lib/coaching/method-protocol-v4.mjs'
 import {goalSessionScenario} from '../lib/coaching/goal-session-scenarios.mjs'
 const ids=['mira','max','sofia','alex','merlin','harry','genie','caesar','lea','noah','iris','ray']
@@ -24,6 +24,7 @@ test('first topical reaction differs by character in all languages and preserves
   }
  }
  assert.match(coachEarlyContactInstruction(119),/119 seconds/)
+ assert.match(coachOpeningNextReply({personaId:'mira',locale:'ru',current:'focus',attempts:0,answers:{}}),/конкретную тему/)
 })
 test('no fake opinion on a bare name, refusal, correction, distress or repeated reaction',()=>{
  const common={personaId:'max',locale:'en'}
