@@ -1,5 +1,3 @@
-import {coachSpeechReviewEnabled} from '@/lib/coaching/coach-speech-review-config.mjs'
-import {geminiSpeechReviewEnabled} from '@/lib/coaching/gemini-speech-review-provider.mjs'
 import { NextResponse, after } from 'next/server'
 import { REIKI_CONSENT_COOKIE, reikiConsentCookieOptions, reikiConsentProof, validReikiConsent } from '@/lib/academy/reiki-oauth-consent.js'
 import { randomUUID } from 'node:crypto'
@@ -1274,8 +1272,6 @@ async function handle(request, { params }) {
         gemini_tts_paid:Boolean(geminiCoachTtsConfig(process.env,'gemini_tts_paid')),
         gemini_live_free:Boolean(geminiFreeLiveConfig(process.env)),
         gemini_live_reason:geminiFreeLiveUnavailableReason(process.env),
-        speech_review_free:coachSpeechReviewEnabled(process.env),
-        speech_review_gemini:geminiSpeechReviewEnabled(process.env),
         live:false})
     }
     if (joined === 'my-coach/turn') {
