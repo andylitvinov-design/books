@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {COACH_GRAPH_IDS,COACH_GRAPH_RELEASE,normalizeCoachGraph,composeCoachGraph,buildCoachGraphInstruction} from '../lib/coaching/coach-personality-graph.mjs';
+import {COACH_GRAPH_IDS,COACH_GRAPH_RELEASE,normalizeCoachGraph,composeCoachGraph,buildCoachGraphInstruction,coachGraphHints,buildCoachGraphLiveHint} from '../lib/coaching/coach-personality-graph.mjs';
 const dims=['care','autonomy','evidence','action','creativity','meaning','discipline','reciprocity','prudence','resilience','authenticity','humility'];
 const contexts=['ordinary','facts','decision','relationship','creation','meaning','support'];
 const triggers=['failure','uncertainty','conflict','achievement','pressure','criticism'];
@@ -39,4 +39,44 @@ test('support/no-advice overrides trigger; arbitrary topic and invalid releases 
  assert.equal(normalizeCoachGraph({...r,release_id:'unknown'},'mira'),null);
  assert.equal(normalizeCoachGraph({...r,edges:[...r.edges,{from_key:'missing',to_key:'value:1'}]},'mira'),null);
  assert.equal(normalizeCoachGraph(r,'unknown'),null);
+});
+
+test('mixed topics blend two contexts and rank the precise episode domain',()=>{
+ const r=fixture('mira');
+ r.nodes.push({key:'domain:money',kind:'domain',data:{context:'decision',text:'Money'},ordinal:0,weight:null});
+ r.nodes.push({key:'domain:love',kind:'domain',data:{context:'relationship',text:'Love'},ordinal:0,weight:null});
+ for(const w of r.context_weights){
+   if(w.context_key==='relationship')w.multiplier=w.dimension_key==='autonomy'?3:0;
+   if(w.context_key==='decision')w.multiplier=w.dimension_key==='care'?3:0;
+ }
+ r.nodes.find(n=>n.key==='dimension:autonomy').weight=5;
+ r.edges.push({from_key:'event:2',to_key:'domain:money',relation:'illustrates'},{from_key:'event:3',to_key:'domain:love',relation:'illustrates'});
+ const g=normalizeCoachGraph(r,'mira');assert.ok(g);
+ const c=composeCoachGraph(g,{context:'decision',secondaryContext:'relationship',domain:'money'});
+ assert.equal(c.lens,'decision');assert.equal(c.secondary,'relationship');
+ assert.deepEqual(c.priorities.map(p=>p.key),['care','autonomy']);
+ assert.equal(c.linkedEvents[0].key,'event:2');
+ const h=coachGraphHints({message:'My money and my relationship are in conflict'});
+ assert.equal(h.context,'decision');assert.equal(h.secondaryContext,'relationship');
+ assert.equal(h.domain,'money');
+ assert.match(buildCoachGraphInstruction(g,{input:{message:'My money and my relationship are in conflict'}}),/concrete tradeoff/);
+});
+test('factual requests override personality reactions, including Spanish punctuation',()=>{
+ const g=normalizeCoachGraph(fixture('mira'),'mira');
+ for(const message of ['What is business failure?','Что такое неудача в бизнесе?','¿Qué es el fracaso en un negocio?']){
+  const h=coachGraphHints({message});assert.equal(h.context,'facts');
+  const c=composeCoachGraph(g,h);assert.equal(c.secondary,null);assert.equal(c.reaction,'');
+  assert.match(buildCoachGraphLiveHint(g,{message}),/facts first/);
+ }
+ assert.equal(coachGraphHints({message:'What is your opinion on business risk?'}).context,'decision');
+ assert.equal(coachGraphHints({message:'What is the meaning of life?'}).context,'meaning');
+});
+test('explicit story requests can inherit the preceding topic, never client text in a compact hint',()=>{
+ const g=normalizeCoachGraph(fixture('mira'),'mira');
+ const input={message:'Расскажи свой пример',turns:[{role:'user',content:'Мой бизнес и бюджет'},{role:'assistant',content:'OK'}]};
+ const h=coachGraphHints(input,{personalExample:true});assert.equal(h.context,'decision');assert.equal(h.domain,'money');
+ const marker='PRIVATE-UTTERANCE-39';
+ const hint=buildCoachGraphLiveHint(g,{message:marker+' business and relationship'});
+ assert.ok(!hint.includes(marker));assert.ok(hint.length<=180);
+ assert.match(buildCoachGraphLiveHint(g,{message:'Business failure',authoritativeNoAdvice:true}),/no unsolicited evaluation or action/);
 });
