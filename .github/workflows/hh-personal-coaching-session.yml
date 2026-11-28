@@ -186,7 +186,7 @@ jobs:
           git rev-parse --verify HEAD^1 >/dev/null
           # Do not execute a retired/missing proposal. Scope by the exact tested diff.
           if [[ ! -f docs/coaching/clarity-course-runs.proposal.sql ]]; then exit 0; fi
-          if git diff --quiet HEAD^1 HEAD -- docs/coaching/clarity-course-runs.proposal.sql tests/personal-coaching-rls-isolated.integration.mjs lib/app/clarity-course-runs.js lib/app/coaching-free-day-quota.js; then
+          if git diff --quiet HEAD^1 HEAD -- docs/coaching/clarity-course-runs.proposal.sql tests/personal-coaching-rls-isolated.integration.mjs lib/app/clarity-course-runs.js lib/app/coaching-free-day-quota.js docs/coaching/goal-course-storage.proposal.sql lib/app/goal-course-store.js; then
             echo 'No Clarity database change; no extra database test.'
             exit 0
           fi
