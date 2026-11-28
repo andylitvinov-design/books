@@ -21,3 +21,7 @@ if (production) {
 }
 
 await import('./prepare-samir-motion-mp4.mjs')
+
+// Optional verified static reactions; no new generation or FFmpeg.
+const {prepareCoachV8}=await import('./prepare-coach-reaction-v8.mjs')
+await prepareCoachV8()
