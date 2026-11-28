@@ -7,6 +7,11 @@ test('restored revision continues, never resets',async()=>{
  queue.offer({courseSessionId:'introductory',protocol:{id:'test',turns:[{role:'user',content:'First'}]}})
  assert.equal(await queue.flush(),9);assert.deepEqual(calls,[9])
 })
+test('Send prevents focus loss after mouse press and synthesized touch press',()=>{
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const composer=ui.slice(ui.indexOf('data-coach-composer-field'))
+ assert.match(composer,/type="submit"\s+onMouseDown=\{event=>\{if\(event\.button===0&&document\.activeElement===composerRef\.current\)event\.preventDefault\(\)\}\}/)
+})
 test('owner and revision guards preserve the first-party restored session',()=>{
  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
  const server=readFileSync(new URL('../lib/app/my-coach-protocol-drafts.js',import.meta.url),'utf8')
@@ -63,8 +68,8 @@ test('explicit course marker cannot conflict with the enclosing draft',()=>{
 import {coachDraftListSummary,draftTranscriptPrefix,coachDraftMatchesResume,coachDraftDurationExtends,coachDraftMinuteLabel} from '../lib/personal-coaching/protocol-draft.mjs'
 import {CLARITY_DAY_ONE_VERSION} from '../lib/coaching/clarity-day-one-scenario.mjs'
 test('greeting list summary never returns a transcript or private profile',()=>{
- const item={id:'draft',revision:3,updatedAt:'2026-11-25T12:00:00Z',courseSessionId:'introductory',protocol:{personaId:'mira',locale:'ru',turns:[{role:'user',content:'private text'}],opening:{name:'private name'}}}
- assert.deepEqual(coachDraftListSummary(item),{id:'draft',revision:3,updatedAt:item.updatedAt,courseSessionId:'introductory',personaId:'mira',locale:'ru',turnCount:1,durationSeconds:null,privateHandoff:true,activeCoachId:'mira'})
+ const item={id:'draft',revision:3,updatedAt:'2026-11-25T12:00:00Z',courseSessionId:'introductory',protocol:{personaId:'mira',locale:'ru',startedAt:'2026-11-25T11:50:00Z',turns:[{role:'user',content:'private text'}],opening:{name:'private name'}}}
+ assert.deepEqual(coachDraftListSummary(item),{id:'draft',revision:3,updatedAt:item.updatedAt,courseSessionId:'introductory',personaId:'mira',locale:'ru',startedAt:'2026-11-25T11:50:00Z',turnCount:1,durationSeconds:null,privateHandoff:true,activeCoachId:'mira'})
  assert.doesNotMatch(JSON.stringify(coachDraftListSummary(item)),/private text|private name/)
  const route=readFileSync(new URL('../app/api/app/my-coach/draft/route.js',import.meta.url),'utf8')
  const store=readFileSync(new URL('../lib/app/my-coach-protocol-drafts.js',import.meta.url),'utf8')
@@ -179,7 +184,10 @@ test('explicit continuation after private restore freezes the active clock and k
  assert.match(ui,/setResumePending\(false\);setPaused\(false\)\s+if\(!restoredRelay\)toggleComposer\(\)/)
  assert.ok(ui.includes('window.setInterval(heartbeat,30000)'))
  assert.ok(ui.includes('data-coach-resume-minutes'))
- assert.ok(gate.includes("Начать заново"))
+ assert.doesNotMatch(gate,/Начать заново|window\.confirm/)
+ assert.ok(gate.includes('onResumeSession(entry.item)'))
+ assert.ok(gate.indexOf("if(entry.kind!=='new')")<gate.indexOf('onStart?.(id,options)'))
+ assert.ok(ui.includes('onResumeSession={restorePrivateDraft}'))
 })
 
 

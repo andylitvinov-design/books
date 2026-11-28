@@ -1,6 +1,7 @@
 'use client'
 import {useEffect,useRef,useState} from 'react'
 import CaesarStaticVideoLab from './caesar-static-video-lab'
+import CaesarWebRtcCaptureLab from './caesar-webrtc-capture-lab'
 import {coachIntroAudioPath} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
 import {avatarSamplePcm16,connectSimliAvatar,connectSequencerAvatar} from '@/lib/coaching/live-avatar-renderers.mjs'
 
@@ -99,5 +100,6 @@ export default function CoachLiveAvatarLab({status}){
     </section>
     <section><h2>Клиентский режим пока выключен</h2><p>€3 / 20 минут; до двух видеосессий в неделю на клиента (предлагаемый лимит). Lukas предназначен для Ali, Caesar — для коучинга. Здесь оба используют только фиксированное тестовое аудио Мирры; живые диалоги, нынешние видео и Gemini не изменены.</p></section>
     <CaesarStaticVideoLab/>
+    <CaesarWebRtcCaptureLab allowed={status.simli.allowed}/>
   </main>
 }

@@ -1,3 +1,6 @@
+import './my-coach-speech-amendments.test.mjs'
+import './my-coach-speech-evidence.test.mjs'
+import './my-coach-speech-review.test.mjs'
 import './coach-private-recall.test.mjs'
 import './my-coach-private-entry-context.test.mjs'
 import './goal-session-scenarios.test.mjs'
@@ -623,7 +626,7 @@ test('next-turn voice course guidance uses exact checkpoints only after opening 
  assert.equal(coachCourseCheckpointGuidance('introductory','ru',opening,{}),'')
  assert.equal(coachCourseCheckpointGuidance('meaning_axes_inner_growth','ru',opening,{}),'')
 })
-test('voice Director checkpoint keeps the runtime course preference without treating interrupted speech as delivered',()=>{
+test('voice Director keeps the course preference and excludes private or interrupted output from reusable history',()=>{
  const server=readFileSync(new URL('../lib/coaching/gemini-live-free.mjs',import.meta.url),'utf8')
  const ui=readFileSync(new URL('../components/my-coach-gemini-live.jsx',import.meta.url),'utf8')
  const checkpoint=ui.slice(ui.indexOf('  async function checkpoint('),ui.indexOf('  function preserveUnconfirmedInput('))
@@ -773,7 +776,7 @@ test('thematic gate handoff is restricted to enabled consented authenticated cor
  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
  const native=readFileSync(new URL('../components/my-coach-gemini-live.jsx',import.meta.url),'utf8')
  assert.match(ui,/if\(courseGateRequired\|\|courseGateRef.current/)
- assert.match(native,/const decision=propsRef.current.onInputFinal\?\.\(value\)/)
+ assert.match(native,/const decision=propsRef.current.onInputFinal\?\.\(value,\{source:'speech',reviewAvailable:Boolean\(audioParts\)&&propsRef.current.speechReviewConsent===true\}\)/)
   assert.match(native,/if\(decision===true\)\{stop\(\);return true\}/)
  assert.equal((native.match(/if\(r.inputText&&commitInput\(r,frame.turnComplete\)\)return/g)||[]).length,3)
 })

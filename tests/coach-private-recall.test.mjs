@@ -95,7 +95,28 @@ assert.ok(ui.includes("'X-HH-Account-ID':owner"))
 assert.ok(!transport.includes('geminiLiveReviewedRecallMessage'))
 assert.ok(transport.includes('result.fingerprint!==r.contextSentFingerprint'))
 assert.ok(transport.includes('if(propsRef.current.liveContextAccess!==r.contextRequestKey)'))
-assert.ok(transport.includes('requestedSavedContext:Boolean(r.contextSentKey)'))
+// All authorized memory sources are restrictive, including trusted course relay.
+const outputCommit=transport.slice(transport.indexOf('  function commitOutput(r){'),transport.indexOf('  // Deliver server-rechecked references'))
+assert.match(outputCommit,/const requestedSavedContext=Boolean\(r\.contextSentKey\|\|r\.claritySelection\?\.memorySelection\|\|r\.claritySelection\?\.materialSelection\|\|r\.clarityOpeningMemoryStageToken\)/)
+assert.match(outputCommit,/if\(!r\.interrupted&&!requestedSavedContext\)\{r\.history\.push/)
+assert.match(outputCommit,/onOutputFinal\?\.\(value,\{interrupted:r\.interrupted,requestedSavedContext\}\)/)
+// Execute the actual output commit, with local callback stubs; no provider.
+const outputFunction=new Function('audioTranscription','propsRef','coachCharacterObservedIds',outputCommit.slice(0,outputCommit.lastIndexOf('  }')+3)+';return commitOutput')
+for(const extra of [{},{contextSentKey:'private'},{claritySelection:{memorySelection:'approved'}},{claritySelection:{materialSelection:'approved'}},{clarityOpeningMemoryStageToken:'approved'}]){
+ const output=[]
+ const runtime={outputText:'A completed answer',history:[],characterSeenIds:new Set(),interrupted:false,...extra}
+ outputFunction(v=>v,{current:{onOutputFinal:(value,meta)=>output.push({value,meta})}},()=>[])(runtime)
+ const privateContext=Object.keys(extra).length>0
+ assert.equal(output[0].meta.requestedSavedContext,privateContext)
+ assert.equal(runtime.history.length,privateContext?0:1)
+}
+{
+ const output=[]
+ const runtime={outputText:'A partly heard answer',history:[],characterSeenIds:new Set(),interrupted:true}
+ outputFunction(v=>v,{current:{onOutputFinal:(value,meta)=>output.push({value,meta})}},()=>[])(runtime)
+ assert.deepEqual(output,[{value:'A partly heard answer',meta:{interrupted:true,requestedSavedContext:false}}])
+ assert.deepEqual(runtime.history,[])
+}
 
 import {coachTranscriptQualityFields,coachTranscriptQualityExtends} from '../lib/personal-coaching/protocol-quality.mjs'
 import {coachProtocolEvidenceVeto} from '../lib/coaching/coach-protocol-relevance.mjs'

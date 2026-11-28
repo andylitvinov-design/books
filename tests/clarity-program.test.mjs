@@ -129,3 +129,17 @@ test('coach selection is a scoped device preference and unavailable Clarity does
 
 import {daybookGames,gameTag,gameNotes,gameProgress,validGameAnswer,gameResult} from '../lib/app/daybook-games.mjs'
 test('three days, nine tap-first games, localized steps and explicit review',()=>{for(const locale of ['ru','en','es'])for(const day of [1,2,3]){const games=daybookGames(locale,day);assert.equal(games.length,3);for(const g of games){assert.equal(g.steps.length,4);assert.ok(g.steps.every(s=>s.prompt&&['scale','pick','multi'].includes(s.kind)));assert.throws(()=>gameResult(g,{}));const answers=g.steps.map(s=>s.kind==='multi'?[0]:0);assert.ok(gameResult(g,answers).includes(g.title));assert.ok(g.steps.every(s=>!validGameAnswer(s,undefined)))}}assert.throws(()=>gameTag(4,1));assert.equal(gameProgress([],1).done,0);const n={id:'1',revision:1,kind:'note',goalId:null,text:'result',tags:[gameTag(1,1)]};assert.equal(gameProgress([n],1).done,1);assert.equal(gameProgress([n,n],1).done,0);assert.equal(gameNotes([n],2,1).length,0);assert.equal(gameProgress([{...n,revision:0}],1).done,0);assert.equal(gameProgress([{...n,tags:['clarity-practice-v1-step-1']}],1).done,0)})
+
+test('day two places eight meaning axes before the three independent support games',()=>{
+ for(const locale of ['ru','en','es']){
+  assert.equal(CLARITY_TASKS[locale][1][0][2],'vectors')
+  assert.equal(CLARITY_TASKS[locale][1].length,3)
+  assert.match(CLARITY_SYLLABUS[locale][1][1],/eight|восемь|ocho/i)
+ }
+ const source=read('components/app/daybook-games.jsx')
+ const block=source.indexOf('data-day-two-meaning-axes'),games=source.indexOf('{games.map(g=>')
+ assert.ok(block>=0&&block<games)
+ assert.match(source,/development-vectors\?track=inner/)
+ assert.match(source,/day===2&&<div data-day-two-meaning-axes/)
+ assert.match(source,/Independent ratings do not change your coaching protocol/)
+})

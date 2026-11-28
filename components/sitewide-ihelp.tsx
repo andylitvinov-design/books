@@ -65,7 +65,7 @@ function PageHelp({pathname}:{pathname:string}){
  const dialog=useRef<HTMLElement>(null);
  const closeButton=useRef<HTMLButtonElement>(null);
  const priorPath=useRef(pathname);
- const businessShamanica=/^\/(?:ru|en|es)\/shamanica\/business\/?$/.test(pathname);
+ const inlineHelpRoute=/^\/(?:ru|en|es)\/(?:services|shamanica(?:\/business)?|my-page)\/?$/.test(pathname);
  // The video studio reports whether its ONE real Director drawer is open.
  // We do not mount a second copy of the video chatbot here.
  useEffect(()=>{
@@ -159,7 +159,7 @@ function PageHelp({pathname}:{pathname:string}){
   return ()=>window.removeEventListener("hh:open-ihelp",onBusinessHelp);
  },[pathname,locale]);
  function restoreHelpFocus(){
-  const trigger=document.querySelector<HTMLButtonElement>("[data-daybook-inline-help], [data-shamanica-ihelp-trigger], [data-my-page-inline-help]");
+  const trigger=document.querySelector<HTMLButtonElement>("[data-daybook-inline-help], [data-shamanica-ihelp-trigger], [data-services-ihelp-trigger], [data-my-page-inline-help]");
   (trigger||launcher.current)?.focus({preventScroll:true});
  }
  function chooseTopic(prompt:string){
@@ -208,19 +208,17 @@ function PageHelp({pathname}:{pathname:string}){
    setMounted(true);
    setOpen(true);
  }
- // The Services landing now has its own four-step support finder and an explicit
- // Ali messenger entry. A second floating iHelp launcher obscures the approved
- // scenic header; suppress it only on the landing, not service detail pages.
- if(/^\/(?:ru|en|es)\/services\/?$/.test(pathname))return null;
+ // Scenic headers open this same dialog; hide only the redundant floating launcher,
+ // never the dialog itself.
  // This route has its own visible Ali secretary chat; avoid an overlapping iHelp bubble.
  if(/^\/(?:ru|en|es)\/my-coach\/real\/[a-z0-9-]+\/?$/.test(pathname))return null;
  return <>
-   <button type="button" ref={launcher} className={styles.launcher} hidden={businessShamanica||/^\/(?:ru|en|es)\/my-page\/?$/.test(pathname)}
+   {!inlineHelpRoute&&<button type="button" ref={launcher} className={styles.launcher}
      data-hh-ihelp-trigger aria-label={t.open} aria-haspopup="dialog"
      aria-controls={nativeVideoOpen?"hh-ihelp-video-director-dialog":"hh-ihelp-panel"}
      aria-expanded={open||nativeVideoOpen} onClick={show}>
      <MessageCircleQuestion size={18} aria-hidden="true"/><span>iHelp</span>
-   </button>
+   </button>}
    {mounted&&<div className={styles.overlay} data-hh-ihelp-overlay hidden={!open}>
      <button type="button" tabIndex={-1} aria-label={t.close}
        className={styles.backdrop} onClick={close}/>
