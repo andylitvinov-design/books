@@ -434,3 +434,35 @@ test('Clarity browser relay stops capture after missing trusted clock observatio
  assert.equal(closed[0].binding.protocolId,protocolId)
  assert.equal(h.sendAudio({realtimeInput:{audio:{data:'AAAAAA==',mimeType:'audio/pcm;rate=16000'}}}),false)
 })
+
+
+test('startup watchdogs close the right phase without a fabricated enrollment or completion',async()=>{
+ const {connectClarityBrowserRelay}=await import('../lib/coaching/clarity-relay-client.mjs')
+ for(const [phase,reason,status] of [
+  ['connect','startup_unverified','not_started'],['entry','entry_unverified','not_started'],
+  ['setup','provider_setup_unverified','not_started'],['consent','consent_unverified','unverified']
+ ]){
+  let socket,watchdog;const closed=[],clocks=[]
+  class BrowserSocket{
+   constructor(){socket=this;this.readyState=0;this.bufferedAmount=0;this.sent=[]}
+   send(raw){this.sent.push(JSON.parse(raw))}
+   close(){this.readyState=3;this.onclose?.()}
+   receive(value){this.onmessage({data:JSON.stringify(value)})}
+  }
+  const selection={accountId:owner,runId:null,day:1,body:{courseSessionId:'clarity_day_1',personaId:'mira',consent:true,voiceConsent:true,trainingUseConsent:true}}
+  const relay=connectClarityBrowserRelay({selection,explicitPlay:true,isForeground:()=>true,
+   onClock:x=>{clocks.push(x);return true},onProvider:()=>{},onClosed:x=>closed.push(x),
+   origin:'https://holistichouse.vercel.app',WebSocketImpl:BrowserSocket,
+   schedule:fn=>{watchdog=fn;return 1},cancel:()=>{}})
+  if(phase!=='connect'){socket.readyState=1;socket.onopen()}
+  if(phase==='setup'||phase==='consent')socket.receive({type:'hh_clarity_selection',runId:id(10),protocolId:id(11),day:1})
+  if(phase==='consent')socket.receive({type:'hh_clarity_ready',decision:'start'})
+  watchdog()
+  assert.equal(socket.readyState,3);assert.equal(closed.length,1)
+  assert.equal(closed[0].reason,reason);assert.equal(closed[0].status,status)
+  assert.equal(closed[0].binding,null);assert.equal(closed[0].elapsedMs,null)
+  assert.equal(closed[0].committed,false);assert.equal(closed[0].terminalVerified,false)
+  assert.equal(clocks.length,0);assert.equal(relay.snapshot().canSendAudio,false)
+  assert.equal(relay.sendAudio({realtimeInput:{audio:{data:'AAAAAA==',mimeType:'audio/pcm;rate=16000'}}}),false)
+ }
+})
