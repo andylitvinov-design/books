@@ -1167,7 +1167,7 @@
 .reikiDetailsScreen a,.reikiDetailsScreen button{scroll-margin-bottom:calc(var(--hh-unified-nav-height,94px) + 20px);}
 @media(max-width:699px){
   .page[data-reiki-practitioner-landing] .reikiDetailsScreen{
-    margin:14px -17px 0;padding:6px 6px 12px;
+    margin:14px 0 0;padding:6px 0 12px;width:100%;box-sizing:border-box;
     background:linear-gradient(160deg,#fff7e8,#fff1d7);border-radius:12px;
   }
   .page[data-reiki-practitioner-landing] .reikiDetailsScreen .reikiSyllabus>p{font-size:12px;line-height:1.1;margin:0 0 3px;}
@@ -1201,7 +1201,7 @@
   .page[data-reiki-practitioner-landing] .reikiDetailsScreen .heroQuickLinks .ghostButton{min-height:44px;padding:5px;font-size:13px;}
 }
 @media(max-width:354px){
-  .page[data-reiki-practitioner-landing] .reikiDetailsScreen{margin-inline:-10px;padding-inline:4px;}
+  /* The details screen inherits the same in-deck edges as the hero at every phone width. */
   .page[data-reiki-practitioner-landing] .reikiDetailsScreen .stepRail a{grid-template-columns:31% minmax(0,1fr) 14px;gap:5px;}
   .reikiDetailsScreen .stepRail a strong{font-size:17px;}
   .reikiBenefitCard{grid-template-columns:29px minmax(0,1fr);gap:5px;padding-inline:5px;}
