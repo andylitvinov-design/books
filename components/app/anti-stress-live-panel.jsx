@@ -9,6 +9,8 @@ import MyCoachGeminiLive from '../my-coach-gemini-live'
 import {projectAntiStressPanelClock} from '@/lib/coaching/anti-stress-relay-client.mjs'
 import {PUBLIC_COACH_PERSONAS,localCoachText} from '@/lib/coaching/persona-registry.mjs'
 import {ANTI_STRESS_COURSE} from '@/lib/coaching/anti-stress-course.mjs'
+import {antiStressProgressProjection} from '@/lib/coaching/anti-stress-progress.mjs'
+import AntiStressProgress from './anti-stress-progress'
 const copy={
  en:{title:'Therapy · Live session',coach:'Choose coach',notice:'Play sends your voice and transcripts to Google Gemini Free; Google may use them to improve models. AI self-regulation support, not clinical care. Practice requires separate permission.',stop:'End voice connection',refresh:'Refresh saved session',unverified:'Connection stop not verified. Refresh the saved session before continuing.',done:'Session time completed. Review your results.',captions:'Current conversation (on this screen only)',time:'Verified active time'},
  ru:{title:'Терапия · Живая сессия',coach:'Выберите коуча',notice:'Play передаёт голос и расшифровку Google Gemini Free (возможно обучение моделей). Поддержка саморегуляции с ИИ, не медицинская помощь. Для каждой практики нужно отдельное согласие.',stop:'Завершить голосовое соединение',refresh:'Обновить сохранённую сессию',unverified:'Остановка не подтверждена. Обновите сохранённую сессию перед продолжением.',done:'Время сессии завершено. Проверьте результаты.',captions:'Текущий разговор (только на этом экране)',time:'Подтверждённое активное время'},
@@ -83,6 +85,21 @@ export default function AntiStressLivePanel({accountId,locale='en',run,day,onRef
  const voiceName=lockedCoachSessionVoice(coach,lang)
  const privateSalutation=identity.name?coachReturningSalutation(({ru:'Здравствуйте, ',en:'Hello, ',es:'Hola, '})[lang]+identity.name+'.',identity.returning,lang):''
  const elapsed=clock?.elapsedMs??day.elapsedMs
+ const [protocolRead,setProtocolRead]=useState(null),[protocolRefresh,setProtocolRefresh]=useState(0)
+ const protocolScope=accountId+':'+run.id+':'+day.protocolId+':'+lang
+ const protocolScopeRef=useRef(protocolScope);protocolScopeRef.current=protocolScope
+ const minuteBucket=Math.floor(elapsed/60000)
+ useEffect(()=>{
+  const c=new AbortController(),selection={runId:run.id,protocolId:day.protocolId,sessionId:day.sessionId}
+  const q=new URLSearchParams({runId:run.id,sessionId:day.sessionId,locale:lang,view:'protocol'})
+  appFetch('anti-stress/session?'+q,undefined,'GET',{accountId,signal:c.signal}).then(data=>{
+   if(c.signal.aborted||protocolScopeRef.current!==protocolScope)return
+   const checked=antiStressProgressProjection({selection,locale:lang,data})
+   if(!checked?.available)throw Error('PROTOCOL_BINDING')
+   setProtocolRead(prior=>prior?.scope===protocolScope&&prior.data?.reviewRevision>data.reviewRevision?{...prior,stale:true}:{scope:protocolScope,data,stale:false})
+  }).catch(()=>{if(!c.signal.aborted&&protocolScopeRef.current===protocolScope)setProtocolRead(prior=>({scope:protocolScope,data:prior?.scope===protocolScope?prior.data:null,stale:true}))})
+  return()=>c.abort()
+ },[accountId,run.id,day.protocolId,day.sessionId,lang,protocolScope,minuteBucket,protocolRefresh])
  const completed=clock?.status==='time_limit'||day.status==='time_limit'
  const canStart=Boolean(identity.status==='ready'&&voiceName&&!fault&&!completed&&!stopping&&run.access==='free'&&run.currentDay===day.day&&['not_started','paused'].includes(day.status))
  const currentMaterials=materialContext?.owner===accountId?materialContext:null
@@ -107,7 +124,7 @@ export default function AntiStressLivePanel({accountId,locale='en',run,day,onRef
   try{
    const verified=await speech.current?.finishCourseSegment?.(change)
    if(verified!==true){setFault(true);return false}
-   setInput('');setOutput('');setPhase('idle')
+   setInput('');setOutput('');setPhase('idle');setProtocolRefresh(n=>n+1)
    return true
   }finally{setStopping(false)}
  }
@@ -138,7 +155,7 @@ export default function AntiStressLivePanel({accountId,locale='en',run,day,onRef
    </>}
   </details>}
   <label>{t.coach} <select value={coach} disabled={stopping||completed||fault} onChange={e=>void changeCoach(e.target.value)}>{PUBLIC_COACH_PERSONAS.map(p=><option key={p.id} value={p.id}>{localCoachText(p.name,lang)}</option>)}</select></label>
-  <progress max={900000} value={elapsed} aria-label={t.time}/><span>{Math.floor(elapsed/60000)}:{String(Math.floor(elapsed/1000)%60).padStart(2,'0')} / 15:00</span>
+  <AntiStressProgress selection={selection} locale={lang} elapsedMs={elapsed} data={protocolRead?.scope===protocolScope?protocolRead.data:null} stale={protocolRead?.scope===protocolScope&&protocolRead.stale}/><span>{Math.floor(elapsed/60000)}:{String(Math.floor(elapsed/1000)%60).padStart(2,'0')} / 15:00</span>
   {completed?<p role="status">{t.done}</p>:<MyCoachGeminiLive ref={speech} locale={lang} personaId={coach} courseSessionId={day.sessionId} voiceName={voiceName||''} privateGreetingText={privateSalutation} therapyRelaySelection={selection} onTherapyRelayClock={onClock} onTherapyRelayClosed={receipt=>{setMaterialConsent(null);clearMemoryChoice();if(!receipt.terminalVerified&&receipt.status!=='not_started')setFault(true)}}
     enabled={canStart} canStart={canStart} elapsedSeconds={Math.floor(elapsed/1000)}
     onVoiceStateChange={v=>setPhase(v.phase)} onInputInterim={setInput} onOutputInterim={setOutput}
