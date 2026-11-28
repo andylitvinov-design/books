@@ -90,10 +90,64 @@ export function classifyExactSiteVideo(env = process.env, git = execFileSync) {
   }
 }
 
+// A protected dependency-change PR necessarily takes the real Core build
+// route (root lockfile excludes docs/CI-only and every fast route). The video
+// browser itself starts Next DEV, not the production bundle. Delegate ONLY
+// that duplicate compilation; retain prebuild generators/tests and both real
+// isolated browser journeys. Unknown history/policy or build hooks => FULL.
+export function canDelegateSiteVideoProductionBuild(env = process.env, git = execFileSync) {
+  const sha=/^[0-9a-f]{40}$/;
+  if(env.GITHUB_EVENT_NAME!=='pull_request' ||
+     env.GITHUB_BASE_REF!=='codex/public-book-library' ||
+     !env.GITHUB_REPOSITORY || env.HH_HEAD_REPO!==env.GITHUB_REPOSITORY ||
+     !sha.test(env.HH_HEAD_SHA||'') || !sha.test(env.GITHUB_SHA||'') ||
+     !sha.test(env.HH_EVENT_BASE_SHA||'')) return false;
+  const opts={encoding:'utf8',maxBuffer:4*1024*1024,stdio:['ignore','pipe','pipe']};
+  try {
+    const read=(...args)=>String(git('git',args,opts));
+    const base=read('rev-parse','HEAD^1').trim();
+    if(base!==env.HH_EVENT_BASE_SHA ||
+       read('rev-parse','HEAD').trim()!==env.GITHUB_SHA ||
+       read('rev-parse','HEAD^2').trim()!==env.HH_HEAD_SHA) return false;
+    const rows=read('diff','--no-renames','--name-status','-z',base,'HEAD').split('\0');
+    if(rows.pop()!=='' || !rows.length || rows.length%2 || rows.length>6000) return false;
+    const changed=new Map();
+    for(let i=0;i<rows.length;i+=2) {
+      const [status,path]=rows.slice(i,i+2);
+      if(!/^[AMDT]$/.test(status)||!path||changed.has(path)||
+         path.split('/').some(x=>!x||x==='.'||x==='..')) return false;
+      changed.set(path,status);
+    }
+    if(changed.get('package-lock.json')!=='M') return false;
+    // Candidate cannot change the Core owner, its classifiers/config or
+    // checkout/build infrastructure while delegating to that owner.
+    if([...changed.keys()].some(p=>
+      /^(?:\.github\/(?:actions\/|workflows\/hh-pr-core-release\.yml$)|lib\/ci\/|scripts\/ci-(?:quick-route|source-preflight|pr-readiness|specialist-aggregate)\.mjs$|(?:next\.config\.[^/]+|tsconfig(?:\.[^/]+)?\.json|\.npmrc|\.nvmrc|\.node-version)$)/.test(p))) return false;
+    const workflow=read('show',base+':.github/workflows/hh-pr-core-release.yml');
+    // Guard against an unknown protected Core policy revision. It must retain
+    // the real production command and fail-closed same-run Core dependency.
+    if(!workflow.includes('- name: Exact proposed release production build and TypeScript check\n') ||
+       !workflow.includes('run: npm run build -- --no-lint\n') ||
+       !workflow.includes('needs: [scope]') ||
+       !workflow.includes('SCOPE_RESULT: ${{ needs.scope.result }}') ||
+       !workflow.includes('"$SCOPE_RESULT" == success')) return false;
+    const route=read('show',base+':scripts/ci-quick-route.mjs');
+    if(!route.includes('package(?:-lock)?') || !route.includes("return 'FULL'")) return false;
+    const before=JSON.parse(read('show',base+':package.json')).scripts;
+    const after=JSON.parse(read('show','HEAD:package.json')).scripts;
+    if(!before||!after||before.build!=='next build'||after.build!==before.build||
+       typeof before.prebuild!=='string'||!before.prebuild||after.prebuild!==before.prebuild||
+       ['postbuild','preprebuild','postprebuild'].some(k=>Object.hasOwn(before,k)||Object.hasOwn(after,k))) return false;
+    return true;
+  } catch { return false; }
+}
+
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href===import.meta.url){
   const choice=classifyExactSiteVideo();
   console.log('Site Video PR browser impact',choice);
-  if(process.env.GITHUB_OUTPUT)appendFileSync(process.env.GITHUB_OUTPUT,'full='+choice.full+'\n');
+  const delegateCoreBuild=choice.full && canDelegateSiteVideoProductionBuild();
+  console.log('Site Video production build owner',delegateCoreBuild?'MANDATORY_CORE':'LOCAL');
+  if(process.env.GITHUB_OUTPUT)appendFileSync(process.env.GITHUB_OUTPUT,'full='+choice.full+'\n'+'delegate_core_build='+delegateCoreBuild+'\n');
   if(process.env.GITHUB_STEP_SUMMARY)appendFileSync(process.env.GITHUB_STEP_SUMMARY,
     'Site Video real browser: '+(choice.full?'required':'DEFERRED TO MANUAL/PRODUCTION')+
     ' ('+choice.reason+')\n');

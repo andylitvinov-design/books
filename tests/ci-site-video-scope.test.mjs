@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import test from 'node:test';
-import {needsFullSiteVideoBrowser,classifyExactSiteVideo} from '../scripts/ci-site-video-scope.mjs';
+import {needsFullSiteVideoBrowser,classifyExactSiteVideo,canDelegateSiteVideoProductionBuild} from '../scripts/ci-site-video-scope.mjs';
 
 const one=filename=>[{filename,status:'modified'}];
 test('reviewed public-display changes can defer repeated Chromium and Redis E2E',()=>{
@@ -107,4 +107,51 @@ test('exact CI routing-only edits retain source tests without unrelated runtime 
  const head='a'.repeat(40),merge='b'.repeat(40),base='c'.repeat(40),z=String.fromCharCode(0);
  const git=(_bin,args)=>args[0]==='rev-parse'?({HEAD:merge,'HEAD^1':base,'HEAD^2':head})[args[1]]+'\n':args[0]==='diff'?rows.flatMap(row=>['M',row.filename]).join(z)+z:(()=>{throw Error('unexpected command')})();
  assert.deepEqual(classifyExactSiteVideo({GITHUB_EVENT_NAME:'pull_request',HH_HEAD_SHA:head,GITHUB_SHA:merge},git),{full:false,reason:'EXACT_CI_ROUTING_POLICY_ONLY'});
+});
+
+
+test('only exact protected root-lockfile PR delegates duplicate production compilation to mandatory Core',()=>{
+  const head='a'.repeat(40),merge='b'.repeat(40),base='c'.repeat(40),z=String.fromCharCode(0);
+  const env={GITHUB_EVENT_NAME:'pull_request',GITHUB_BASE_REF:'codex/public-book-library',
+    GITHUB_REPOSITORY:'owner/repo',HH_HEAD_REPO:'owner/repo',HH_HEAD_SHA:head,GITHUB_SHA:merge,HH_EVENT_BASE_SHA:base};
+  const core=readFileSync(new URL('../.github/workflows/hh-pr-core-release.yml',import.meta.url),'utf8');
+  const route=readFileSync(new URL('../scripts/ci-quick-route.mjs',import.meta.url),'utf8');
+  const pkg=JSON.stringify({scripts:{build:'next build',prebuild:'node prepare.mjs'}});
+  const lock=['M','package-lock.json','M','lib/site-videos/model.js'];
+  const fake=(rows=lock,after=pkg,coreSource=core)=>(_bin,args)=>{
+    if(args[0]==='rev-parse')return ({HEAD:merge,'HEAD^1':base,'HEAD^2':head})[args[1]]+'\n';
+    if(args[0]==='diff')return rows.join(z)+z;
+    if(args[0]==='show')return ({
+      [base+':.github/workflows/hh-pr-core-release.yml']:coreSource,
+      [base+':scripts/ci-quick-route.mjs']:route,[base+':package.json']:pkg,
+      'HEAD:package.json':after,
+    })[args[1]];
+    throw Error('unexpected command');
+  };
+  assert.equal(canDelegateSiteVideoProductionBuild(env,fake()),true);
+  for(const extra of ['.github/workflows/hh-pr-core-release.yml','.github/actions/ci-ffmpeg-static/action.yml',
+    'scripts/ci-quick-route.mjs','lib/ci/specialist-aggregate.mjs','next.config.ts','tsconfig.json','.npmrc'])
+    assert.equal(canDelegateSiteVideoProductionBuild(env,fake([...lock,'M',extra])),false,extra);
+  for(const overrides of [{GITHUB_EVENT_NAME:'workflow_dispatch'},{GITHUB_EVENT_NAME:'push'},
+    {GITHUB_BASE_REF:'other'},{HH_HEAD_REPO:'fork/repo'},{HH_EVENT_BASE_SHA:'d'.repeat(40)},
+    {HH_HEAD_SHA:'d'.repeat(40)},{GITHUB_SHA:'d'.repeat(40)}])
+    assert.equal(canDelegateSiteVideoProductionBuild({...env,...overrides},fake()),false);
+  assert.equal(canDelegateSiteVideoProductionBuild(env,fake(['M','lib/site-videos/model.js'])),false);
+  assert.equal(canDelegateSiteVideoProductionBuild(env,fake(['A','package-lock.json'])),false);
+  assert.equal(canDelegateSiteVideoProductionBuild(env,fake([...lock,'M','package-lock.json'])),false);
+  assert.equal(canDelegateSiteVideoProductionBuild(env,fake(lock,JSON.stringify({scripts:{build:'echo skipped',prebuild:'node prepare.mjs'}}))),false);
+  assert.equal(canDelegateSiteVideoProductionBuild(env,fake(lock,JSON.stringify({scripts:{build:'next build',prebuild:'node prepare.mjs',postbuild:'node extra.mjs'}}))),false);
+  assert.equal(canDelegateSiteVideoProductionBuild(env,fake(lock,pkg,core.replace('run: npm run build -- --no-lint','run: echo skipped'))),false);
+  assert.equal(canDelegateSiteVideoProductionBuild(env,()=>{throw Error('unknown history')}),false);
+});
+
+test('Site Video retains prebuild, both real browser tests and manual production compilation',()=>{
+  const y=readFileSync(new URL('../.github/workflows/site-video-browser.yml',import.meta.url),'utf8');
+  assert.match(y,/HH_DELEGATE_CORE_BUILD: \$\{\{ steps\.impact\.outputs\.delegate_core_build \}\}/);
+  assert.match(y,/npm run prebuild/);
+  assert.match(y,/npm run build -- --no-lint/);
+  assert.match(y,/npm run build\n/);
+  assert.match(y,/node scripts\/verify-site-video-browser\.mjs/);
+  assert.match(y,/node scripts\/verify-site-video-admin-browser\.mjs/);
+  assert.equal((y.match(/fetch-depth: \$\{\{ github\.event_name == 'pull_request' && 2 \|\| 0 \}\}/g)||[]).length,2);
 });

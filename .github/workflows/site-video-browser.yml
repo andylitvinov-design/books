@@ -165,7 +165,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-          fetch-depth: 0
+          fetch-depth: ${{ github.event_name == 'pull_request' && 2 || 0 }}
       - name: Verify live PR readiness before costly CI
         if: github.event_name == 'pull_request'
         env:
@@ -186,6 +186,8 @@ jobs:
         id: impact
         env:
           HH_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HH_EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HH_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
         run: node scripts/ci-site-video-scope.mjs
       - name: Seed approved synthetic master and enforce existing SQL/RLS in isolated PostgreSQL
         if: github.event_name != 'pull_request' || steps.impact.outputs.full == 'true'
@@ -259,7 +261,7 @@ jobs:
           path: public/audio/mandala/scenarios
           key: hh-core-media-v1-${{ runner.os }}-${{ hashFiles('scripts/generate-scenario-melodies.mjs', 'scripts/generate-mandala-melodies.mjs', 'lib/mandala/scenario-audio-catalog.mjs', 'package-lock.json') }}
       - name: Restore trusted production Next compiler cache
-        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'codex/public-book-library' && steps.impact.outputs.full == 'true' }}
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'codex/public-book-library' && steps.impact.outputs.full == 'true' && steps.impact.outputs.delegate_core_build != 'true' }}
         uses: actions/cache/restore@v4
         with:
           path: |
@@ -269,15 +271,24 @@ jobs:
       - name: Build actual application with locked production dependencies
         if: github.event_name != 'pull_request' || steps.impact.outputs.full == 'true'
         run: |
-          # Dedicated source lint above and mandatory Core already check
-          # production PRs. Keep full Next type checking and compilation.
+          # Root-lockfile production PRs with exact trusted Core ownership
+          # still run all prebuild generation/tests here. The real browser
+          # launches Next DEV and does not consume a production build bundle.
+          # Core performs mandatory full Next production compilation/types.
+          # Manual/push, unknown policy and every other route stay unchanged.
           if [[ "$GITHUB_EVENT_NAME" == pull_request && "${GITHUB_BASE_REF:-}" == codex/public-book-library ]]; then
-            npm run build -- --no-lint
+            if [[ "$HH_DELEGATE_CORE_BUILD" == true ]]; then
+              npm run prebuild
+              echo 'Duplicate production compilation delegated to required Core; actual browser E2E still runs.' >> "$GITHUB_STEP_SUMMARY"
+            else
+              npm run build -- --no-lint
+            fi
           else
             npm run build
           fi
         env:
           NEXT_TELEMETRY_DISABLED: '1'
+          HH_DELEGATE_CORE_BUILD: ${{ steps.impact.outputs.delegate_core_build }}
       - name: Exercise editor against isolated Redis
         if: github.event_name != 'pull_request' || steps.impact.outputs.full == 'true'
         run: |
@@ -354,7 +365,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-          fetch-depth: 0
+          fetch-depth: ${{ github.event_name == 'pull_request' && 2 || 0 }}
       - name: Verify live PR readiness before costly CI
         if: github.event_name == 'pull_request'
         env:
@@ -375,6 +386,8 @@ jobs:
         id: impact
         env:
           HH_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HH_EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HH_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
         run: node scripts/ci-site-video-scope.mjs
       - name: Verify synthetic owner bridge, E2E isolation and scripts before database setup
         run: |
