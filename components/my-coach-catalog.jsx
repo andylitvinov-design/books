@@ -358,7 +358,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
   return <main className={styles.root} data-my-coach-catalog lang={lang}>
     <div className={styles.frame}>
       <header className={[styles.brandHeader, heroStyles.stickyHeader].join(' ')}>
-        <Link href={'/' + lang} className={styles.brand} aria-label="Holistic House">
+        <Link href={'/' + lang + '/my-coach'} prefetch={false} className={styles.brand} aria-label="Holistic House">
           <span className={styles.brandMark} aria-hidden="true" />
           <span>Holistic House<sup>®</sup></span>
         </Link>

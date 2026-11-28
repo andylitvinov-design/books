@@ -21,3 +21,15 @@ test("root and locale roots open the existing My Coach catalog without a separat
  assert.match(read("app/[locale]/my-coach/page.jsx"),/<MyCoachCatalog locale=\{locale\}/);
  assert.match(read("app/[locale]/my-coach/page.jsx"),/locales = \['en', 'ru', 'es'\]/);
 });
+
+
+test("visible brand links use the actual localized My Coach destination, not a redirecting RSC alias",()=>{
+ const header=read("components/public-site-header.tsx");
+ const catalog=read("components/my-coach-catalog.jsx");
+ const audit=read("scripts/verify-release-reaudit.mjs");
+ assert.ok(header.includes('href={`/${locale}/my-coach`} prefetch={false} aria-label={text.home}'));
+ assert.ok(catalog.includes("href={'/' + lang + '/my-coach'} prefetch={false} className={styles.brand}"));
+ assert.ok(audit.includes("privateWordmark).toHaveAttribute('href', '/en/my-coach')"));
+ assert.ok(audit.includes("await privateWordmark.click()"));
+ assert.ok(audit.includes("assert.deepEqual(unexpectedErrors, [], 'No unexplained JavaScript diagnostics during CSP navigation')"));
+});

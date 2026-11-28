@@ -839,7 +839,7 @@ async function exercise(engine, browserType, width) {
           const privateWordmark = cspPage.locator('.house-header--services .house-wordmark');
           await expect(privateWordmark).toHaveCount(1);
           await expect(privateWordmark).toBeVisible();
-          await expect(privateWordmark).toHaveAttribute('href', '/');
+          await expect(privateWordmark).toHaveAttribute('href', '/en/my-coach');
           await privateWordmark.click();
           await assertCspPublicHome(cspPage);
           await waitForDocument();
