@@ -108,3 +108,11 @@
 .page[data-cabinet-theme="daybook"] :is(button,a,input,textarea):focus-visible {
   outline-color:var(--hh-cabinet-primary);outline-offset:3px;
 }
+
+.myPageBrand{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 8px;min-height:44px;color:#fff3d6}
+.myPageBrand a{display:flex;align-items:center;gap:6px;color:#fff3d6;text-decoration:none;font:700 clamp(19px,5.1vw,26px)/1.1 Georgia,serif}
+.myPageBrand a span{display:grid;place-items:center;width:28px;height:28px;background:#08755d;color:#fff3d6;border-radius:7px;font-size:20px;flex:none}
+.myPageBrand button{min-height:44px;display:flex;align-items:center;gap:4px;padding:4px 9px;color:#fff3d6;background:#352619;border:1px solid #c8a66c;border-radius:999px;font:700 12px/1.2 system-ui;cursor:pointer}
+.myPageBrand button span{display:grid;place-items:center;width:18px;height:18px;border:1px solid currentColor;border-radius:50%}
+.page[data-cabinet-theme="daybook"] .socialModes a{min-height:44px;font-size:14px}
+.page .socialModes{margin-bottom:9px}
