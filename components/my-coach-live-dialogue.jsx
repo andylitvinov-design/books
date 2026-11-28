@@ -24,6 +24,7 @@ import {coachSessionVisibleStageIds} from '@/lib/coaching/coach-session-progress
 import {openingStagePosition,profileStagePosition,methodStagePosition,courseStagePosition,savedProfileStagePosition,openingCapturedAnswers,courseCapturedRows,groupedSessionPosition,boundTranscriptReview,clarityVersionedStageView} from '@/lib/coaching/coach-session-stage-view.mjs'
 import {checkpointQuestionMatches,checkpointConfirmationMatches} from '@/lib/coaching/coach-course-question-binding.mjs'
 import {clarityScenarioVersion,clarityScenarioGateFields} from '@/lib/coaching/clarity-course-scenarios.mjs'
+import {thematicScenarioVersion} from '@/lib/coaching/session-blueprint.mjs'
 import {projectClarityPanelClock,restoredClarityRelayBinding} from '@/lib/coaching/clarity-relay-client.mjs'
 import {protocolAnswerClass} from '@/lib/coaching/coach-protocol-validation-gate.mjs'
 import {COACH_PROFILE_AXES} from '@/lib/coaching/coach-profile-intake.mjs'
@@ -68,7 +69,7 @@ import {myCoachProtocolPdfOptions,normalizeMyCoachProtocol,MY_COACH_PROTOCOL_MAX
 import MyCoachCourseFieldReview from './my-coach-course-field-review'
 import MyCoachCourseGateVoice from './my-coach-course-gate-voice'
 import MyCoachResultPreview from './my-coach-result-preview'
-import {coachCourseProtocolRows,coachCourseProtocolSchema,normalizeCoachCourseFieldReview,coachCourseGateHandoffRequired,coachReviewScenarioVersion} from '@/lib/coaching/coach-course-protocol-schema.mjs'
+import {coachCourseProtocolRows,coachCourseProtocolSchema,normalizeCoachCourseFieldReview,coachCourseGateHandoffRequired,coachReviewScenarioVersion,coachExpandedGateReadbackMatches} from '@/lib/coaching/coach-course-protocol-schema.mjs'
 import {normalizeMyCoachDraft,coachDraftMinuteLabel} from '@/lib/personal-coaching/protocol-draft.mjs'
 import {coachProfileArchiveEnvelope} from '@/lib/coaching/coach-profile-archive-v3.mjs'
 import {coachProfileTrackForCourse,MEANING_AXES_COACH_SESSION_ID} from '@/lib/coaching/coach-profile-session-v3.mjs'
@@ -960,7 +961,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   // review or temporarily inconsistent turn snapshot to crash the session.
   let courseRows=[],courseReviewInvalid=false
   let effectiveCourseReview=courseGate?courseGate.step.review:courseFieldReview
-  const courseScenarioVersion=courseGate?courseGate.step.scenarioVersion||null:coachReviewScenarioVersion(effectiveCourseReview)||(courseGateEnabled&&autoSaveEnabled&&!effectiveCourseReview?clarityScenarioVersion(selectedCourseId):null)
+  const courseScenarioVersion=courseGate?courseGate.step.scenarioVersion||null:coachReviewScenarioVersion(effectiveCourseReview)||(courseGateEnabled&&autoSaveEnabled&&!effectiveCourseReview?(clarityScenarioVersion(selectedCourseId)||thematicScenarioVersion(selectedCourseId)):null)
   const courseSchema=coachCourseProtocolSchema(selectedCourseId,lang,{scenarioVersion:courseScenarioVersion})
   // A selected course stays a course even while evidence/readback is unavailable.
   // Never replace its checklist with a persona method because rows are temporarily empty.
@@ -2332,6 +2333,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
        (q!==null&&(!q||typeof q.id!=='string'||typeof q.fieldId!=='string'||typeof q.text!=='string'||
        !['answer','confirm'].includes(q.kind))))throw Error('COURSE_GATE_READBACK')
     const review=normalizeCoachCourseFieldReview(step.review,protocol.courseSessionId,protocol.turns)
+    if(!coachExpandedGateReadbackMatches(protocol.courseSessionId,protocol.locale,protocol.turns,{...step,review}))throw Error('COURSE_GATE_READBACK')
     if((step.scenarioVersion||step.crossCoach||step.activeCoachId)&&(!getCoachPersona(step.activeCoachId)||(step.crossCoach===true&&(!step.resumeText||step.paused))))throw Error('COURSE_GATE_READBACK')
     return {step:{...step,review},revision:item.revision,protocol}
   }
