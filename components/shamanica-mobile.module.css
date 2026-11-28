@@ -1016,3 +1016,15 @@
 .featuredGrid strong{display:grid;place-items:center;min-height:30px;padding:4px 3px;font:800 clamp(10px,2.8vw,14px)/1.12 system-ui,sans-serif;text-align:center;overflow-wrap:anywhere}
 .artifactActions>a:focus-visible,.artifactActions>button:focus-visible,.sessionChannels a:focus-visible,.featuredArtifacts a:focus-visible{outline:3px solid #087750;outline-offset:2px}
 @media(min-width:760px){.artifactHero{padding:20px 18px 12px;gap:20px}.page[data-shamanica-audience="self"] .serviceCard{min-height:100px}.page[data-shamanica-audience="self"] .serviceBody{padding:5px 6px;grid-template-columns:17px minmax(0,1fr)}.page[data-shamanica-audience="self"] .serviceBody>svg:not(.artifactCardArrow){width:17px;height:17px}.featuredGrid strong{min-height:38px}}
+
+/* SHAMANIC_BUSINESS_ARTIFACT_CREAM_20261127: same shell as personal, business imagery. */
+.page[data-shamanica-audience="business"] .container{gap:5px}
+.page[data-shamanica-audience="business"] .audiences{order:1;grid-template-columns:repeat(2,minmax(0,1fr));width:94%;gap:8px;padding:0;border:0;background:none;box-shadow:none;height:auto;margin:3px auto 2px}
+.page[data-shamanica-audience="business"] .audiences>button{display:none}
+.page[data-shamanica-audience="business"] .audiences>a{min-height:40px;border:1px solid #d9b775;background:#fff1d6;color:#123e32;box-shadow:0 2px 6px #12080366}
+.page[data-shamanica-audience="business"] .audiences .audienceActive{background:linear-gradient(#087750,#00462f);color:#fff5dc}
+.page[data-shamanica-mobile][data-shamanica-audience="business"] .hero{order:2;height:auto;min-height:0;margin:0;padding:7px;background:#fff5df;border:1px solid #dfc28b;border-radius:23px 23px 0 0;overflow:hidden;text-align:left}
+.page[data-shamanica-audience="business"] .hero:before{display:none}
+.page[data-shamanica-audience="business"] .artifactHeroArt{background-image:url("/images/holistic-house/report-lighthouse-coast.webp");background-position:center}
+.page[data-shamanica-audience="business"] .artifactHero h1{color:#fff4dc;font:700 clamp(29px,8.4vw,48px)/.98 Georgia,serif;text-align:left;letter-spacing:-.035em;margin:9px 0 7px;overflow-wrap:normal;hyphens:auto}
+.page[data-shamanica-audience="business"] .artifactHeroText p{margin:0;font:500 clamp(11.5px,3.25vw,16px)/1.26 system-ui,sans-serif}
