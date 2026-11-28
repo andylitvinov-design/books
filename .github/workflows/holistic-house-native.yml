@@ -93,7 +93,8 @@ jobs:
     # Full native builds run on verified production pushes or manual dispatch only.
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     name: Holistic House Android installable debug APK
-    runs-on: ubuntu-latest
+    # Only the existing delegation receipt runs on PRs. Do not reserve a full runner for echo.
+    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-slim' || 'ubuntu-latest' }}
     timeout-minutes: 40
     steps:
       - name: Verify delegated lightweight PR native coverage
@@ -209,7 +210,7 @@ jobs:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     name: Holistic House iOS unsigned simulator app
     # PR performs only a lightweight delegation on Linux; genuine iOS builds always use macOS.
-    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-24.04' || 'macos-15' }}
+    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-slim' || 'macos-15' }}
     timeout-minutes: 40
     steps:
       - name: Verify delegated lightweight PR native coverage
