@@ -1437,7 +1437,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const wasPaused=voicePauseRef.current
     voicePauseRef.current=next.phase==='paused'
     setVoiceState(next)
-    if(next.phase==='idle'||next.phase==='paused')setSpeechReviews(rows=>rows.map(row=>row.pending?{...row,pending:false}:row))
+    if(next.phase==='idle'||next.phase==='paused')setSpeechReviews(rows=>rows.filter(row=>!(row.observationOnly&&row.pending&&row.edited==null)).map(row=>row.pending?{...row,pending:false}:row))
     if(!voicePauseRef.current||wasPaused)return
     freezeActiveClock()
     cancelPendingCoachTurn()
@@ -2439,7 +2439,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             speechReviewConsent={activeSpeechReviewConsent}
             speechReviewProvider={speechReviewProvider}
             speechReviewAll={activeOrdinaryReview}
-            onSpeechReviewCandidate={(id,text)=>setSpeechReviews(rows=>rows.map(row=>row.id===id?observeSpeechCandidate(row,text):row).filter(Boolean))}
+            onSpeechReviewCandidate={(id,text)=>setSpeechReviews(rows=>rows.map(row=>row.id===id?(row.observationOnly&&!activeOrdinaryReview?null:observeSpeechCandidate(row,text)):row).filter(Boolean))}
             onInputFinal={(text,details)=>{
               // A recognized explicit correction stops the current transport before
               // its next reply is accepted. Confirmation is a local text turn;
@@ -2492,8 +2492,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
               // mutation of the original transcript/evidence.
               const sessionId=protocolIdRef.current
               if(captured&&sessionId&&observationBudgetRef.current.sessionId!==sessionId)observationBudgetRef.current={sessionId,count:0}
-              const sensitive=Boolean(recallRequested||candidate||['ru','en','es'].some(locale=>coachingBrainSafety({...guard,locale})||coachingBrainBoundary({...guard,locale})))
-              if(captured&&sessionId&&canObserveOrdinarySpeech({enabled:activeOrdinaryReview,source:details?.source,reviewAvailable:details?.reviewAvailable,sensitive,raw:text,count:observationBudgetRef.current.count})){
+              if(captured&&sessionId&&canObserveOrdinarySpeech({enabled:activeOrdinaryReview,source:details?.source,reviewAvailable:details?.reviewAvailable,sensitive:Boolean(recallRequested||candidate),raw:text,count:observationBudgetRef.current.count})&&
+                !['ru','en','es'].some(locale=>coachingBrainSafety({...guard,locale})||coachingBrainBoundary({...guard,locale}))){
                 observationBudgetRef.current.count++
                 const id=++speechReviewSerial.current
                 setSpeechReviews(rows=>[...rows,{id,amendmentId:crypto.randomUUID(),sessionId,afterTurnCount:turnsRef.current.length,locale:conversationLang,provider:'groq',raw:text,candidate:'',previous:'',edited:null,pending:true,observationOnly:true}])
