@@ -59,7 +59,30 @@ jobs:
             const PROD="codex/public-book-library", CONTROL="codex/bootstrap-books", fullRepo=owner+"/"+repo;
             const baseEvidence=require(process.env.GITHUB_WORKSPACE+"/scripts/ci-pr-base-freshness.cjs");
             const mergeSafety=require(process.env.GITHUB_WORKSPACE+"/scripts/ci-pr-native-merge-policy.cjs");
-            const classifier=await baseEvidence.loadTrustedClassifier(process.env.GITHUB_WORKSPACE);
+            let classifier=await baseEvidence.loadTrustedClassifier(process.env.GITHUB_WORKSPACE);
+            // A different PR can merge while the inventory is being read.
+            // Refresh only the protected policy checkout, never the PR HEAD.
+            async function assessCurrentBase(pr,checks){
+              for(let attempt=0;attempt<3;attempt++){
+                const result=await baseEvidence.assessBaseFreshness({github,owner,repo,pr,...classifier,
+                  verifiedRunBase:rows=>baseEvidence.coreRunBaseForCheck({github,owner,repo,pr,
+                    check:checks.get(unifiedRequired?"hh-merge-check":"hh-core-verified"),
+                    rows,token:process.env.HH_CORE_BASE_TOKEN})});
+                if(result.ok||!["CLASSIFIER_BASE_STALE","BASE_MOVED_DURING_CHECK"].includes(result.reason))return result;
+                const branch=(await github.rest.repos.getBranch({owner,repo,branch:PROD})).data;
+                const sha=branch?.commit?.sha;
+                if(branch?.protected!==true||!/^[a-f0-9]{40}$/.test(sha||""))
+                  return {ok:false,reason:"PROTECTED_BASE_UNVERIFIED"};
+                const checkout=require("node:path").join(process.env.GITHUB_WORKSPACE,".hh-merge-policy-production");
+                const {execFileSync}=require("node:child_process");
+                if(classifier.classifierBase!==sha){
+                  execFileSync("git",["-C",checkout,"fetch","--no-tags","--depth=1","origin",sha],{timeout:35000});
+                  execFileSync("git",["-C",checkout,"checkout","--detach",sha],{timeout:15000});
+                  classifier=await baseEvidence.loadTrustedClassifier(process.env.GITHUB_WORKSPACE);
+                }
+              }
+              return {ok:false,reason:"PRODUCTION_BASE_RETRIES_EXHAUSTED"};
+            }
             const {selectDeepScan,isRateLimitError}=require(process.env.GITHUB_WORKSPACE+"/scripts/ci-pr-api-budget.cjs");
             const log=s=>core.info("HH_FULL_OPEN_PR: "+s), skipped=new Map();
             const skip=k=>skipped.set(k,(skipped.get(k)||0)+1);
@@ -204,15 +227,12 @@ jobs:
                   const namedSafety=[...checks.entries()].some(([name,c])=>/auth|security|privacy|consent|billing|payment|rls|database|guard/i.test(name)&&c.conclusion==="success");
                   if(sensitive&&!namedSafety){skip("SENSITIVE_SPECIALIST_QA_MISSING");continue;}
                 }
-                const freshness=await baseEvidence.assessBaseFreshness({github,owner,repo,pr:live,...classifier,
-                  verifiedRunBase:rows=>baseEvidence.coreRunBaseForCheck({github,owner,repo,pr:live,
-                    check:checks.get(unifiedRequired?"hh-merge-check":"hh-core-verified"),
-                    rows,token:process.env.HH_CORE_BASE_TOKEN})});
+                const freshness=await assessCurrentBase(live,checks);
                 if(!freshness.ok){skip(freshness.reason);continue;}
                 const children=all.filter(other=>other.number!==pr.number&&other.base?.ref===live.head.ref);
                 const method=children.length?"merge":"squash";
                 if(!methods.has(method)){skip("DISALLOWED_MERGE_METHOD");continue;}
-                eligible.push({number:pr.number,head:pr.head.sha,base:live.base.sha,method,via:qa.via});
+                eligible.push({number:pr.number,head:pr.head.sha,base:freshness.base,method,via:qa.via});
               }catch(e){
                 if(isRateLimitError(e)){
                   apiPaused=true;skip("API_RATE_LIMIT_PAUSE");
@@ -230,7 +250,7 @@ jobs:
               try{
                const live=(await github.rest.pulls.get({owner,repo,pull_number:c.number})).data;
                if(live.state!=="open"||live.draft||live.auto_merge||
-                  live.head.sha!==c.head||live.base.sha!==c.base||
+                  live.head.sha!==c.head||
                   live.base.ref!==PROD||live.mergeable!==true||!["clean","behind","unstable","blocked"].includes(live.mergeable_state)){
                  skip("CHANGED_BEFORE_ARM");continue;
                }
@@ -303,16 +323,14 @@ jobs:
                    Date.parse(l.expires_at||"")>Date.now()))){
                  skip("ACTIVE_OR_AMBIGUOUS_LEASE");continue;
                }
-               const freshness=await baseEvidence.assessBaseFreshness({github,owner,repo,pr:live,...classifier,
-                 verifiedRunBase:rows=>baseEvidence.coreRunBaseForCheck({github,owner,repo,pr:live,
-                   check:freshChecks.get(unifiedRequired?"hh-merge-check":"hh-core-verified"),
-                   rows,token:process.env.HH_CORE_BASE_TOKEN})});
+               const freshness=await assessCurrentBase(live,freshChecks);
                if(!freshness.ok){skip(freshness.reason);continue;}
                // Shared review/thread and exact-HEAD owner-lease safety is
                // mandatory for the hourly fallback, too. The read-only guard
                // rechecks current ownership after the prior inventory pass.
                const safe=await mergeSafety.auditNativeMerge({
-                 github,owner,repo,number:c.number,expectedHead:c.head,expectedBase:c.base
+                 github,owner,repo,number:c.number,expectedHead:c.head,expectedBase:freshness.base,
+                 allowVerifiedBaseAdvance:true
                });
                if(!safe.ok){skip("MERGE_SAFETY_"+safe.reason);continue;}
                attempts++;

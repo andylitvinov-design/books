@@ -704,6 +704,13 @@ jobs:
           ref: codex/bootstrap-books
           persist-credentials: false
           fetch-depth: 1
+      - name: Checkout protected production classifier for interrupted CI
+        uses: actions/checkout@v4
+        with:
+          ref: codex/public-book-library
+          path: .hh-merge-policy-production
+          persist-credentials: false
+          fetch-depth: 1
       - name: Retry one proven interrupted mandatory job, never failed source code
         uses: actions/github-script@v7
         with:
@@ -752,9 +759,8 @@ jobs:
             if (live.state !== "open" || live.draft || live.base.ref !== "codex/public-book-library" ||
                 live.head.repo?.full_name !== fullRepo || live.head.ref !== event.head_branch ||
                 live.head.sha !== reference.head.sha || live.mergeable === false ||
-                live.mergeable_state === "dirty" ||
-                (reference.base?.sha && reference.base?.sha !== live.base.sha)) {
-              log("SKIP PR moved, changed base, became draft, or has conflicts");
+                live.mergeable_state === "dirty") {
+              log("SKIP PR changed HEAD, target, draft or conflict state");
               return;
             }
             // GitHub can re-associate an OLD workflow_run with the NEW PR HEAD.
@@ -764,16 +770,47 @@ jobs:
               log("SKIP invalid immutable Core run commit");
               return;
             }
+            let testedBase=reference.base?.sha;
             if (event.head_sha !== live.head.sha) {
               const sourceMerge = (await github.rest.repos.getCommit({
                 owner,repo,ref:event.head_sha
               })).data;
               const parents = sourceMerge.parents || [];
               if (parents.length !== 2 || parents[1]?.sha !== live.head.sha ||
-                  parents[0]?.sha !== live.base.sha) {
-                log("SKIP superseded Core HEAD or production BASE; no stale rerun");
+                  !/^[a-f0-9]{40}$/.test(parents[0]?.sha||"")) {
+                log("SKIP superseded Core HEAD; no stale source rerun");
                 return;
               }
+              testedBase=parents[0].sha;
+            }
+            // A protected advance alone does not invalidate an interrupted
+            // exact-HEAD job. Reuse the same current production-owned proof.
+            // This authorizes only a real infrastructure retry, never merge.
+            const baseEvidence=require(process.env.GITHUB_WORKSPACE+"/scripts/ci-pr-base-freshness.cjs");
+            const checkout=require("node:path").join(process.env.GITHUB_WORKSPACE,".hh-merge-policy-production");
+            const {execFileSync}=require("node:child_process");
+            let provenBase=null;
+            async function retryBaseAllowed(pr){
+              const branch=(await github.rest.repos.getBranch({owner,repo,branch:"codex/public-book-library"})).data;
+              const actual=branch?.commit?.sha;
+              if(branch?.protected!==true||!/^[a-f0-9]{40}$/.test(actual||"")||
+                 !/^[a-f0-9]{40}$/.test(testedBase||""))return false;
+              if(actual===testedBase||actual===provenBase)return true;
+              const delta=(await github.rest.repos.compareCommits({owner,repo,base:testedBase,head:actual,per_page:100})).data;
+              if(delta?.status!=="ahead"||delta.behind_by!==0||delta.base_commit?.sha!==testedBase||
+                 delta.merge_base_commit?.sha!==testedBase)return false;
+              const checked=execFileSync("git",["-C",checkout,"rev-parse","HEAD"],{encoding:"utf8",timeout:10000}).trim();
+              if(checked!==actual){
+                execFileSync("git",["-C",checkout,"fetch","--no-tags","--depth=1","origin",actual],{timeout:35000});
+                execFileSync("git",["-C",checkout,"checkout","--detach",actual],{timeout:15000});
+              }
+              const classifier=await baseEvidence.loadTrustedClassifier(process.env.GITHUB_WORKSPACE);
+              const verdict=await baseEvidence.assessBaseFreshness({github,owner,repo,pr,...classifier,verifiedRunBase:testedBase});
+              if(!verdict.ok||verdict.base!==actual)return false;
+              provenBase=actual;return true;
+            }
+            if(!await retryBaseAllowed(live)){
+              log("SKIP unverified or relevant protected base change; no blind retry");return;
             }
             // Only a single trusted mandatory infrastructure interruption qualifies.
             // A red aggregate downstream of an interrupted job is not source failure.
@@ -820,8 +857,9 @@ jobs:
             if (latestPr.state !== "open" || latestPr.draft ||
                 latestPr.base.ref !== "codex/public-book-library" ||
                 latestPr.head.sha !== live.head.sha ||
-                latestPr.base.sha !== live.base.sha) {
-              log("SKIP PR changed before targeted retry"); return;
+                latestPr.mergeable === false || latestPr.mergeable_state === "dirty" ||
+                !await retryBaseAllowed(latestPr)) {
+              log("SKIP PR changed or protected base proof invalid before targeted retry"); return;
             }
             const latestJobs = (await github.rest.actions.listJobsForWorkflowRun({
               owner,repo,run_id:event.id,per_page:100,filter:"latest"
