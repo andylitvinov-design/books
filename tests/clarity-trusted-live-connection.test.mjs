@@ -53,8 +53,11 @@ test('relay loads an approved reference only after consent and before its first 
  assert.equal(f.provider.messages.length,1)
  f.consent()
  await reading
- assert.deepEqual(f.events,[])
+ assert.deepEqual(f.events.map(event=>event.type),['begin'])
+ f.client.input({realtimeInput:{audio:{data:'AAAAAA==',mimeType:'audio/pcm;rate=16000'}}})
+ f.provider.input({serverContent:{turnComplete:true}})
  assert.equal(f.provider.messages.length,1)
+ assert.ok(!f.client.messages.some(frame=>frame.serverContent))
  finish(note)
  await f.relay.settled()
  const requests=f.provider.messages.filter(packet=>packet.clientContent?.turnComplete)
@@ -71,7 +74,25 @@ test('loss of the relay client during the opening lookup never discloses the sto
  finish('CLIENT-APPROVED REFERENCE DATA (stale synthetic results)')
  await f.relay.settled()
  assert.equal(f.provider.messages.length,1)
- assert.deepEqual(f.events,[])
+ assert.deepEqual(f.events.map(event=>event.type),['begin','disconnect'])
+})
+test('Clarity rechecks opening memory after persisting begin when consent is revoked during that write',async()=>{
+ let pendingBegin,completeBegin
+ const writing=new Promise(resolve=>{pendingBegin=resolve})
+ const write=new Promise(resolve=>{completeBegin=resolve})
+ let memoryApproved=true
+ const note='CLIENT-APPROVED REFERENCE DATA (revoked during begin)'
+ const f=fixture({
+  beforePersist:async event=>{if(event.type==='begin'){pendingBegin();await write}},
+  loadOpeningNote:async()=>memoryApproved?note:'',
+ })
+ f.ready();f.consent();await writing
+ memoryApproved=false
+ completeBegin()
+ await f.relay.settled()
+ const requests=f.provider.messages.filter(packet=>packet.clientContent?.turnComplete)
+ assert.equal(requests.length,1)
+ assert.equal(JSON.stringify(requests).includes(note),false)
 })
 test('Clarity closes a committed opening when the approved reference stalls',async()=>{
  let entered,release
@@ -99,7 +120,7 @@ test('Clarity completes an explicit pause while opening memory is still pending'
  await new Promise(resolve=>setImmediate(resolve))
  assert.equal(f.provider.readyState,3)
  assert.equal(f.client.readyState,3)
- assert.deepEqual(f.events,[])
+ assert.deepEqual(f.events.map(event=>event.type),['begin','pause'])
  assert.equal(f.run.clock.days[0].elapsedMs,0)
  release('CLIENT-APPROVED REFERENCE DATA (late synthetic source)')
  await f.relay.settled()
