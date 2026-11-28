@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {speechEvidenceLanguage,isSuspectShortRussianSpeech,speechEvidenceCandidate,speechWordErrors} from '../lib/coaching/coach-speech-evidence.mjs'
+import {speechEvidenceLanguage,isSuspectShortRussianSpeech,speechEvidenceCandidate,speechWordErrors,shouldReviewSpeech,speechReviewCandidateText} from '../lib/coaching/coach-speech-evidence.mjs'
 test('reported short wrong-script token is review-only, not a guessed correction',()=>{
   assert.equal(isSuspectShortRussianSpeech('postawszym','ru'),true)
   for(const text of ['уставшим','Whisper','GPT','business','stop','нет','не хочу','Я использую Whisper','postawszym and other words'])assert.equal(isSuspectShortRussianSpeech(text,'ru'),false,text)
@@ -26,4 +26,16 @@ test('live review uses speech only and never replays a candidate',()=>{
   assert.ok(live.indexOf('if(decision?.transcriptReview)')<live.indexOf('void checkpoint(r,value,preceding)'))
   assert.match(parent,/details\?\.source==='speech'/)
   assert.match(live,/onInputFinal\?\.\(body,\{source:'typed'\}\)/)
+})
+
+test('expanded review is optional and candidate output stays unverified',()=>{
+ assert.equal(shouldReviewSpeech('postawszym','ru',false),true)
+ assert.equal(shouldReviewSpeech('это совершенно русская фраза','en',false),false)
+ assert.equal(shouldReviewSpeech('это совершенно русская фраза','en',true),true)
+ assert.equal(shouldReviewSpeech('это совершенно русская фраза','es',true),true)
+ assert.equal(shouldReviewSpeech('Я использую Whisper','ru',true),false)
+ assert.equal(shouldReviewSpeech('business','ru',true),false)
+ assert.equal(speechReviewCandidateText('postawszym','postawszym','ru'),'')
+ assert.equal(speechReviewCandidateText('Уставшим','postawszym','ru'),'Уставшим')
+ assert.equal(speechReviewCandidateText('bad\u0000text','postawszym','ru'),'')
 })
