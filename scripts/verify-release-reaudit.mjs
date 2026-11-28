@@ -24,6 +24,25 @@ const routes = [
   ['/books/maya-tradition', 'en'], ['/books/maya-tradition?lang=ru', 'ru'],
 ];
 const volumes = ['maya-egregor-gods', 'maya-calendar', 'maya-exorcism', 'maya-mysteries'];
+
+// Check actual loaded CSS, including nested media rules, rather than inferring
+// route isolation from filenames or successful source compilation.
+async function hasScopedStyle(page, selector) {
+  return page.evaluate(wanted => {
+    const normalize = value => value.replace(/\s*>\s*/g, ' > ').replace(/\s+/g, ' ').trim();
+    const visit = rules => [...rules].some(rule => {
+      if (typeof rule.selectorText === 'string' &&
+          rule.selectorText.split(',').some(part => normalize(part) === normalize(wanted))) return true;
+      return rule.cssRules ? visit(rule.cssRules) : false;
+    });
+    return [...document.styleSheets].some(sheet => {
+      try { return visit(sheet.cssRules); } catch { return false; }
+    });
+  }, selector);
+}
+const scopedReaderRule = '.reader-shell .reader-layout > *';
+const scopedCabinetRule = '.cabinet-landing-shell .hh-test-mode-grid';
+
 async function check(name, detail, fn) {
   try { const extra = await fn(); results.push({ name, ...detail, ok: true, ...extra }); return true; }
   catch (error) { results.push({ name, ...detail, ok: false, error: String(error.message).slice(0, 1800) }); return false; }
@@ -359,6 +378,26 @@ async function exercise(engine, browserType, width) {
         assert.equal(response.status(), 200);
         await page.locator('main').first().waitFor();
         await settlePublicDocument('before-assertions');
+        // The approved Home must not receive these private/reader route styles.
+        if (path.startsWith('/?lang=') || path === '/es') {
+          assert.equal(await hasScopedStyle(page, scopedReaderRule), false, 'Home must not load reader-specific CSS');
+          assert.equal(await hasScopedStyle(page, scopedCabinetRule), false, 'Home must not load Cabinet-specific CSS');
+        }
+        if (path === '/en/client' || path === '/ru/client') {
+          await expect(page.locator('main.cabinet-landing-shell')).toBeVisible();
+          assert.equal(await hasScopedStyle(page, scopedCabinetRule), true, 'Cabinet route retains its actual stylesheet');
+          assert.equal(await hasScopedStyle(page, scopedReaderRule), false, 'Cabinet must not load reader-specific CSS');
+          // Exercise a genuine, local-only topic toggle in the current test picker.
+          // The old mood/Stress widget was moved into signed-in My Tests.
+          const topic = page.locator('[data-prelogin-test-picker] section[aria-labelledby="hh-simple-topic-title"] [role="group"] button[aria-pressed]').first();
+          await expect(topic).toBeVisible();
+          const initial = await topic.getAttribute('aria-pressed');
+          assert.ok(initial === 'true' || initial === 'false');
+          await topic.click();
+          await expect(topic).toHaveAttribute('aria-pressed', initial === 'true' ? 'false' : 'true');
+          await topic.click();
+          await expect(topic).toHaveAttribute('aria-pressed', initial);
+        }
         if (path.endsWith('/services')) {
           // Synthetic outage must still be handled by the actual on-screen
           // component. No mock success and no silently hidden API failure.
@@ -739,10 +778,21 @@ async function exercise(engine, browserType, width) {
           await expect(cspPage).toHaveURL(origin + '/en/services');
           await expect(cspPage.locator('main')).toHaveClass(/services-shell/);
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), 'same-public-document', 'Same-policy links must retain soft navigation');
-          // The unified Profile dock now opens the PRIVATE Cabinet first.
-          // Verify the hard CSP boundary, guest isolation and the public
-          // actual six-tab My Space and separate public profile builder.
+          // The unified Profile dock opens My Page. A guest must see the
+          // sign-in gate, not private account content. Exercise its real
+          // discovery link into the private CSP boundary, not an invented URL.
           await cspPage.locator('[data-hh-unified-dock] [data-unified-dock-item="profile"]').click();
+          await expect(cspPage).toHaveURL(origin + '/en/my-page');
+          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
+          await waitForDocument();
+          await expect(cspPage.locator('[data-universal-my-page]')).toBeVisible();
+          await expect(cspPage.locator('[data-my-page-public-fallback="guest"]')).toBeVisible();
+          await expect(cspPage.locator('[data-my-page-google]')).toBeVisible();
+          await expect(cspPage.locator('[data-my-page-anti-stress-practices], [data-my-page-media-library]')).toHaveCount(0);
+          const discover = cspPage.locator('[data-my-page-discover]');
+          await expect(discover).toHaveAttribute('href', '/en/app/portrait');
+          await cspPage.evaluate(() => { window.__cspDocumentProbe = 'my-page-before-private-profile'; });
+          await discover.click();
           await expect(cspPage).toHaveURL(origin + '/en/app/portrait');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'private');
           await waitForDocument();
@@ -784,7 +834,7 @@ async function exercise(engine, browserType, width) {
           const discoveryBottom = cspPage.locator('[data-hh-unified-dock]');
           await expect(discoveryBottom).toBeVisible();
           await expect(discoveryBottom.locator('[data-unified-dock-item]')).toHaveCount(7);
-          await expect(discoveryBottom.locator('[data-unified-dock-item="profile"]')).toHaveAttribute('href', '/en/app/portrait');
+          await expect(discoveryBottom.locator('[data-unified-dock-item="profile"]')).toHaveAttribute('href', '/en/my-page');
           await expect(cspPage.locator('.mobile-bottom-navigation')).toHaveCount(0);
           const privateContext = await cspBrowser.newContext({viewport:{width,height:900}, serviceWorkers: 'block'});
           await privateContext.route('**/api/**', route => ['GET', 'HEAD'].includes(route.request().method()) ? route.continue() : route.abort());
@@ -870,7 +920,7 @@ async function exercise(engine, browserType, width) {
           const restoredDiscoveryBottom = cspPage.locator('[data-hh-unified-dock]');
           await expect(restoredDiscoveryBottom).toBeVisible();
           await expect(restoredDiscoveryBottom.locator('[data-unified-dock-item]')).toHaveCount(7);
-          await expect(restoredDiscoveryBottom.locator('[data-unified-dock-item="profile"]')).toHaveAttribute('href', '/en/app/portrait');
+          await expect(restoredDiscoveryBottom.locator('[data-unified-dock-item="profile"]')).toHaveAttribute('href', '/en/my-page');
           await expect(cspPage.locator('.mobile-bottom-navigation')).toHaveCount(0);
           historyPhase = 'forward-to-public-home';
           await cspPage.goForward({ waitUntil: 'domcontentloaded' });
@@ -982,6 +1032,8 @@ async function exercise(engine, browserType, width) {
             const response = await page.goto(origin + readerPath, { waitUntil: 'domcontentloaded', timeout: 35000 });
             assert.equal(response.status(), 200);
             await page.locator('.reader-article').waitFor({ state: 'visible', timeout: 20000 });
+            await expect.poll(() => hasScopedStyle(page, scopedReaderRule)).toBe(true);
+            assert.equal(await hasScopedStyle(page, scopedCabinetRule), false, 'Book reader must not load Cabinet CSS');
             const language = await page.evaluate(() => ({ htmlLang: document.documentElement.lang, mainLang: document.querySelector('main')?.lang }));
             assert.equal(language.htmlLang, locale, 'Reader document language');
             assert.equal(language.mainLang, locale, 'Reader main language');

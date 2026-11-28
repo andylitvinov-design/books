@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import "./cabinet-landing.css";
 import "./client-teal.css";
 import { notFound } from "next/navigation";
 

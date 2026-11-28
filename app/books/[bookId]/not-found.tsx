@@ -1,4 +1,5 @@
 import Link from "next/link";
+import "@/app/reader-responsive.css";
 
 export default function BookNotFound() {
   return (

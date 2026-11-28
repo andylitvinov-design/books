@@ -27,6 +27,11 @@ const homepagePublicImageSources = [
   "/images/holistic-house/ideas-pine-reference.webp",
   "/images/video-goal-art/:path*",
   "/images/holistic-house/andy-about.png",
+  "/images/holistic-house/ali-inner-alchemist-hero.webp",
+  "/videos/holistic-house/film-collection-v3/sun-warm-ocean-dawn.jpg",
+  "/images/holistic-house/course-focus-mountain-boy.webp",
+  "/images/holistic-house/shamanic-cards-business-hd.avif",
+  "/images/holistic-house/books-library.webp",
 ] as const;
 
 // Only approved pages with an explicit Record button may ask for microphone.
