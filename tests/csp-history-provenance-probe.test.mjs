@@ -42,16 +42,25 @@ test('persisted pageshow can establish foreign restore when its document and ent
 });
 
 
-test('CSP browser audit identifies the actual dialogue-first home and keeps a nonempty hero assertion',()=>{
-  const home = readFileSync(new URL('../components/holistic-house-home.tsx',import.meta.url),'utf8');
+test('CSP browser audit identifies the actual My Coach home and keeps visible hero and navigation assertions',()=>{
+  const catalog = readFileSync(new URL('../components/my-coach-catalog.jsx',import.meta.url),'utf8');
+  const helper = readFileSync(new URL('../scripts/verify-my-coach-home-entry.mjs',import.meta.url),'utf8');
   const audit = readFileSync(new URL('../scripts/verify-release-reaudit.mjs',import.meta.url),'utf8');
   const history = readFileSync(new URL('../scripts/csp-history-provenance-probe.mjs',import.meta.url),'utf8');
-  assert.match(home,/data-home-design="dialogue-first-v1"/);
-  assert.match(home,/HomeDialogueEntry/);
-  for (const source of [audit,history]) {
-    assert.ok(source.includes('main[data-home-design='), 'Homepage SSR anchor must remain an actual main element');
-    assert.match(source,/dialogue-first-v1/);
-    assert.match(source,/data-home-dialogue-entry/);
-    assert.doesNotMatch(source,/approved-v2/);
+  assert.match(catalog,/<main[^>]*data-my-coach-catalog/);
+  for (const marker of ['data-my-coach-hero', 'data-my-coach-rail', 'my-coach-heading']) {
+    assert.ok(catalog.includes(marker), 'Real catalog must retain ' + marker);
+    assert.ok(helper.includes(marker), 'Browser helper must verify ' + marker);
   }
+  for (const check of ["page.locator('main[data-my-coach-catalog]')", "page.waitForURL(url=>url.pathname===target", "await root.count(),1", "await root.getAttribute('lang'),locale", "waitFor({state:'visible'", "data-my-coach-program-details", "data-home-dialogue-entry", "document.documentElement.scrollWidth<=innerWidth+1"]) {
+    assert.ok(helper.includes(check), 'Home acceptance must retain ' + check);
+  }
+  for (const source of [audit,history]) {
+    assert.ok(source.includes("import { verifyMyCoachHome } from './verify-my-coach-home-entry.mjs'"));
+    assert.match(source,/await verifyMyCoachHome\(/);
+    assert.doesNotMatch(source,/main\[data-home-design=|approved-v2/);
+  }
+  assert.ok(history.includes("await ready('/en/services'); result.home = await snapshot()"));
+  assert.ok(history.includes("await aboutLink.click()"));
+  assert.ok(history.includes("assertHistoryProvenanceEvidence(result)"));
 });

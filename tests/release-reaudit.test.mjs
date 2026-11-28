@@ -361,6 +361,11 @@ test('release re-audit follows current My Space Today guest Profile and explicit
   assert.ok(start > 0 && finish > start + 1000, 'Real CSP browser journey is preserved');
   const flow = source.slice(start, finish);
   for (const required of [
+    "toHaveURL(origin + '/en/my-page')",
+    "locator('[data-universal-my-page]')",
+    "locator('[data-my-page-public-fallback=\"guest\"] [data-my-page-google]')",
+    "locator('[data-my-page-private-feed]')).toHaveCount(0)",
+    "locator('[data-my-page-discover]').click()",
     "toHaveURL(origin + '/en/app/portrait')",
     "toHaveAttribute('data-csp-class', 'private')",
     "locator('[data-cabinet-guest-overview]')",
@@ -376,7 +381,7 @@ test('release re-audit follows current My Space Today guest Profile and explicit
   ]) assert.ok(flow.includes(required), 'Missing My Space/CSP regression: ' + required);
   assert.ok(!flow.includes("locator('[data-profile-hub-tabs] [data-profile-tab=\"today\"]')"),
     'Anonymous My Space no longer relies on signed-in Today navigation');
-  assert.ok(source.includes("toHaveAttribute('href', '/en/app/portrait')"), 'Private test navigation returns to Profile');
+  assert.ok(source.includes("toHaveAttribute('href', '/en/my-page')"), 'Private test navigation returns to My Page');
   assert.ok(!source.includes('Public profile discovery must retain same-policy soft navigation'));
 });
 
@@ -456,7 +461,7 @@ test('private public-test discovery keeps the current unified seven-destination 
   for (const scope of [first, back]) {
     assert.ok(scope.includes("locator('[data-hh-unified-dock]')"), 'The real single shared dock must mount on private test discovery');
     assert.ok(scope.includes("locator('[data-unified-dock-item]')).toHaveCount(7)"), 'All seven real dock links must remain present');
-    assert.ok(scope.includes("locator('[data-unified-dock-item=\"profile\"]')).toHaveAttribute('href', '/en/app/portrait')"), 'Profile still leads to the actual Cabinet');
+    assert.ok(scope.includes("locator('[data-unified-dock-item=\"profile\"]')).toHaveAttribute('href', '/en/my-page')"), 'Profile still leads to the actual My Page Cabinet');
     assert.ok(scope.includes("locator('.mobile-bottom-navigation')).toHaveCount(0)"), 'No duplicate retired mobile bar');
     assert.ok(!scope.includes("locator('.mobile-bottom-navigation')).toBeVisible()"), 'A retired bar cannot be required as the release condition');
   }

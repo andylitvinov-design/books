@@ -5,7 +5,7 @@ import assert from 'node:assert/strict'
 export async function verifyMyCoachHome(page,locale){
  const target='/'+locale+'/my-coach'
  await page.waitForURL(url=>url.pathname===target,{timeout:30000})
- const root=page.locator('[data-my-coach-catalog]')
+ const root=page.locator('main[data-my-coach-catalog]')
  await root.waitFor({state:'visible',timeout:30000})
  assert.equal(await root.count(),1)
  assert.equal(await root.getAttribute('lang'),locale)
