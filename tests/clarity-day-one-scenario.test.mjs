@@ -368,7 +368,7 @@ test('explicit opening refusal stops the bound relay, not ordinary protocol requ
   assert.equal(run(repair).declined,false)
  }
  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
- const input=ui.slice(ui.indexOf('onInputFinal={text=>{'),ui.indexOf('onOutputInterim={setStreamingPreview}'))
+ const input=ui.slice(ui.indexOf('onInputFinal={(text,details)=>{'),ui.indexOf('onOutputInterim={setStreamingPreview}'))
  assert.match(input,/if\(clarityCourseDay\(selectedCourseId\)\)\{\s*if\(!captured\)return true/)
  assert.match(input,/if\(declined&&!coachingBrainSafety\(guard\)&&!coachingBrainBoundary\(guard\)\)\{\s*setPaused\(true\);setStreamingPreview\(''\);return true/)
  const transport=readFileSync(new URL('../components/my-coach-gemini-live.jsx',import.meta.url),'utf8')
