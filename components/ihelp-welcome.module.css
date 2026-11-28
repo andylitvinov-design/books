@@ -68,3 +68,13 @@
 .topicRail button[data-hh-ihelp-topic="meaning"]{background:#f1e5fa;border-color:#e8d8f3;color:#7543a5}
 .topicRail{gap:5px}
 .topicRail button{flex:1 0 auto;flex-direction:column;gap:4px;padding:6px;min-height:49px}
+
+
+/* Five equal-width topic tiles, never truncate the last tile on an iPhone. */
+.topics{padding:7px 8px 10px;background:transparent;box-sizing:border-box}
+.topics p{color:#164b40;font-weight:750}
+.topicRail{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;overflow:visible;padding:0}
+.topicRail button{box-sizing:border-box;width:100%;min-width:0;min-height:51px;gap:4px;padding:5px 2px;border-radius:15px;white-space:normal;text-align:center;background:#e7f4e4}
+.topicRail button svg{flex:none;width:18px;height:18px}
+.topicRail button strong{display:block;max-width:100%;font-size:clamp(10px,2.8vw,13px);line-height:1.15;overflow-wrap:break-word;hyphens:auto}
+@media(max-width:355px){.topicRail{gap:3px}.topicRail button{padding-inline:1px}.topicRail button strong{font-size:10px}}
