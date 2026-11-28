@@ -132,3 +132,18 @@ test('Last Session includes active saved drafts without claiming review or leaki
  assert.ok(source.includes('selectLastCoachSession(reviewed,drafts)'))
  assert.ok(source.includes('daily?.owner===accountId'))
 })
+
+import {coachArchiveSessionMetadata} from '../lib/app/coach-archive-session-metadata.mjs'
+test('private archive shows real start date and recorded duration for drafts and reviewed sessions',()=>{
+ const p={personaId:'mira',courseSessionId:'introductory',startedAt:'2026-11-25T10:00:00Z',completedAt:'2026-11-25T10:05:00Z',durationSeconds:125,turns:[{content:'PRIVATE'}]}
+ const m=coachArchiveSessionMetadata(p,'2026-11-26T10:00:00Z')
+ assert.deepEqual(m,{date:p.startedAt,dateKind:'start',duration:'2:05',personaId:'mira',courseSessionId:'introductory'})
+ assert.equal(coachArchiveSessionMetadata(p).date,p.startedAt)
+ assert.equal(coachArchiveSessionMetadata({durationSeconds:null},p.completedAt).dateKind,'saved')
+ assert.equal(coachArchiveSessionMetadata({durationSeconds:7201}).duration,null)
+ assert.equal(coachArchiveSessionMetadata({startedAt:'2026-11-26'},'2026-11-25').date,'2026-11-25')
+ assert.equal(coachArchiveSessionMetadata({}).date,null)
+ const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
+ assert.ok(read('components/app/my-coach-draft-archive.jsx').includes('<CoachSessionArchiveHeader protocol={p}'))
+ assert.ok(read('components/app/my-coaching-plan.jsx').includes('<CoachSessionArchiveHeader protocol={protocol} locale={lang} reviewed/>'))
+})

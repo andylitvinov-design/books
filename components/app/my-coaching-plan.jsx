@@ -7,6 +7,7 @@ import {appFetch} from '@/lib/app/client-fetch'
 import MyCoachContext from './my-coach-context'
 import MyCoachDraftArchive from './my-coach-draft-archive'
 import AntiStressArchive from './anti-stress-archive'
+import CoachSessionArchiveHeader from './coach-session-archive-header'
 import CourseArchiveReview from './course-archive-review'
 import MyCoachSavedProfileV3 from './my-coach-saved-profile-v3'
 import DaybookDailySettings from './daybook-daily-settings'
@@ -489,7 +490,7 @@ export default function MyCoachingPlan({accountId,locale='en'}){
    {reportError&&<p className={styles.inlineError} role="alert">{t.reportError}</p>}
    {protocolError&&<p className={styles.inlineError} role="alert">{protocolError}</p>}
    {visibleProtocols.map(protocol=><article key={protocol.id} className={styles.reportCard} data-my-coach-saved-protocol={protocol.id}>
-    <div className={styles.reportTop}><div><span>{protocolCopy[lang].transcript}</span><h2>{protocolCopy[lang].title} · {protocol.personaId}</h2><small>{formatDate(protocol.completedAt,lang)} · {protocol.turns?.length||0} {lang==='ru'?'реплик':lang==='es'?'turnos':'turns'}</small></div></div>
+    <CoachSessionArchiveHeader protocol={protocol} locale={lang} reviewed/>
     {isGoalReviewedResult(protocol.courseSessionId)?<><SavedGoalResults protocol={protocol} locale={lang} onDownload={()=>exportProtocol(protocol,false,'results')}/><details className={styles.reportDetails}><summary>{protocolCopy[lang].title} <ChevronDown size={16}/></summary><SavedProtocolOverview protocol={protocol} locale={lang}/></details></>:<SavedProtocolOverview protocol={protocol} locale={lang}/>} 
    <SavedProtocolCheckin protocol={protocol} locale={lang}/>
     {protocol.clientSummary&&<div className={styles.reportSection}><b>{lang==='ru'?'Мой итог':lang==='es'?'Mi conclusión':'My takeaway'}</b><p>{protocol.clientSummary}</p></div>}

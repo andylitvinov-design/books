@@ -222,9 +222,10 @@ test('browser WebSocket relay opens same-origin only and releases microphone aft
  const {connectClarityBrowserRelay}=await import('../lib/coaching/clarity-relay-client.mjs')
  const runId=id(10),protocolId=id(11),wire=JSON.stringify
  let socket,visible=true,timerId=0
+ const captureSocket=value=>{socket=value}
  const timers=new Map(),clocks=[],selectionFrames=[],played=[],drained=[],closed=[]
  class BrowserSocket {
-  constructor(url){this.url=url;this.readyState=0;this.bufferedAmount=0;this.sent=[];socket=this}
+  constructor(url){this.url=url;this.readyState=0;this.bufferedAmount=0;this.sent=[];captureSocket(this)}
   send(raw){this.sent.push(JSON.parse(raw))}
   open(){this.readyState=1;this.onopen()}
   receive(value){this.onmessage({data:wire(value)})}
@@ -264,7 +265,7 @@ test('browser WebSocket relay opens same-origin only and releases microphone aft
  socket.receive(clock(6000,'paused'))
  assert.equal(closed.length,1);assert.equal(closed[0].terminalVerified,true);assert.equal(closed[0].binding.protocolId,protocolId);assert.equal(closed[0].elapsedMs,6000)
  assert.equal(h.snapshot().closed,true);assert.equal(events.size,0);assert.equal(timers.size,0)
- const g=connectClarityBrowserRelay(opts);socket.open();socket.receive(select)
+ connectClarityBrowserRelay(opts);socket.open();socket.receive(select)
  visible=false;events.get('visibilitychange')()
  assert.equal(closed.at(-1).status,'not_started');assert.equal(socket.sent.length,1)
  visible=true
@@ -410,8 +411,9 @@ test('relay initialization times out before provider allocation and disposes a l
 test('Clarity browser relay stops capture after missing trusted clock observations, not a fake completion',async()=>{
  const {connectClarityBrowserRelay}=await import('../lib/coaching/clarity-relay-client.mjs')
  let socket;const tasks=new Map(),closed=[];let seq=0
+ const captureSocket=value=>{socket=value}
  class BrowserSocket{
-  constructor(){socket=this;this.readyState=0;this.bufferedAmount=0;this.sent=[]}
+  constructor(){captureSocket(this);this.readyState=0;this.bufferedAmount=0;this.sent=[]}
   send(raw){this.sent.push(JSON.parse(raw))}
   close(){this.readyState=3;this.onclose?.()}
   receive(value){this.onmessage({data:JSON.stringify(value)})}
@@ -451,8 +453,9 @@ test('startup watchdogs close the right phase without a fabricated enrollment or
   ['setup','provider_setup_unverified','not_started'],['consent','consent_unverified','unverified']
  ]){
   let socket,watchdog;const closed=[],clocks=[]
+  const captureSocket=value=>{socket=value}
   class BrowserSocket{
-   constructor(){socket=this;this.readyState=0;this.bufferedAmount=0;this.sent=[]}
+   constructor(){captureSocket(this);this.readyState=0;this.bufferedAmount=0;this.sent=[]}
    send(raw){this.sent.push(JSON.parse(raw))}
    close(){this.readyState=3;this.onclose?.()}
    receive(value){this.onmessage({data:JSON.stringify(value)})}

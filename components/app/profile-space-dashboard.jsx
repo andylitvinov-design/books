@@ -160,7 +160,7 @@ function ExpressProgramOverview({locale,copy}) {
           </div>
           <div className={styles.expressResult}><strong>{t.result}</strong><p>{part.outcome}</p></div>
           {part.notice && <p className={styles.expressNotice}>{part.notice}</p>}
-          <Link className={styles.expressLink} href={'/'+locale+'/services#service-group-'+part.group} prefetch={false}>{part.action}<ArrowRight size={18} aria-hidden="true"/></Link>
+          <Link className={styles.expressLink} href={'/'+locale+'/services/'+({diagnostics:'free-situation-review',homeopathy:'alchemy-of-soul',constellations:'business-consulting'}[part.key])} prefetch={false}>{part.action}<ArrowRight size={18} aria-hidden="true"/></Link>
         </div>
       </article>
     })}

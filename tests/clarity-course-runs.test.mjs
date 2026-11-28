@@ -333,6 +333,12 @@ test('bound day eligibility requires reviewed prior protocols and rejects a pree
  records.delete(run.protocolIds[1]);drafts.add(run.protocolIds[1]);assert.equal(await canStart(db,actor,run,2),false)
  drafts.clear();assert.equal(await canStart(db,actor,run,2),true)
  assert.match(source,/if\(run.clock.days\[day-1\]\?\.status==='not_started'&&!await canStartBoundDay\(db,actor,run,day\)\)throw conflict\(\)/)
+ const apply=source.slice(source.indexOf('export async function applyTrustedClarityRunEvent('),source.indexOf('export async function recoverExpiredClarityRun('))
+ const guard=apply.indexOf("if(before.clock.days[event.day-1]?.status==='not_started'&&!await canStartBoundDay(db,actor,before,event.day))throw conflict()")
+ assert.ok(guard>apply.indexOf('await requireClarityCredentialEvent(db,actor,event)'))
+ assert.ok(guard<apply.indexOf('await claimTrustedFreeCoachingDays'))
+ assert.ok(guard<apply.indexOf('await writeClock'))
+
  const draftsSource=readFileSync(new URL('../lib/app/my-coach-protocol-drafts.js',import.meta.url),'utf8')
  assert.match(draftsSource,/courseRunId&&!cursor&&!hasMore&&drafts.length===0\?await readClarityBoundStart/)
 })
