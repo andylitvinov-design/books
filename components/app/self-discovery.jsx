@@ -198,27 +198,27 @@ export default function SelfDiscovery({locale='en',initialTheme='love',initialVi
  const sourceQuery=discoverySourceQuery(theme.id,locale)
  function testPath(key){return root+'/tests?explore=1&'+sourceQuery+'&test='+encodeURIComponent(key)}
  function retakeKey(id){return free.find(e=>e.definition?.id===id)?.key}
- const task=(name,Icon,label,hint,status)=> <button type="button" className={styles.task} aria-expanded={view===name} onClick={()=>openView(name)}><span className={styles.taskIcon}><Icon size={26} aria-hidden="true"/></span><span className={styles.taskText}><strong>{label}</strong><small>{hint}</small></span>{status&&<span className={styles.status}>{status}</span>}<ChevronRight size={21} aria-hidden="true"/></button>
+ const task=(name,Icon,label,hint,status)=> <button type="button" className={styles.task+(name==='tests'?' '+styles.nextAction:'')} aria-expanded={view===name} onClick={()=>openView(name)}><span className={styles.taskIcon}><Icon size={26} aria-hidden="true"/></span><span className={styles.taskText}><strong>{label}</strong><small>{hint}</small></span>{status&&<span className={styles.status}>{status}</span>}<ChevronRight size={21} aria-hidden="true"/></button>
  return <main className={styles.page} data-cabinet-theme="daybook" data-self-discovery>
   <div className={styles.mast}><Link href={root+'/course?view=courses'} prefetch={false}><ArrowLeft size={23} aria-hidden="true"/>{t.back}</Link><button className={styles.help} type="button" aria-label={d.help} aria-haspopup="dialog" onClick={()=>window.dispatchEvent(new Event('hh:open-ihelp'))}><MessageCircle size={19} aria-hidden="true"/>iHelp</button></div>
   <header className={styles.hero}><span className={styles.kicker}>SELF DISCOVERY</span><h1>{d.title}</h1><p>{d.course}</p><span className={styles.motto}><Sparkles size={16} aria-hidden="true"/>{d.motto}</span></header>
   <button type="button" className={styles.choose} aria-expanded={expanded} onClick={()=>setExpanded(x=>!x)}><span className={styles.choosePhoto} aria-hidden="true"/><span className={styles.chooseText}><strong>{d.choose}</strong><small>{d.hint}</small></span><ChevronRight size={26} aria-hidden="true"/></button>
   <nav className={styles.nav} aria-label={d.choose}>{DISCOVERY_THEMES.slice(0,5).map(item=>{const Icon=ICONS[item.id];const n=themeProgress(free,verified,item.id);return <button type="button" key={item.id} aria-pressed={theme.id===item.id} onClick={()=>choose(item.id)}><Icon size={21} aria-hidden="true"/>{item.label[locale]}{state.phase==='ready'&&<small>{n.done}/{n.total}</small>}</button>})}</nav>
   {expanded&&<div className={styles.allThemes}>{DISCOVERY_THEMES.map(item=><button type="button" key={item.id} aria-pressed={theme.id===item.id} onClick={()=>{choose(item.id);setExpanded(false)}}>{item.title[locale]}</button>)}</div>}
-  <section className={styles.banner}><small>{d.theme} · {theme.label[locale]}</small><h2>{theme.title[locale]}</h2>{state.phase==='ready'&&<div className={styles.progressRow}><progress aria-label={d.complete} max={Math.max(1,counts.total)} value={counts.done}/><strong>{counts.done}/{counts.total}</strong></div>}</section>
+
   {state.phase!=='ready'?<section className={styles.panel} aria-live="polite">
    <p>{state.phase==='guest'?t.login:state.phase==='error'?t.error:t.loading}</p>
    {state.phase==='guest'?<Link className={styles.action} href={root+'/portrait'}>{t.login}</Link>:state.phase==='error'?<button className={styles.action} onClick={()=>void load()}>{t.retry}</button>:null}
   </section>:<>
-   <section className={styles.panel}><h2>{d.tasks}</h2><div className={styles.strip}><CheckCircle2 size={17} aria-hidden="true"/>{d.strip}</div>
+   <section className={styles.panel+' '+styles.overviewCard} data-course-standard="golden-v4"><section className={styles.banner}><small>{d.theme} · {theme.label[locale]}</small><h2>{theme.title[locale]}</h2>{state.phase==='ready'&&<div className={styles.progressRow}><progress aria-label={d.complete} max={Math.max(1,counts.total)} value={counts.done}/><strong>{counts.done}/{counts.total}</strong></div>}</section>
     <div className={styles.tasks}>{task('tests',ListChecks,d.test,d.testHint,counts.done+'/'+counts.total)}
     {theme.id!=='all'&&task('practice',Play,d.practice,d.practiceHint,practiceCounts[theme.id]===undefined?ui.unknown:practiceCounts[theme.id]>0?'✓ '+ui.saved:ui.notStarted)}
     {task('results',BarChart3,d.results,d.resultHint,results.length?String(results.length)+' '+ui.attempts:null)}</div>
-    <h3 className={styles.resourceTitle}>{d.resources}</h3><div className={styles.resources}>
+    <details className={styles.resourceDisclosure}><summary><BookOpen size={20} aria-hidden="true"/>{d.resources}<ChevronRight size={18} aria-hidden="true"/></summary><div className={styles.resources}>
      <button type="button" onClick={()=>openView('guide')}><BookOpen size={23} aria-hidden="true"/><span>{d.guide}</span></button>
      <Link href={root+'/portfolio'} prefetch={false}><Sparkles size={23} aria-hidden="true"/><span>{d.recommend}</span></Link>
      <button type="button" onClick={()=>setView('results')}><BarChart3 size={23} aria-hidden="true"/><span>{d.report}</span></button>
-    </div>
+    </div></details>
    </section>
    {view==='tests'&&<section className={styles.panel} data-self-discovery-tests><h2>{d.test}</h2><p className={styles.note}>{d.freeOnly}</p><input aria-label={d.search} className={styles.search} type="search" placeholder={d.search} value={query} onChange={e=>{setQuery(e.target.value);setTestLimit(12)}}/>
     <div className={styles.kinds} role="group" aria-label={ui.kind}>{[{key:'all'},...TEST_KINDS].map(item=><button type="button" key={item.key} aria-pressed={kind===item.key} onClick={()=>{setKind(item.key);setTestLimit(12)}}>{item.key==='all'?ui.all:testKindShortLabel({testKind:item.key},locale)}</button>)}</div>
@@ -230,13 +230,13 @@ export default function SelfDiscovery({locale='en',initialTheme='love',initialVi
     <section id="test-history" className={styles.panel}><h2>{t.history}</h2>{results.length===0?<p>{d.noData}</p>:<ul className={styles.history}>{results.slice(0,shown).map(row=><li key={row.id}><Link href={root+'/results/'+encodeURIComponent(row.id)+'?'+sourceQuery} prefetch={false}><strong>{assessmentHistoryTitle(row,accountLocale)||row.definitionKey||t.tests}</strong><small>{t.date}: {dated(row.measurementAt,locale,t.unknown)}</small></Link></li>)}</ul>}
     {shown<results.length&&<button onClick={()=>setShown(n=>n+20)}>{t.more}</button>}<Link href={root+'/history'} prefetch={false}>{t.all}</Link></section></>}
    <button type="button" className={styles.primary} onClick={()=>{choose(next.id);setView(null)}}><Sparkles size={26} aria-hidden="true"/>{d.next} «{next.label[locale]}»<ArrowRight size={23} aria-hidden="true"/></button>
-   <section className={styles.panel}><h2>{d.overview}</h2><p>{d.wheelHint}</p>
+   <section className={styles.panel}><details><summary>{d.overview}</summary><p>{d.wheelHint}</p>
     {['outer','inner'].map(track=>{const items=track==='outer'?OUTER_VECTOR_ITEMS:INNER_VECTOR_ITEMS,model=state.vectors[track];return <details key={track} id={track==='outer'?'life-balance':'meaning-axes'}><summary>{track==='outer'?t.balance:t.axes} ({Object.keys(model.ratings).length}/{items.length})</summary>
      <DevelopmentVectorWheel items={items} ratings={model.ratings} focusId={model.focusId} locale={locale} track={track}/>
      <ul className={styles.dates}>{items.map(item=><li key={item.id}><span>{item.name[locale]||item.name.en}</span><small>{model.ratings[item.id]?dated(model.ratings[item.id].recordedAt,locale,t.unknown):t.missing}</small></li>)}</ul><Link className={styles.action} href={'/'+locale+'/development-vectors?mode=self-discovery&track='+track} prefetch={false}>{t.edit}</Link><SelfDiscoveryVectorHistory key={state.id+':'+track} snapshots={state.vectorHistory} items={items} track={track} locale={locale}/></details>})}
     <details data-self-discovery-portrait><summary>{t.profile}</summary><TestExplorerVisual locale={accountLocale} coverage={coverageForFocus([])} portrait={buildPsychPortrait(state.results)} compact/><PortraitAnalyses results={state.results} locale={accountLocale}/><PortraitRecommendations results={state.results} locale={accountLocale}/></details>
    <Link className={styles.action} href={root+'/portfolio'} prefetch={false}>{t.profile}</Link><Link className={styles.action} href={root+'/history'} prefetch={false}>{t.all}</Link>
-   </section>
+   </details></section>
    <p className={styles.note+' '+styles.foot}>{d.loaded} {t.privacy}</p><button className={styles.refresh} onClick={()=>void load()}>{t.retry}</button>
   </>}
  </main>
