@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 // Source-backed owner-memory privacy tests run within the existing release suite.
 import './coach-personal-memory.test.mjs'
+import './coach-owner-memory-availability.test.mjs'
 import './coach-memory-selection.test.mjs'
 import './coach-memory-selection-adapter.test.mjs'
 import './coach-memory-stage-plan.test.mjs'
