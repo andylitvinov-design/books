@@ -291,7 +291,7 @@ test('IA v2 uses an exact mobile-dock batch for Messenger isolation and restores
   assert.ok(!s.includes('/^\\.github\\/workflows\\/ia-v2\\.yml$/'),
     'editing the IA workflow itself must retain the full specialist path');
   assert.match(s, /uses: actions\/cache\/restore@v4/);
-  assert.ok(s.includes("key: hh-core-media-v1-${{ runner.os }}-${{ hashFiles('scripts/generate-scenario-melodies.mjs', 'scripts/generate-mandala-melodies.mjs', 'lib/mandala/scenario-audio-catalog.mjs', 'package-lock.json') }}"));
+  assert.ok(s.includes("key: hh-core-media-v1-${{ runner.os }}-${{ hashFiles('scripts/generate-scenario-melodies.mjs', 'scripts/generate-mandala-melodies.mjs', 'lib/mandala/scenario-audio-catalog.mjs', 'scripts/vercel-static-media-cache.mjs', '.github/actions/ci-ffmpeg-static/action.yml') }}"));
   assert.ok(s.includes("key: hh-core-next-v2-${{ runner.os }}-${{ hashFiles('package-lock.json', 'next.config.ts', 'tsconfig.json') }}"));
   assert.match(s, /path: \|\n\s+\.next\/cache\n\s+tsconfig\.tsbuildinfo/);
   assert.ok(s.includes('npm_lifecycle_event=prebuild node scripts/generate-soft-ocean-melody.mjs'));
@@ -406,7 +406,7 @@ test('Mandala workflow-only speed route fails closed for all product or deleted 
 test('Mandala restores the same immutable production Core MP3 cache before safe generation', () => {
   const core=workflow('hh-pr-core-release.yml');
   const mandala=workflow('holistic-support-mandala.yml');
-  const cacheKey="key: hh-core-media-v1-${{ runner.os }}-${{ hashFiles('scripts/generate-scenario-melodies.mjs', 'scripts/generate-mandala-melodies.mjs', 'lib/mandala/scenario-audio-catalog.mjs', 'package-lock.json') }}";
+  const cacheKey="key: hh-core-media-v1-${{ runner.os }}-${{ hashFiles('scripts/generate-scenario-melodies.mjs', 'scripts/generate-mandala-melodies.mjs', 'lib/mandala/scenario-audio-catalog.mjs', 'scripts/vercel-static-media-cache.mjs', '.github/actions/ci-ffmpeg-static/action.yml') }}";
   const section=mandala.split('      - name: Restore production-owned scenario MP3 cache (read-only)\n')[1]
     ?.split('      - name: Generate original first-party melody masters\n')[0];
   assert.ok(section,'Mandala must reuse existing Core media, not build a parallel cache');
@@ -903,4 +903,27 @@ test('native PR receipts use slim runners; OPORA retains all real unit and brows
   assert.match(browser,/Validate the isolated AS5\.6 fixture and safety regressions[\s\S]*?if: github\.event_name != 'pull_request'\s+run: node --test/);
   for (const marker of ['actions/cache/restore@v4','ci-playwright-launch-proof.cjs','node scripts/verify-opora-as56-browser.mjs','node scripts/verify-opora-course-ready-viewport.mjs']) assert.ok(browser.includes(marker));
   assert.doesNotMatch(browser,/continue-on-error:\s*true/);
+});
+
+
+test('scenario cache identity follows generator closure and pinned encoder, not unrelated npm changes',()=>{
+  const files=['hh-pr-core-release.yml','hh-static-image-cost-guard.yml','holistic-support-mandala.yml','ia-v2.yml','release-reaudit.yml','site-video-browser.yml','hh-public-services-production.yml'];
+  const producer=workflow(files[1]);
+  const key=producer.split('\n').find(line=>line.includes('key: hh-core-media-v1-'))?.trim();
+  assert.ok(key);
+  assert.doesNotMatch(key,/package-lock\.json/);
+  for(const source of ['scripts/generate-scenario-melodies.mjs','scripts/generate-mandala-melodies.mjs','lib/mandala/scenario-audio-catalog.mjs','scripts/vercel-static-media-cache.mjs','.github/actions/ci-ffmpeg-static/action.yml'])assert.ok(key.includes(source),source);
+  for(const file of files){
+    const source=workflow(file);
+    const restore=source.split('\n').findIndex(line=>line.includes('key: hh-core-media-v1-'));
+    assert.ok(restore>0,file);
+    assert.equal(source.split('\n')[restore].trim(),key,file);
+    const before=source.split('\n').slice(0,restore).join('\n');
+    assert.match(before,/uses: \.\/\.github\/actions\/ci-ffmpeg-static/);
+    assert.match(before,/stage: materialize/);
+  }
+  const push=producer.split('  push:')[1]?.split('  workflow_dispatch:')[0]||'';
+  for(const path of ['tsconfig.json','.github/actions/ci-ffmpeg-static/action.yml','scripts/vercel-static-media-cache.mjs'])assert.ok(push.includes(path),path+' must reseed on protected push');
+  assert.match(producer,/node scripts\/generate-scenario-melodies\.mjs --check/);
+  assert.match(producer,/github\.event_name != 'pull_request' && github\.ref == 'refs\/heads\/codex\/public-book-library'/);
 });

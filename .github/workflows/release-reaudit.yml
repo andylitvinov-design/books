@@ -79,7 +79,13 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - name: Stage checksum-verified FFmpeg before npm lifecycle
+        uses: ./.github/actions/ci-ffmpeg-static
       - run: npm ci --no-audit --no-fund
+      - name: Materialize checksum-verified FFmpeg for scenario cache identity
+        uses: ./.github/actions/ci-ffmpeg-static
+        with:
+          stage: materialize
       - name: Public and synthetic security regressions
         run: |
           node --test tests/csp-history-provenance-probe.test.mjs tests/csp-history-provenance.test.mjs tests/personal-testimonials-prefetch.test.mjs tests/video-csp-navigation.test.mjs tests/csp-navigation-initiator.test.mjs tests/csp-navigation-diagnostics.test.mjs tests/release-reaudit.test.mjs tests/navigation-cabinet.test.mjs tests/client-cabinet-pages.test.mjs tests/admin-login-security.test.mjs tests/clients.test.mjs tests/maya-tradition-hub.test.mjs tests/page-video-release.test.mjs
@@ -105,7 +111,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: public/audio/mandala/scenarios
-          key: hh-core-media-v1-${{ runner.os }}-${{ hashFiles('scripts/generate-scenario-melodies.mjs', 'scripts/generate-mandala-melodies.mjs', 'lib/mandala/scenario-audio-catalog.mjs', 'package-lock.json') }}
+          key: hh-core-media-v1-${{ runner.os }}-${{ hashFiles('scripts/generate-scenario-melodies.mjs', 'scripts/generate-mandala-melodies.mjs', 'lib/mandala/scenario-audio-catalog.mjs', 'scripts/vercel-static-media-cache.mjs', '.github/actions/ci-ffmpeg-static/action.yml') }}
       - name: Restore trusted production Next compiler cache
         if: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'codex/public-book-library' }}
         uses: actions/cache/restore@v4
