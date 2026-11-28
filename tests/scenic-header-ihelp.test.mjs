@@ -12,7 +12,7 @@ test("Support and both Shamanic headers open the shared iHelp dialog", () => {
  assert.match(shamanic,/data-shamanica-ihelp-trigger aria-haspopup="dialog"[\s\S]{0,180}hh:open-ihelp/);
  assert.ok(!shamanic.includes('"/holistic-support/mobile"}><Sparkles size={18}/>{t.help}'));
  assert.ok(help.includes('window.addEventListener("hh:open-ihelp",onBusinessHelp)'));
- assert.ok(help.includes('hidden={inlineHelpRoute}'));
+ assert.ok(help.includes('{!inlineHelpRoute&&<button'));
  assert.ok(!help.includes('services\\/?$/.test(pathname))return null'));
  assert.ok(help.includes('[data-services-ihelp-trigger]'));
  assert.ok(help.includes('<IHelpTopics locale={locale}'));
