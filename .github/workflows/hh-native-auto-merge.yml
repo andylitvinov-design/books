@@ -279,9 +279,11 @@ jobs:
               return {
                 id: job.id, run_id: job.run_id, name: job.name,
                 status: job.status, conclusion: job.conclusion,
-                steps: name === "core-lint-types-build" && Array.isArray(job.steps)
-                  ? job.steps.filter(step =>
-                    step.name === "Verify bounded shallow scope ancestry before PR routing")
+                steps: Array.isArray(job.steps)
+                  ? job.steps.filter(step => name === "core-lint-types-build"
+                    ? step.name === "Verify bounded shallow scope ancestry before PR routing"
+                    : ["Validate exact-head risk and required specialist workflows",
+                        "Confirm one-runner Core and independent specialist release evidence"].includes(step.name))
                     .map(step => ({name:step.name,status:step.status,conclusion:step.conclusion}))
                   : [],
               };
@@ -365,11 +367,17 @@ jobs:
             const baseLog=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-core-tested-base-logs.cjs');
             const {execFileSync}=require('node:child_process');
             const checkout=require('node:path').join(process.env.GITHUB_WORKSPACE,'.hh-merge-policy-production');
-            let freshness={ok:false,reason:'PRODUCTION_BASE_RETRIES_EXHAUSTED'};
+            // The completed unified gate already proved the exact target and
+            // specialist scope. Reuse its authenticated receipt, not a second
+            // classifier; legacy/missing/stale proof uses the existing path.
+            const handoff=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-merge-ready-receipt.cjs');
+            const reused=await handoff.readMergeReadyReceipt({github,owner,repo,pr,run,jobs});
+            let freshness=reused||{ok:false,reason:'PRODUCTION_BASE_RETRIES_EXHAUSTED'};
+            if(reused)core.info('CI_AUTO_MERGE: unified gate receipt reused; no second CI classification');
             let observedRunBase=null,observedProtectedBase=null;
             // Protected production may advance after the Core event. Refresh
             // only the trusted production checkout, never any candidate PR code.
-            for(let attempt=1;attempt<=4;attempt++){
+            for(let attempt=1;!freshness.ok&&attempt<=4;attempt++){
               const production=(await github.rest.repos.getBranch({
                 owner,repo,branch:'codex/public-book-library'
               })).data;
@@ -430,6 +438,7 @@ jobs:
             // public-media BASE. Pin it during ARM as well: another
             // production commit must not silently turn that proof stale.
             core.setOutput("requires_current_base",String(
+              freshness.reason==="UNIFIED_GATE_RECEIPT_REUSED" ||
               freshness.reason==="SENSITIVE_BASE_VERIFIED" ||
               freshness.reason==="ISOLATED_CI_PUBLIC_MEDIA_REVALIDATED" ||
               freshness.reason==="INDEPENDENT_PUBLIC_RASTER_REVALIDATED" ||
