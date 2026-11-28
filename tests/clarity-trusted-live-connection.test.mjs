@@ -73,6 +73,22 @@ test('loss of the relay client during the opening lookup never discloses the sto
  assert.equal(f.provider.messages.length,1)
  assert.deepEqual(f.events,[])
 })
+test('Clarity completes an explicit pause while opening memory is still pending',async()=>{
+ let entered,release
+ const checking=new Promise(resolve=>{entered=resolve})
+ const pending=new Promise(resolve=>{release=resolve})
+ const f=fixture({loadOpeningNote:()=>{entered();return pending}})
+ f.ready();f.consent();await checking
+ f.client.input({type:'hh_clarity_pause'})
+ await new Promise(resolve=>setImmediate(resolve))
+ assert.equal(f.provider.readyState,3)
+ assert.equal(f.client.readyState,3)
+ assert.deepEqual(f.events,[])
+ assert.equal(f.run.clock.days[0].elapsedMs,0)
+ release('CLIENT-APPROVED REFERENCE DATA (late synthetic source)')
+ await f.relay.settled()
+ assert.equal(f.provider.messages.length,1)
+})
 test('real pongs credit only the observed interval; pause closes upstream before persisting stop',async()=>{
  const f=fixture();f.ready();f.consent();await f.relay.settled()
  f.advance(5000);f.client.pong();await f.relay.settled()
