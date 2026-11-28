@@ -539,9 +539,10 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     if(!value||r.ended)return
     // Unheard/partial speech is retained in the private transcript, not fed
     // back to the Director as a completed spoken assistant turn.
-    if(!r.interrupted&&!r.contextSentKey){r.history.push({role:'assistant',content:value});r.history=r.history.slice(-20);for(const id of coachCharacterObservedIds([{role:'assistant',content:value}]))r.characterSeenIds.add(id)}
+    const requestedSavedContext=Boolean(r.contextSentKey||r.claritySelection?.memorySelection||r.claritySelection?.materialSelection||r.clarityOpeningMemoryStageToken)
+    if(!r.interrupted&&!requestedSavedContext){r.history.push({role:'assistant',content:value});r.history=r.history.slice(-20);for(const id of coachCharacterObservedIds([{role:'assistant',content:value}]))r.characterSeenIds.add(id)}
     // An archive-bearing reply is not reusable provider history.
-    propsRef.current.onOutputFinal?.(value,{interrupted:r.interrupted,requestedSavedContext:Boolean(r.contextSentKey)||Boolean(r.clarityOpeningMemoryStageToken)})
+    propsRef.current.onOutputFinal?.(value,{interrupted:r.interrupted,requestedSavedContext})
     r.interrupted=false
   }
   // Deliver server-rechecked references and Director hints ONLY after the
