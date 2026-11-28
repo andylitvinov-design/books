@@ -12,6 +12,7 @@ import {PRIVATE_HEADERS,safeError} from "@/lib/app/http";
 import {normalizeTimedTranscript} from "@/lib/mandala/audio-visual-storyboard.mjs";
 import {isSpeechTranscriptLanguageMismatch} from "@/lib/mandala/audio-speech-language.mjs";
 import {coachSpeechReviewGlossary} from "@/lib/coaching/coach-speech-review-glossary.mjs";
+import {coachSpeechReviewEnabled,isCoachSpeechReviewRequest} from "@/lib/coaching/coach-speech-review-config.mjs";
 
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
@@ -62,6 +63,9 @@ export async function POST(request){
     if(textOnly&&purpose!==null&&purpose!=="ali_chat"&&purpose!=="my_coach")throw new AppError("AUDIO_STT_PURPOSE_INVALID",400);
     if(purpose==="my_coach"){
       const actor=await createRequestAuth(request,config).verified();
+      if(isCoachSpeechReviewRequest({purpose,filename:file.name,review:form.get("review")})&&
+        (!textOnly||!coachSpeechReviewEnabled(process.env)))
+        throw new AppError("AUDIO_STT_REVIEW_DISABLED",503);
       await consumeRate(config,{op:"my-coach-stt-free-user-minute",userId:actor.id},8,60);
       await consumeRate(config,{op:"my-coach-stt-free-user-day",userId:actor.id},120,86400);
       await consumeRate(config,{op:"my-coach-stt-free-global-minute"},12,60);

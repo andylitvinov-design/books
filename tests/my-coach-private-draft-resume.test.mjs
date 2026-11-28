@@ -62,8 +62,8 @@ test('explicit course marker cannot conflict with the enclosing draft',()=>{
 
 import {coachDraftListSummary,draftTranscriptPrefix,coachDraftDurationExtends,coachDraftMinuteLabel} from '../lib/personal-coaching/protocol-draft.mjs'
 test('greeting list summary never returns a transcript or private profile',()=>{
- const item={id:'draft',revision:3,updatedAt:'2026-11-25T12:00:00Z',courseSessionId:'introductory',protocol:{personaId:'mira',locale:'ru',turns:[{role:'user',content:'private text'}],opening:{name:'private name'}}}
- assert.deepEqual(coachDraftListSummary(item),{id:'draft',revision:3,updatedAt:item.updatedAt,courseSessionId:'introductory',personaId:'mira',locale:'ru',turnCount:1,durationSeconds:null})
+ const item={id:'draft',revision:3,updatedAt:'2026-11-25T12:00:00Z',courseSessionId:'introductory',protocol:{personaId:'mira',locale:'ru',startedAt:'2026-11-25T11:50:00Z',turns:[{role:'user',content:'private text'}],opening:{name:'private name'}}}
+ assert.deepEqual(coachDraftListSummary(item),{id:'draft',revision:3,updatedAt:item.updatedAt,courseSessionId:'introductory',personaId:'mira',locale:'ru',startedAt:'2026-11-25T11:50:00Z',turnCount:1,durationSeconds:null})
  assert.ok(!JSON.stringify(coachDraftListSummary(item)).includes('private'))
  const route=readFileSync(new URL('../app/api/app/my-coach/draft/route.js',import.meta.url),'utf8')
  const store=readFileSync(new URL('../lib/app/my-coach-protocol-drafts.js',import.meta.url),'utf8')
