@@ -19,6 +19,7 @@ import {ClarityStartLink} from './app/clarity-program'
 import styles from './my-coach-greeting-gate.module.css'
 import {ReikiJoinDialog} from './reiki-join-dialog'
 import {useGooglePageAction} from './use-google-page-action'
+import {CoachExpressButton} from './my-coach-express-intro'
 
 const words={
  en:{eyebrow:'MEET YOUR AI COACH',play:'Hear my greeting',playing:'Your coach is speaking…',
@@ -91,7 +92,7 @@ function CourseProgress({progress,lang}){
 
 // Audio is the existing public, first-party recorded welcome MP3. The video
 // portrait is silent; no fake lip-sync or Gemini/TTS billing is involved.
-export default function MyCoachGreetingGate({personaId,locale='en',name,methodId,onStart,accountSaving=false,entryPending=false,resumeControl,selectedMethod='',onMethodSelect,methodSelectionEnabled=false,privateProfileEnabled=false,draftCourses=[]}){
+export default function MyCoachGreetingGate({personaId,locale='en',name,methodId,onStart,onExpressStart,accountSaving=false,entryPending=false,resumeControl,selectedMethod='',onMethodSelect,methodSelectionEnabled=false,privateProfileEnabled=false,draftCourses=[]}){
  const lang=words[locale]?locale:'en',t=words[lang]
  const router=useRouter(),query=useSearchParams()
  const persona=getCoachPersona(personaId)
@@ -117,15 +118,27 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
  const switching=useRef(false)
  const canSwitch=PUBLIC_COACH_RAIL_IDS.includes(personaId)&&PUBLIC_COACH_RAIL_IDS.length>1
  const [readyTopic,setReadyTopic]=useState(null)
+ const [expressNotice,setExpressNotice]=useState('')
+ const expressActionId='express_intro-'+personaId
  const gateError=({en:'Could not continue. Please try again.',ru:'Не удалось продолжить. Попробуйте ещё раз.',es:'No pudimos continuar. Inténtalo de nuevo.'})[lang]
- const gate=useGooglePageAction({locale:lang,continuation:'my-coach-action',kind:'coach-topic',onAuthorized:action=>{
+ const gate=useGooglePageAction({locale:lang,continuation:'my-coach-action',kind:'coach-topic',onAuthorized:async action=>{
+   if(action.id===expressActionId){
+     if(!PUBLIC_COACH_RAIL_IDS.includes(personaId)||switching.current||chosen.current)return
+     if(typeof onExpressStart!=='function'){
+       setExpressNotice(({en:'Two-minute chat is not available yet.',ru:'Двухминутный чат пока недоступен.',es:'El chat de dos minutos aún no está disponible.'})[lang]);return
+     }
+     audioRun.current++;detachAudio.current();player.current?.cancel?.();player.current=null
+     setAudioActive(false);setPhase('preview');topicDialog.current?.close()
+     await onExpressStart({personaId,locale:lang,mode:'express_intro'})
+     return
+   }
    // Restore only the selected topic; OAuth is never proof that audio ended.
    if(action.id===INTRODUCTORY_COACH_SESSION_ID||COACH_PROGRAM_GROUPS.some(group=>group.sessions.some(item=>item.id===action.id)))setReadyTopic(action.id)
  }})
  useEffect(()=>()=>{audioRun.current++;detachAudio.current();player.current?.cancel?.();player.current=null},[])
  useEffect(()=>{audioRun.current++;detachAudio.current();player.current?.cancel?.();player.current=null;
    topicDialog.current?.close();chosen.current=false;switching.current=false;touchOrigin.current=null;setExpandedGroup(null);
-   setGreetingStarted(false);setPhase('preview');setError('');setAudioActive(false);setTime(0);setDuration(null);setExpanded(false)},[personaId,lang])
+   setGreetingStarted(false);setPhase('preview');setError('');setExpressNotice('');setAudioActive(false);setTime(0);setDuration(null);setExpanded(false)},[personaId,lang])
  useEffect(()=>{if(!expanded)return;const escape=e=>{if(e.key==='Escape')setExpanded(false)};window.addEventListener('keydown',escape);return()=>window.removeEventListener('keydown',escape)},[expanded])
  function selectProgram(id){
    if(!COACH_COMPARISON_IDS.includes(id)||id===program||gate.busy)return
@@ -216,6 +229,13 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
    player.current=null
    onStart?.(id,options)
  }
+ function chooseExpress(){
+   if(entryPending||gate.busy||chosen.current||switching.current||!PUBLIC_COACH_RAIL_IDS.includes(personaId))return
+   setExpressNotice('');topicDialog.current?.close()
+   audioRun.current++;detachAudio.current();player.current?.cancel?.();player.current=null
+   setAudioActive(false);setPhase('preview')
+   void gate.begin({id:expressActionId})
+ }
  function showTopics(mode='sessions'){
    setDialogMode(mode);setExpandedGroup(null)
    if(topicDialog.current&&!topicDialog.current.open)topicDialog.current.showModal()
@@ -229,6 +249,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
        <div className={styles.cinemaShade} aria-hidden="true"/>
        <div className={styles.cinemaTop}>
          <span className={styles.videoLabel}><GraduationCap size={19} aria-hidden="true"/>{ui.video}</span>
+         <CoachExpressButton locale={lang} available={PUBLIC_COACH_RAIL_IDS.includes(personaId)} busy={gate.busy||entryPending} onStart={chooseExpress}/>
        </div>
        <div className={styles.portraitSpace} data-coach-greeting-swipe={canSwitch?'true':undefined}
          onTouchStart={beginSwipe} onTouchEnd={endSwipe}
@@ -308,6 +329,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
        </>}
      </div>
    </dialog>
+   {expressNotice&&<p role="status" className={styles.mediaError}>{expressNotice}</p>}
    {gate.error&&!gate.open&&<p role="alert" className={styles.mediaError}>{gateError}</p>}
    {gate.open&&<ReikiJoinDialog mode="coach" locale={lang} busy={gate.busy} error={gate.error?gateError:''} onGoogle={()=>void gate.signIn()} onDismiss={gate.dismiss}/>}
    <div className={styles.profileBelow}>
