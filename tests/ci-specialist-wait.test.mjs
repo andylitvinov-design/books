@@ -1586,3 +1586,38 @@ test('use newer protected gate before old optional waits; unavailable proof neve
   safeTrustedPolicyAdvance:()=>true,verify:async()=>{throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PR_HEAD_CHANGED');}
  })}),/PR_HEAD_CHANGED/);
 });
+
+test('public browser gate composes proven route-local and server-dependency isolation, never waives owned checkout or media',()=>{
+ const ts=createRequire(new URL('../lib/ci/fast-ui-parser/package.json',import.meta.url))('typescript');
+ const shared='app/api/app/[...path]/route.js';
+ const store='.github/workflows/hh-public-services-production.yml', video='.github/workflows/site-video-browser.yml';
+ const mandatory=['hh-personal-coaching-session','hh-app-r1','ia-v2','hh-app-browser','hh-billing-isolated','hh-private-audio-e2e'].map(n=>'.github/workflows/'+n+'.yml');
+ const original="async function handle(joined) {\n  if (joined === 'my-coach/turn') { return 'old'; }\n  if (joined === 'services/cart') { return 'cart'; }\n}\n";
+ const proposed=original.replace("return 'old';","return 'new';");
+ const trigger="on:\n  pull_request:\n    paths:\n      - 'app/api/app/*/route.js'\n      - 'package-lock.json'\n      - 'components/public-store*'\n";
+ const sources=new Map([[store,trigger],[video,trigger]]);
+ const basePackage={name:'hh',dependencies:{react:'19.0.0'},scripts:{'test:app':'node --conditions=react-server --test tests/coach-old.test.mjs'}};
+ const currentPackage=JSON.parse(JSON.stringify(basePackage));currentPackage.dependencies.ws='8.23.0';
+ const baseLock={lockfileVersion:3,packages:{'':{dependencies:basePackage.dependencies},'node_modules/react':{version:'19.0.0',integrity:'sha512-old'}}};
+ const currentLock=JSON.parse(JSON.stringify(baseLock));currentLock.packages[''].dependencies=currentPackage.dependencies;
+ currentLock.packages['node_modules/ws']={version:'8.23.0',integrity:'sha512-new',resolved:'https://registry.npmjs.org/ws/-/ws-8.23.0.tgz'};
+ const files={base:sources,current:new Map(sources),testedMergeSha:'d'.repeat(40),basePackage:JSON.stringify(basePackage),
+  currentPackage:JSON.stringify(currentPackage),baseLock:JSON.stringify(baseLock),currentLock:JSON.stringify(currentLock)};
+ const rows=[{filename:shared,status:'M'},{filename:'app/api/app/clarity-course/route.js',status:'A'},
+  {filename:'package.json',status:'M'},{filename:'package-lock.json',status:'M'}];
+ const expected=[store,video,...mandatory];
+ const scope=(r=rows,f=files,e=expected,src=proposed)=>[...independentDispatcherAdvisories(f,r,e,
+  side=>side==='base'?original:src,ts)];
+ assert.deepEqual(scope(),[store,video]);
+ assert.deepEqual(scope(rows,{...files,currentLock:null}),[]);
+ assert.deepEqual(scope([...rows,{filename:'components/public-store-card.jsx',status:'M'}]),[]);
+ assert.deepEqual(scope([...rows,{filename:'lib/billing/charge.js',status:'M'}]),[]);
+ assert.deepEqual(scope([...rows,{filename:'components/app/my-personal-videos.jsx',status:'M'}]),[store]);
+ assert.deepEqual(scope(rows,files,expected.filter(n=>!n.includes('hh-billing-isolated'))),[video]);
+ assert.deepEqual(scope(rows,files,expected.filter(n=>!n.includes('hh-private-audio-e2e'))),[store]);
+ assert.deepEqual(scope(rows,files,expected.filter(n=>!n.includes('hh-app-browser'))),[]);
+ assert.deepEqual(scope(rows,files,expected,proposed.replace("return 'cart';","return 'other';")),[]);
+ assert.deepEqual(scope(rows,{...files,current:new Map([[store,trigger+'# edited'],[video,trigger]])}),[video]);
+ const lock=JSON.parse(files.currentLock);lock.packages['node_modules/react'].version='20.0.0';
+ assert.deepEqual(scope(rows,{...files,currentLock:JSON.stringify(lock)}),[]);
+});
