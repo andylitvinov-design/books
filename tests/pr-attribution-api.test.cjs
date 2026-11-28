@@ -477,9 +477,16 @@ test('6+4 shared ledger is opt-in, within the existing request cap; other PRs an
  const c={id:1234,user:{login:'andylitvinov-design',id:274943885},created_at:at(45),body:'<!-- HH_PR_TRACE_V1 -->\n'+JSON.stringify(e)+'\n<!-- HH_PR_TRACE_V1 -->\n'+JSON.stringify({...e,pr:3391})};
  const m=makeRequest({prValue:p,commentRows:[],registryRows:[c]});
  const out=await api.loadPr(3390,{request:m.request,now:Date.parse(at(100)),includeRegistry:true});
- assert.equal(out.source.reads,7);assert.equal(out.automation_trace.events.length,1);assert.equal(out.automation_trace.events[0].url,'https://github.com/andylitvinov-design/books/issues/1419#issuecomment-1234');
+ assert.equal(out.source.reads,7);assert.equal(new URL(m.calls.find(x=>x.url.includes('/issues/1419/comments')).url).searchParams.get('since'),new Date(Date.parse(at(100))-86400000).toISOString());assert.equal(out.automation_trace.events.length,1);assert.equal(out.automation_trace.events[0].url,'https://github.com/andylitvinov-design/books/issues/1419#issuecomment-1234');
  assert.equal(out.automation_registry.observed_prs,2);assert.equal(out.automation_registry.actors[0].observations,2);assert.equal(out.automation_registry.actors[0].reported.COMMIT_WRITTEN,undefined);
  assert.equal(out.automation_trace.credits.some(x=>x.metric==='commits'),false);
  const normal=makeRequest({prValue:p,commentRows:[],registryRows:[c]});
  assert.equal((await api.loadPr(3390,{request:normal.request,now:Date.parse(at(100))})).source.reads,6);
+});
+
+
+test('shared registry must not interpret the stale oldest GitHub page as an empty current sample',async()=>{
+ const m=makeRequest({registryRows:[{id:5,created_at:'2026-10-21T16:09:25Z',body:'historical'}]});
+ const out=await api.loadPr(3390,{request:m.request,now:Date.parse(at(100)),includeRegistry:true});
+ assert.equal(out.automation_registry,null);assert.equal(out.automation_trace.coverage.registry_available,false);
 });

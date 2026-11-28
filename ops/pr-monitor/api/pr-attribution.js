@@ -497,7 +497,10 @@ async function loadPr(number,{request=fetch,token=TOKEN,now=Date.now(),includeRe
  // the original per-PR budget/rate reserve and never fail normal history on ledger errors.
  let registryComments=null;
  if(includeRegistry&&used<15&&(remaining===null||remaining>=reserve)){
-  try{const rows=await gh('/issues/1419/comments?per_page=100&sort=created&direction=desc');if(Array.isArray(rows)&&rows.length<=100)registryComments=rows;}catch{/* optional ledger unavailable */}
+  // GitHub issue-specific comments ignore sort/direction and otherwise return the oldest page.
+  try{const rows=await gh('/issues/1419/comments?per_page=100&since='+encodeURIComponent(new Date(now-86400000).toISOString()));
+   if(Array.isArray(rows)&&rows.length<=100&&rows.every(r=>{const t=Date.parse(r?.updated_at||r?.created_at||'');return Number.isFinite(t)&&t>=now-86400000-1000;}))registryComments=rows;
+  }catch{/* optional ledger unavailable */}
  }
  const automation_trace=automationAudit({pr,comments,registryComments,timeline:prTimelineEvents,headProof,live,now});
  const automation_registry=summarizeRegistry(registryComments,now);

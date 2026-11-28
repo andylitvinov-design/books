@@ -725,3 +725,63 @@ test('native freshness mirrors all protected independent proofs and supplies exa
   assert.equal((await assess({...args,baseAdvancePolicy:extra,pr:{...args.pr,mergeable:false}})).ok,false,name);
  }
 });
+
+test('V3 readiness fast path is bound to authenticated exact run, merge parents, workflow and protected ref',async()=>{
+ const {parseMergeReadyV3,verifiedMergeReadyV3}=require('../scripts/ci-pr-base-freshness.cjs');
+ const owner='andylitvinov-design',repo='books',full=owner+'/'+repo,
+   source='c'.repeat(40),merge='d'.repeat(40),target=head;
+ const workflow='.github/workflows/hh-pr-core-release.yml';
+ const p={number:42,state:'open',draft:false,mergeable:true,base:{ref:'codex/public-book-library',sha:old},
+  head:{sha:source,ref:'feature',repo:{full_name:full}},changed_files:173};
+ const run={id:11,run_attempt:2,name:'HH PR core release gate',path:workflow,event:'pull_request',
+  head_sha:source,head_branch:'feature',repository:{full_name:full},head_repository:{full_name:full},
+  status:'completed',conclusion:'success',pull_requests:[]};
+ const steps=['Pin exact production base for shallow checkout','Validate exact-head risk and required specialist workflows',
+  'Confirm one-runner Core and independent specialist release evidence'].map(name=>({name,status:'completed',conclusion:'success'}));
+ const jobs=[{id:21,run_id:11,name:'core-lint-types-build',status:'completed',conclusion:'success'},
+  {id:22,run_id:11,name:'hh-merge-check',status:'completed',conclusion:'success',steps}];
+ const x={schema:'HH_MERGE_READY_V3',repo:full,pr:42,head:source,tested_base:old,tested_merge:merge,
+  accepted_base:target,policy_base:target,run_id:11,run_attempt:2,required:[],evidence:[]};
+ const log=value=>'[command]/usr/bin/git log -1 --format=%H\n'+merge+'\nHH_MERGE_READY_V3:'+JSON.stringify(value);
+ let value=x,reads=0,lists=0,alter=false,parents=[{sha:old},{sha:source}];
+ const github={request:async()=>({data:log(value)}),rest:{repos:{
+  getBranch:async()=>({data:{protected:true,commit:{sha:target}}}),
+  getContent:async({ref})=>({data:{type:'file',path:workflow,sha:alter&&ref===merge?source:old}})},
+  git:{getCommit:async()=>({data:{sha:merge,parents}})},
+  pulls:{listFiles:async()=>{lists++;return {data:[]};}}
+ }};
+ const args={github,owner,repo,pr:p,run,jobs,target};
+ assert.deepEqual(parseMergeReadyV3(log(x)),x);
+ assert.equal(parseMergeReadyV3(log(x)+'\nHH_MERGE_READY_V3:'+JSON.stringify(x)),null);
+ assert.deepEqual(await verifiedMergeReadyV3(args),x);
+ const repair={id:23,run_id:11,name:'hh-eslint-repair',status:'completed',conclusion:'skipped'};
+ assert.deepEqual(await verifiedMergeReadyV3({...args,jobs:[...jobs,repair]}),x);
+ for(const bad of [
+  {...repair,name:'unknown-extra-job'},{...repair,conclusion:'failure'},
+  {...repair,conclusion:'success'},{...repair,status:'in_progress'},
+  {...repair,run_id:12},{...repair,id:22}
+ ])assert.equal(await verifiedMergeReadyV3({...args,jobs:[...jobs,bad]}),null);
+ assert.equal(await verifiedMergeReadyV3({...args,jobs:[...jobs,repair,repair]}),null);
+ assert.deepEqual(await verifiedMergeReadyV3({...args,github:{...github,
+  request:async()=>({data:Buffer.from(log(x),'utf8')})}}),x);
+ const fast=await assess({github,owner,repo,pr:p,classifierBase:target,decideRoute:()=>{throw Error('not needed');},
+   readReadyReceipt:async()=>{reads++;return verifiedMergeReadyV3(args);}});
+ assert.equal(fast.reason,'MERGE_READY_V3_VERIFIED');assert.equal(lists,0);assert.equal(reads,1);
+ for(const bad of [{...x,head:old},{...x,accepted_base:old},{...x,policy_base:old},
+   {...x,run_attempt:1},{...x,required:[workflow]},{...x,run_id:99}]){
+  value=bad;assert.equal(await verifiedMergeReadyV3(args),null);
+ }
+ value=x;alter=true;assert.equal(await verifiedMergeReadyV3(args),null);alter=false;
+ parents=[{sha:target},{sha:source}];assert.equal(await verifiedMergeReadyV3(args),null);parents=[{sha:old},{sha:source}];
+ assert.equal(await verifiedMergeReadyV3({...args,run:{...run,conclusion:'failure'}}),null);
+ assert.equal(await verifiedMergeReadyV3({...args,pr:{...p,mergeable:null}}),null);
+ assert.equal(await verifiedMergeReadyV3({...args,jobs:[jobs[0],{...jobs[1],steps:[]}]}),null);
+ const fallback=await assess({github,owner,repo,pr:p,classifierBase:target,decideRoute:()=> 'FULL',
+   readReadyReceipt:async()=>null});
+ assert.equal(fallback.reason,'FILES_INCOMPLETE');assert.equal(lists,1);
+ let branchReads=0;
+ const moving={...github,rest:{...github.rest,repos:{...github.rest.repos,
+   getBranch:async()=>({data:{protected:true,commit:{sha:++branchReads===1?target:source}}})}}};
+ assert.equal((await assess({github:moving,owner,repo,pr:p,classifierBase:target,decideRoute:()=> 'FULL',
+  readReadyReceipt:async()=>x})).reason,'BASE_MOVED_DURING_CHECK');
+});

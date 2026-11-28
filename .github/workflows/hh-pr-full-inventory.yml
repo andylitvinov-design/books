@@ -59,12 +59,16 @@ jobs:
             const PROD="codex/public-book-library", CONTROL="codex/bootstrap-books", fullRepo=owner+"/"+repo;
             const baseEvidence=require(process.env.GITHUB_WORKSPACE+"/scripts/ci-pr-base-freshness.cjs");
             const mergeSafety=require(process.env.GITHUB_WORKSPACE+"/scripts/ci-pr-native-merge-policy.cjs");
+            const hourlyProof=require(process.env.GITHUB_WORKSPACE+"/scripts/ci-pr-hourly-ready-proof.cjs");
+            const hourlyReadyCache=new Map();
             let classifier=await baseEvidence.loadTrustedClassifier(process.env.GITHUB_WORKSPACE);
             // A different PR can merge while the inventory is being read.
             // Refresh only the protected policy checkout, never the PR HEAD.
             async function assessCurrentBase(pr,checks){
               for(let attempt=0;attempt<3;attempt++){
                 const result=await baseEvidence.assessBaseFreshness({github,owner,repo,pr,...classifier,
+                  readReadyReceipt:target=>unifiedRequired?hourlyProof.readHourlyReadyReceipt({github,owner,repo,pr,checks,target,
+                    verify:baseEvidence.verifiedMergeReadyV3,cache:hourlyReadyCache}):null,
                   verifiedRunBase:rows=>baseEvidence.coreRunBaseForCheck({github,owner,repo,pr,
                     check:checks.get(unifiedRequired?"hh-merge-check":"hh-core-verified"),
                     rows,token:process.env.HH_CORE_BASE_TOKEN})});
@@ -131,14 +135,7 @@ jobs:
             const red=new Set(["failure","timed_out","cancelled","action_required","startup_failure","stale"]);
             const eligible=[]; let detailErrors=0,checksRead=0,apiPaused=false;
             async function latestChecks(sha){
-              const runs=(await github.rest.checks.listForRef({owner,repo,ref:sha,per_page:100})).data;
-              if(!Array.isArray(runs.check_runs)||!Number.isSafeInteger(runs.total_count)||
-                 runs.total_count>100||runs.total_count!==runs.check_runs.length)return null;
-              const names=new Map();
-              for(const check of [...runs.check_runs].sort((a,b)=>b.id-a.id)){
-                if(!names.has(check.name))names.set(check.name,check);
-              }
-              return names;
+              return hourlyProof.completeLatestChecks({github,owner,repo,sha});
             }
             // Release-ready may temporarily be optional; replace it only with proven exact-HEAD QA.
             const quality=/core-lint-types-build|actionlint-changed|unit|browser|database|guard-unit|contract|public-services|focused-verification|crm|verify/i;
@@ -165,10 +162,13 @@ jobs:
                 if(!gate||gate.status!=="completed"||gate.conclusion!=="success"||
                    gate.app?.slug!=="github-actions"||gate.app?.id!==15368)
                   return {ok:false,reason:"UNIFIED_REQUIRED_NOT_GREEN"};
-                if(rows.some(([name,c])=>quality.test(name)&&!obsolete.has(name)&&
-                   c.status!=="completed"))
+                const pending=rows.filter(([name,c])=>quality.test(name)&&!obsolete.has(name)&&
+                   c.status!=="completed").map(([,c])=>c);
+                if(pending.some(c=>!["queued","requested","waiting","pending"].includes(c.status)))
                   return {ok:false,reason:"FOCUSED_QA_RUNNING"};
-                return {ok:true,via:"UNIFIED_REQUIRED"};
+                // Queued duplicates need the same proven receipt as native
+                // ARM; do not block solely because the HEAD SHA changed.
+                return {ok:true,via:"UNIFIED_REQUIRED",pending};
               }
               if(rows.some(([name,c])=>quality.test(name)&&c.status!=="completed"))
                 return {ok:false,reason:"FOCUSED_QA_RUNNING"};
@@ -229,6 +229,10 @@ jobs:
                 }
                 const freshness=await assessCurrentBase(live,checks);
                 if(!freshness.ok){skip(freshness.reason);continue;}
+                if(qa.pending?.length&&!await mergeSafety.verifyQueuedQualityDuplicates({
+                  github,owner,repo,pr:live,expectedHead:live.head.sha,expectedBase:freshness.base,
+                  checks:[...checks.values()],pending:qa.pending
+                })){skip("FOCUSED_QA_UNVERIFIED");continue;}
                 const children=all.filter(other=>other.number!==pr.number&&other.base?.ref===live.head.ref);
                 const method=children.length?"merge":"squash";
                 if(!methods.has(method)){skip("DISALLOWED_MERGE_METHOD");continue;}
@@ -256,7 +260,8 @@ jobs:
                }
                // Never rely on a stale success while the full inventory was being scanned.
                const freshChecks=await latestChecks(c.head);
-               if(!assess(freshChecks).ok){skip("CHECKS_CHANGED_BEFORE_ARM");continue;}
+               const freshQa=assess(freshChecks);
+               if(!freshQa.ok){skip("CHECKS_CHANGED_BEFORE_ARM");continue;}
                const comments=await github.paginate(github.rest.issues.listComments,{
                  owner,repo,issue_number:c.number,per_page:100
                });
@@ -325,6 +330,10 @@ jobs:
                }
                const freshness=await assessCurrentBase(live,freshChecks);
                if(!freshness.ok){skip(freshness.reason);continue;}
+               if(freshQa.pending?.length&&!await mergeSafety.verifyQueuedQualityDuplicates({
+                 github,owner,repo,pr:live,expectedHead:c.head,expectedBase:freshness.base,
+                 checks:[...freshChecks.values()],pending:freshQa.pending
+               })){skip("FOCUSED_QA_UNVERIFIED");continue;}
                // Shared review/thread and exact-HEAD owner-lease safety is
                // mandatory for the hourly fallback, too. The read-only guard
                // rechecks current ownership after the prior inventory pass.

@@ -2,7 +2,7 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
-const {auditNativeMerge,inspectReviews}=require('../scripts/ci-pr-native-merge-policy.cjs');
+const {auditNativeMerge,inspectReviews,auditIndependentDomainChecks,verifyQueuedQualityDuplicates}=require('../scripts/ci-pr-native-merge-policy.cjs');
 const HEAD='a'.repeat(40),BASE='b'.repeat(40),OWNER='andylitvinov-design',REPO='books';
 function makeTestWorld(opts={}){
  const pr={number:42,state:'open',draft:false,mergeable:true,mergeable_state:'clean',
@@ -317,3 +317,72 @@ test('interrupted Core retry revalidates current protected proof rather than com
  assert.ok(body.includes('selectInterruptedMandatoryJob(jobs)'));
  assert.ok(!body.includes('latestPr.base.sha !== live.base.sha'));
 });
+
+
+test('native merge accepts queued duplicate only from current protected unified gate and actual prior same-tree job',async()=>{
+ const old='d'.repeat(40),tree='e'.repeat(40),full=OWNER+'/'+REPO;
+ const name='read-only-mobile',workflow='.github/workflows/mobile.yml';
+ const check=(id,job,run,name,status,conclusion)=>({id,name,status,conclusion,head_sha:HEAD,
+  app:{id:15368,slug:'github-actions'},details_url:'https://github.com/'+full+'/actions/runs/'+run+'/job/'+job});
+ const gate=check(10,20,30,'hh-merge-check','completed','success');
+ const queued=check(11,21,31,name,'queued',null);
+ const pr={number:42,head:{ref:'feat/x'}};
+ const run=(id,path,head_sha,status,conclusion)=>({id,path,head_sha,status,conclusion,
+  event:'pull_request',head_branch:'feat/x',head_repository:{full_name:full},
+  pull_requests:[{number:42,base:{ref:'codex/public-book-library'}}],run_attempt:1});
+ const runs={30:run(30,'.github/workflows/hh-pr-core-release.yml',HEAD,'completed','success'),
+  31:run(31,workflow,HEAD,'queued',null),32:run(32,workflow,old,'completed','success')};
+ const job=(c,id,run_id)=>({id,run_id,name:c.name,status:c.status,conclusion:c.conclusion,
+  check_run_url:'https://api.github.com/repos/'+full+'/check-runs/'+c.id});
+ const jobs={20:{...job(gate,20,30),steps:[{name:'Validate exact-head risk and required specialist workflows',status:'completed',conclusion:'success'}]},21:job(queued,21,31)};
+ const receipt={name:workflow,run_id:32,jobs:1,prior_head:old,prior_gate_run:33,prior_run_attempt:1};
+ const log='CI_PRIOR_HEAD_SPECIALIST_REUSED:'+JSON.stringify([receipt])+'\nSpecialist CI aggregate for PR #42 head='+HEAD+' event_base='+BASE+' tested_base='+BASE;
+ const world=({checks=[gate,queued],oldTree=tree,priorConclusion='success',priorAttempt=1,proof=log,changedWorkflow=false,commitOverrides={}}={})=>({
+  rest:{
+   checks:{listForRef:async()=>({data:{total_count:checks.length,check_runs:checks}})},
+   actions:{getJobForWorkflowRun:async({job_id})=>({data:jobs[job_id]}),
+    getWorkflowRun:async({run_id})=>({data:run_id===32?{...runs[32],conclusion:priorConclusion,run_attempt:priorAttempt}:runs[run_id]})},
+   repos:{getContent:async({ref})=>({data:{type:'file',sha:changedWorkflow&&ref===HEAD?old:tree}})},
+   git:{getCommit:async({commit_sha})=>({data:{sha:commit_sha,tree:{sha:commit_sha===old?oldTree:tree},...commitOverrides[commit_sha]}})}
+  },
+  request:async endpoint=>({data:endpoint.endsWith('/logs')?proof:{total_count:1,jobs:[{name,run_id:32,status:'completed',conclusion:'success'}]}})
+ });
+ const audit=opts=>auditIndependentDomainChecks({github:world(opts),owner:OWNER,repo:REPO,pr,expectedHead:HEAD,expectedBase:BASE});
+ assert.equal((await audit()).ok,true);
+ for(const opts of [{oldTree:BASE},{priorConclusion:'failure'},{priorAttempt:2},{proof:''},{changedWorkflow:true},{checks:[queued]}])
+  assert.equal((await audit(opts)).reason,'CRITICAL_CHECK_PENDING:'+name);
+ assert.equal((await audit({checks:[gate,{...queued,status:'in_progress'}]})).reason,'CRITICAL_CHECK_PENDING:'+name);
+ assert.equal((await audit({checks:[gate,{...queued,status:'completed',conclusion:'failure'}]})).reason,'CRITICAL_CHECK_FAILED:'+name);
+ const quality=({pending=[queued],opts={}}={})=>verifyQueuedQualityDuplicates({github:world(opts),owner:OWNER,repo:REPO,pr,expectedHead:HEAD,expectedBase:BASE,checks:[gate,queued],pending});
+ assert.equal(await quality(),true);
+ assert.equal(await quality({pending:[]}),true);
+ assert.equal(await quality({pending:[{...queued,head_sha:old}]}),false);
+ assert.equal(await quality({pending:[{...queued,status:'in_progress'}]}),false);
+ assert.equal(await quality({opts:{priorAttempt:2}}),false);
+ assert.equal(await quality({opts:{proof:''}}),false);
+ const priorMerge='1'.repeat(40),testedMerge='2'.repeat(40);
+ const equivalent={...receipt,proof_mode:'equivalent_merge_tree',prior_merge:priorMerge,tested_merge:testedMerge,tested_base:BASE};
+ const equivalentLog='[command]/usr/bin/git log -1 --format=%H\n'+testedMerge+'\nCI_PRIOR_HEAD_SPECIALIST_REUSED:'+JSON.stringify([equivalent])+'\nSpecialist CI aggregate for PR #42 head='+HEAD+' event_base='+BASE+' tested_base='+BASE;
+ const overrides={
+  [HEAD]:{parents:[{sha:old},{sha:BASE}]},
+  [priorMerge]:{parents:[{sha:BASE},{sha:old}]},
+  [testedMerge]:{parents:[{sha:BASE},{sha:HEAD}]}
+ };
+ const options={oldTree:BASE,proof:equivalentLog,commitOverrides:overrides};
+ assert.equal((await audit(options)).ok,true);
+ for(const bad of [
+  {...options,proof:equivalentLog.replace(testedMerge,'3'.repeat(40))},
+  {...options,commitOverrides:{...overrides,[HEAD]:{parents:[{sha:BASE},{sha:old}]}}},
+  {...options,commitOverrides:{...overrides,[priorMerge]:{...overrides[priorMerge],tree:{sha:BASE}}}},
+  {...options,commitOverrides:{...overrides,[testedMerge]:{parents:[{sha:BASE},{sha:old}]}}},
+  {...options,priorAttempt:2}
+ ])assert.equal((await audit(bad)).reason,'CRITICAL_CHECK_PENDING:'+name);
+});
+
+ test('hourly merge applies shared queued duplicate proof before eligibility and ARM',()=>{
+ const hourly=fs.readFileSync('.github/workflows/hh-pr-full-inventory.yml','utf8');
+ assert.equal((hourly.match(/mergeSafety\.verifyQueuedQualityDuplicates\(/g)||[]).length,2);
+ assert.ok(hourly.includes('pending:qa.pending'));
+ assert.ok(hourly.includes('pending:freshQa.pending'));
+ assert.ok(hourly.includes('FOCUSED_QA_UNVERIFIED'));
+ });
