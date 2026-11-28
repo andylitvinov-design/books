@@ -1143,7 +1143,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       if(r.ended||r.socket!==socket)return
       r.ready=false
       r.replyWatch?.clear()
-        r.reconnectSoon=false
+      r.reconnectSoon=false
       // A complete reply already received from Gemini belongs to the current
       // conversation. Let its queued PCM finish before replacing the socket.
       const denied=event?.code===1008
