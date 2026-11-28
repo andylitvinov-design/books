@@ -606,8 +606,9 @@ export function trustedAdditiveActionlint(base, current) {
 
 // General, read-only prior HEAD evidence for every applicable Specialist.
 // An exact SHA change alone does not invalidate a previously tested tree.
-// This is NOT a path-name or status-copy waiver: identical source AND
-// proposed merge trees, same protected base, immutable run/attempt identity,
+// This is NOT a path-name or status-copy waiver: identical proposed merge
+// trees, identical source or pure incorporation of the tested protected BASE,
+// same protected base, immutable run/attempt identity,
 // actual successful Core + unified gate, and its complete executed-job
 // receipt are mandatory. No candidate workflow may authorize its own reuse.
 const PRIOR_SHA=/^[0-9a-f]{40}$/;
@@ -618,6 +619,24 @@ function priorCheckout(lines,sha) {
   const positions=lines.flatMap((line,i)=>line==='[command]/usr/bin/git log -1 --format=%H'?[i]:[]);
   return positions.length===1&&lines[positions[0]+1]===sha;
 }
+
+// Reuse all Specialists for a pure incorporation of the ALREADY tested
+// protected base when the old and new proposed merge trees are identical.
+// A two-parent source merge alone does not prove equivalence: the resulting
+// source tree must equal the current proposed checkout and the old checkout.
+export function verifiedEquivalentHeadTrees(ctx,old,current,merge,before) {
+  if(![ctx.head,ctx.previousHead,ctx.base,ctx.merge,old?.tree?.sha,current?.tree?.sha,
+    merge?.tree?.sha,before?.tree?.sha].every(x=>PRIOR_SHA.test(x||''))||
+    old.sha!==ctx.previousHead||current.sha!==ctx.head||merge.sha!==ctx.merge||
+    merge.parents?.length!==2||merge.parents[0]?.sha!==ctx.base||
+    merge.parents[1]?.sha!==ctx.head||before.parents?.length!==2||
+    before.parents[0]?.sha!==ctx.base||before.parents[1]?.sha!==ctx.previousHead||
+    before.tree.sha!==merge.tree.sha)return false;
+  if(old.tree.sha===current.tree.sha)return true;
+  return current.parents?.length===2&&current.parents[0]?.sha===ctx.previousHead&&
+    current.parents[1]?.sha===ctx.base&&current.tree.sha===merge.tree.sha;
+}
+
 export async function verifiedPriorSpecialistEvidence(api,ctx,pr,files,expected) {
   const none=new Map();
   if(![ctx.head,ctx.previousHead,ctx.base,ctx.merge].every(x=>PRIOR_SHA.test(x||''))||
@@ -632,7 +651,11 @@ export async function verifiedPriorSpecialistEvidence(api,ctx,pr,files,expected)
       return c;
     };
     const [old,current,merge]=await Promise.all([commit(ctx.previousHead),commit(ctx.head),commit(ctx.merge)]);
-    if(old.tree.sha!==current.tree.sha||merge.parents?.length!==2||
+    const sameSource=old.tree.sha===current.tree.sha;
+    const incorporatedBase=current.parents?.length===2&&
+      current.parents[0]?.sha===ctx.previousHead&&current.parents[1]?.sha===ctx.base&&
+      current.tree.sha===merge.tree.sha;
+    if((!sameSource&&!incorporatedBase)||merge.parents?.length!==2||
        merge.parents[0]?.sha!==ctx.base||merge.parents[1]?.sha!==ctx.head)return none;
     const runs=await api.runsForWorkflow(ctx.previousHead,PRIOR_CORE);
     if(!Array.isArray(runs)||runs.length>100)return none;
@@ -668,8 +691,7 @@ export async function verifiedPriorSpecialistEvidence(api,ctx,pr,files,expected)
        f[5]!==ctx.previousHead||f[6]!==ctx.base||!priorCheckout(c,oldMerge)||
        !priorCheckout(g,oldMerge))return none;
     const before=await commit(oldMerge);
-    if(before.parents?.length!==2||before.parents[0]?.sha!==ctx.base||
-       before.parents[1]?.sha!==ctx.previousHead||before.tree.sha!==merge.tree.sha)return none;
+    if(!verifiedEquivalentHeadTrees(ctx,old,current,merge,before))return none;
     const receipt=g.filter(line=>line.startsWith('Specialist CI aggregate for PR #'));
     const header='Specialist CI aggregate for PR #'+ctx.number+' head='+ctx.previousHead+' event_base=';
     if(receipt.length!==1||!receipt[0].startsWith(header)||
@@ -700,7 +722,7 @@ export async function verifiedPriorSpecialistEvidence(api,ctx,pr,files,expected)
          expected.includes(name)&&typeof files.base.get(name)==='string'&&
          files.base.get(name)===files.current.get(name))
         result.set(name,{name,run_id:runId,jobs,prior_head:ctx.previousHead,prior_gate_run:run.id,
-          prior_run_attempt:actual.run_attempt});
+          prior_run_attempt:actual.run_attempt,...(!sameSource?{proof_mode:'equivalent_merge_tree',prior_merge:oldMerge,tested_merge:ctx.merge,tested_base:ctx.base}: {})});
     }
     return result;
   }catch{return none;}
