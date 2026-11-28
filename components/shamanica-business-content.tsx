@@ -178,7 +178,8 @@ export function ShamanicaBusinessContent({locale}:{locale:PublicLocale}){
   const index=BUSINESS_SERVICES.indexOf(id);
   return t.services[index>=0?index:0];
  };
- return <div className={styles.root} data-shamanica-business>
+ // Mark this client component only after its DOM ref has committed (not during SSR).
+ return <div className={styles.root} data-shamanica-business ref={node=>{if(node)node.dataset.businessHydrated="true";}}>
   <details className={styles.quizDrawer} data-business-extras><summary>{locale==="ru"?"Подобрать решение · 3 вопроса":locale==="es"?"Encontrar solución · 3 preguntas":"Find my approach · 3 questions"}<ArrowRight size={17} aria-hidden="true"/></summary>
   <section id="business-quiz" className={styles.quiz} data-business-quiz data-quiz-step={step+1} aria-labelledby="business-quiz-heading">
    <div className={styles.quizTop}>
