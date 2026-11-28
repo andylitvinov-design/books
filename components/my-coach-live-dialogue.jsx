@@ -27,7 +27,7 @@ import {clarityScenarioVersion,clarityScenarioGateFields} from '@/lib/coaching/c
 import {projectClarityPanelClock,restoredClarityRelayBinding} from '@/lib/coaching/clarity-relay-client.mjs'
 import {protocolAnswerClass} from '@/lib/coaching/coach-protocol-validation-gate.mjs'
 import {COACH_PROFILE_AXES} from '@/lib/coaching/coach-profile-intake.mjs'
-import {coachSessionOpeningLine,coachSessionNameSalutation,coachOpeningProgress,coachOpeningProtocolSnapshot,coachExplicitNameCorrection,coachNameCorrectionDecision,coachNameCorrectionQuestion} from '@/lib/coaching/coach-opening-protocol.mjs'
+import {coachSessionOpeningLine,coachSessionNameSalutation,coachOpeningProgress,coachOpeningProtocolSnapshot,coachExplicitNameCorrection,coachNameCorrectionDecision,coachNameCorrectionQuestion,coachOpeningFirstNameCandidate,coachOpeningNextReply} from '@/lib/coaching/coach-opening-protocol.mjs'
 import {coachProfileProgress,coachProfileProtocolSnapshot} from '@/lib/coaching/coach-profile-intake.mjs'
 import {COACH_PROFILE_REVIEW_VERSION,coachProfileReviewProgress,coachProfileReviewNextReply,
   coachProfileReviewProtocolSnapshot} from '@/lib/coaching/coach-profile-review.mjs'
@@ -1641,8 +1641,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     })
     // A preselected goal cannot rewrite a simple invitation reply like 'yes'.
     const pendingName=nameCorrectionRef.current||openingProgress.pendingNameCorrection
-    const correctionName=coachExplicitNameCorrection(message)
-    const isNameCorrection=Boolean(pendingName||(correctionName&&(openingProgress.current!=='name'||localOpeningScope.priorSession?.name)))
+    const initialName=coachOpeningFirstNameCandidate({turns:turnsRef.current,message,locale:responseLocale,personaId,...localOpeningScope})
+    const correctionName=coachExplicitNameCorrection(message)||initialName
+    const isNameCorrection=Boolean(pendingName||initialName||(correctionName&&(openingProgress.current!=='name'||localOpeningScope.priorSession?.name)))
     const goalEligible=!isNameCorrection&&!coachExplicitRecall(message)&&openingProgress.completed&&openingProgress.answers.focus?.kind!=='profile'
     message=goalEligible?goalTurn.message:message
     if(!coachProtocolRoomForExchange(turnsRef.current,message)){setError(protocolCopy[lang].limit);return null}
@@ -1710,6 +1711,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         nameCorrectionRef.current=null
         answer=owner?({ru:'Имя '+candidate+' сохранено в вашем профиле.',en:'Your preferred name '+candidate+' is saved in your profile.',es:'El nombre '+candidate+' está guardado en tu perfil.'})[responseLocale]:
           ({ru:'Буду обращаться к вам: '+candidate+'. Войдите, чтобы сохранить имя для следующих сессий.',en:'I will call you '+candidate+'. Sign in to keep this name for future sessions.',es:'Te llamaré '+candidate+'. Inicia sesión para guardarlo para otras sesiones.'})[responseLocale]
+        if(openingProgress.current==='name'){
+          const nextOpening=coachOpeningProgress({turns:[...turnsRef.current,{role:'user',content:message}],locale:responseLocale,personaId,...localOpeningScope})
+          if(nextOpening.checkmarks.name&&!nextOpening.completed&&!nextOpening.declined)answer+=' '+coachOpeningNextReply(nextOpening)
+        }
       }else if(decision==='reject'){
         nameCorrectionRef.current=null
         answer=({ru:'Не меняю имя. Скажите: «Называйте меня…» и назовите верное имя.',en:'I will not change the name. Please say “Call me…” and the correct name.',es:'No cambiaré el nombre. Di «Llámame…» y tu nombre correcto.'})[responseLocale]
@@ -1729,7 +1734,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       setDraft('');setSpeechPreview('');setStreamingPreview('');return {reply:answer,mode:'offline',locale:responseLocale}
     }
     if(greetingIdentity.name&&!openingProgress.completed&&!coachingBrainSafety(currentInput)&&!coachingBrainBoundary(currentInput)){
-      const firstParty=coachOpeningTurn({locale:responseLocale,message,openingHistory:restoredDraft?conversationTurns:openingHistory,openingEvidencePersonaId,
+      const firstParty=coachOpeningTurn({locale:responseLocale,message,openingHistory:restoredDraft?conversationTurns:openingHistory,openingEvidencePersonaId,openingTurns:turnsRef.current,
         openingPrior:localOpeningScope.priorSession,allowOpeningPrior:localOpeningScope.allowPrior,deferProfileToPrivateDirector:freshPrivateProfile},personaId)
       if(firstParty){
         const answer=firstParty.message
@@ -1787,7 +1792,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         reframe:'options',choice:'options',planning:'action',commitment:'action',integration:'action'}
       const stage=legacyStage[semanticStage]||'goal'
       const offlineOpening=!interruption?coachOpeningTurn({locale:responseLocale,
-        message,openingHistory:restoredDraft?conversationTurns:openingHistory,openingEvidencePersonaId,openingPrior:localOpeningScope.priorSession,allowOpeningPrior:localOpeningScope.allowPrior,
+        message,openingHistory:restoredDraft?conversationTurns:openingHistory,openingEvidencePersonaId,openingTurns:turnsRef.current,openingPrior:localOpeningScope.priorSession,allowOpeningPrior:localOpeningScope.allowPrior,
         deferProfileToPrivateDirector:freshPrivateProfile},personaId):null
       const offlineReply=interruption||offlineOpening||
         offlineCoachingBrainReply(input,selectCoachingBrainMethod(input),semanticStage)
@@ -2746,7 +2751,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
               // A recognized explicit correction stops the current transport before
               // its next reply is accepted. Confirmation is a local text turn;
               // never mint another grant automatically or let a model save a name.
-              const candidate=coachExplicitNameCorrection(text)
+              const candidate=coachExplicitNameCorrection(text)||coachOpeningFirstNameCandidate({
+                turns:turnsRef.current,message:text,locale:conversationLang,personaId,...localOpeningScope})
               const guard={locale:conversationLang,message:text,turns:turnsRef.current}
               const recallRequested=handlePrivateLiveRecall(text)
               if(details?.source==='speech'&&!recallRequested&&!candidate&&shouldReviewSpeech(text,conversationLang,speechReviewConsent)&&

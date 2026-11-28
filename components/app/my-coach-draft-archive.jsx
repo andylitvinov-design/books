@@ -5,6 +5,7 @@ import {coachIsNameRepairUtterance} from '@/lib/coaching/coach-opening-protocol.
 import MyCoachSavedProfileV3 from './my-coach-saved-profile-v3'
 import MyCoachCourseFieldReview from '../my-coach-course-field-review'
 import styles from './my-coaching-plan.module.css'
+import CoachSessionArchiveHeader from './coach-session-archive-header'
 
 const copy={
  ru:{title:'Незавершённые коуч-сессии',unreviewed:'Автосохранённый черновик · не проверенный итог',review:'Проверить и сохранить в архив',name:'Подтверждённое имя (необязательно)',goal:'Моя подтверждённая цель',summary:'Мой итог',step:'Мой следующий шаг',consent:'Я проверил(а) расшифровку и введённые сведения. Сохранить как проверенный отчёт.',discard:'Удалить черновик',ask:'Удалить незавершённый протокол без возможности восстановления?',more:'Показать более ранние черновики',error:'Не удалось синхронизировать черновики. Повторите попытку.',saved:'Проверенный протокол сохранён.',empty:'Нет незавершённых сессий',you:'Вы',coach:'Коуч'},
@@ -27,7 +28,7 @@ function DraftRow({item,t,lang,onAction,busy}){
       checkmarks:{invitation:false,name:true,continuity:false,focus:false,feelings:false,confirmation:false}}}:{})}
  }
  return <article className={styles.reportCard} data-coach-unreviewed-draft={item.id}>
-  <div className={styles.reportTop}><div><span>{t.unreviewed}</span><h2>{p.personaId}</h2><small>{new Date(item.updatedAt).toLocaleDateString(lang)} · {p.turns.length}</small></div></div>
+  <CoachSessionArchiveHeader protocol={p} updatedAt={item.updatedAt} courseSessionId={item.courseSessionId} locale={lang}/>
   <details className={styles.reportDetails}><summary>{t.review}</summary>
    <button type="button" className={styles.primaryButton} disabled={busy} onClick={()=>{if(window.confirm(({en:'This file contains private conversation text. Keep it secure and share only with explicit permission. Download?',ru:'Файл содержит личный диалог. Храните его безопасно и передавайте только с явного разрешения. Скачать?',es:'El archivo contiene un diálogo privado. Guárdalo de forma segura y compártelo solo con permiso explícito. ¿Descargar?'})[lang]))downloadCoachQualityTranscript(p)}}>{({en:'Export private QA transcript (JSON)',ru:'Скачать стенограмму для анализа (JSON)',es:'Exportar transcripción privada (JSON)'})[lang]}</button>
    {opening?.name&&<p>{t.name}: {opening.name} ({t.unreviewed})</p>}
