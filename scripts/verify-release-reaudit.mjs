@@ -1,3 +1,4 @@
+import { verifyMyCoachHome } from './verify-my-coach-home-entry.mjs';
 import { verifyHistoryProvenance } from './csp-history-provenance-probe.mjs';
 import { catalogStatsDiagnosticSource, attachCatalogStatsResponseDiagnostic } from './catalog-stats-request-diagnostics.mjs';
 import { decodeReadyPoster, isTransientYouTubePosterTimeout } from './public-poster-readiness.mjs';
@@ -29,42 +30,10 @@ async function check(name, detail, fn) {
   catch (error) { results.push({ name, ...detail, ok: false, error: String(error.message).slice(0, 1800) }); return false; }
 }
 async function assertCspPublicHome(page) {
-  await expect(page).toHaveURL(origin + '/');
-  // The approved owner reference is the canonical React Home, never legacy CDN HTML.
-  await expect(page.locator('body[data-fast-home]')).toHaveCount(0);
-  // Real Home: visible markup alone is not enough. Require the
-  // lightweight first-party script to have initialized its controls.
-  // A rapid back-navigation may still be replacing the outgoing document.
-  // Verify the REAL CDN or React Home rather than testing a stale DOM.
-  await expect(page.locator('body[data-fast-home="en"], main[data-home-design="dialogue-first-v1"]'))
-    .toHaveCount(1,{timeout:15000});
-  const fast = page.locator('body[data-fast-home="en"]');
-  if (await fast.count()) {
-    await expect(fast.locator('[data-home-dialogue-entry]')).toBeVisible();
-    await expect(fast.locator('[data-home-intent-option]')).toHaveCount(3);
-    await expect(fast.locator('[data-home-intent-form]')).toBeVisible();
-    await expect(fast.locator('[data-hh-unified-dock] [data-unified-dock-item]')).toHaveCount(7);
-    await expect.poll(() => page.evaluate(() => document.documentElement.dataset.homeInteractive === 'true')).toBe(true);
-    return;
-  }
+  await verifyMyCoachHome(page, 'en');
   await expect(page.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
-  // A history traversal can update the URL while the previous public document
-  // remains visible and its replacement is pending. Require the destination DOM,
-  // not load/hydration readiness: the server-rendered home is sufficient here.
-  const home = page.locator('main[data-home-design="dialogue-first-v1"]');
-  await expect(home).toHaveCount(1);
-  await expect(home).toBeVisible();
-  await expect(home.locator('[data-home-dialogue-entry]')).toBeVisible();
-  await expect(home.locator('[data-home-intent-option]')).toHaveCount(4);
-  const programIds=['clarity','goal','business','reiki'];
-  assert.deepEqual(await home.locator('[data-home-intent-option]').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-home-intent-option'))),programIds);
-  for (const intention of programIds) {
-    const program=home.locator('[data-home-intent-option="'+intention+'"]');
-    await expect(program).toHaveCount(1);
-    await expect(program).toBeVisible();
-    await expect(program).toHaveAttribute('type','button');
-  }
-  await expect(home.locator('[data-home-methods]')).toBeVisible();
+  await expect(page.locator('body[data-fast-home]')).toHaveCount(0);
+  await expect(page.locator('[data-hh-unified-dock] [data-unified-dock-item="coach"]')).toHaveAttribute('aria-current','page');
 }
 
 async function assertAnonymousPrivateNavigation(page) {
@@ -484,23 +453,23 @@ async function exercise(engine, browserType, width) {
       });
     }
     for (const locale of ['en', 'ru', 'es']) {
-      await check('home-paid-session-link', { engine, width, locale }, async () => {
+      await check('home-and-paid-consultation-entry', { engine, width, locale }, async () => {
         // Isolate the cross-document booking journey from public audit telemetry.
         const bookingPage = await context.newPage();
         try {
           const home = locale === 'en' ? '/' : '/' + locale;
           const destination = '/' + locale + '/services?consultation=1#consultation';
           await bookingPage.goto(origin + home, { waitUntil: 'domcontentloaded', timeout: 35000 });
-          await expect(bookingPage.locator('[data-home-dialogue-entry][data-home-interactive="true"]')).toBeVisible({ timeout: 20000 });
-          const link = bookingPage.locator('a[data-home-request-session]');
-          await expect(link).toHaveCount(1);
-          await expect(link).toHaveAttribute('href', destination);
-          await bookingPage.evaluate(() => window.scrollTo(0, 0));
-          const rect = await link.boundingBox();
-          const viewportHeight = bookingPage.viewportSize().height;
-          assert.ok(rect && rect.height >= 44 && rect.y >= 0 && rect.y + rect.height <= viewportHeight,
-            'The real booking link is visible in the first viewport without scrolling');
-          await link.click();
+          await verifyMyCoachHome(bookingPage, locale);
+          const support = bookingPage.locator('[data-hh-unified-dock] [data-unified-dock-item="services"]');
+          await expect(support).toHaveAttribute('href', '/' + locale + '/services');
+          if (await support.isVisible()) {
+            await support.click();
+            await expect(bookingPage).toHaveURL(origin + '/' + locale + '/services');
+          }
+          // The owner retired the Home booking button. Keep the actual paid
+          // offer and its explicit compatibility URL under independent test.
+          await bookingPage.goto(origin + destination, { waitUntil: 'domcontentloaded', timeout: 35000 });
           await expect(bookingPage).toHaveURL(origin + destination, { timeout: 35000 });
           const panel = bookingPage.locator('[data-services-unified-panel="consultation"]');
           await expect(panel).toHaveAttribute('data-expanded', 'true', { timeout: 20000 });
@@ -508,7 +477,7 @@ async function exercise(engine, browserType, width) {
           await expect(booking).toBeVisible();
           await expect(booking.locator('[data-service-product]')).toHaveCount(2);
           await expect(booking.locator('h2')).toBeInViewport({ timeout: 10000 });
-          return { realPaidOffer: true, paymentsOrBookingsMade: false, firstScreen: true };
+          return { myCoachHome: true, realPaidOffer: true, explicitConsultationEntry: true, paymentsOrBookingsMade: false };
         } finally { await bookingPage.close(); }
       });
       await check('consultation-safe-handoff', { engine, width, locale }, async () => {
@@ -743,6 +712,12 @@ async function exercise(engine, browserType, width) {
           // Verify the hard CSP boundary, guest isolation and the public
           // actual six-tab My Space and separate public profile builder.
           await cspPage.locator('[data-hh-unified-dock] [data-unified-dock-item="profile"]').click();
+          await expect(cspPage).toHaveURL(origin + '/en/my-page');
+          await expect(cspPage.locator('[data-universal-my-page]')).toBeVisible();
+          await expect(cspPage.locator('[data-my-page-public-fallback="guest"] [data-my-page-google]')).toBeVisible();
+          await expect(cspPage.locator('[data-my-page-private-feed]')).toHaveCount(0);
+          // The old private discovery remains independently protected.
+          await cspPage.locator('[data-my-page-discover]').click();
           await expect(cspPage).toHaveURL(origin + '/en/app/portrait');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'private');
           await waitForDocument();
@@ -784,7 +759,7 @@ async function exercise(engine, browserType, width) {
           const discoveryBottom = cspPage.locator('[data-hh-unified-dock]');
           await expect(discoveryBottom).toBeVisible();
           await expect(discoveryBottom.locator('[data-unified-dock-item]')).toHaveCount(7);
-          await expect(discoveryBottom.locator('[data-unified-dock-item="profile"]')).toHaveAttribute('href', '/en/app/portrait');
+          await expect(discoveryBottom.locator('[data-unified-dock-item="profile"]')).toHaveAttribute('href', '/en/my-page');
           await expect(cspPage.locator('.mobile-bottom-navigation')).toHaveCount(0);
           const privateContext = await cspBrowser.newContext({viewport:{width,height:900}, serviceWorkers: 'block'});
           await privateContext.route('**/api/**', route => ['GET', 'HEAD'].includes(route.request().method()) ? route.continue() : route.abort());
@@ -805,21 +780,16 @@ async function exercise(engine, browserType, width) {
           await waitForDocument();
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Leaving private must load a new public document');
           await cspPage.evaluate(() => { window.__cspDocumentProbe = 'public-home-before-about'; });
-          const fromFastHome = await cspPage.locator('body[data-fast-home="en"]').count() > 0;
-          // The normal Home has an IntersectionObserver-driven lazy catalogue above
-          // About. Exercise the user scroll through it before locating the lower link;
-          // a late insertion can otherwise move the click target on a busy CI runner.
-          // This is still a single real user click and all CSP/history assertions remain.
-          if (!fromFastHome) {
-            const deferredHome = cspPage.locator('[data-home-deferred-sections]');
-            await expect(deferredHome).toHaveCount(1);
-            await deferredHome.scrollIntoViewIfNeeded();
-            await expect(deferredHome.locator('[data-home-deferred-content]')).toBeVisible({ timeout: 20000 });
-          }
-          const publicAbout = cspPage.locator(fromFastHome ? '.about a[href="/en/about"]' : '.service-home-about a[href="/en/about"]');
+          // My Coach intentionally has no retired Home About link. Follow
+          // the real Support dock and its public header menu instead.
+          await cspPage.locator('[data-hh-unified-dock] [data-unified-dock-item="services"]').click();
+          await expect(cspPage).toHaveURL(origin + '/en/services');
+          await waitForDocument();
+          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe),'public-home-before-about','My Coach to Support stays same-policy');
+          await cspPage.locator('.site-main-menu-trigger').click();
+          const publicAbout = cspPage.locator('.site-main-menu-more [data-nav-item="about"]');
           await expect(publicAbout).toHaveCount(1);
           await expect(publicAbout).toBeVisible();
-          await publicAbout.evaluate(node => node.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' }));
           await cspPage.evaluate(() => {
             window.__hhAboutClickEvidence = null;
             document.addEventListener('click', event => {
@@ -838,9 +808,7 @@ async function exercise(engine, browserType, width) {
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
           await waitForDocument();
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe),
-            fromFastHome ? undefined : 'public-home-before-about',
-            fromFastHome ? 'CDN Home About opens a full document with its own CSP'
-              : 'React Home About preserves same-policy soft navigation');
+            'public-home-before-about', 'Support About preserves same-policy soft navigation');
           await cspPage.locator('#psychic-alchemy-video button').click();
           await expect(cspPage.frameLocator('#psychic-alchemy-video iframe').locator('[data-csp-probe]')).toBeVisible();
           interruptedDocumentProbe = await cspPage.evaluate(() => window.__cspInitDocumentProbe);
@@ -858,6 +826,10 @@ async function exercise(engine, browserType, width) {
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
           await waitForDocument();
           await expect.poll(() => cspPage.evaluate(() => window.__cspInitDocumentProbe), { message: 'Restored interrupted router must be replaced with a fresh document' }).not.toBe(interruptedDocumentProbe);
+          historyPhase = 'back-to-support';
+          await cspPage.goBack({ waitUntil: 'domcontentloaded' });
+          await expect(cspPage).toHaveURL(origin + '/en/services');
+          await waitForDocument();
           historyPhase = 'back-to-public-home';
           await cspPage.goBack({ waitUntil: 'domcontentloaded' });
           await assertCspPublicHome(cspPage);
@@ -870,11 +842,15 @@ async function exercise(engine, browserType, width) {
           const restoredDiscoveryBottom = cspPage.locator('[data-hh-unified-dock]');
           await expect(restoredDiscoveryBottom).toBeVisible();
           await expect(restoredDiscoveryBottom.locator('[data-unified-dock-item]')).toHaveCount(7);
-          await expect(restoredDiscoveryBottom.locator('[data-unified-dock-item="profile"]')).toHaveAttribute('href', '/en/app/portrait');
+          await expect(restoredDiscoveryBottom.locator('[data-unified-dock-item="profile"]')).toHaveAttribute('href', '/en/my-page');
           await expect(cspPage.locator('.mobile-bottom-navigation')).toHaveCount(0);
           historyPhase = 'forward-to-public-home';
           await cspPage.goForward({ waitUntil: 'domcontentloaded' });
           await assertCspPublicHome(cspPage);
+          await waitForDocument();
+          historyPhase = 'forward-to-support';
+          await cspPage.goForward({ waitUntil: 'domcontentloaded' });
+          await expect(cspPage).toHaveURL(origin + '/en/services');
           await waitForDocument();
           historyPhase = 'forward-to-public';
           await cspPage.goForward({ waitUntil: 'domcontentloaded' });
