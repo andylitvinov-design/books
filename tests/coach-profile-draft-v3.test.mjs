@@ -85,6 +85,9 @@ test('private resume UI keeps typed profile actions and normal checkpoints mutua
  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
  const route=readFileSync(new URL('../app/api/app/my-coach/draft/route.js',import.meta.url),'utf8')
  for(const marker of ['data-coach-private-profile-v3','setProfileV3Enabled(result.profileV3Enabled===true)','profileV3Ref.current=structured','profileV3FaultRef.current=true','if(structured&&!structured.step.closed)draftRevision=structured.revision','if(restoredDraft)forceLocal=true','profileV3Ref.current&&!profileV3Ref.current.step.closed','questionTurnId:q.turnId','restoredProfileProof.current=coachProfileArchiveEnvelope(p)'])assert.ok(ui.includes(marker),marker)
+ const profile=ui.slice(ui.indexOf('  async function runProfileV3('),ui.indexOf('  async function runCourseGate('))
+ assert.match(profile,/p\.personaId!==\(protocolOriginPersonaRef\.current\|\|personaId\)/)
+ assert.match(profile,/\(item\.privateCoachId\|\|p\.personaId\)!==personaId/)
  assert.ok(route.includes("profileV3Enabled:process.env.HH_MY_COACH_PROFILE_V3_ENABLED==='true'"))
 })
 

@@ -14,14 +14,14 @@ class Socket extends EventEmitter{
  input(value){this.emit('message',JSON.stringify(value))}
  pong(){this.emit('pong',Buffer.from(this.pings.at(-1)))}
 }
-function fixture({beforePersist=async()=>{},segmentBudgetMs=null,previousRun=null}={}){
+function fixture({beforePersist=async()=>{},segmentBudgetMs=null,previousRun=null,loadOpeningNote}={}){
  const base=previousRun?previousRun.clock.lastEventAt+1000:1795100000000,client=new Socket(),provider=new Socket(),protocolId=id(2)
  let run=previousRun||createClarityRun({id:id(1),ordinal:1,access:'free',protocolIds:[protocolId,id(3),id(4)],createdAt:base})
  const previousCredentialExpiresAt=previousRun?base:null
  const lease={leaseId:previousRun?id(11):id(10),run,day:1,protocolId,now:base,previousCredentialExpiresAt,
   ...clarityRunCredentialWindow(run,{day:1,protocolId,now:base,previousCredentialExpiresAt})}
  let now=base,seq=previousRun?200:20,tid=0;const timers=new Map(),events=[],retirements=[]
- const relay=bindClarityTrustedLiveConnection({client,provider,lease,coachId:'mira',setup:{setup:{model:'synthetic'}},segmentDeadlineMs:segmentBudgetMs===null?null:base+segmentBudgetMs,clock:()=>now,uuid:()=>id(++seq),
+ const relay=bindClarityTrustedLiveConnection({client,provider,lease,coachId:'mira',setup:{setup:{model:'synthetic'}},loadOpeningNote,segmentDeadlineMs:segmentBudgetMs===null?null:base+segmentBudgetMs,clock:()=>now,uuid:()=>id(++seq),
   schedule:(fn,ms)=>{timers.set(++tid,{fn,at:now+ms});return tid},cancel:key=>timers.delete(key),
   retireLease:async binding=>{retirements.push({binding,status:run.clock.days[0].status,elapsed:run.clock.days[0].elapsedMs})},
   persist:async e=>{events.push(e);await beforePersist(e);run=advanceClarityRun(run,e);return clarityRunSummary(run)}})
@@ -43,6 +43,35 @@ test('server provider setup and explicit client consent are both required; paire
  await f.relay.settled()
  assert.equal(f.run.clock.days[0].elapsedMs,0)
  assert.equal(f.run.clock.days[0].status,'paused')
+})
+test('relay loads an approved reference only after consent and before its first generation',async()=>{
+ let finish,entered
+ const reading=new Promise(resolve=>{entered=resolve})
+ const note='CLIENT-APPROVED REFERENCE DATA (synthetic reviewed results)'
+ const f=fixture({loadOpeningNote:()=>new Promise(resolve=>{finish=resolve;entered()})})
+ f.ready()
+ assert.equal(f.provider.messages.length,1)
+ f.consent()
+ await reading
+ assert.deepEqual(f.events,[])
+ assert.equal(f.provider.messages.length,1)
+ finish(note)
+ await f.relay.settled()
+ const requests=f.provider.messages.filter(packet=>packet.clientContent?.turnComplete)
+ assert.equal(requests.length,1)
+ assert.equal(requests[0].clientContent.turns[0].parts[0].text,note)
+ assert.ok(!f.client.messages.some(frame=>JSON.stringify(frame).includes(note)))
+})
+test('loss of the relay client during the opening lookup never discloses the stored reference',async()=>{
+ let finish,entered
+ const reading=new Promise(resolve=>{entered=resolve})
+ const f=fixture({loadOpeningNote:()=>new Promise(resolve=>{finish=resolve;entered()})})
+ f.ready();f.consent();await reading
+ f.client.close()
+ finish('CLIENT-APPROVED REFERENCE DATA (stale synthetic results)')
+ await f.relay.settled()
+ assert.equal(f.provider.messages.length,1)
+ assert.deepEqual(f.events,[])
 })
 test('real pongs credit only the observed interval; pause closes upstream before persisting stop',async()=>{
  const f=fixture();f.ready();f.consent();await f.relay.settled()

@@ -3,7 +3,7 @@
 import {useEffect,useRef,useState} from 'react'
 import styles from './my-coach-live-dialogue.module.css'
 
-const topics=[
+export const coachContextTopicOptions=[
  ['body_health','Body & Health','Тело и здоровье','Cuerpo y salud'],
  ['emotional_wellbeing','Emotional wellbeing','Эмоциональное благополучие','Bienestar emocional'],
  ['relationships','Relationships','Отношения','Relaciones'],
@@ -178,7 +178,7 @@ export default function MyCoachStagedMemoryControls({locale='en',provider='gemin
      <label>{t.topic}
        <select value={topicKey} onChange={event=>{setSharePersonal(false);onTopicKey?.(event.target.value)}}>
          <option value="">{t.choose}</option>
-         {topics.map(([key,en,ru,es])=><option value={key} key={key}>{lang==='ru'?ru:lang==='es'?es:en}</option>)}
+         {coachContextTopicOptions.map(([key,en,ru,es])=><option value={key} key={key}>{lang==='ru'?ru:lang==='es'?es:en}</option>)}
        </select>
      </label>
      {loadingPersonal?<p role="status">{t.loading}</p>:null}

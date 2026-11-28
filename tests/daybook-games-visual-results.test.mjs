@@ -43,3 +43,21 @@ test('all three days have one translated practical action cue per game and goal 
   assert.ok(quest.steps.every(s=>s.options.at(-1)===later))
  }
 })
+
+test('day two preserves legacy answers and distinguishes support observations from plans',()=>{
+ for(const locale of ['ru','en','es']){
+  const [battery,resources,calm]=daybookGames(locale,2)
+  assert.equal(resources.steps[1].options.length,5)
+  assert.equal(resources.steps[2].options.length,5)
+  assert.equal(resources.steps[3].options.length,7)
+  assert.ok(battery.steps[3].actionCue.length>80)
+  assert.ok(calm.steps[2].actionCue.length>100)
+  for(let status=0;status<7;status++){
+   const answers={0:[0],1:0,2:0,3:status}
+   const saved=gameResult(resources,answers)
+   assert.deepEqual(decodeSavedGame({locale,text:saved},2,2),answers)
+  }
+  assert.notEqual(resources.steps[3].options[1],resources.steps[3].options[2])
+  assert.notEqual(resources.steps[3].options[5],resources.steps[3].options[6])
+ }
+})

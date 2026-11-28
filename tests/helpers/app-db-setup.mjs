@@ -40,6 +40,7 @@ export async function setup(){const db=await adminClient();try{
 
  // Include the existing encrypted-goals schema in this isolated fixture so export is complete.
  await db.query(await readFile(new URL('../../supabase/migrations/20261017165000_hh_reports_development_goals.sql',import.meta.url),'utf8'))
+ await db.query(await readFile(new URL('../../supabase/migrations/20261127140625_hh_self_discovery_vector_history.sql',import.meta.url),'utf8'))
  // The real production-approved private Academy and Express schemas must exist
  // in the EMPTY isolated browser DB: otherwise real browser QA gets SQL 42P01
  // instead of verifying owner RLS and user-facing responses. Never invent tables

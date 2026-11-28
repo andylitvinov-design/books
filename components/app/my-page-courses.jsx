@@ -29,27 +29,28 @@ function courseView(c,locale,t){
  const root='/'+locale,appRoot='/'+(locale==='es'?'en':locale)+'/app'
  const fallback=c.done===null||c.total===null?'':c.done+'/'+c.total
  switch(c.kind){
-  case 'goal':return {title:c.title,detail:c.progress?c.progress.completedWeeks+'/8 '+({en:'weeks',ru:'недель',es:'semanas'})[locale]:'',href:c.progress?.next?profileDaybookHref(appRoot,c.id,c.progress.next.week,c.progress.next.step):profileDaybookHref(appRoot,c.id),Icon:Target}
-  case 'growth':return {title:t[c.presetId]||t.growth,detail:fallback?fallback+' '+t.lessons:'',href:appRoot+'/course?view=courses&courseId='+encodeURIComponent(c.id),Icon:BookOpen}
+  case 'self-discovery':return {title:'Self Discovery',detail:[fallback?fallback+' '+({en:'tests explored',ru:'тестов исследовано',es:'pruebas exploradas'}[locale]):'',c.axes+'/16 '+({en:'axes measured',ru:'осей измерено',es:'ejes medidos'}[locale])].filter(Boolean).join(' · '),href:root+'/app/daybook/self-discovery?theme=all&view=results',Icon:BookOpen}
+  case 'goal':return {art:/health|здоров|salud|well.?being/i.test(c.title)?'health':/money|деньг|финанс|dinero|finanz/i.test(c.title)?'money':'goal',title:c.title,detail:c.progress?c.progress.completedWeeks+'/8 '+({en:'weeks',ru:'недель',es:'semanas'})[locale]:'',href:c.progress?.next?profileDaybookHref(appRoot,c.id,c.progress.next.week,c.progress.next.step):profileDaybookHref(appRoot,c.id),Icon:Target}
+  case 'growth':return {art:c.presetId==='calm_balance'?'antistress':'growth',title:t[c.presetId]||t.growth,detail:fallback?fallback+' '+t.lessons:'',href:appRoot+'/course?view=courses&courseId='+encodeURIComponent(c.id),Icon:BookOpen}
   case 'reiki':return {title:t.reiki,detail:fallback?t.slides+' · '+fallback:'',href:root+'/academy/principles-of-energywork/learn'+(c.slideId?'?slide='+encodeURIComponent(c.slideId):''),Icon:Flower2}
   case 'business':return {title:t.business,detail:fallback+' '+t.days,href:root+'/app/daybook/business',Icon:Briefcase}
   case 'clarity':{
    const href=clarityMyPageRunHref(locale,c)
    return href?{title:t.clarity+' · '+t.run+' '+c.ordinal,detail:[c.day?t.session+' '+c.day+'/3':'',t.time+' '+Math.floor(c.done/60000)+'/60 '+t.minutes].filter(Boolean).join(' · '),href,Icon:MessageCircle}:null
   }
-  case 'therapy':return {title:t.antistress+' · Therapy',detail:[c.day?t.session+' '+c.day+'/3':'',Math.floor(c.done/60000)+'/45 '+t.minutes].filter(Boolean).join(' · '),href:root+'/app/my-coaching-plan?tab=reports&antiStressRun='+encodeURIComponent(c.id),Icon:Flower2}
-  case 'legacy':return {title:c.group==='clarity'?t.legacyClarity:t[c.group]||t.coach,detail:t.saved+' · '+c.done,href:c.group==='goal'?root+'/app/daybook?start=vector':c.group==='clarity'?root+'/app/daybook?program=clarity':root+'/my-coach',Icon:c.group==='goal'?Target:MessageCircle}
+  case 'therapy':return {art:'antistress',title:t.antistress+' · Therapy',detail:[c.day?t.session+' '+c.day+'/3':'',Math.floor(c.done/60000)+'/45 '+t.minutes].filter(Boolean).join(' · '),href:root+'/app/my-coaching-plan?tab=reports&antiStressRun='+encodeURIComponent(c.id),Icon:Flower2}
+  case 'legacy':return {art:c.group==='antistress'?'antistress':'clarity',title:c.group==='clarity'?t.legacyClarity:t[c.group]||t.coach,detail:t.saved+' · '+c.done,href:c.group==='goal'?root+'/app/daybook?start=vector':c.group==='clarity'?root+'/app/daybook?program=clarity':root+'/my-coach',Icon:c.group==='goal'?Target:MessageCircle}
   default:return null
  }
 }
 function ProgressRing({percent,label,unknown}){
  const known=Number.isInteger(percent)&&percent>=0&&percent<=100
  return <span className={styles.ring} role={known?'progressbar':'img'} aria-label={known?label:unknown} aria-valuemin={known?0:undefined} aria-valuemax={known?100:undefined} aria-valuenow={known?percent:undefined}>
-  <svg viewBox="0 0 54 54" aria-hidden="true"><circle cx="27" cy="27" r="23" className={styles.track}/>{known&&<circle cx="27" cy="27" r="23" pathLength="100" strokeDasharray={percent+' 100'} className={styles.fill}/>}</svg>
+  <svg viewBox="0 0 54 54" aria-hidden="true"><circle cx="27" cy="27" r="23" className={styles.track}/>{known&&percent>0&&<circle cx="27" cy="27" r="23" pathLength="100" strokeDasharray={percent+' 100'} className={styles.fill}/>}</svg>
   <strong aria-hidden="true">{known?percent+'%':'—'}</strong>
  </span>
 }
-export default function MyPageCourses({locale='en',accountId}){
+export default function MyPageCourses({locale='en',accountId,onSummary}){
  const lang=Object.hasOwn(COPY,locale)?locale:'en',t=COPY[lang]
  const [state,setState]=useState(null)
  const [retry,setRetry]=useState(0)
@@ -105,9 +106,18 @@ export default function MyPageCourses({locale='en',accountId}){
   return {key:'goal:'+id,kind:'goal',id,title:goal.title,state:progress?.next===null?'completed':'active',percent:progress?.percent??null,progress}
  }),[goalSnapshot])
  const root='/'+(lang==='es'?'en':lang)+'/app', localRoot='/'+lang
- const rows=[...goalRows,...(current?.courses||[])]
+ const rows=useMemo(()=>[...goalRows,...(current?.courses||[])],[goalRows,current])
+ useEffect(()=>{
+  if(!onSummary||!accountId)return
+  const eligible=rows.filter(c=>!['legacy'].includes(c.kind)&&c.state!=='closed')
+  const done=eligible.filter(c=>c.state==='completed').length
+  const complete=Boolean(current&&!current.partial&&goalSnapshot&&!goalSnapshot.error&&!goalSnapshot.entriesError&&goalSnapshot.entries!==null)
+  onSummary({owner:accountId,plan:goalSnapshot?.plan||null,planFailed:!!goalSnapshot?.error,focus:goalRows[0]?.title||null,done,total:eligible.length,percent:complete&&eligible.length?Math.round(100*done/eligible.length):null})
+ },[accountId,rows,current,goalSnapshot,goalRows,onSummary])
+ const [showAvailable,setShowAvailable]=useState(false)
  const canExplore=Boolean(current&&goalSnapshot&&!goalSnapshot.error)
  const available=[
+  ...(!rows.some(c=>c.kind==='self-discovery')?[{key:'new:self-discovery',title:'Self Discovery',href:localRoot+'/app/daybook/self-discovery',Icon:BookOpen}]:[]),
   ...(!rows.some(c=>c.kind==='clarity'||c.kind==='legacy'&&c.group==='clarity')?[{key:'new:clarity',title:labels.clarity,section:'clarity',Icon:MessageCircle}]:[]),
   ...(!goalRows.length?[{key:'new:goal',title:labels.goal,section:'goals',Icon:Target}]:[]),
   ...(!rows.some(c=>c.kind==='business')?[{key:'new:business',title:labels.business,section:'business',Icon:Briefcase}]:[]),
@@ -116,22 +126,24 @@ export default function MyPageCourses({locale='en',accountId}){
  function toggle(key){setOpened(previous=>previous===key?null:key)}
  const expand=(key,view,percent,status,ringLabel,content,kind)=>{
   const {Icon}=view,expanded=opened===key,region='my-course-'+encodeURIComponent(key)
+  const art=kind==='available'?key.replace('new:',''):view.art||kind
   return <article key={key} className={styles.item} data-my-page-course={kind} data-my-page-course-key={key}>
    <button type="button" className={styles.row} aria-expanded={expanded} aria-controls={region} onClick={()=>toggle(key)}>
-    <span className={styles.icon} data-course-art={kind==='available'?key.replace('new:',''):kind} aria-hidden="true"><Icon size={22}/></span>
-    <span className={styles.description}><strong>{view.title}</strong>{view.detail&&<small>{view.detail}</small>}<span className={styles.action}>{status}<ChevronDown size={14} aria-hidden="true" className={expanded?styles.rotated:undefined}/></span>{kind!=='available'&&Number.isInteger(percent)&&percent>=0&&percent<=100?<span className={styles.linear} aria-hidden="true"><span style={{width:percent+'%'}}/></span>:null}</span>
-    {kind==='available'?<ChevronDown size={21} aria-hidden="true"/>:<ProgressRing percent={percent} label={ringLabel} unknown={t.unknown}/>}
+    <span className={styles.icon} data-course-art={art} aria-hidden="true"><Icon size={22}/></span>
+    <span className={styles.description}><strong>{view.title}</strong>{view.detail&&<small>{view.detail}</small>}<span className={styles.srOnly}>{status}</span>{kind!=='available'&&Number.isInteger(percent)&&percent>=0&&percent<=100?<span className={styles.linear} aria-hidden="true"><span style={{width:percent+'%'}}/></span>:null}</span>
+    {kind==='available'?<span/>:<ProgressRing percent={percent} label={ringLabel} unknown={t.unknown}/>}
+    <ChevronDown size={16} aria-hidden="true" className={expanded?styles.rotated:undefined}/>
    </button>
    <div id={region} className={styles.panel} hidden={!expanded}>{expanded&&content}</div>
   </article>
  }
  return <section className={profileStyles.card} aria-label={t.title} id="my-courses" data-my-page-courses>
-  <header className={profileStyles.heading}><BookOpen size={23} aria-hidden="true"/><h2>{t.title}</h2></header>
+  <header className={profileStyles.heading}><BookOpen size={23} aria-hidden="true"/><h2>{t.title}</h2>{canExplore&&rows.length>0&&<button className={styles.seeAll} type="button" aria-expanded={showAvailable} aria-controls="my-course-discovery" onClick={()=>setShowAvailable(v=>!v)}>{labels.explore}<ArrowRight size={15}/></button>}</header>
   {!current||!goalSnapshot?<p className={profileStyles.empty} role="status">{t.loading}</p>:null}
   {rows.length>0?<div className={styles.list}>{rows.map(c=>{
     const view=courseView(c,lang,t);if(!view)return null
     const status=c.state==='saved'?t.review:t[c.state]
-    const label=view.title+' · '+(c.kind==='reiki'?t.slides:c.kind==='clarity'?t.time:t.progress)
+    const label=view.title+' · '+(c.kind==='reiki'?t.slides:c.kind==='clarity'?t.time:c.kind==='self-discovery'?({en:'Test catalogue coverage',ru:'Охват каталога тестов',es:'Cobertura del catálogo'}[lang]):t.progress)
     const action=<Link href={view.href} prefetch={false} className={styles.resume} data-my-course-resume>{c.state==='completed'||c.state==='saved'||c.state==='closed'?labels.manage:status}<ArrowRight size={18} aria-hidden="true"/></Link>
     let content=action
     if(c.kind==='goal')content=<ProfileGoalConsole key={c.id} locale={lang} root={root} accountId={accountId} selectedGoalId={c.id} cabinetSnapshot={snapshot}/>
@@ -141,7 +153,7 @@ export default function MyPageCourses({locale='en',accountId}){
   })}</div>:canExplore&&!current.partial&&<p className={profileStyles.empty}>{t.empty}</p>}
   {current?.coursePurchases?.length>0&&<CoursePurchaseHistory locale={lang} orders={current.coursePurchases}/>}
   {(current?.partial||goalSnapshot?.error||goalSnapshot?.entriesError)&&<div className={styles.notice} role="status">{t.partial} <button type="button" onClick={()=>setRetry(n=>n+1)}>{t.retry}</button></div>}
-  {canExplore&&<div className={styles.discovery}>
+  {canExplore&&<div id="my-course-discovery" className={styles.discovery} hidden={rows.length>0&&!showAvailable}>
    <h3>{labels.explore}</h3>
    {goalRows.length>0&&<Link className={styles.secondary} href={root+'/daybook?start=vector'} prefetch={false}>{labels.newGoal}<ArrowRight size={16}/></Link>}
    <div className={styles.list}>{available.map(item=>{

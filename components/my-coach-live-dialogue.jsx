@@ -4,6 +4,7 @@ import {clarityCourseId,clarityCourseDay,clarityReturnHref,clarityCoachHref,clar
 import {useEffect,useRef,useState} from 'react'
 import {flushSync} from 'react-dom'
 import {appFetch,getCabinetBootstrap} from '@/lib/app/client-fetch'
+import {coachLiveReviewedEntryInput} from '@/lib/coaching/coach-live-memory-note.mjs'
 import MyCoachContext from '@/components/app/my-coach-context'
 import Link from 'next/link'
 import {ArrowLeft,ChevronDown,ArrowRight,Heart,Home,Keyboard,Leaf,Languages,LockKeyhole,MessageCircle,Pencil,Send,ShieldCheck,Sparkles,Target,UserRound,Video,Volume2,Play,LoaderCircle,Zap,Download,Printer,FileText,Maximize2,Minimize2,Pause,PhoneOff,VolumeX,Plus} from 'lucide-react'
@@ -38,8 +39,8 @@ import MyCoachEarlyExit from './my-coach-early-exit'
 import {coachCompletionDestination,coachEarlyExitDestination,coachShouldOfferEarlyExit} from '@/lib/coaching/coach-early-exit.mjs'
 import MyCoachSpeechLoop from './my-coach-speech-loop'
 import MyCoachGeminiLive from './my-coach-gemini-live'
-import MyCoachStagedMemoryControls from './my-coach-staged-memory-controls'
-import {coachExplicitRecall,privateCoachRecallText,coachReturningSalutation} from '@/lib/coaching/coach-private-recall.mjs'
+import MyCoachStagedMemoryControls,{coachContextTopicOptions} from './my-coach-staged-memory-controls'
+import {coachExplicitRecall,privateCoachEntryText,privateCoachRecallText,coachReturningSalutation} from '@/lib/coaching/coach-private-recall.mjs'
 import AntiStressMemoryPanel from './app/anti-stress-memory-panel'
 import MyCoachSessionStateCard from './my-coach-session-state-card'
 import {startCoachingMp3Playback,unlockCoachingAudioContext,shouldUseCoachingWebAudio} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
@@ -412,6 +413,36 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [greetingIdentity,setGreetingIdentity]=useState({status:'loading',name:''})
   const [privateRecall,setPrivateRecall]=useState(null)
   const [crossModeChoice,setCrossModeChoice]=useState(null)
+  const [entryMemoryGrant,setEntryMemoryGrant]=useState(null)
+  const [entryContextTopic,setEntryContextTopic]=useState('')
+  const entryMemoryRequest=useRef(null)
+  useEffect(()=>()=>{entryMemoryRequest.current?.abort();entryMemoryRequest.current=null},[])
+  async function approveEntryMemory(approved){
+    entryMemoryRequest.current?.abort()
+    entryMemoryRequest.current=null
+    const owner=protocolOwnerRef.current,provider=memoryProvider
+    if(!approved||!owner){setEntryMemoryGrant(null);return}
+    const controller=new AbortController()
+    entryMemoryRequest.current=controller
+    setEntryMemoryGrant({owner,provider,status:'loading'})
+    const timeout=setTimeout(()=>controller.abort(),4500)
+    try{
+      const consent={sessionAccepted:true,providerSharing:true,priorSessions:true}
+      const contextSessionToken=entryContextTopic&&contextSession?.accountId===owner&&!contextSession.expired&&
+        contextSession.expiresAt>Date.now()?contextSession.token:undefined
+      const scope=entryContextTopic?{topicKey:entryContextTopic,...(contextSessionToken?{contextSessionToken}:{})}:{}
+      const result=await appFetch('my-coach/staged-memory',{stage:'identity',provider,entry:true,consent,...scope},'POST',{accountId:owner,signal:controller.signal})
+      if(entryMemoryRequest.current!==controller||protocolOwnerRef.current!==owner)return
+      if(result?.schema!=='hh-my-coach-staged-memory-v1'||result.stage!=='identity'||
+         typeof result.stageToken!=='string'||!result.stageToken||result.stageToken.length>140)throw Error('INVALID_STAGE')
+      const topic=result.prior?.previous?.[0]?.topic||result.prior?.foundation?.topic
+      setEntryMemoryGrant({owner,provider,status:'ready',token:result.stageToken,scope,topic:typeof topic==='string'?topic.slice(0,140):''})
+      setContextPaused(false)
+    }catch{
+      if(entryMemoryRequest.current===controller&&protocolOwnerRef.current===owner)
+        setEntryMemoryGrant({owner,provider,status:'unavailable'})
+    }finally{clearTimeout(timeout)}
+  }
   const recallRequestRef=useRef(null)
   useEffect(()=>()=>recallRequestRef.current?.abort(),[])
   const namePreferenceVersion=useRef(null),nameCorrectionRef=useRef(null),confirmedNameRef=useRef('')
@@ -479,23 +510,43 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   useEffect(()=>()=>pending.current?.abort(),[])
   useEffect(()=>{
     let active=true
-    void getCabinetBootstrap('portrait',{refresh:true}).then(value=>{
-      if(!active||turnsRef.current.length||protocolStartedRef.current)return
-      const id=value?.account?.id
-      if(typeof id==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)){
-        protocolOwnerRef.current=id;setProtocolOwnerReady(true)
-        return fetch('/api/app/my-coach/protocol?view=greeting-identity',{credentials:'same-origin',cache:'no-store',headers:{'X-HH-Account-ID':id}}).then(async response=>{
-          if(!response.ok)throw Error('GREETING_IDENTITY_UNAVAILABLE')
-          const value=await response.json()
-          if(active&&protocolOwnerRef.current===id&&!protocolStartedRef.current&&!turnsRef.current.length){
-            namePreferenceVersion.current=value.preferenceVersion||null
-            setGreetingIdentity({status:'ready',name:typeof value.preferredName==='string'?value.preferredName:'',returning:value.returning===true,hasPreviousProtocol:value.hasPreviousProtocol===true})
-          }
-        })
-      }
-      if(active)setGreetingIdentity({status:'ready',name:''})
-    }).catch(()=>{if(active)setGreetingIdentity({status:'unavailable',name:''})}) // No name guessed on failure.
-    return()=>{active=false}
+    const controller=new AbortController()
+    const timer=setTimeout(()=>controller.abort(),8000)
+    let owner=null
+    async function loadEntry(){
+      try{
+        const bootstrap=await appFetch('bootstrap?view=portrait',undefined,'GET',{signal:controller.signal})
+        if(!active||turnsRef.current.length||protocolStartedRef.current)return
+        const id=bootstrap?.account?.id
+        if(typeof id!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)){
+          setGreetingIdentity({status:'ready',name:''})
+          return
+        }
+        owner=id
+        protocolOwnerRef.current=id
+        setProtocolOwnerReady(true)
+        const read=()=>appFetch('my-coach/protocol?view=greeting-identity&includeContext=true',undefined,'GET',{accountId:id,signal:controller.signal})
+        let value
+        try{value=await read()}
+        catch(error){
+          if(controller.signal.aborted||(error.status&&error.status<500))throw error
+          value=await read()
+        }
+        if(!active||protocolOwnerRef.current!==id||protocolStartedRef.current||turnsRef.current.length)return
+        if(!value.entryContext)throw Error('GREETING_CONTEXT_UNAVAILABLE')
+        namePreferenceVersion.current=value.preferenceVersion||null
+        setGreetingIdentity({status:'ready',owner:id,name:typeof value.preferredName==='string'?value.preferredName:'',hasPreviousProtocol:value.hasPreviousProtocol===true,entryContext:value.entryContext,entryMemoryEnabled:value.entryMemoryEnabled===true})
+      }catch(error){
+        if(!active||protocolStartedRef.current||turnsRef.current.length||protocolOwnerRef.current!==owner)return
+        if(error.status===401||error.status===409){
+          protocolOwnerRef.current=null
+          setProtocolOwnerReady(false)
+          setGreetingIdentity({status:'ready',name:''})
+        }else setGreetingIdentity({status:'unavailable',owner,name:''})
+      }finally{clearTimeout(timer)}
+    }
+    void loadEntry()
+    return()=>{active=false;clearTimeout(timer);controller.abort()}
   },[])
   useEffect(()=>{
     if(!protocolOwnerReady||greetingAccepted)return
@@ -590,6 +641,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const coachStyle=getCoachPresentation(personaId,conversationLang)?.style
   const privateSalutation=coachReturningSalutation(coachSessionNameSalutation(greetingIdentity.name,conversationLang),greetingIdentity.hasPreviousProtocol,conversationLang)
   const introduction=[privateSalutation,coachSessionOpeningLine(personaId,conversationLang)].filter(Boolean).join(' ')
+  const privateEntry=greetingIdentity.owner===protocolOwnerRef.current
+    ?privateCoachEntryText(greetingIdentity.status==='unavailable'?{kind:'unavailable'}:greetingIdentity.entryContext,conversationLang)
+    :''
   const ui=sessionUi[lang]||sessionUi.en
   const voiceGate=voiceGateText[lang]||voiceGateText.en
   const liveVoiceSelected=coachEngine==='gemini_live_free'
@@ -627,10 +681,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(busy||paused||coachProfileOpenRef.current||replaying||!['idle','paused'].includes(voiceState.phase)||(selectedGeminiEngine&&!geminiEngineReady))return
     if(!protocolStartedRef.current)protocolStartedRef.current=new Date().toISOString()
     if(!selectedGoal&&selectedCourseId!==INTRODUCTORY_COACH_SESSION_ID)setSelectedGoal(coachCourseFocusLabel(selectedCourseId,conversationLang))
-    if(liveVoiceSelected&&greetingIdentity.name&&!turnsRef.current.length){
-      // Show the name in the first-party transcript, not in a provider start packet.
-      flushSync(()=>captureBasicIntroduction())
-    }
     speechRef.current?.startSession?.(introduction,{naturalVoice:true})
   }
   // Explicit logical start shared by text, streaming and Live. Never reselect on resume.
@@ -697,12 +747,16 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const visibleMethodName=coachMethodNames[visibleMethodId]||'GROW'
   const memoryProvider=coachEngine==='gemini_live_free'||coachEngine==='gemini_free'
     ?'gemini_free':coachEngine==='gemini_paid'?'gemini_paid':'groq'
+  const memoryProviderLabel=memoryProvider==='groq'?'Groq':'Gemini Paid'
   const lastMemoryProviderRef=useRef(memoryProvider)
   useEffect(()=>{
     // A prior opt-in to Groq is never automatically an opt-in to Gemini Free,
     // Paid or any provider with a different data-use policy.
     if(lastMemoryProviderRef.current===memoryProvider)return
     lastMemoryProviderRef.current=memoryProvider
+    entryMemoryRequest.current?.abort()
+    entryMemoryRequest.current=null
+    setEntryMemoryGrant(null)
     setAllowOpeningPrior(false)
     setStagedMemory(null)
     setContextTopic('')
@@ -718,10 +772,16 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const openingHistory=confirmedClientTurns.slice(0,32)
     .map(turn=>String(turn.content||'').slice(0,160))
   // The preferred name stays first-party; sharing past-session context remains opt-in.
-  const localNameScope={allowPrior:allowOpeningPrior||Boolean(greetingIdentity.name),priorSession:openingPrior?{...openingPrior,name:greetingIdentity.name||openingPrior.name}:{name:greetingIdentity.name,topic:''}}
+  const entryMemoryReady=entryMemoryGrant?.status==='ready'&&entryMemoryGrant.owner===protocolOwnerRef.current&&entryMemoryGrant.provider===memoryProvider
+  const entryTopic=entryMemoryReady?entryMemoryGrant.topic:''
+  const localNameScope={
+    allowPrior:allowOpeningPrior||Boolean(greetingIdentity.name||entryTopic),
+    priorSession:{name:greetingIdentity.name||openingPrior?.name||'',topic:openingPrior?.topic||entryTopic},
+  }
   const localOpeningScope=privateTextOnly?(restoredOpeningScope.current||localNameScope):localNameScope
+  const openingEvidencePersonaId=protocolOriginPersonaRef.current||personaId
   const openingProgress=coachOpeningProgress({turns,locale:conversationLang,
-    personaId,...localOpeningScope})
+    personaId:openingEvidencePersonaId,...localOpeningScope})
   const clarityCourseActive=Boolean(clarityCourseDay(selectedCourseId))
   const clarityOpeningReady=openingProgress.completed&&!openingProgress.declined&&Boolean(openingProgress.answers?.confirmation?.quote)
   const clarityVoiceActive=['listening','thinking','speaking'].includes(voiceState.phase)
@@ -823,6 +883,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     liveContextConsent.assessments)?'personal':livePriorApproved?'identity':null
   const liveSessionScope=contextSession&&!contextSession.expired&&
     contextSession.expiresAt>Date.now()?contextSession.token:null
+  const entryMemoryToken=entryMemoryReady&&!contextPaused&&!openingProgress.declined&&
+    (continuityChoice!=='new'||openingProgress.answers.continuity?.automatic===true)?entryMemoryGrant.token:''
+  const liveEntryToken=liveVoiceSelected?entryMemoryToken:''
+  const liveEntryAccess=liveEntryToken&&!clarityCourseDay(selectedCourseId)&&!restoredDraft
+    ?JSON.stringify(coachLiveReviewedEntryInput(liveEntryToken,entryMemoryGrant.scope)):''
   const liveContextAccess=liveVoiceSelected&&liveContextStage&&stagedMemory?.stageToken
     ?JSON.stringify({stage:liveContextStage,stageToken:stagedMemory.stageToken,
       shareApproved:true,consent:liveContextConsent,
@@ -832,7 +897,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           (liveContextConsent.profile?'meaning_purpose':contextTopic),
         ...(liveSessionScope?{contextSessionToken:liveSessionScope}:{})
       }:{})
-    }):''
+    }):liveEntryAccess
   // An optional, very soft acknowledgment on the FOUR lit milestones only.
   // The feelings checkbox (step 5) has no sound or lamp by design.
   const previousOpeningLamps=useRef(null)
@@ -1235,7 +1300,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const firstRelayAck=!relayClockRef.current
     if(firstRelayAck&&!protocolStartedRef.current)protocolStartedRef.current=new Date().toISOString()
     relayClockRef.current=next;protocolIdRef.current=next.protocolId
-    if(firstRelayAck&&greetingIdentity.hasPreviousProtocol)void loadPrivateRecall(conversationLang)
     if(!protocolOriginPersonaRef.current)protocolOriginPersonaRef.current=personaId
     setRestoredCourseRunId(next.runId);setRestoredClarityTimeKnown(true)
     setActiveSessionSeconds(activeClockRef.current.restore(Math.floor(next.elapsedMs/1000)))
@@ -1258,7 +1322,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(!protocolStartedRef.current)protocolStartedRef.current=new Date().toISOString()
     const opening=coachOpeningProtocolSnapshot(coachOpeningProgress({
       turns:rows,locale:conversationLang,
-      personaId,...localOpeningScope,
+      personaId:openingEvidencePersonaId,...localOpeningScope,
     }))
     if(confirmedNameRef.current&&opening.checkmarks.name)opening.name=confirmedNameRef.current
     let value
@@ -1509,7 +1573,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   pauseActionRef.current=pauseVoiceConversation
   function courseGateHandoffText(locale){return ({ru:'Вступление завершено. Продолжим в режиме проверяемого протокола: сначала ответ, затем проверка и сохранение. Вы можете начать или закончить сессию.',en:'The opening is complete. Continue in verified protocol mode: answer, verify, then save. You can start or finish the session.',es:'La introducción ha terminado. Continúa con el protocolo verificado: responder, verificar y guardar. Puedes empezar o terminar la sesión.'})[locale]}
   function courseGateOpeningAfter(rows,locale){
-    const opening=coachOpeningProgress({turns:rows,locale,personaId,...localOpeningScope})
+    const opening=coachOpeningProgress({turns:rows,locale,personaId:openingEvidencePersonaId,...localOpeningScope})
     return !freshPrivateProfile&&!profileV3&&coachCourseGateHandoffRequired({enabled:courseGateEnabled,autosave:autoSaveRef.current,courseSessionId:selectedCourseId,locale,opening})
   }
   async function sendMessage(raw,{voiceTurn=false,utteranceLocale=null,onApprovedPhrase=null,forceLocal=false}={}){
@@ -1641,7 +1705,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       setDraft('');setSpeechPreview('');setStreamingPreview('');return {reply:answer,mode:'offline',locale:responseLocale}
     }
     if(greetingIdentity.name&&!openingProgress.completed&&!coachingBrainSafety(currentInput)&&!coachingBrainBoundary(currentInput)){
-      const firstParty=coachOpeningTurn({locale:responseLocale,message,openingHistory,
+      const firstParty=coachOpeningTurn({locale:responseLocale,message,openingHistory:restoredDraft?conversationTurns:openingHistory,openingEvidencePersonaId,
         openingPrior:localOpeningScope.priorSession,allowOpeningPrior:localOpeningScope.allowPrior,deferProfileToPrivateDirector:freshPrivateProfile},personaId)
       if(firstParty){
         const answer=firstParty.message
@@ -1691,7 +1755,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       // Local-only authored fallback. NEVER send private text to an unverified model.
       // Same editorial persona prompts, same browser-only conversation history.
       const input=currentInput
-      const interruption=localInterruption||coachingBrainSafety(input)||coachingBrainBoundary(input)
+      const interruption=coachingBrainSafety(input)||coachingBrainBoundary(input)
       // Use the shared evidence-led protocol, never advance on message count.
       // This stays in the browser; unverified models receive no client text.
       const semanticStage=coachingBrainStageDecision(input).stage
@@ -1699,7 +1763,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         reframe:'options',choice:'options',planning:'action',commitment:'action',integration:'action'}
       const stage=legacyStage[semanticStage]||'goal'
       const offlineOpening=!interruption?coachOpeningTurn({locale:responseLocale,
-        message,openingHistory,openingPrior:localOpeningScope.priorSession,allowOpeningPrior:localOpeningScope.allowPrior,
+        message,openingHistory:restoredDraft?conversationTurns:openingHistory,openingEvidencePersonaId,openingPrior:localOpeningScope.priorSession,allowOpeningPrior:localOpeningScope.allowPrior,
         deferProfileToPrivateDirector:freshPrivateProfile},personaId):null
       const offlineReply=interruption||offlineOpening||
         offlineCoachingBrainReply(input,selectCoachingBrainMethod(input),semanticStage)
@@ -1752,6 +1816,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           personaId,settings,locale:responseLocale,consent:true,message,voiceTurn:voiceTurn===true,
           courseSessionId:selectedCourseId,
           ...(methodSession?{methodId:methodSession.methodId,methodSessionId:methodSession.methodSessionId}:{}),
+          ...(!liveVoiceSelected&&entryMemoryToken&&!contextFocusChanged?{
+            memoryEntryStageToken:entryMemoryToken,
+            ...(entryMemoryGrant.scope.topicKey?{memoryEntryTopic:entryMemoryGrant.scope.topicKey}:{}),
+            ...(entryMemoryGrant.scope.contextSessionToken?{memoryEntryContextSessionToken:entryMemoryGrant.scope.contextSessionToken}:{}),
+          }:{}),
           ...(requestedSavedContext&&contextTopic&&(memoryShareGoals||memoryShareTests)?{contextTopic}:{}),
           ...(requestedSavedContext&&contextTopic==='personal_growth'&&memoryShareTests?{contextAssessments:true}:{}),
           ...(requestedSavedContext?{
@@ -2193,7 +2262,9 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       const result=await response.json().catch(()=>null),item=result?.draft
       if(!response.ok||item?.id!==id||item.revision!==revision+1)throw Error('PROFILE_STEP_NOT_ACKNOWLEDGED')
       const recovered=normalizeMyCoachDraft(item),p=recovered.protocol
-      if(!draftMountedRef.current||protocolOwnerRef.current!==owner||p.personaId!==personaId||
+      if(!draftMountedRef.current||protocolOwnerRef.current!==owner||
+         p.personaId!==(protocolOriginPersonaRef.current||personaId)||
+         (item.privateCoachId||p.personaId)!==personaId||
          recovered.courseSessionId!==selectedCourseId)throw Error('ACCOUNT_CHANGED')
       const next=readProfileV3Step(item,p)
       if(!next)throw Error('PROFILE_READBACK_INVALID')
@@ -2248,7 +2319,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       const result=await response.json().catch(()=>null),item=result?.draft
       if(!response.ok||item?.id!==id||item.revision!==payload.revision+1)throw Error('COURSE_GATE_NOT_ACKNOWLEDGED')
       const recovered=normalizeMyCoachDraft(item),p=recovered.protocol
-      if(!draftMountedRef.current||protocolOwnerRef.current!==owner||p.personaId!==(courseGateRef.current?.protocol.personaId||personaId)||
+      if(!draftMountedRef.current||protocolOwnerRef.current!==owner||p.personaId!==(courseGateRef.current?.protocol.personaId||protocolOriginPersonaRef.current||personaId)||
          recovered.courseSessionId!==selectedCourseId)throw Error('ACCOUNT_CHANGED')
       const next=readCourseGateStep(item,p);if(!next||(next.step.activeCoachId&&next.step.activeCoachId!==personaId))throw Error('COURSE_GATE_READBACK')
       if(payload.action==='course-gate-continue')setCourseResumeRequired(false)
@@ -2260,20 +2331,33 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     }catch{if(draftMountedRef.current){setCourseGateError(true);setAutoSaveStatus('error')}return false}
     finally{courseGateBusyRef.current=false;if(draftMountedRef.current)setCourseGateBusy(false)}
   }
+  function canResumeWithSelectedCoach(item){
+    if(clarityDay)return item.courseSessionId===clarityCourseId(clarityDay)&&
+      (item.personaId===personaId||item.crossCoach===true||item.relayHandoff===true)
+    return item.personaId===personaId||(!clarityCourseDay(item.courseSessionId)&&
+      (item.privateHandoff===true||item.crossCoach===true))
+  }
   async function restorePrivateDraft(item){
     const owner=protocolOwnerRef.current
-    if(!owner||resumeList?.owner!==owner||(courseRunId&&item.courseRunId!==courseRunId)||(!clarityDay&&item.personaId!==personaId)||resumeBusy||resumeInFlight.current||protocolStartedRef.current||turnsRef.current.length)return
+    if(!owner||resumeList?.owner!==owner||(courseRunId&&item.courseRunId!==courseRunId)||!canResumeWithSelectedCoach(item)||resumeBusy||resumeInFlight.current||protocolStartedRef.current||turnsRef.current.length)return
     resumeInFlight.current=true;setResumeBusy(true);setResumeError(false)
     try{
       const identity=await getCabinetBootstrap('portrait',{refresh:true})
       if(identity?.account?.id!==owner)throw Error('ACCOUNT_CHANGED')
       const response=await fetch('/api/app/my-coach/draft',{method:'POST',credentials:'same-origin',cache:'no-store',
         headers:{'Content-Type':'application/json','X-HH-Account-ID':owner},
-        body:JSON.stringify({action:'resume',id:item.id,revision:item.revision,confirmed:true,...(item.courseRunId?{courseRunId:item.courseRunId}:{})})})
+        body:JSON.stringify({action:'resume',id:item.id,revision:item.revision,confirmed:true,
+          ...(item.privateHandoff===true||item.crossCoach===true||item.relayHandoff===true?{coachId:personaId}:{}),
+          ...(item.courseRunId?{courseRunId:item.courseRunId}:{})})})
       const result=await response.json().catch(()=>null)
-      if(!response.ok||result?.draft?.id!==item.id||result.draft.protocol?.personaId!==item.personaId||result.draft.courseSessionId!==item.courseSessionId||
+      const restored=result?.draft
+      const approvedHandoff=item.privateHandoff===true&&!clarityCourseDay(item.courseSessionId)
+        ?(restored?.privateCoachId||restored?.protocol?.personaId)===personaId
+        :(item.crossCoach===true&&restored?.courseGateStep?.crossCoach===true&&!restored.courseGateStep.paused)||
+          (item.relayHandoff===true&&result?.relayHandoff===true)
+      if(!response.ok||restored?.id!==item.id||restored.protocol?.personaId!==item.personaId||restored.courseSessionId!==item.courseSessionId||
          (result.courseRunId||null)!==(item.courseRunId||null)||(result.courseOrdinal||null)!==(item.courseOrdinal||null)||
-         (item.personaId!==personaId&&!(clarityDay&&result.draft.courseSessionId===clarityCourseId(clarityDay)&&((item.crossCoach===true&&result.draft.courseGateStep?.crossCoach===true&&!result.draft.courseGateStep.paused)||(item.relayHandoff===true&&result.relayHandoff===true)))))throw Error('RESUME_CONFLICT')
+         ((item.personaId!==personaId||item.privateHandoff===true)&&!approvedHandoff))throw Error('RESUME_CONFLICT')
       if(!draftMountedRef.current||protocolOwnerRef.current!==owner||protocolStartedRef.current)return
       const recovered=normalizeMyCoachDraft(result.draft),p=recovered.protocol
       const restoredTime=result.clarityTime
@@ -2338,7 +2422,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const browseTitle=keepCoachTab?({ru:'Открыть в новой вкладке, сохранив разговор',en:'Open in a new tab and keep your conversation',es:'Abrir en otra pestaña y conservar la conversación'})[lang]:undefined
   const browseProps=keepCoachTab?{target:'_blank',rel:'noopener noreferrer',title:browseTitle,onClick:pauseForNavigation}:{onClick:interceptSessionExit}
   function enterCoachingFromGreeting(id=INTRODUCTORY_COACH_SESSION_ID,{privateProfile=false}={}){
-    if(greetingIdentity.status==='loading'||courseRunId)return
+    if(greetingIdentity.status==='loading'||entryMemoryGrant?.status==='loading'||courseRunId)return
     if(resumeInFlight.current||(clarityCourseDay(id)&&!protocolOwnerRef.current))return
     clarityTimeLimit.current=false
     setClarityHomeworkAccepted(false)
@@ -2368,15 +2452,8 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       setGreetingAccepted(true)
     })
     if(privateProfile){toggleComposer();return}
-    // A bound course must get its protocol ID from the first durable relay ACK.
-    if(saveToAccount&&greetingIdentity.hasPreviousProtocol){
-      if(!clarityCourseDay(id)){
-        if(!protocolIdRef.current)protocolIdRef.current=crypto.randomUUID()
-        void loadPrivateRecall(conversationLang)
-      }
-    }
+    // Start in the original gesture after the private entry read settles.
     if(liveVoiceSelected&&liveVoiceReady&&!busy&&!paused&&!replaying){
-      if(greetingIdentity.name&&!turnsRef.current.length)flushSync(()=>captureBasicIntroduction())
       speechRef.current?.startSession?.()
     }
   }
@@ -2406,6 +2483,40 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const videoViewLabel=viewExpanded?
     ({ru:'Свернуть видео коуча',en:'Collapse coach video',es:'Contraer el vídeo del coach'})[lang]:
     ({ru:'Развернуть видео коуча',en:'Expand coach video',es:'Ampliar el vídeo del coach'})[lang]
+  const coachContextReview=<>
+          <button type="button" disabled={contextSessionLoading||busy||Boolean(contextSession&&contextSession.expiresAt>Date.now())} onClick={async()=>{
+            setContextSessionLoading(true)
+            setContextSessionError(false)
+            try{
+              const {account:{id:accountId}}=await getCabinetBootstrap('portrait')
+              const [session,plan]=await Promise.all([
+                appFetch('coaching-context/session',{},'POST',{accountId}),
+                appFetch('coaching-life-plan?locale='+lang,undefined,'GET',{accountId}),
+              ])
+              if(protocolOwnerRef.current!==accountId)return
+              if(!greetingAccepted)void approveEntryMemory(false)
+              setContextSession({...session,accountId,domains:plan.domains})
+            }catch{setContextSessionError(true)}
+            finally{setContextSessionLoading(false)}
+          }}>
+            {({en:'Review context for this conversation',ru:'Проверить контекст для этой беседы',
+              es:'Revisar el contexto de esta conversación'})[lang]}
+          </button>
+          {contextSessionError&&<p role="status">
+            {({en:'Session context is unavailable.',ru:'Контекст беседы недоступен.',
+              es:'El contexto de la conversación no está disponible.'})[lang]}
+          </p>}
+          {contextSession?.expired&&<p role="status">
+            {({en:'Session permission expired. Review again to share saved context.',ru:'Разрешение для беседы истекло. Повторите проверку, чтобы поделиться контекстом.',
+              es:'El permiso de esta conversación venció. Revisa el contexto antes de compartirlo de nuevo.'})[lang]}
+          </p>}
+          {contextSession&&!contextSession.expired&&<MyCoachContext key={contextSession.sessionId}
+            accountId={contextSession.accountId} locale={lang} domains={contextSession.domains}
+            contextSessionToken={contextSession.token} onGrantChange={()=>{
+              cancelPendingCoachTurn();setStagedMemory(null);setContextRevision(value=>value+1)
+              if(!greetingAccepted)void approveEntryMemory(false)
+            }}/>}
+  </>
   return <section ref={sessionRootRef} className={`${styles.root} ${callStyles.rootV6}`} lang={lang} data-coach-dock-v6 data-coach-dialogue-active={sessionHasStarted?'true':'false'} data-my-coach-live-dialogue={personaId} data-my-coach-immersive-session data-session-visual-v2 data-session-visual-v3 data-session-visual-v4 data-session-visual-v5 data-coach-view-expanded={viewExpanded?'true':'false'} data-coach-session-started={sessionClockStarted?'true':'false'} data-coach-prestart-profile={sessionHasStarted?'false':'true'} data-coach-showcase={introComplete?'false':'true'}
     data-coach-greeting-stage={greetingAccepted?'session':'introduction'}>
     <header className={styles.sessionTopbar}>
@@ -2438,12 +2549,42 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     </header>
     {!greetingAccepted&&<MyCoachGreetingGate
       personaId={personaId} locale={conversationLang} name={name}
-      methodId={visibleMethodId} onStart={enterCoachingFromGreeting} entryPending={greetingIdentity.status==='loading'} accountSaving={protocolOwnerReady} clarityDay={clarityDay} courseRunId={courseRunId}
+      methodId={visibleMethodId} onStart={enterCoachingFromGreeting} entryPending={greetingIdentity.status==='loading'||entryMemoryGrant?.status==='loading'} accountSaving={protocolOwnerReady} clarityDay={clarityDay} courseRunId={courseRunId}
       selectedMethod={selectedMethod} onMethodSelect={setSelectedMethod}
       methodSelectionEnabled={protocolOwnerReady}
       privateProfileEnabled={protocolOwnerReady&&profileV3Enabled}
-      draftCourses={resumeList?.owner===protocolOwnerRef.current?resumeList.items.filter(item=>item.personaId===personaId||(clarityDay&&(item.crossCoach===true||item.relayHandoff===true))).map(item=>item.courseSessionId):[]}
+      draftCourses={resumeList?.owner===protocolOwnerRef.current?resumeList.items.filter(canResumeWithSelectedCoach).map(item=>item.courseSessionId):[]}
       resumeControl={protocolOwnerReady&&<div data-coach-resume-choices style={{padding:12}}>
+        {greetingIdentity.entryMemoryEnabled&&<>
+          <label>
+            {({ru:'Тема для разрешённых записей',en:'Topic for approved items',es:'Tema para elementos autorizados'})[lang]}
+            <select value={entryContextTopic} onChange={event=>{void approveEntryMemory(false);setEntryContextTopic(event.target.value)}}>
+              <option value="">{({ru:'Только история сессий',en:'Session history only',es:'Solo historial de sesiones'})[lang]}</option>
+              {coachContextTopicOptions.map(([key,en,ru,es])=><option key={key} value={key}>{{en,ru,es}[lang]}</option>)}
+            </select>
+          </label>
+          {entryContextTopic&&<details>
+            <summary>{({ru:'Проверить цели, результаты и фрагменты дневника',en:'Review goals, results and Daybook excerpts',es:'Revisar metas, resultados y fragmentos del diario'})[lang]}</summary>
+            {coachContextReview}
+          </details>}
+          <label>
+            <input type="checkbox" checked={['loading','ready'].includes(entryMemoryGrant?.status)}
+              onChange={event=>void approveEntryMemory(event.target.checked)}/>
+            {memoryProvider==='gemini_free'
+              ?({ru:'Разрешить Gemini использовать ваше имя и проверенные итоги прошлых сессий для приветствия. Google может использовать эти данные для улучшения моделей.',
+                en:'Allow Gemini to use your name and reviewed past-session results for the greeting. Google may use this data to improve models.',
+                es:'Permitir que Gemini use tu nombre y resultados revisados anteriores para saludar. Google puede usar estos datos para mejorar sus modelos.'})[lang]
+              :({ru:`Разрешить ${memoryProviderLabel} использовать проверенные итоги прошлых сессий в этой беседе, начиная с первого ответа.`,en:`Allow ${memoryProviderLabel} to use reviewed past-session results in this conversation, starting with its first reply.`,
+                es:`Permitir que ${memoryProviderLabel} use resultados revisados anteriores en esta conversación desde su primera respuesta.`})[lang]}
+          </label>
+          {entryContextTopic&&<p>{({ru:'К первому ответу этого провайдера можно подключить только записи, которые вы отдельно разрешили для выбранной темы.',
+            en:'Only items you individually approved for this topic can be sent to this provider before its first reply.',
+            es:'Solo los elementos que autorizaste para este tema pueden enviarse a este proveedor antes de su primera respuesta.'})[lang]}</p>}
+          {entryMemoryGrant?.status==='unavailable'&&<p role="status">
+            {({ru:'Контекст недоступен. Можно продолжить без передачи истории.',en:'Context is unavailable. You can continue without sharing history.',
+              es:'El contexto no está disponible. Puedes continuar sin compartir el historial.'})[lang]}
+          </p>}
+        </>}
         <button type="button" disabled={resumeBusy} onClick={()=>void loadPrivateResume()}>{({ru:'Продолжить сохранённую сессию',en:'Continue a saved session',es:'Continuar una sesión guardada'})[lang]}</button>
         {resumeBusy&&<p role="status">{({ru:'Проверяем сохранённые сессии…',en:'Checking saved sessions…',es:'Buscando sesiones guardadas…'})[lang]}</p>}
         {resumeList?.items.length>0&&<p>{({ru:'Сохранённая история остаётся приватной. Для доступной голосовой сессии потребуется новое явное нажатие Play.',en:'Saved history remains private. Available voice continuation requires a new explicit Play.',es:'El historial guardado sigue siendo privado. Para continuar por voz, pulsa Play de nuevo.'})[lang]}</p>}
@@ -2453,8 +2594,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           const duration=day?(Number.isInteger(item.clarityTime?.elapsedSeconds)?coachDraftMinuteLabel(item.clarityTime.elapsedSeconds,lang):timeUnverifiedText):coachDraftMinuteLabel(item.durationSeconds,lang)
           const completedReview=day&&item.clarityTime?.status==='time_limit'&&item.clarityTime.elapsedSeconds===CLARITY_COURSE_SECONDS&&item.clarityTime.remainingSeconds===0
           const label=<><strong>{(completedReview?{ru:'Открыть итоги',en:'Open results',es:'Abrir resultados'}:{ru:'Продолжить сессию',en:'Continue session',es:'Continuar sesión'})[lang]} · <span data-clarity-resume-time={day?true:undefined}>{duration}</span></strong><br/><small>{item.courseOrdinal?('#'+item.courseOrdinal+' · '):''}{title} · {previousCoach} · {new Date(item.updatedAt).toLocaleDateString(lang)}</small></>
-          const direct=item.personaId===personaId||(clarityDay&&day===clarityDay&&(item.crossCoach===true||item.relayHandoff===true))
-          return direct?<button key={item.id} type="button" disabled={resumeBusy} data-coach-resume-minutes={day?item.clarityTime?.elapsedSeconds??'':item.durationSeconds??''} onClick={()=>void restorePrivateDraft(item)} style={{display:'block',marginTop:8,textAlign:'start'}}>{label}</button>:
+          const direct=canResumeWithSelectedCoach(item)
+          return direct?<button key={item.id} type="button" disabled={resumeBusy} data-coach-resume-minutes={day?item.clarityTime?.elapsedSeconds??'':item.durationSeconds??''} onClick={()=>void restorePrivateDraft(item)} style={{display:'block',marginTop:8,textAlign:'start'}}>{label}{!completedReview&&item.activeCoachId&&item.activeCoachId!==personaId&&<><br/><small>
+              {({ru:'Продолжить с ',en:'Continue with ',es:'Continuar con '})[lang]}{name}
+            </small></>}</button>:
             <Link key={item.id} href={clarityCoachHref(coachSessionHref(lang,item.personaId)||'/'+lang+'/my-coach',day,item.courseRunId)} style={{display:'block',marginTop:8}}>{label}<br/><small>{({ru:'Открыть у прежнего коуча',en:'Open with previous coach',es:'Abrir con el coach anterior'})[lang]}</small></Link>
         })}
         {resumeList&&resumeList.items.length===0&&<p>{({ru:'На этой странице нет незавершённых сессий.',en:'No unfinished sessions on this page.',es:'No hay sesiones pendientes en esta página.'})[lang]}</p>}
@@ -2538,6 +2681,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             openingPrior={openingPrior} allowOpeningPrior={Boolean(openingPrior)&&openingProgress.checkmarks.invitation}
             enabled={liveVoiceReady} canStart={!nameCorrectionRef.current&&!courseGateRequired&&!busy&&!paused&&!coachProfileOpen&&!replaying&&liveVoiceReady}
             liveContextAccess={liveContextAccess} contextRevision={contextRevision}
+            clarityOpeningMemoryStageToken={liveEntryToken} clarityOpeningMemoryScope={entryMemoryGrant?.scope}
             localRecoveryTurns={coachProviderHistory(turns.filter(row=>!row.privateGreetingPrefix))}
             privateGreetingText={!turns.length?privateSalutation:''}
             onPrivateGreeting={capturePrivateLiveSalutation}
@@ -2722,33 +2866,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         assessmentsAllowed={contextAssessments} onAssessmentsAllowed={setContextAssessments}
         contextSessionToken={contextSession?.token} contextRevision={contextRevision}
         onMemoryChange={setStagedMemory}>
-          <button type="button" disabled={contextSessionLoading||busy||Boolean(contextSession&&contextSession.expiresAt>Date.now())} onClick={async()=>{
-            setContextSessionLoading(true)
-            setContextSessionError(false)
-            try{
-              const {account:{id:accountId}}=await getCabinetBootstrap('portrait')
-              const [session,plan]=await Promise.all([
-                appFetch('coaching-context/session',{},'POST',{accountId}),
-                appFetch('coaching-life-plan?locale='+lang,undefined,'GET',{accountId}),
-              ])
-              setContextSession({...session,accountId,domains:plan.domains})
-            }catch{setContextSessionError(true)}
-            finally{setContextSessionLoading(false)}
-          }}>
-            {({en:'Review context for this conversation',ru:'Проверить контекст для этой беседы',
-              es:'Revisar el contexto de esta conversación'})[lang]}
-          </button>
-          {contextSessionError&&<p role="status">
-            {({en:'Session context is unavailable.',ru:'Контекст беседы недоступен.',
-              es:'El contexto de la conversación no está disponible.'})[lang]}
-          </p>}
-          {contextSession?.expired&&<p role="status">
-            {({en:'Session permission expired. Review again to share saved context.',ru:'Разрешение для беседы истекло. Повторите проверку, чтобы поделиться контекстом.',
-              es:'El permiso de esta conversación venció. Revisa el contexto antes de compartirlo de nuevo.'})[lang]}
-          </p>}
-          {contextSession&&!contextSession.expired&&<MyCoachContext key={contextSession.sessionId}
-            accountId={contextSession.accountId} locale={lang} domains={contextSession.domains}
-            contextSessionToken={contextSession.token} onGrantChange={()=>{cancelPendingCoachTurn();setStagedMemory(null);setContextRevision(value=>value+1)}}/>}
+          {greetingAccepted&&coachContextReview}
       </MyCoachStagedMemoryControls>
       <details className={styles.voicePrivacyDetails}>
         <summary>{lang==='ru'?'Приватность голоса':lang==='es'?'Privacidad de voz':'Voice privacy'}</summary>
@@ -2767,6 +2885,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         </div>
         <div className={`${styles.transcriptFeed} ${callStyles.feed}`} ref={transcriptRef} role="log" aria-live="polite" aria-relevant="additions">
           {!turns.length&&<div className={styles.transcriptCoach}><strong>{name}</strong><p>{introduction}</p></div>}
+          {greetingAccepted&&privateEntry&&turns.length<=1&&<p data-coach-private-entry-context>{privateEntry}</p>}
           {turns.map((turn,index)=><div key={index}
             className={turn.role==='user'?styles.transcriptUser:styles.transcriptCoach}>
             <strong>{turn.role==='user'?t.user:turnCoachName(turn)}

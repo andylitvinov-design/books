@@ -124,5 +124,5 @@ test('Clarity uses the same one-record memory gate only for an exact resumed pro
  assert.match(relay,/readApprovedCrossModeReference\(config,actor,selection\.protocolId,memorySelection,start\.locale\)/)
  assert.match(ctrl,/if\(reference\)sendProvider\(reference\)/)
  assert.match(ctrl,/!started\|\|!mediaReady/)
- assert.match(voice,/requestedSavedContext:Boolean\(r\.contextSentKey\)\|\|Boolean\(r\.claritySelection\?\.memorySelection\)/)
+ assert.match(voice,/const requestedSavedContext=Boolean\(r\.contextSentKey\|\|r\.claritySelection\?\.memorySelection\|\|r\.clarityOpeningMemoryStageToken\)/)
 })

@@ -16,6 +16,7 @@ import {GEMINI_LIVE_WEBSOCKET,GEMINI_LIVE_INPUT_RATE,GEMINI_LIVE_OUTPUT_RATE,
  appendGeminiLiveTranscript} from '../lib/coaching/gemini-live-transport.mjs'
 import {GEMINI_COACH_VOICE_OPTIONS,lockedCoachSessionVoice,MERLIN_VOCAL_DELIVERY,coachVocalDelivery,approvedGeminiVoice} from '../lib/coaching/gemini-voice-catalog.mjs'
 import {coachLiveMemoryNote,coachLiveApprovedAxes} from '../lib/coaching/coach-live-memory-note.mjs'
+import {COACH_CONTEXT_TOPIC_KEYS} from '../lib/coaching/coach-staged-memory.mjs'
 
 const key='AIza'+'A'.repeat(36)
 const free={
@@ -423,14 +424,14 @@ test('Free Live uses only provider-granted context, never raw client memory prop
  assert.match(ui,/memoryStageToken:stagedMemory\.stageToken/,
   'non-Live engines retain the existing staged server memory contract')
  const socketCalls=[...live.matchAll(/sendSocket\(r,([^\n]+)/g)].map(match=>match[1].trim())
- assert.equal(socketCalls.filter(value=>value.startsWith('r.continuing?geminiLiveContinueMessage():geminiLiveStartMessage()')).length,1)
+ assert.match(live,/const cue=r\.continuing\?geminiLiveContinueMessage\(note\):geminiLiveStartMessage\(note\)/)
  assert.ok(socketCalls.some(value=>value.startsWith('geminiLivePcmMessage(pcm)')))
  assert.ok(socketCalls.some(value=>value.startsWith('geminiLiveTextMessage(body)')))
  assert.match(live,/const packet=geminiLiveContextMessage\(r\.pendingContext\)/)
  assert.match(live,/const packet=geminiLiveDirectorMessage\(r\.pendingDirectorHint\)/)
  assert.ok(socketCalls.some(value=>value.startsWith('packet))')))
  assert.ok(!socketCalls.some(value=>/memoryNote/.test(value)))
- const src=live.slice(live.indexOf('  function handleAudio('),live.indexOf('  function capture('))
+ const src=live.slice(live.indexOf('  async function sendInitialLiveCue('),live.indexOf('  function capture('))
  const phases=[], traffic=[], outputs=[]
  const r={ended:false,ready:false,introSent:false,sessionStarted:false,inputText:'',outputText:'',
   context:{state:'running'},socket:{send:packet=>traffic.push(packet)},audioGate:{accept:()=>true},player:{playing:false}}
@@ -466,9 +467,10 @@ test('Play emits one marked app cue but never fabricated visitor consent',()=>{
  assert.match(speech,/first invitation question/)
   assert.match(speech,/Do not repeat your name, biography or public introduction/)
  assert.doesNotMatch(speech,/previous goal|private session|account ID|API key/i)
+ assert.match(geminiLiveStartMessage('CLIENT-APPROVED REFERENCE DATA (synthetic)').clientContent.turns[0].parts[1].text,/reviewed context sent by the application before this event/)
  const client=load('components/my-coach-gemini-live.jsx')
  assert.match(client,/if\(!r\.introSent\)/)
- assert.match(client,/sendSocket\(r,r\.continuing\?geminiLiveContinueMessage\(\):geminiLiveStartMessage\(\)\)/)
+ assert.match(client,/if\(!sendSocket\(r,cue\)\)/)
  assert.match(client,/r\.sessionStarted=true/)
 })
 test('server turnComplete waits for audible PCM tail onended before transcript final',()=>{
@@ -571,10 +573,18 @@ test('signed owner-scoped Live memory service rejects fake data, wrong account a
  const onlyKeys=(obj,keys)=>{
   if(Object.keys(obj).some(key=>!keys.includes(key)))throw new Err('INVALID_FIELDS',400)
  }
+ let entryRevision=1,entryEnabled=true
  const service=runInNewContext(src+'\nreadMyCoachLiveContext',{
-  AppError:Err,onlyKeys,createHmac,
+  AppError:Err,onlyKeys,createHmac,COACH_CONTEXT_TOPIC_KEYS,
+  readCoachEntrySources:async(_config,_actor,provider,_env,{topicKey,contextSessionToken})=>{
+   assert.equal(provider,'gemini_free');assert.equal(topicKey,'personal_growth');assert.equal(contextSessionToken,'session-fixture')
+   return [{kind:'test_results',sourceKind:'selected_assessment',text:'Approved scale'},
+    {kind:'journal_excerpt',sourceKind:'selected_daybook_excerpt',text:'Approved excerpt'}]
+  },
+  clientMemoryEnabled:()=>true,readClientMemoryConsentForAccount:async()=>({revision:entryRevision,memory_enabled:entryEnabled}),
   verifyCoachMemoryTicket:(token,args)=>args.accountId==='client-A'&&
-   args.provider==='gemini_free'&&(token==='prior-ticket'||(!args.requirePrior&&token==='basic-ticket')),
+   args.provider==='gemini_free'&&(args.requireEntry?token==='entry-ticket'&&args.consentRevision===1:
+      token==='prior-ticket'||(!args.requirePrior&&token==='basic-ticket')),
   geminiFreeLiveConfig:()=>({provider:'gemini_live_free'}),
   coachLiveMemoryNote,coachLiveMemoryScopes:()=>[],
  },{timeout:1000})
@@ -614,6 +624,22 @@ test('signed owner-scoped Live memory service rejects fake data, wrong account a
  await assert.rejects(service(config,{id:'client-B'},body,{},{readStaged}),/MY_COACH_MEMORY_STAGE_REQUIRED/)
  await assert.rejects(service(config,actor,{...body,stageToken:'basic-ticket'},{},{readStaged}),/MY_COACH_MEMORY_STAGE_REQUIRED/)
  await assert.rejects(service(config,actor,{...body,axesRaw:axes},{},{readStaged}),/INVALID_FIELDS/)
+ const entry={stage:'identity',stageToken:'entry-ticket',shareApproved:true,entry:true,continuity:'previous',
+  consent:{priorSessions:true,goals:false,profile:false,assessments:false,axes:false}}
+ assert.match((await service(config,actor,entry,{},{readStaged})).note,/Reviewed last goal/)
+ const materialEntry={...entry,topicKey:'personal_growth',contextSessionToken:'session-fixture'}
+ const stored=await service(config,actor,materialEntry,{},{readStaged})
+ const firstPacket=geminiLiveStartMessage(stored.note)
+ assert.match(firstPacket.clientContent.turns[0].parts[0].text,/Approved scale/)
+ assert.match(firstPacket.clientContent.turns[0].parts[0].text,/Approved excerpt/)
+ assert.match(firstPacket.clientContent.turns[0].parts[0].text,/Reviewed last goal/)
+ const readCount=reads.length
+ entryEnabled=false
+ await assert.rejects(service(config,actor,entry,{},{readStaged}),/MEMORY_CONSENT_REQUIRED/)
+ entryEnabled=true;entryRevision++
+ await assert.rejects(service(config,actor,entry,{},{readStaged}),/MY_COACH_MEMORY_STAGE_REQUIRED/)
+ assert.equal(reads.length,readCount,'disabled or changed permissions did not reopen the archive')
+
  await assert.rejects(service(config,actor,{...body,consent:{...consent,axes:true,profile:false}},{},{readStaged}),/MY_COACH_LIVE_CONTEXT_INVALID/)
  const route=load('app/api/app/my-coach/live-context/route.js')
  assert.match(route,/requireSameOrigin\(request,config\)/)
@@ -653,7 +679,7 @@ test('catalog session entries load a new document with the session voice policy'
 test('in-call Live context grants are checked without a second Gemini inference',async()=>{
  const live=load('components/my-coach-gemini-live.jsx')
  const helper=live.slice(live.indexOf('  function scheduleContextFreshnessCheck(r){'),
-   live.indexOf('  async function loadApprovedContext(r){'))
+   live.indexOf('  async function loadApprovedContext('))
  assert.match(live,/LIVE_CONTEXT_CHECK_MS=5\*60\*1000/)
  assert.match(live,/LIVE_CONTEXT_PACKET_MAX_AGE_MS=60\*1000/)
  assert.match(live,/r\.pendingContextReadAt/)
