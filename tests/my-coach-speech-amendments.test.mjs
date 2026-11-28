@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {normalizeSpeechAmendments,addSpeechAmendment,speechAmendmentsExtend} from '../lib/personal-coaching/speech-amendments.mjs'
+import {normalizeSpeechAmendments,addSpeechAmendment,speechAmendmentsExtend,speechPersonalCorrection} from '../lib/personal-coaching/speech-amendments.mjs'
 import {normalizeMyCoachProtocol,myCoachProtocolPdfOptions} from '../lib/personal-coaching/session-protocol.mjs'
 import {normalizeMyCoachDraft,draftTranscriptPrefix} from '../lib/personal-coaching/protocol-draft.mjs'
 const id='8afbf841-49a0-46e1-b5c1-124a116efa28',other='8afbf841-49a0-46e1-b5c1-124a116efa29'
@@ -22,4 +22,15 @@ test('draft prefix allows append-only corrections but never deletion or edits',(
  assert.equal(draftTranscriptPrefix(a,b),true);assert.equal(draftTranscriptPrefix(b,a),false)
  assert.equal(speechAmendmentsExtend(b,{...b,speechAmendments:[{...event,text:'changed'}]}),false)
  assert.equal(draftTranscriptPrefix(b,{...b,turns:[{...turns[0],content:'changed'},turns[1]]}),false)
+})
+
+test('same-session same-language personal suggestion never picks conflicting corrections',()=>{
+ const a={...event,locale:'ru'}
+ assert.equal(speechPersonalCorrection([a],turns,id,'POSTAWSZYM','ru'),'Уставшим')
+ assert.equal(speechPersonalCorrection([event],turns,id,'postawszym','ru'),'')
+ assert.equal(speechPersonalCorrection([a],turns,id,'postawszym','en'),'')
+ assert.equal(speechPersonalCorrection([a],turns,other,'postawszym','ru'),'')
+ assert.equal(speechPersonalCorrection([a,{...a,id:'8afbf841-49a0-46e1-b5c1-124a116efa30',text:'Сосредоточенным'}],turns,id,'postawszym','ru'),'')
+ assert.throws(()=>addSpeechAmendment([a],{...a,text:'other'},turns,id),/SPEECH_AMENDMENT_CONFLICT/)
+ assert.deepEqual(addSpeechAmendment([a],{...a,confirmedAt:'2026-11-27T20:00:01.000Z'},turns,id),[a])
 })

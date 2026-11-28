@@ -35,8 +35,8 @@ import MyCoachEarlyExit from './my-coach-early-exit'
 import {coachCompletionDestination,coachEarlyExitDestination,coachShouldOfferEarlyExit} from '@/lib/coaching/coach-early-exit.mjs'
 import MyCoachSpeechLoop from './my-coach-speech-loop'
 import MyCoachGeminiLive from './my-coach-gemini-live'
-import {isSuspectShortRussianSpeech} from '@/lib/coaching/coach-speech-evidence.mjs'
-import {addSpeechAmendment} from '@/lib/personal-coaching/speech-amendments.mjs'
+import {shouldReviewSpeech,speechReviewCandidateText} from '@/lib/coaching/coach-speech-evidence.mjs'
+import {addSpeechAmendment,speechPersonalCorrection} from '@/lib/personal-coaching/speech-amendments.mjs'
 import MyCoachStagedMemoryControls from './my-coach-staged-memory-controls'
 import {coachExplicitRecall,privateCoachRecallText,coachReturningSalutation} from '@/lib/coaching/coach-private-recall.mjs'
 import MyCoachSessionStateCard from './my-coach-session-state-card'
@@ -269,7 +269,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const speechAmendmentsRef=useRef([])
   const [speechAmendments,setSpeechAmendments]=useState([])
   function restoreSpeechAmendments(value){const rows=value||[];speechAmendmentsRef.current=rows;setSpeechAmendments(rows)}
-  useEffect(()=>{setSpeechReviews([]);setSpeechReviewConsent(false);restoreSpeechAmendments([])},[personaId,locale])
+  useEffect(()=>{setSpeechReviews([]);setSpeechReviewConsent(false)},[personaId,locale])
   const [viewExpanded,setViewExpanded]=useState(false)
   // Public greeting remains a separate, free pre-session screen. No Google
   // token, microphone or coaching clock starts until the user opts in.
@@ -1371,7 +1371,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     const text=String(row.edited??row.candidate??'').trim()
     if(!text)return
     try{
-      const next=addSpeechAmendment(speechAmendmentsRef.current,{id:row.amendmentId,sessionId:row.sessionId,afterTurnCount:row.afterTurnCount,raw:row.raw,text,source:'client_confirmed',confirmedAt:new Date().toISOString()},turnsRef.current,protocolIdRef.current)
+      const next=addSpeechAmendment(speechAmendmentsRef.current,{id:row.amendmentId,sessionId:row.sessionId,afterTurnCount:row.afterTurnCount,raw:row.raw,text,source:'client_confirmed',locale:row.locale,confirmedAt:new Date().toISOString()},turnsRef.current,protocolIdRef.current)
       restoreSpeechAmendments(next)
       setSpeechReviews(rows=>rows.filter(item=>item.id!==row.id))
       queuePrivateDraft(turnsRef.current)
@@ -2422,7 +2422,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             }}
             onInputInterim={setSpeechPreview}
             speechReviewConsent={speechReviewConsent}
-            onSpeechReviewCandidate={(id,text)=>setSpeechReviews(rows=>rows.map(row=>row.id===id?{...row,candidate:text,pending:false}:row))}
+            onSpeechReviewCandidate={(id,text)=>setSpeechReviews(rows=>rows.map(row=>row.id===id?{...row,candidate:speechReviewCandidateText(text,row.raw,row.locale),pending:false}:row))}
             onInputFinal={(text,details)=>{
               // A recognized explicit correction stops the current transport before
               // its next reply is accepted. Confirmation is a local text turn;
@@ -2430,12 +2430,13 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
               const candidate=coachExplicitNameCorrection(text)
               const guard={locale:conversationLang,message:text,turns:turnsRef.current}
               const recallRequested=handlePrivateLiveRecall(text)
-              if(details?.source==='speech'&&!recallRequested&&!candidate&&isSuspectShortRussianSpeech(text,conversationLang)&&
+              if(details?.source==='speech'&&!recallRequested&&!candidate&&shouldReviewSpeech(text,conversationLang,speechReviewConsent)&&
                 !['ru','en','es'].some(locale=>coachingBrainSafety({...guard,locale})||coachingBrainBoundary({...guard,locale}))){
                 const id=++speechReviewSerial.current
                 if(!protocolIdRef.current)protocolIdRef.current=crypto.randomUUID()
                 const amendmentId=crypto.randomUUID(),sessionId=protocolIdRef.current,afterTurnCount=turnsRef.current.length
-                setSpeechReviews(rows=>[...rows,{id,amendmentId,sessionId,afterTurnCount,raw:text,candidate:'',edited:null,pending:details.reviewAvailable===true}])
+                const previous=speechPersonalCorrection(speechAmendmentsRef.current,turnsRef.current,sessionId,text,conversationLang)
+                setSpeechReviews(rows=>[...rows,{id,amendmentId,sessionId,afterTurnCount,locale:conversationLang,raw:text,candidate:'',previous,edited:null,pending:details.reviewAvailable===true}])
                 setSpeechPreview('')
                 return {transcriptReview:id}
               }
@@ -2746,6 +2747,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             <small>{({ru:'Проверьте расшифровку',en:'Review transcription',es:'Revisa la transcripción'})[lang]}: {row.raw}</small>
             {row.pending&&<small> · {({ru:'Уточняется…',en:'Checking…',es:'Comprobando…'})[lang]}</small>}
             {row.candidate&&<p>{({ru:'Вариант Whisper',en:'Whisper candidate',es:'Opción Whisper'})[lang]}: {row.candidate}</p>}
+            {row.previous&&row.previous!==row.candidate&&<button type="button" onClick={()=>setSpeechReviews(rows=>rows.map(item=>item.id===row.id?{...item,edited:row.previous}:item))}>{({ru:'Прежнее исправление (не проверено по новому аудио)',en:'Previous correction (not verified against new audio)',es:'Corrección anterior (no verificada con el audio nuevo)'})[lang]}: {row.previous}</button>}
             <textarea rows={2} maxLength={1200} aria-label={({ru:'Правильный текст',en:'Correct transcription',es:'Texto correcto'})[lang]} value={row.edited??row.candidate} onChange={event=>{const text=event.target.value;setSpeechReviews(rows=>rows.map(item=>item.id===row.id?{...item,edited:text}:item))}}/>
             <button type="button" disabled={row.pending||!(row.edited??row.candidate).trim()||!turns.length||protocolSaving||protocolSaved||protocolSaveLocked||Boolean(courseGate)} onClick={()=>confirmSpeechAmendment(row)}>{({ru:'Подтвердить для протокола',en:'Confirm for transcript',es:'Confirmar para la transcripción'})[lang]}</button>
             <button type="button" disabled={Boolean(draft.trim())||busy||row.pending} onClick={()=>{if(draft.trim())return;setDraft(row.edited??(row.candidate||row.raw));setSpeechReviews(rows=>rows.filter(item=>item.id!==row.id))}}>{({ru:'Уточнить и повторить текстом',en:'Edit and repeat as text',es:'Editar y repetir por texto'})[lang]}</button>
