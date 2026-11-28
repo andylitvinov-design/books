@@ -2,6 +2,7 @@ import './my-coach-speech-amendments.test.mjs'
 import './my-coach-speech-evidence.test.mjs'
 import './my-coach-speech-review.test.mjs'
 import './coach-private-recall.test.mjs'
+import './my-coach-private-entry-context.test.mjs'
 import './goal-session-scenarios.test.mjs'
 import './my-coach-session-stage-view.test.mjs'
 import {coachCourseProtocolSchema,coachCourseCheckpointGuidance,coachCourseProtocolGuidance,coachCourseProtocolRows,appendCoachCourseFieldReview,normalizeCoachCourseFieldReview} from '../lib/coaching/coach-course-protocol-schema.mjs'
@@ -276,7 +277,9 @@ test('live coach logo returns to localized Holistic House home; Back keeps coach
   assert.ok(brand.includes('{...browseProps}'))
   assert.ok(!brand.includes('/coaching/sessions'))
   const back=ui.split('<Link className={styles.chooseCoach} ')[1]?.split('>')[0]
-  assert.ok(back?.includes("href={'/'+lang+'/my-coach'}"))
+  assert.ok(back?.includes("href={clarityCoachHref('/'+lang+'/my-coach',clarityDay||clarityCourseDay(selectedCourseId),activeCourseRunId)}"))
+  assert.ok(ui.includes('const activeCourseRunId=restoredCourseRunId||courseRunId'))
+  assert.ok(back?.includes('onClick={navigateBackToCoaches}'))
   assert.match(ui,/if\(!protocolSaved&&\(turnsRef\.current\.length>0\|\|speechRef\.current\?\.hasLiveSession\?\.\(\)\)\)\{event\.preventDefault\(\);endWithProtocol\(\)\}/)
 })
 
@@ -554,6 +557,8 @@ test('all typed reply paths synchronously commit transcript and checkpoint befor
  assert.match(knownOpening,/coachOpeningTurn\(/)
  assert.match(knownOpening,/!commitCompletedClientTurn\(requestId,message,/)
  assert.doesNotMatch(knownOpening,/fetch\(|appFetch\(|setTurns\(/)
+ assert.match(send,/coachNameCorrectionQuestion\(candidate,responseLocale\)[\s\S]*?if\(!commitCompletedClientTurn\(requestId,message,/)
+ assert.match(send,/const firstParty=coachOpeningTurn\([\s\S]*?if\(!commitCompletedClientTurn\(requestId,message,/)
  assert.doesNotMatch(send,/slice\(-160\)|setTurns\(previous=>/)
  assert.match(send,/coachProtocolRoomForExchange\(turnsRef.current,message\)/)
  assert.match(send,/if\(response.status===401\)\{[\s\S]*?retainPendingClient\(\)/)
@@ -621,7 +626,7 @@ test('next-turn voice course guidance uses exact checkpoints only after opening 
  assert.equal(coachCourseCheckpointGuidance('introductory','ru',opening,{}),'')
  assert.equal(coachCourseCheckpointGuidance('meaning_axes_inner_growth','ru',opening,{}),'')
 })
-test('voice Director checkpoint keeps the runtime course preference without treating interrupted speech as delivered',()=>{
+test('voice Director keeps the course preference and excludes private or interrupted output from reusable history',()=>{
  const server=readFileSync(new URL('../lib/coaching/gemini-live-free.mjs',import.meta.url),'utf8')
  const ui=readFileSync(new URL('../components/my-coach-gemini-live.jsx',import.meta.url),'utf8')
  const checkpoint=ui.slice(ui.indexOf('  async function checkpoint('),ui.indexOf('  function preserveUnconfirmedInput('))
@@ -631,8 +636,9 @@ test('voice Director checkpoint keeps the runtime course preference without trea
  assert.ok(server.includes('coachCourseCheckpointGuidance(parsed.input.courseSessionId,body.locale,opening,directive,parsed.input.turns,parsed.input.message)'))
  assert.ok(server.includes('geminiLiveThematicCheckpointGuidance(namePrefix,directive,courseHint)'))
  const output=ui.slice(ui.indexOf('  function commitOutput('),ui.indexOf('  function canSendSideband('))
- assert.ok(output.includes("if(!r.interrupted&&!r.contextSentKey){r.history.push({role:'assistant',content:value})"))
- assert.ok(output.includes('onOutputFinal?.(value,{interrupted:r.interrupted,requestedSavedContext:Boolean(r.contextSentKey)})'))
+ assert.ok(output.includes('const requestedSavedContext=Boolean(r.contextSentKey||r.claritySelection?.memorySelection||r.claritySelection?.materialSelection||r.clarityOpeningMemoryStageToken)'))
+ assert.ok(output.includes("if(!r.interrupted&&!requestedSavedContext){r.history.push({role:'assistant',content:value})"))
+ assert.ok(output.includes('onOutputFinal?.(value,{interrupted:r.interrupted,requestedSavedContext})'))
 })
 test('review dropdown distinguishes unreviewed and explicitly reopened checkpoints',()=>{
  const ui=readFileSync(new URL('../components/my-coach-course-field-review.jsx',import.meta.url),'utf8')
@@ -987,6 +993,30 @@ test('consented legacy draft reconstructs only exact confirmed fields after the 
  }
 })
 
+import {draftTranscriptPrefix} from '../lib/personal-coaching/protocol-draft.mjs'
+test('long QA capture and immutable Clarity visit attribution coexist in draft, report and export',()=>{
+ const visit='8afbf841-49a0-46e1-b5c1-124a116efa29',capturedAt='2026-11-19T20:01:00.000Z'
+ const data={...sample(),courseSessionId:'clarity_day_1',turnLayout:'chronological',turns:[
+  {role:'assistant',content:'Welcome',coachId:'mira',capturedAt,locale:'en'},
+  {role:'user',content:'Original answer '+('words '.repeat(500)).trimEnd(),coachId:'caesar',visitId:visit},
+  {role:'assistant',content:'Continue',coachId:'caesar',visitId:visit,authorPersonaId:'caesar',capturedAt,inference:{provider:'gemini_live_free',model:'gemini-3.1-flash-live-preview'}}
+ ]}
+ const normalized=normalizeMyCoachProtocol(data),draft=normalizeMyCoachDraft({courseSessionId:data.courseSessionId,protocol:data}).protocol
+ assert.deepEqual(draft.turns,normalized.turns)
+ assert.equal(draft.turns[0].coachId,'mira');assert.equal(draft.turns[0].visitId,undefined)
+ assert.equal(draft.turns[1].content,data.turns[1].content)
+ assert.equal(draft.turns[1].coachId,'caesar');assert.equal(draft.turns[1].visitId,visit)
+ assert.equal(draft.turns[2].authorPersonaId,'caesar')
+ const exported=coachQualityTranscript(draft)
+ assert.equal(exported.turns[1].visitId,visit);assert.equal(exported.turns[1].coachId,'caesar')
+ assert.equal(exported.turns[2].visitId,visit);assert.equal(exported.turns[2].authorPersonaId,'caesar')
+ assert.equal(draftTranscriptPrefix(draft,normalized),true)
+ const altered={...draft,turns:draft.turns.map((row,i)=>i===2?{...row,coachId:'mira',authorPersonaId:'mira'}:row)}
+ assert.equal(draftTranscriptPrefix(draft,altered),false)
+ assert.throws(()=>normalizeMyCoachProtocol({...data,turns:data.turns.map((row,i)=>i===2?{...row,authorPersonaId:'mira'}:row)}),/MY_COACH_PROTOCOL_INVALID/)
+ assert.throws(()=>normalizeMyCoachProtocol({...data,courseSessionId:'introductory'}),/MY_COACH_PROTOCOL_INVALID/)
+})
+
 
 test('private supervision export audits literal evidence without claiming semantic review or server receipts',async()=>{
  const {coachProtocolEvidenceAudit}=await import('../lib/personal-coaching/protocol-evidence-audit.mjs')
@@ -1019,6 +1049,18 @@ test('private supervision export audits literal evidence without claiming semant
  assert.equal(coachProtocolEvidenceAudit(sample()).status,'unavailable')
 })
 
+test('final archive retry reuses the acknowledged revision after a lost response instead of writing a finalized draft',()=>{
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const save=ui.slice(ui.indexOf('  async function saveProtocol(){'),ui.indexOf('  async function closeProtocolToRating(){'))
+ assert.ok(save.includes('protocolSaveInFlightRef.current||protocolSaving'))
+ assert.ok(save.includes('let request=protocolSaveRequestRef.current'))
+ assert.ok(save.includes("if(request&&request.owner!==owner)throw Error('ACCOUNT_CHANGED')"))
+ assert.ok(save.indexOf('if(!request){')<save.indexOf('await autoSaveQueueRef.current?.flush()'))
+ assert.ok(save.indexOf('protocolSaveRequestRef.current=request')<save.indexOf("await fetch('/api/app/my-coach/protocol'"))
+ assert.ok(save.includes('body:request.body'))
+ assert.ok(save.includes('protocolSaveRequestRef.current=null;protocolSaveSnapshotRef.current=null;setProtocolSaveLocked(false)'))
+ assert.ok(save.includes('finally{protocolSaveInFlightRef.current=false;setProtocolSaving(false)}'))
+})
 
 test('course protocol panel renders the actual grouped checkpoints, not a competing generic GROW summary',()=>{
  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
@@ -1029,4 +1071,46 @@ test('course protocol panel renders the actual grouped checkpoints, not a compet
  assert.ok(card.includes('{courseProtocol?<details><summary>{captureT.title}'))
  assert.ok(card.includes('data-coach-opening-name'))
  assert.ok(card.includes('data-coach-profile-checklist'))
+})
+
+test('final protocol unlocks only before a request is prepared; ambiguous POST retries remain immutable',async()=>{
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const save=ui.slice(ui.indexOf('  async function saveProtocol(){'),ui.indexOf('  async function closeProtocolToRating(){'))
+ const ref=current=>({current})
+ const snapshot={id:'protocol-1',turns:['original']}
+ let locked=false,saving=false,saved=false,flushCount=0,postCount=0,ready=false,failPost=true,body,revision=7
+ const refs={protocolSaveInFlightRef:ref(false),profileV3BusyRef:ref(false),profileV3FaultRef:ref(false),courseGateBusyRef:ref(false),courseGateAttemptRef:ref(false),protocolOwnerRef:ref('owner'),protocolSaveSnapshotRef:ref(null),restoredProfileProof:ref(null),protocolIdRef:ref('protocol-1'),protocolSaveRequestRef:ref(null),autoSaveRef:ref(true),profileV3Ref:ref(null),courseGateRef:ref(null),turnsRef:ref([]),autoSaveQueueRef:ref({flush:async()=>{flushCount++;return ready?revision:null},stop(){}})}
+ const env={...refs,protocolSaving:false,protocolSaved:false,autoSaveStatus:'active',lang:'en',currentProtocol:()=>({...snapshot}),setProtocolSaveLocked:v=>{locked=v},setProtocolSaving:v=>{saving=v},setProtocolError(){},protocolCopy:{en:{error:'error'}},queuePrivateDraft:()=>true,fetch:async(_url,options)=>{postCount++;if(body)assert.equal(options.body,body);else body=options.body;if(failPost)throw Error('lost response');return {ok:true,status:200,json:async()=>({saved:true,id:snapshot.id})}},setAutoSaveEnabled(){},setProfileV3(){},setProfileV3CanStart(){},setCourseGate(){},setProtocolSaved:v=>{saved=v},setProtocolEditing(){}}
+ const execute=new Function(...Object.keys(env),save+'\nreturn saveProtocol()')
+ assert.equal(await execute(...Object.values(env)),false)
+ assert.equal(locked,false);assert.equal(saving,false);assert.equal(refs.protocolSaveSnapshotRef.current,null);assert.equal(postCount,0)
+ ready=true
+ assert.equal(await execute(...Object.values(env)),false)
+ assert.equal(locked,true);assert.equal(saving,false);assert.equal(postCount,1);assert.equal(flushCount,2)
+ assert.equal(refs.protocolSaveSnapshotRef.current.id,snapshot.id);assert.equal(JSON.parse(body).draftRevision,7)
+ snapshot.turns=['edited'];revision=8;failPost=false
+ assert.equal(await execute(...Object.values(env)),true)
+ assert.equal(saved,true);assert.equal(postCount,2);assert.equal(flushCount,2)
+ assert.equal(JSON.parse(body).protocol.turns[0],'original')
+})
+
+import {thematicScenarioVersion,THEMATIC_EXPANDED_VERSION} from '../lib/coaching/session-blueprint.mjs'
+import {coachExpandedGateReadbackMatches} from '../lib/coaching/coach-course-protocol-schema.mjs'
+test('expanded session gate pins its exact version through review, coach handoff and archive',()=>{
+ const fixtures={ru:{history:['Да','Меня зовут Анна','Новая тема','Хочу поработать над целью','Спокойно','Да'],answer:'работа',yes:'да'},en:{history:['Yes','My name is Anna','New topic','I want to work on a goal','Calm','Yes'],answer:'work',yes:'yes'},es:{history:['Sí','Me llamo Ana','Un tema nuevo','Quiero trabajar en una meta','Tranquila','Sí'],answer:'trabajo',yes:'sí'}}
+ const courses=[...COACH_PROGRAM_SESSIONS,...COACH_COURSE_SESSIONS].filter(item=>thematicScenarioVersion(item.id))
+ assert.equal(courses.length,16)
+ for(const item of courses)for(const [locale,f] of Object.entries(fixtures)){
+  const course=item.id,personaId='mira',opening=coachOpeningProgress({turns:f.history,locale,personaId})
+  const schema=coachCourseProtocolSchema(course,locale,{scenarioVersion:THEMATIC_EXPANDED_VERSION})
+  let value={courseSessionId:course,revision:1,protocol:{...sample(),personaId,locale,courseSessionId:course,turnLayout:'chronological',opening:coachOpeningProtocolSnapshot(opening),turns:f.history.map(content=>({role:'user',content}))}}
+  let n=0
+  const step=(action,extra={})=>{const input={action,id:value.protocol.id,revision:value.revision,consent:true,requestId:'00000000-0000-4000-8000-'+String(++n).padStart(12,'0'),...extra};const next=coachCourseGateTransition(value,input,'2026-11-28T18:12:00.000Z');value={...value,...next,revision:value.revision+1};const view=coachCourseGateView(value);assert.ok(coachExpandedGateReadbackMatches(course,locale,value.protocol.turns,view));return view}
+  let view=step('course-gate-start');assert.equal(view.scenarioVersion,THEMATIC_EXPANDED_VERSION);assert.equal(view.total,schema.checkpoints.length);assert.equal(view.prompt.fieldId,schema.checkpoints[0].id)
+  view=step('course-gate-answer',{promptId:view.prompt.id,content:f.answer});assert.equal(view.prompt.kind,'confirm');view=step('course-gate-answer',{promptId:view.prompt.id,content:f.yes});assert.equal(view.acceptedCount,1);const first=view.review.events[0],pending=view.prompt.fieldId
+  view=step('course-gate-continue',{coachId:'max',resumeConfirmed:true});assert.equal(view.activeCoachId,'max');assert.equal(view.prompt.fieldId,pending);assert.deepEqual(view.review.events[0],first);assert.equal(view.scenarioVersion,THEMATIC_EXPANDED_VERSION)
+  assert.ok(coachCourseGateArchiveMatches(value,{...value.protocol,courseFieldReview:view.review}));assert.equal(coachCourseGateArchiveMatches(value,{...value.protocol,courseSessionId:'goal_result',courseFieldReview:view.review}),false)
+  assert.equal(coachExpandedGateReadbackMatches(course,locale,value.protocol.turns,{...view,scenarioVersion:null}),false);assert.equal(coachExpandedGateReadbackMatches(course,locale,value.protocol.turns,{...view,total:view.total+1}),false)
+  assert.equal(coachExpandedGateReadbackMatches(course,locale,value.protocol.turns,{...view,prompt:{...view.prompt,fieldId:'forged'}}),false)
+ }
 })

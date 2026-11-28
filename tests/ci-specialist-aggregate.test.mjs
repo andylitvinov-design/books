@@ -1227,14 +1227,14 @@ test('base advances fail closed while matching tested checkout retains HEAD chec
   api.target = async () => BASE;
   api.pr = async () => currentPr();
   assert.deepEqual((await verify(api, ctx, sources, { maxWaitMs: 0 })).expected, [path]);
-  // The final target read must be definitive; don't invent a future target
-  // movement from another speculative read while a real specialist is green.
+  // Bracket the same final target proof with two actual protected-ref reads.
+  // A stable target needs no new specialist execution.
   let targetReads = 0;
   api.target = async () => { targetReads++; return BASE; };
   api.compare = async () => ({ status:'diverged' });
   api.pr = async () => currentPr();
   assert.deepEqual((await verify(api, ctx, sources, { maxWaitMs: 0 })).expected,[path]);
-  assert.equal(targetReads,1,'complete specialist evidence precedes one final target scan');
+  assert.equal(targetReads,2,'complete specialist evidence precedes the bracketed final target scan');
   api.target = async () => advanced;
   await assert.rejects(() => verify(api, ctx, sources, { maxWaitMs: 0 }),
     /PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED/, 'unsafe production target remains blocking at final review');
@@ -2347,7 +2347,7 @@ test('base movement during Specialist preserves exact-HEAD results only for prov
   const ctx={repo,number:27,head:SHA,base:BASE};
   const good=await verify(api,ctx,files,{maxWaitMs:0});
   assert.deepEqual(good.expected,[path]);
-  assert.equal(liveReads,1,'verified disjoint production drift is reviewed once after real Specialist jobs');
+  assert.equal(liveReads,2,'one disjoint impact proof is bracketed by two final protected-ref reads');
   api.target=async()=>live;
   api.compare=async()=>comparison('.github/workflows/hh-pr-core-release.yml');
   await assert.rejects(()=>verify(api,ctx,files,{maxWaitMs:0}),/PRODUCTION_BASE_CHANGED/);
@@ -3415,4 +3415,40 @@ test('a failed specialist readback remains fail closed and prevents the next bat
   }), /SPECIALIST_DEPENDENCY_JOB_CANCELLED/);
   assert.deepEqual(started,[0,1,2]);
   assert.deepEqual(finished.sort(),[0,1,2]);
+});
+
+
+test('batched pure prebuild test registration keeps existing tests and real domain owners', () => {
+  const old={scripts:{
+    prebuild:'node scripts/prepare.mjs && npm run test:coaching:release && npm run test:academy:release',
+    'test:coaching:release':'node --test tests/coach-old.test.mjs',
+    'test:academy:release':'node --test tests/academy-old.test.mjs tests/academy-last.test.mjs'
+  }, dependencies:{next:'15.0.0'}};
+  const next=structuredClone(old);
+  next.scripts['test:coaching:release']='node --test tests/coach-new.test.mjs tests/coach-old.test.mjs tests/coaching-extra.test.mjs';
+  next.scripts['test:academy:release']='node --test tests/academy-old.test.mjs tests/academy-new.test.mjs tests/academy-last.test.mjs';
+  const paths=['package.json','tests/coach-new.test.mjs','tests/coaching-extra.test.mjs','tests/academy-new.test.mjs','lib/coaching/voice.mjs'];
+  const check=(proposal=next,changed=paths,before=old)=>classifyPackageImpact({changed,basePackage:JSON.stringify(before),currentPackage:JSON.stringify(proposal)});
+  assert.deepEqual(check(),{mode:'core',reason:'BATCH_ADDITIVE_PREBUILD_TESTS',workflows:[]});
+  const yaml=pattern=>"on:\n  pull_request:\n    branches: ['codex/public-book-library']\n    paths:\n      - 'package.json'\n      - '"+pattern+"'\n";
+  const owners=new Map([
+    ['.github/workflows/hh-live-audio-ci.yml',yaml('lib/live-audio/**')],
+    ['.github/workflows/hh-personal-coaching-session.yml',yaml('lib/coaching/**')],
+  ]);
+  assert.deepEqual(expectedWorkflows({base:owners,current:owners,changed:paths,packageImpact:check()}),['.github/workflows/hh-personal-coaching-session.yml']);
+  for (const mutation of [
+    v=>{v.scripts['test:academy:release']='node --test tests/academy-new.test.mjs tests/academy-last.test.mjs'},
+    v=>{v.scripts['test:academy:release']='node --test tests/academy-last.test.mjs tests/academy-new.test.mjs tests/academy-old.test.mjs'},
+    v=>{v.scripts['test:academy:release']+=' && echo bypass'},
+    v=>{v.scripts['test:academy:release']+=' tests/academy-new.test.mjs'},
+    v=>{v.scripts.prebuild+=' && echo bypass'},
+    v=>{v.scripts['test:monetization']='node --test tests/wallet.test.mjs'},
+    v=>{v.dependencies.next='16.0.0'},
+    v=>{v.scripts['test:coaching:release']+=' tests/billing-new.test.mjs'},
+  ]) {const bad=structuredClone(next);mutation(bad);assert.equal(check(bad).mode,'full');}
+  assert.equal(check(next,paths.slice(0,3)).mode,'full');
+  assert.equal(check(next,[...paths,'package-lock.json']).mode,'full');
+  const before=structuredClone(old),after=structuredClone(next);
+  before.scripts['pretest:academy:release']=after.scripts['pretest:academy:release']='node scripts/side-effect.mjs';
+  assert.equal(check(after,paths,before).mode,'full');
 });
