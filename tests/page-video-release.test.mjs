@@ -155,3 +155,12 @@ test('new My Coach live aliases use the same strict catalog contract',async()=>{
  const r=await run('verify-site-video-browser.mjs',{coachHome:true});
  assert.ok(r.some(x=>/PASS:.*EN\/RU aliases open My Coach/.test(x)));
 });
+
+
+test('practitioner video byline preserves its real destination without automatic RSC prefetch', () => {
+  const link = player.match(/<Link className="site-video-master-link"[^>]+>/g);
+  assert.equal(link?.length, 1);
+  assert.ok(link[0].includes('prefetch={false}'));
+  assert.ok(link[0].includes('href={`/${locale}/masters/${video.practitionerSlug}#practitioner-videos`}'));
+  assert.match(player, /\{video\.practitionerName\}/);
+});
