@@ -96,6 +96,29 @@ const CORE_PATH='.github/workflows/hh-pr-core-release.yml';
 const QUEUED=new Set(['queued','requested','waiting','pending']);
 // Only a genuine current unified gate can authorize skipping a queued
 // duplicate. Recheck the actual prior job; running/red/missing proof stays HOLD.
+
+// Verify the protected Specialist's equivalent-merge-tree receipt, not
+// merely the SHA or message of a source synchronization commit.
+async function verifyPriorTreeEquivalence({row,currentCommit,oldCommit,expectedHead,expectedBase,lines,readCommit}){
+ if(currentCommit?.sha!==expectedHead||oldCommit?.sha!==row.prior_head||
+    !SHA.test(currentCommit.tree?.sha||'')||!SHA.test(oldCommit.tree?.sha||''))return false;
+ if(currentCommit.tree.sha===oldCommit.tree.sha)return true;
+ if(row.proof_mode!=='equivalent_merge_tree'||row.tested_base!==expectedBase||
+    ![row.prior_merge,row.tested_merge].every(x=>SHA.test(x||''))||
+    row.prior_merge===row.tested_merge||currentCommit.parents?.length!==2||
+    currentCommit.parents[0]?.sha!==row.prior_head||currentCommit.parents[1]?.sha!==expectedBase||
+    typeof readCommit!=='function')return false;
+ const checkout=lines.flatMap((line,i)=>line==='[command]/usr/bin/git log -1 --format=%H'?[i]:[]);
+ if(checkout.length!==1||lines[checkout[0]+1]!==row.tested_merge)return false;
+ try{
+  const [before,after]=await Promise.all([readCommit(row.prior_merge),readCommit(row.tested_merge)]);
+  return before?.sha===row.prior_merge&&after?.sha===row.tested_merge&&
+   before.parents?.length===2&&before.parents[0]?.sha===expectedBase&&before.parents[1]?.sha===row.prior_head&&
+   after.parents?.length===2&&after.parents[0]?.sha===expectedBase&&after.parents[1]?.sha===expectedHead&&
+   SHA.test(before.tree?.sha||'')&&before.tree.sha===after.tree?.sha&&after.tree.sha===currentCommit.tree.sha;
+ }catch{return false;}
+}
+
 async function verifiedQueuedDuplicateChecks({github,owner,repo,pr,expectedHead,expectedBase,checks,pending}){
  const approved=new Set(),full=owner+'/'+repo;
  if(!pr?.head?.ref||!SHA.test(expectedBase||'')||!Array.isArray(pending)||!pending.length||
@@ -161,9 +184,9 @@ async function verifiedQueuedDuplicateChecks({github,owner,repo,pr,expectedHead,
       prior.head_branch!==pr.head.ref||prior.status!=='completed'||prior.conclusion!=='success'||
       String(prior.path||'').split('@')[0]!==row.name||
       !prior.pull_requests?.some(p=>p.number===pr.number&&p.base?.ref===PROD)||
-      prior.run_attempt!==row.prior_run_attempt||
-      currentCommit?.sha!==expectedHead||oldCommit?.sha!==row.prior_head||
-      !SHA.test(currentCommit.tree?.sha||'')||currentCommit.tree.sha!==oldCommit.tree?.sha)continue;
+      prior.run_attempt!==row.prior_run_attempt)continue;
+   if(!await verifyPriorTreeEquivalence({row,currentCommit,oldCommit,expectedHead,expectedBase,lines,
+     readCommit:async sha=>(await github.rest.git.getCommit({owner,repo,commit_sha:sha})).data}))continue;
    const jobs=(await github.request('GET /repos/{owner}/{repo}/actions/runs/{run_id}/attempts/{attempt_number}/jobs',
     {owner,repo,run_id:prior.id,attempt_number:prior.run_attempt,per_page:100})).data;
    if(!Array.isArray(jobs?.jobs)||jobs.total_count!==jobs.jobs.length||jobs.jobs.length>100)continue;

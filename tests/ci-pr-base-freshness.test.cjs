@@ -754,6 +754,16 @@ test('V3 readiness fast path is bound to authenticated exact run, merge parents,
  assert.deepEqual(parseMergeReadyV3(log(x)),x);
  assert.equal(parseMergeReadyV3(log(x)+'\nHH_MERGE_READY_V3:'+JSON.stringify(x)),null);
  assert.deepEqual(await verifiedMergeReadyV3(args),x);
+ const repair={id:23,run_id:11,name:'hh-eslint-repair',status:'completed',conclusion:'skipped'};
+ assert.deepEqual(await verifiedMergeReadyV3({...args,jobs:[...jobs,repair]}),x);
+ for(const bad of [
+  {...repair,name:'unknown-extra-job'},{...repair,conclusion:'failure'},
+  {...repair,conclusion:'success'},{...repair,status:'in_progress'},
+  {...repair,run_id:12},{...repair,id:22}
+ ])assert.equal(await verifiedMergeReadyV3({...args,jobs:[...jobs,bad]}),null);
+ assert.equal(await verifiedMergeReadyV3({...args,jobs:[...jobs,repair,repair]}),null);
+ assert.deepEqual(await verifiedMergeReadyV3({...args,github:{...github,
+  request:async()=>({data:Buffer.from(log(x),'utf8')})}}),x);
  const fast=await assess({github,owner,repo,pr:p,classifierBase:target,decideRoute:()=>{throw Error('not needed');},
    readReadyReceipt:async()=>{reads++;return verifiedMergeReadyV3(args);}});
  assert.equal(fast.reason,'MERGE_READY_V3_VERIFIED');assert.equal(lists,0);assert.equal(reads,1);
