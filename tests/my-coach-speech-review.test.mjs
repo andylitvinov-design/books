@@ -74,3 +74,21 @@ test('typed input retires the review queue before committing the new turn',()=>{
  assert.ok(end>start)
  assert.match(live.slice(start,end),/speechReviewBuffer\?\.clear\(\);r\.speechReviewQueue\?\.cancel\(\);r\.speechReviewQueue=null/)
 })
+
+import {isBoundedCoachReviewWav} from '../lib/coaching/coach-speech-review-wav.mjs'
+test('long review is opt-in, bounded and canonical, without slicing the utterance',()=>{
+ const b=createSpeechReviewBuffer({long:true})
+ for(let i=0;i<68;i++)b.append(new Uint8Array(16000).fill(i),true,1000+i*500)
+ const parts=b.take(35000);assert.equal(parts.length,68)
+ assert.throws(()=>speechReviewWav(parts),/INVALID/)
+ const wav=speechReviewWav(parts,{long:true})
+ assert.equal(wav.length,34*32000+44);assert.equal(isBoundedCoachReviewWav(wav),false);assert.equal(isBoundedCoachReviewWav(wav,{long:true}),true)
+ const bad=wav.slice();bad[24]=0;assert.equal(isBoundedCoachReviewWav(bad,{long:true}),false)
+ for(let i=0;i<71;i++)b.append(new Uint8Array(16000),true,1000+i*500)
+ assert.equal(b.take(36500),null)
+})
+test('long candidate must not be silently truncated',async()=>{
+ const results=[];const q=createSpeechReviewQueue({request:async()=>('a'.repeat(1201)),onResult:(...x)=>results.push(x)})
+ assert.equal(q.offer({id:1,parts:[new Uint8Array(3200)]}),true)
+ await new Promise(r=>setTimeout(r,20));assert.deepEqual(results,[[1,'']]);q.cancel()
+})

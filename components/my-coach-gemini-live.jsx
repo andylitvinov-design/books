@@ -525,7 +525,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
         r.speechReviewQueue??=createSpeechReviewQueue({request:requestSpeechReview,onResult:(id,text)=>{
           if(runtime.current===r&&!r.ended&&propsRef.current.speechReviewConsent===true&&propsRef.current.speechReviewProvider===reviewProvider)propsRef.current.onSpeechReviewCandidate?.(id,r.paused?'':text)
         }})
-        if(!r.speechReviewQueue.offer({id:decision.transcriptReview,parts:audioParts,locale:r.locale,provider:reviewProvider}))propsRef.current.onSpeechReviewCandidate?.(decision.transcriptReview,'')
+        if(!r.speechReviewQueue.offer({id:decision.transcriptReview,parts:audioParts,locale:r.locale,provider:reviewProvider,long:process.env.NEXT_PUBLIC_HH_MY_COACH_STT_LONG_REVIEW_ENABLED==='true'&&reviewProvider!=='gemini'}))propsRef.current.onSpeechReviewCandidate?.(decision.transcriptReview,'')
       }else propsRef.current.onSpeechReviewCandidate?.(decision.transcriptReview,'')
       r.lastAssistantTurnFinished=false;r.pendingDirectorHint='';return false
     }
@@ -1366,7 +1366,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       settings:p.settings,courseSessionId:p.courseSessionId,allowOpeningPrior:p.allowOpeningPrior===true,
       methodSession:p.methodSession,prepareMethodSession:p.prepareMethodSession,methodCheckpointQueue:Promise.resolve(),
       openingPrior:p.allowOpeningPrior===true?p.openingPrior:null,
-      speechReviewBuffer:createSpeechReviewBuffer(),speechReviewQueue:null,
+      speechReviewBuffer:createSpeechReviewBuffer({long:process.env.NEXT_PUBLIC_HH_MY_COACH_STT_LONG_REVIEW_ENABLED==='true'&&p.speechReviewProvider!=='gemini'}),speechReviewQueue:null,
       abort:new AbortController(),timer:null,reconnectTimer:null,
       resampler:new GeminiLivePcmResampler(context.sampleRate),
       audioGate:new GeminiLiveBargeGate()}
@@ -1443,7 +1443,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     hasLiveSession:()=>Boolean(runtime.current?.paused||runtime.current&&!runtime.current.ended),
     isResumeUnavailable:()=>runtime.current?.paused===true&&runtime.current.resumeUnavailable===true}),[startSession])
   useEffect(()=>{
-    const r=runtime.current;r?.speechReviewBuffer?.clear();r?.speechReviewQueue?.cancel();if(r)r.speechReviewQueue=null
+    const r=runtime.current;r?.speechReviewBuffer?.clear();r?.speechReviewQueue?.cancel();if(r){r.speechReviewQueue=null;r.speechReviewBuffer=createSpeechReviewBuffer({long:process.env.NEXT_PUBLIC_HH_MY_COACH_STT_LONG_REVIEW_ENABLED==='true'&&speechReviewProvider!=='gemini'})}
   },[speechReviewConsent,speechReviewProvider])
   useEffect(()=>{
     runtime.current?.player?.setMuted(outputMuted)

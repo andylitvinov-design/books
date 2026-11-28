@@ -4,6 +4,7 @@
  * Editing, shot matching and rendering remain local on the original Studio.
  */
 import {NextResponse} from "next/server";
+import {isBoundedCoachReviewWav} from "@/lib/coaching/coach-speech-review-wav.mjs";
 import {coachSpeechReviewEnabled,isCoachSpeechReviewRequest} from "@/lib/coaching/coach-speech-review-config.mjs";
 import {shouldUseCoachLargeV3} from "@/lib/coaching/coach-stt-model.mjs";
 import {coachSpeechReviewGlossary} from "@/lib/coaching/coach-speech-review-glossary.mjs";
@@ -66,6 +67,12 @@ export async function POST(request){
       const actor=await createRequestAuth(request,config).verified();
       if(isCoachSpeechReviewRequest({purpose,filename:file.name,review:form.get("review")})&&(!textOnly||!coachSpeechReviewEnabled(process.env)))
         throw new AppError("AUDIO_STT_REVIEW_DISABLED",503);
+      if(isCoachSpeechReviewRequest({purpose,filename:file.name,review:form.get("review")})){
+        const long=process.env.HH_MY_COACH_STT_LONG_REVIEW_ENABLED==="true";
+        if(file.type!=="audio/wav"||file.size>(long?35:12)*32000+44||
+          !isBoundedCoachReviewWav(new Uint8Array(await file.arrayBuffer()),{long}))
+          throw new AppError("AUDIO_STT_INVALID_FILE",400);
+      }
       await consumeRate(config,{op:"my-coach-stt-free-user-minute",userId:actor.id},8,60);
       await consumeRate(config,{op:"my-coach-stt-free-user-day",userId:actor.id},120,86400);
       await consumeRate(config,{op:"my-coach-stt-free-global-minute"},12,60);
