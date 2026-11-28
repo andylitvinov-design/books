@@ -1,8 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { verify, requiresCurrentProductionBase, classifyPrState, diagnoseAggregateError, awaitPositiveMergeability } from '../scripts/ci-specialist-aggregate.mjs';
+import { verify, requiresCurrentProductionBase, classifyPrState, diagnoseAggregateError, awaitPositiveMergeability, verifiedPriorSpecialistEvidence, reusePriorSpecialistState, revalidateAfterTrustedPolicyAdvance } from '../scripts/ci-specialist-aggregate.mjs';
+import { createRequire } from 'node:module';
+import { verifyStableProtectedBase, observeProtectedBaseDrift, independentPackageOnlyAdvisories, verifiedCoachDispatcherIsolation, independentDispatcherAdvisories, provenNonApplicableWorkflows, withCompletedSpecialistEvidence, mergeReadyReceipt } from '../scripts/ci-specialist-aggregate.mjs';
 import { inspectJobs, trustedRequiredJobs, inspectWorkflowRuns } from '../lib/ci/specialist-aggregate.mjs';
-import { safeComposedIndependentAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeIndependentRouterPolicyAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeStandaloneVideoAfterSpecialistScopeAdvance, safeNonOverlappingProductAdvance, safeIndependentMixedCandidateAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeComposedIndependentAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeIndependentRouterPolicyAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeStandaloneVideoAfterSpecialistScopeAdvance, safeNonOverlappingProductAdvance, safeIndependentMixedCandidateAdvance, normalizeIdenticalProtectedOverlap, safeDetachedBenchmarkAdvance, safeTrustedPolicyAdvance, safeAdditiveProtectedProductAdvance } from '../lib/ci/production-base-impact.mjs';
 
 const repo = 'andylitvinov-design/books', head = 'a'.repeat(40), base = 'b'.repeat(40);
 const path = '.github/workflows/mobile.yml';
@@ -622,7 +624,7 @@ test('#5093: protected BASE drift must not trigger auto-sync before required mac
   path:workflow,id:981,head_branch:pr.head.ref});
  let elapsed=0,polls=0,jobReads=0,baseReads=0,compares=0;
  const api={
-  pr:async()=>mediaPr,target:async()=>{baseReads++;return latest;},
+  pr:async()=>mediaPr,target:async()=>{assert.equal(jobReads,1,'no final target authorization before Mac evidence');baseReads++;return latest;},
   compare:async()=>{compares++;return {
     status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
     base_commit:{sha:base},merge_base_commit:{sha:base},
@@ -641,7 +643,7 @@ test('#5093: protected BASE drift must not trigger auto-sync before required mac
  assert.equal(polls,2,'the real Mac specialist must finish before BASE is considered stale');
  assert.equal(jobReads,1,'successful exact-run macOS job evidence is independently read');
  assert.equal(compares,1,'only final protected BASE comparison can trigger auto-sync');
- assert.equal(baseReads,1,'no early or periodic stale-base branch update while Mac is active');
+ assert.equal(baseReads,2,'two final target reads bracket the same proof after Mac completes');
  let redPolls=0,redBaseReads=0;
  await assert.rejects(()=>verify({...api,
   target:async()=>{redBaseReads++;return latest;},
@@ -859,7 +861,7 @@ test('all required specialists finish before BASE_ADVANCED; not only macOS (#519
     now:()=>elapsed,sleep:async ms=>{elapsed+=ms;}}),/PRODUCTION_BASE_CHANGED/);
   assert.equal(polls,2,'the actual specialist should finish before base reconciliation');
   assert.equal(jobReads,1,'read the exact-HEAD completed specialist job');
-  assert.equal(baseReads,1,'only final target comparison, not an early rejection');
+  assert.equal(baseReads,2,'final target proof is bracketed by two reads, not an early rejection');
   assert.equal(compares,1,'do not repeatedly compare moving production during CI');
   let redPolls=0,redBaseReads=0;
   await assert.rejects(()=>verify({...api,
@@ -1291,4 +1293,441 @@ test('mixed tested candidate: independent protected domain is not stale just bec
   assert.equal((await verify(api,ctx,files,{maxWaitMs:0})).head,head);
   await assert.rejects(()=>verify({...api,pr:async()=>({...exact,mergeable:false})},ctx,files,{maxWaitMs:0}),/MERGE_CONFLICT/);
   await assert.rejects(()=>verify({...api,pr:async()=>({...exact,head:{...exact.head,sha:target}})},ctx,files,{maxWaitMs:0}),/PR_HEAD_CHANGED/);
+});
+
+
+test('same regular protected blob is not a conflicting change; unknown or different evidence stays strict',async()=>{
+  const target='d'.repeat(40),blob='e'.repeat(40),name='lib/site-videos/model.js';
+  const row={filename:name,status:'modified',sha:blob};
+  const delta={status:'ahead',ahead_by:1,behind_by:0,total_commits:1,
+    base_commit:{sha:base},merge_base_commit:{sha:base},commits:[{sha:target}],files:[row]};
+  const entry={type:'blob',mode:'100644',sha:blob};
+  const rows=[{filename:name,status:'M'}];
+  const normalize=(d=delta,c=rows,a=entry,b=entry)=>normalizeIdenticalProtectedOverlap(d,base,target,c,async()=>a,async()=>b);
+  assert.deepEqual((await normalize()).identical,[name]);
+  assert.deepEqual((await normalize()).compare.files,[]);
+  const other={filename:'components/unrelated-page.jsx',status:'modified'};
+  assert.deepEqual((await normalize({...delta,files:[row,other]})).compare.files,[other]);
+  for(const result of [
+    await normalize(delta,rows,{...entry,sha:'f'.repeat(40)}),
+    await normalize(delta,rows,entry,{...entry,mode:'100755'}),
+    await normalize(delta,rows,entry,null),
+    await normalize({...delta,commits:[]}),
+    await normalize({...delta,files:[row,row]}),
+    await normalize({...delta,files:[{...row,status:'renamed',previous_filename:'old.js'}]}),
+    await normalize({...delta,files:[{...row,filename:'package-lock.json'}]},[{filename:'package-lock.json',status:'M'}]),
+    await normalize({...delta,files:[{...row,filename:'lib/ci/production-base-impact.mjs'}]},[{filename:'lib/ci/production-base-impact.mjs',status:'M'}]),
+  ]) assert.deepEqual(result.identical,[]);
+  const exact={...pr,mergeable:true,base:{...pr.base,sha:target}};
+  const files={base:new Map(),current:new Map(),changedRows:[...rows,{filename:'app/api/app/my-coach/turn/route.js',status:'M'}]};
+  const api={pr:async()=>exact,target:async()=>target,compare:async()=>delta,
+    entry:async()=>entry,runs:async()=>[],jobs:async()=>[]};
+  // An unchanged HEAD may keep its real specialist evidence, not fabricate new tests.
+  assert.equal((await verify(api,ctx,files,{maxWaitMs:0,readTestedEntry:async()=>entry})).head,head);
+  await assert.rejects(()=>verify({...api,entry:async()=>({...entry,mode:'100755'})},ctx,files,{maxWaitMs:0,readTestedEntry:async()=>entry}),/PRODUCTION_BASE_CHANGED/);
+  await assert.rejects(()=>verify({...api,pr:async()=>({...exact,mergeable:false})},ctx,files,{maxWaitMs:0,readTestedEntry:async()=>entry}),/MERGE_CONFLICT/);
+});
+
+
+test('prior unified gate reuses every proved same-tree Specialist, not stale or red evidence',async()=>{
+ const old='d'.repeat(40),oldMerge='e'.repeat(40),merge='f'.repeat(40),sourceTree='1'.repeat(40),mergeTree='2'.repeat(40);
+ const gatePath='.github/workflows/hh-pr-core-release.yml', second='.github/workflows/other.yml';
+ const context={...ctx,previousHead:old,merge};
+ const source={base:new Map([[gatePath,'trusted'],[path,yaml],[second,yaml]]),
+   current:new Map([[gatePath,'trusted'],[path,yaml],[second,yaml]])};
+ const commits={
+  [head]:{sha:head,tree:{sha:sourceTree}},[old]:{sha:old,tree:{sha:sourceTree}},
+  [merge]:{sha:merge,tree:{sha:mergeTree},parents:[{sha:base},{sha:head}]},
+  [oldMerge]:{sha:oldMerge,tree:{sha:mergeTree},parents:[{sha:base},{sha:old}]}
+ };
+ const oldRun={...run('completed','success'),id:321,head_sha:old,path:gatePath};
+ const step=name=>({name,status:'completed',conclusion:'success'});
+ const job=(id,name,steps)=>({id,name,run_id:321,status:'completed',conclusion:'success',steps:steps.map(step)});
+ const jobs=[job(1,'core-lint-types-build',['Verify bounded shallow scope ancestry before PR routing']),
+  job(2,'hh-merge-check',['Pin exact production base for shallow checkout','Validate exact-head risk and required specialist workflows','Confirm one-runner Core and independent specialist release evidence'])];
+ const checkout='[command]/usr/bin/git log -1 --format=%H';
+ const coreLog=[checkout,oldMerge,'HH_CORE_BUILD_IDENTITY_V1 27 321 1 '+oldMerge+' '+old+' '+base].join('\n');
+ const gateLog=[checkout,oldMerge,'Specialist CI aggregate for PR #27 head='+old+' event_base='+base+' tested_base='+base,
+  'Verified applicable workflows: 2','- '+path+' (2 executed jobs; run 11)','- '+second+' (1 executed jobs; run 12)'].join('\n');
+ const specialists=[{...oldRun,id:11,path},{...oldRun,id:12,path:second}];
+ const api={commit:async sha=>commits[sha],runs:async()=>specialists,runsForWorkflow:async()=>[oldRun],
+  attemptJobs:async()=>jobs,jobLog:async id=>id===1?coreLog:gateLog};
+ const check=(a=api,f=source)=>verifiedPriorSpecialistEvidence(a,context,pr,f,[path,second]);
+ const proof=await check();assert.equal(proof.size,2);
+ assert.equal(proof.get(path).run_id,11);
+ assert.equal(proof.get(path).prior_run_attempt,1);
+ for(const state of ['failure','cancelled','in_progress']){
+  const changed={...specialists[0],id:13,status:state==='in_progress'?'in_progress':'completed',
+   conclusion:state==='in_progress'?null:state};
+  const partial=await check({...api,runs:async()=>[...specialists,changed]});
+  assert.equal(partial.has(path),false,state);
+  assert.equal(partial.has(second),true,state);
+ }
+ assert.equal((await check({...api,runs:async()=>[{...specialists[0],conclusion:'failure'},specialists[1]]})).has(path),false);
+ assert.equal((await check({...api,runs:async()=>{throw Error('API unavailable')}})).size,0);
+ assert.equal((await check({...api,commit:async sha=>sha===old?{...commits[sha],tree:{sha:'3'.repeat(40)}}:commits[sha]})).size,0);
+ assert.equal((await check({...api,commit:async sha=>sha===oldMerge?{...commits[sha],tree:{sha:'3'.repeat(40)}}:commits[sha]})).size,0);
+ assert.equal((await check({...api,runsForWorkflow:async()=>[{...oldRun,conclusion:'failure'}]})).size,0);
+ assert.equal((await check({...api,attemptJobs:async()=>[jobs[0],{...jobs[1],conclusion:'failure'}]})).size,0);
+ assert.equal((await check({...api,jobLog:async id=>id===1?coreLog:gateLog.replace('Verified applicable workflows: 2','Verified applicable workflows: 3')})).size,0);
+ assert.equal((await check({...api,jobLog:async id=>id===1?coreLog:gateLog.replace(oldMerge,merge)})).size,0);
+ assert.equal((await check(api,{...source,current:new Map([[gatePath,'candidate'],[path,yaml],[second,yaml]])})).size,0);
+ const waiting={missing:[path],queued:[second+':queued'],pending:[second+':queued'],running:[],failed:[]};
+ const result=reusePriorSpecialistState(waiting,proof);
+ assert.deepEqual(result.missing,[]);assert.deepEqual(result.pending,[]);assert.equal(result.reused.length,2);
+ const red=reusePriorSpecialistState({...waiting,missing:[],queued:[],pending:[second+':in_progress'],running:[second+':in_progress'],failed:[path+':failure']},proof);
+ assert.deepEqual(red.failed,[path+':failure']);assert.equal(red.reused.length,0);assert.equal(red.pending.length,1);
+});
+
+test('universal moving-base proof treats feature-owned CI regressions as local, not global release policy',()=>{
+  const target='d'.repeat(40);
+  const candidate=['components/my-coach-live-dialogue.jsx','app/api/app/clarity-course/route.js',
+    'tests/ci-coaching-rls-guard.test.mjs','.github/workflows/hh-personal-coaching-session.yml'];
+  const rows=['components/shamanica-business-content.tsx','components/tarot-deck.jsx',
+    'lib/ci/pr-loss-metrics.mjs'].map(filename=>({filename,status:'modified'}));
+  const delta={status:'ahead',ahead_by:2,behind_by:0,total_commits:2,base_commit:{sha:base},
+    merge_base_commit:{sha:base},commits:[{sha:'e'.repeat(40)},{sha:target}],files:rows};
+  const accept=(d=delta,p=candidate)=>safeNonOverlappingProductAdvance(d,base,target,p);
+  assert.equal(accept(),true);
+  // A different, newly named feature is also accepted without a PR ID or exact patch.
+  assert.equal(accept({...delta,files:[{filename:'components/ornithology-detail.jsx',status:'modified'}]}),true);
+  for(const path of ['tests/ci-global-regression.test.mjs','tests/ci-coaching-release-policy.test.mjs',
+    'tests/ci-shamanica-rls-guard.test.mjs','scripts/ci-coaching-rls-guard.mjs','lib/ci/production-base-impact.mjs',
+    '.github/workflows/hh-pr-core-release.yml']) assert.equal(accept(delta,[...candidate,path]),false,path);
+  for(const path of [candidate[0],'components/my-coach-summary.jsx','app/[locale]/layout.tsx',
+    'lib/auth/permissions.mjs','package.json','supabase/migrations/private.sql',
+    '.github/workflows/hh-pr-core-release.yml','lib/ci/production-base-impact.mjs']) {
+    assert.equal(accept({...delta,files:[...rows,{filename:path,status:'modified'}]}),false,path);
+  }
+  assert.equal(accept({...delta,commits:[]}),false);
+  assert.equal(accept({...delta,files:[...rows,rows[0]]}),false);
+  assert.equal(accept({...delta,files:[{...rows[0],status:'renamed',previous_filename:'old.jsx'}]}),false);
+});
+
+test('final base race retries freshness only, never real source failure or stable rejected delta',async()=>{
+ const one='d'.repeat(40),two='e'.repeat(40);
+ const live={...pr,mergeable:true};
+ const bad=()=>Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED');
+ let calls=[], reads=[one,two,two,two],refresh=0;
+ const api={target:async()=>reads.shift(),pr:async()=>{refresh++;return live;}};
+ assert.equal(await verifyStableProtectedBase(api,ctx,async(p,retry,target)=>{
+   calls.push(target);if(target===one)throw bad();
+ },live,async()=>{}),two);
+ assert.deepEqual(calls,[one,two]);assert.equal(refresh,1);
+ reads=[one,one];calls=[];
+ await assert.rejects(()=>verifyStableProtectedBase(api,ctx,async(p,r,target)=>{calls.push(target);throw bad();},live,async()=>{}),/PRODUCTION_BASE_CHANGED/);
+ assert.deepEqual(calls,[one]);
+ reads=[one,two];calls=[];
+ await assert.rejects(()=>verifyStableProtectedBase(api,ctx,async()=>{throw Error('SPECIALIST_FAILED');},live,async()=>{}),/SPECIALIST_FAILED/);
+ assert.deepEqual(reads,[two]);
+ reads=[one,two];await assert.rejects(()=>verifyStableProtectedBase({...api,pr:async()=>({...live,head:{...live.head,sha:two}})},ctx,async()=>{},live,async()=>{}),/PR_HEAD_CHANGED/);
+ reads=[one,two,one,two,one,two,one,two];let attempts=0;
+ await assert.rejects(()=>verifyStableProtectedBase(api,ctx,async()=>{attempts++;},live,async()=>{}),/PRODUCTION_BASE_CHANGED/);
+ assert.equal(attempts,4);
+ let comparisons=0;
+ const preview={target:async()=>two,compare:async()=>{comparisons++;return {status:'ahead',ahead_by:2,files:[{filename:'lib/coaching/x.mjs'}]};}};
+ assert.equal(await observeProtectedBaseDrift(preview,ctx,['lib/coaching/x.mjs'],base),two);
+ assert.equal(await observeProtectedBaseDrift(preview,ctx,['lib/coaching/x.mjs'],two),two);
+ assert.equal(comparisons,1);
+ assert.equal(await observeProtectedBaseDrift({...preview,compare:async()=>{throw Error('unavailable');}},ctx,[],base),base);
+});
+
+test('root-only optional product workflows are advisory only for verified isolated server dependency additions',async()=>{
+ const names=['hh-static-image-cost-guard','opora-module-ci','hh-owner-telegram-video','hh-live-audio-ci','holistic-house-native'].map(n=>'.github/workflows/'+n+'.yml');
+ const security='.github/workflows/hh-billing-isolated.yml';
+ const basePackage={name:'hh',dependencies:{react:'19.0.0'},scripts:{'test:app':'node --conditions=react-server --test tests/coach-old.test.mjs'}};
+ const currentPackage=JSON.parse(JSON.stringify(basePackage));currentPackage.dependencies.ws='8.23.0';
+ const baseLock={lockfileVersion:3,packages:{'':{dependencies:basePackage.dependencies},'node_modules/react':{version:'19.0.0',integrity:'sha512-old'}}};
+ const currentLock=JSON.parse(JSON.stringify(baseLock));currentLock.packages[''].dependencies=currentPackage.dependencies;
+ currentLock.packages['node_modules/ws']={version:'8.23.0',integrity:'sha512-new',resolved:'https://registry.npmjs.org/ws/-/ws-8.23.0.tgz'};
+ const ownerYaml=n=>"on:\n  pull_request:\n    paths:\n      - 'package-lock.json'\n      - 'lib/"+n+"/**'\njobs:\n  test:\n    runs-on: ubuntu-latest\n";
+ const source=new Map([...names,security].map((n,i)=>[n,ownerYaml(i===1?'opora':'owner-'+i)]));
+ const paths=['package.json','package-lock.json','lib/coaching/clarity-course.mjs'];
+ const files={base:source,current:new Map(source),changedRows:paths.map(filename=>({filename,status:'M'})),
+   basePackage:JSON.stringify(basePackage),currentPackage:JSON.stringify(currentPackage),baseLock:JSON.stringify(baseLock),currentLock:JSON.stringify(currentLock)};
+ const expect=[...names,security];
+ const proof=(f=files,p=paths)=>[...independentPackageOnlyAdvisories(f,p,expect)];
+ assert.deepEqual(proof(),names);
+ assert.deepEqual(proof(files,[...paths,'lib/opora/course.mjs']),names.filter(n=>n!==names[1]));
+ assert.deepEqual(proof(files,[...paths,'next.config.ts']),[]);
+ assert.deepEqual(proof(files,[...paths,'scripts/ci-freshness.mjs']),[]);
+ assert.deepEqual(proof({...files,current:new Map([...source,[names[0],source.get(names[0])+'# changed']])}),names.slice(1));
+ assert.deepEqual(proof({...files,baseLock:null}),[]);
+ const altered=JSON.parse(files.currentLock);altered.packages['node_modules/react'].version='20.0.0';
+ assert.deepEqual(proof({...files,currentLock:JSON.stringify(altered)}),[]);
+ const installer=JSON.parse(files.currentLock);installer.packages['node_modules/ws'].hasInstallScript=true;
+ assert.deepEqual(proof({...files,currentLock:JSON.stringify(installer)}),[]);
+ const peerOld=JSON.parse(files.baseLock),peerNew=JSON.parse(files.currentLock);
+ peerOld.packages['node_modules/react'].peerDependencies={ws:'*'};peerNew.packages['node_modules/react'].peerDependencies={ws:'*'};
+ assert.deepEqual(proof({...files,baseLock:JSON.stringify(peerOld),currentLock:JSON.stringify(peerNew)}),[]);
+ const candidateRun=(filename,id,conclusion)=>({...run('completed',conclusion),path:filename,id});
+ const api={pr:async()=>({...pr,mergeable:true}),target:async()=>base,
+   runs:async()=>[...names.map((n,i)=>candidateRun(n,10+i,'failure')),candidateRun(security,30,'success')],
+   jobs:async()=>[{name:'test',status:'completed',conclusion:'success'}]};
+ const good=await verify(api,ctx,files,{maxWaitMs:0});
+ assert.deepEqual(good.expected,[security]);assert.equal(good.executed.length,1);
+ assert.deepEqual(good.advisory.packageOnly,[...names].sort());
+ await assert.rejects(()=>verify({...api,runs:async()=>[candidateRun(security,30,'failure')]},ctx,files,{maxWaitMs:0}),/SPECIALIST_FAILED/);
+});
+
+test('route-local coach source proof retains all shared statements and new import usage boundaries',()=>{
+ const ts=createRequire(new URL('../lib/ci/fast-ui-parser/package.json',import.meta.url))('typescript');
+ const original=[
+  "import {sharedAuth} from '@/lib/app/session.js'",
+  "async function handle(joined) {",
+  "  await sharedAuth()",
+  "  if (joined === 'my-coach/stream') { return 'old'; }",
+  "  if (joined === 'my-coach/live-token') { return 'old'; }",
+  "  if (joined === 'services/cart') { return 'cart'; }",
+  "}", ""
+ ].join('\n');
+ const proposed="import {clarityCourseDay} from '@/lib/coaching/clarity-course.mjs'\n"+
+   original.replace("return 'old';","return clarityCourseDay('day');").replace("return 'old';","return 'token';");
+ const proof=(value=proposed)=>verifiedCoachDispatcherIsolation(original,value,ts);
+ assert.equal(proof(),true);
+ for(const bad of [
+  proposed.replace('await sharedAuth()','await sharedAuth(false)'),
+  proposed.replace("return 'cart';","return clarityCourseDay('day');"),
+  proposed.replace("joined === 'my-coach/stream'","joined === 'services/stream'"),
+  proposed.replace("return 'cart';","return 'new-cart';"),
+  proposed.replace("@/lib/coaching/clarity-course.mjs","@/lib/app/session.js"),
+  proposed.replace('await sharedAuth()','await sharedAuth(); clarityCourseDay()'),
+  proposed.replace("return clarityCourseDay('day');","return 'unused';"),
+  proposed.replace("if (joined === 'services/cart')","if (joined === 'my-coach/extra') {return 1;} if (joined === 'services/cart')"),
+  proposed+"function broken( {"
+ ])assert.equal(proof(bad),false,bad);
+ const shared='app/api/app/[...path]/route.js',other='.github/workflows/practice-visual-services.yml';
+ const mandatory=['hh-personal-coaching-session','hh-app-r1','ia-v2'].map(n=>'.github/workflows/'+n+'.yml');
+ const yaml="on:\n  pull_request:\n    paths:\n      - 'app/api/app/*/route.js'\n      - 'components/practice-*'\n";
+ const files={base:new Map([[other,yaml]]),current:new Map([[other,yaml]]),testedMergeSha:'d'.repeat(40)};
+ const rows=[{filename:shared,status:'M'},{filename:'app/api/app/clarity-course/route.js',status:'A'}];
+ const verifyScope=(r=rows,owners=[other,...mandatory],f=files)=>[...independentDispatcherAdvisories(f,r,owners,
+   side=>side==='base'?original:proposed,ts)];
+ assert.deepEqual(verifyScope(),[other]);
+ assert.deepEqual(verifyScope([...rows,{filename:'components/practice-editor.jsx',status:'M'}]),[]);
+ assert.deepEqual(verifyScope([...rows,{filename:'lib/app/session.js',status:'M'}]),[]);
+ assert.deepEqual(verifyScope(rows,[other,...mandatory.slice(1)]),[]);
+ assert.deepEqual(verifyScope(rows,[other,...mandatory],{...files,testedMergeSha:null}),[]);
+ assert.deepEqual(verifyScope(rows,[other,...mandatory],{...files,current:new Map([[other,yaml+'# changed']])}),[]);
+});
+test('known untouched nonapplicable workflow with orphan run is advisory; unknown and required runs remain blockers',async()=>{
+ const other='.github/workflows/non-applicable.yml';
+ const extraYaml="on:\n  pull_request:\n    paths:\n      - 'lib/elsewhere/**'\n";
+ const files={base:new Map([[path,yaml],[other,extraYaml]]),current:new Map([[path,yaml],[other,extraYaml]]),
+   changedRows:[{filename:'lib/crm/a.js',status:'M'}]};
+ const make=(filename,id,conclusion,pull_requests)=>({...run('completed',conclusion),path:filename,id,pull_requests});
+ const normal=run('completed','success'),orphan=make(other,82,'failure',[]);
+ const api={pr:async()=>({...pr,mergeable:true}),target:async()=>base,runs:async()=>[normal,orphan],
+   jobs:async()=>[{name:'test',status:'completed',conclusion:'success'}]};
+ assert.deepEqual([...provenNonApplicableWorkflows(files,['lib/crm/a.js'],[path])],[other]);
+ const good=await verify(api,ctx,files,{maxWaitMs:0});
+ assert.deepEqual(good.expected,[path]);assert.ok(good.advisory.nonApplicable.includes(other+':failure'));
+ await assert.rejects(()=>verify({...api,runs:async()=>[normal,make('.github/workflows/unknown.yml',83,'failure',[])]},ctx,files,{maxWaitMs:0}),/SPECIALIST_FAILED/);
+ await assert.rejects(()=>verify({...api,runs:async()=>[normal,make(path,84,'failure',[])]},ctx,files,{maxWaitMs:0}),/SPECIALIST_FAILED/);
+});
+
+test('protected additive benchmark tools and registrations do not invalidate unrelated green exact-HEAD CI',()=>{
+ const target='c'.repeat(40);
+ const make=(filename,lines)=>({filename,status:'added',additions:lines.length,deletions:0,changes:lines.length,
+   patch:'@@ -0,0 +1,'+lines.length+' @@\n'+lines.map(l=>'+'+l).join('\n')});
+ const rows=[
+  make('lib/coaching/local-stt-benchmark.mjs',["import {readFileSync} from 'node:fs'","export const sample=1"]),
+  make('scripts/local-stt-benchmark.mjs',["import {sample} from '../lib/coaching/local-stt-benchmark.mjs'"]),
+  make('tests/local-stt-benchmark.test.mjs',["import test from 'node:test'","import {sample} from '../lib/coaching/local-stt-benchmark.mjs'"]),
+  make('docs/local-stt-benchmark.md',['# Local synthetic benchmark']),
+  {filename:'tests/coaching-release.test.mjs',status:'modified',additions:1,deletions:0,changes:1,
+   patch:"@@ -1 +1,2 @@\n+import './local-stt-benchmark.test.mjs'\n import './old.test.mjs'"}
+ ];
+ const diff={status:'ahead',ahead_by:1,behind_by:0,total_commits:1,base_commit:{sha:base},
+   merge_base_commit:{sha:base},commits:[{sha:target}],files:rows};
+ const candidate=['lib/coaching/live-provider.mjs','package.json','tests/my-coach-personas.test.mjs'];
+ const yes=(files=rows,paths=candidate)=>safeDetachedBenchmarkAdvance({...diff,files},base,target,paths);
+ assert.equal(yes(),true);
+ assert.equal(safeNonOverlappingProductAdvance(diff,base,target,candidate),true);
+ assert.equal(safeTrustedPolicyAdvance({...diff,files:[...rows,{filename:'scripts/ci-specialist-aggregate.mjs',status:'modified'}]},base,target,candidate),true);
+ assert.equal(yes(rows,[...candidate,rows[0].filename]),false);
+ for(const bad of [
+  rows.slice(0,4),
+  [...rows,{filename:'lib/coaching/live-provider.mjs',status:'modified'}],
+  [...rows,{filename:'package.json',status:'modified'}],
+  [...rows,{filename:'app/api/voice/route.js',status:'added'}],
+  rows.map((r,i)=>i===0?{...r,patch:null}:r),
+  rows.map((r,i)=>i===0?make(r.filename,["import {x} from './live-provider.mjs'"]):r),
+  rows.map((r,i)=>i===2?make(r.filename,["import {x} from '../lib/coaching/live-provider.mjs'"]):r),
+  rows.map((r,i)=>i===4?{...r,patch:"@@ -1 +1,2 @@\n+process.exit(0)\n import './old.test.mjs'"}:r),
+  rows.map((r,i)=>i===4?{...r,deletions:1,changes:2}:r)
+ ])assert.equal(yes(bad),false);
+ assert.equal(safeTrustedPolicyAdvance({...diff,files:rows},base,target,candidate),false);
+});
+
+test('use newer protected gate before old optional waits; unavailable proof never waives a real failure',async()=>{
+ const target='c'.repeat(40),files={changedRows:[{filename:'components/my-coach-live-dialogue.jsx',status:'M'}]};
+ const delta={status:'ahead',ahead_by:1,behind_by:0,total_commits:1,base_commit:{sha:base},
+  merge_base_commit:{sha:base},commits:[{sha:target}],files:[{filename:'scripts/ci-specialist-aggregate.mjs',status:'modified'}]};
+ let compares=0,loads=0,checks=0,cleaned=0;
+ const api={target:async()=>target,compare:async()=>{compares++;return delta;}};
+ const result={risk:'STRICT',expected:[],executed:[],advisory:{}};
+ const loader=async()=>{loads++;return {safeTrustedPolicyAdvance:()=>true,
+  verify:async()=>{checks++;return result;},cleanup:()=>{cleaned++;}};};
+ const opts={optional:true,loadPolicy:loader};
+ const noDrift=await revalidateAfterTrustedPolicyAdvance({...api,target:async()=>base},ctx,files,opts);
+ assert.equal(noDrift,null);assert.equal(compares,0);assert.equal(loads,0);
+ const selected=await revalidateAfterTrustedPolicyAdvance(api,ctx,files,opts);
+ assert.equal(selected.policyRevalidatedAgainst,target);assert.equal(checks,1);assert.equal(cleaned,1);
+ assert.equal(await revalidateAfterTrustedPolicyAdvance({...api,compare:async()=>{throw Error('API unavailable');}},ctx,files,opts),null);
+ assert.equal(await revalidateAfterTrustedPolicyAdvance(api,ctx,files,{optional:true,loadPolicy:async()=>{throw Error('missing protected code');}}),null);
+ assert.equal(await revalidateAfterTrustedPolicyAdvance(api,ctx,files,{optional:true,loadPolicy:async()=>({
+  safeTrustedPolicyAdvance:()=>false,verify:async()=>{throw Error('must not execute');}
+ })}),null);
+ await assert.rejects(()=>revalidateAfterTrustedPolicyAdvance(api,ctx,files,{optional:true,loadPolicy:async()=>({
+  safeTrustedPolicyAdvance:()=>true,verify:async()=>{throw Error('SPECIALIST_FAILED');}
+ })}),/SPECIALIST_FAILED/);
+ await assert.rejects(()=>revalidateAfterTrustedPolicyAdvance(api,ctx,files,{optional:true,loadPolicy:async()=>({
+  safeTrustedPolicyAdvance:()=>true,verify:async()=>{throw Error('PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PR_HEAD_CHANGED');}
+ })}),/PR_HEAD_CHANGED/);
+});
+
+test('public browser gate composes proven route-local and server-dependency isolation, never waives owned checkout or media',()=>{
+ const ts=createRequire(new URL('../lib/ci/fast-ui-parser/package.json',import.meta.url))('typescript');
+ const shared='app/api/app/[...path]/route.js';
+ const store='.github/workflows/hh-public-services-production.yml', video='.github/workflows/site-video-browser.yml';
+ const mandatory=['hh-personal-coaching-session','hh-app-r1','ia-v2','hh-app-browser','hh-billing-isolated','hh-private-audio-e2e'].map(n=>'.github/workflows/'+n+'.yml');
+ const original="async function handle(joined) {\n  if (joined === 'my-coach/turn') { return 'old'; }\n  if (joined === 'services/cart') { return 'cart'; }\n}\n";
+ const proposed=original.replace("return 'old';","return 'new';");
+ const trigger="on:\n  pull_request:\n    paths:\n      - 'app/api/app/*/route.js'\n      - 'package-lock.json'\n      - 'components/public-store*'\n";
+ const sources=new Map([[store,trigger],[video,trigger]]);
+ const basePackage={name:'hh',dependencies:{react:'19.0.0'},scripts:{'test:app':'node --conditions=react-server --test tests/coach-old.test.mjs'}};
+ const currentPackage=JSON.parse(JSON.stringify(basePackage));currentPackage.dependencies.ws='8.23.0';
+ const baseLock={lockfileVersion:3,packages:{'':{dependencies:basePackage.dependencies},'node_modules/react':{version:'19.0.0',integrity:'sha512-old'}}};
+ const currentLock=JSON.parse(JSON.stringify(baseLock));currentLock.packages[''].dependencies=currentPackage.dependencies;
+ currentLock.packages['node_modules/ws']={version:'8.23.0',integrity:'sha512-new',resolved:'https://registry.npmjs.org/ws/-/ws-8.23.0.tgz'};
+ const files={base:sources,current:new Map(sources),testedMergeSha:'d'.repeat(40),basePackage:JSON.stringify(basePackage),
+  currentPackage:JSON.stringify(currentPackage),baseLock:JSON.stringify(baseLock),currentLock:JSON.stringify(currentLock)};
+ const rows=[{filename:shared,status:'M'},{filename:'app/api/app/clarity-course/route.js',status:'A'},
+  {filename:'package.json',status:'M'},{filename:'package-lock.json',status:'M'}];
+ const expected=[store,video,...mandatory];
+ const scope=(r=rows,f=files,e=expected,src=proposed)=>[...independentDispatcherAdvisories(f,r,e,
+  side=>side==='base'?original:src,ts)];
+ assert.deepEqual(scope(),[store,video]);
+ assert.deepEqual(scope(rows,{...files,currentLock:null}),[]);
+ assert.deepEqual(scope([...rows,{filename:'components/public-store-card.jsx',status:'M'}]),[]);
+ assert.deepEqual(scope([...rows,{filename:'lib/billing/charge.js',status:'M'}]),[]);
+ assert.deepEqual(scope([...rows,{filename:'components/app/my-personal-videos.jsx',status:'M'}]),[store]);
+ assert.deepEqual(scope(rows,files,expected.filter(n=>!n.includes('hh-billing-isolated'))),[video]);
+ assert.deepEqual(scope(rows,files,expected.filter(n=>!n.includes('hh-private-audio-e2e'))),[store]);
+ assert.deepEqual(scope(rows,files,expected.filter(n=>!n.includes('hh-app-browser'))),[]);
+ assert.deepEqual(scope(rows,files,expected,proposed.replace("return 'cart';","return 'other';")),[]);
+ assert.deepEqual(scope(rows,{...files,current:new Map([[store,trigger+'# edited'],[video,trigger]])}),[video]);
+ const lock=JSON.parse(files.currentLock);lock.packages['node_modules/react'].version='20.0.0';
+ assert.deepEqual(scope(rows,{...files,currentLock:JSON.stringify(lock)}),[]);
+});
+
+test('completed specialist attempt cache saves repeated job reads without hiding new attempts or incomplete evidence',async()=>{
+ const green={id:31,run_attempt:1,status:'completed',conclusion:'success'};
+ const job=(attempt=1,name='test',status='completed',conclusion='success')=>({id:42,run_id:31,run_attempt:attempt,name,status,conclusion});
+ let calls=0,rows=[job()];
+ const api=withCompletedSpecialistEvidence({jobs:async()=>{calls++;return rows;}});
+ assert.deepEqual(await api.completedSpecialistJobs(green,['test']),rows);
+ assert.deepEqual(await api.completedSpecialistJobs(green,['test']),rows);
+ assert.equal(calls,1);
+ rows=[job(2)];const again={...green,run_attempt:2};
+ assert.deepEqual(await api.completedSpecialistJobs(again,['test']),rows);assert.equal(calls,2);
+ rows=[job(2,'test'),{...job(2,'new-required'),id:43}];
+ assert.equal((await api.completedSpecialistJobs(again,['test','new-required'])).length,2);assert.equal(calls,3);
+ rows=[job(3,'test','in_progress',null)];const third={...green,run_attempt:3};
+ await api.completedSpecialistJobs(third,['test']);await api.completedSpecialistJobs(third,['test']);assert.equal(calls,5);
+ rows=[job(4,'test','completed','failure')];const fourth={...green,run_attempt:4};
+ await api.completedSpecialistJobs(fourth,['test']);await api.completedSpecialistJobs(fourth,['test']);assert.equal(calls,7);
+ rows=[job(4)];await api.completedSpecialistJobs({...green,run_attempt:undefined});await api.completedSpecialistJobs({...green,run_attempt:undefined});assert.equal(calls,9);
+});
+test('a newly protected policy can finish the current waiting gate without old optional jobs',async()=>{
+ const newer='d'.repeat(40);
+ const source={base:new Map([[path,yaml]]),current:new Map([[path,yaml]]),
+   changedRows:[{filename:'lib/crm/a.js',status:'M'}]};
+ let elapsed=0,polls=0,handOff=0;
+ const live={...pr,mergeable:true};
+ const api={pr:async()=>live,target:async()=>elapsed>=90_000?newer:base,
+   compare:async()=>({status:'ahead',ahead_by:1,files:[{filename:'scripts/ci-specialist-aggregate.mjs'}]}),
+   runs:async()=>{polls++;return [run('in_progress',null)];},
+   jobs:async()=>{throw Error('old optional run must not be required by test handoff');}};
+ const receipt={head,risk:'STRICT',expected:[],executed:[],policyRevalidatedAgainst:newer};
+ const opts={maxWaitMs:180_000,pollMs:30_000,now:()=>elapsed,sleep:async ms=>{elapsed+=ms;}};
+ const result=await verify(api,ctx,source,{...opts,tryProtectedPolicy:async remaining=>{
+   handOff++;assert.equal(remaining,90_000);return receipt;
+ }});
+ assert.deepEqual(result,receipt);assert.equal(handOff,1);assert.equal(polls,3);
+ elapsed=0;
+ await assert.rejects(()=>verify(api,ctx,source,{...opts,tryProtectedPolicy:async()=>{throw Error('SPECIALIST_FAILED');}}),/SPECIALIST_FAILED/);
+ elapsed=0;handOff=0;
+ await assert.rejects(()=>verify(api,ctx,source,{...opts,tryProtectedPolicy:async()=>{handOff++;return null;}}),/RUNNING_TIMEOUT/);
+ assert.equal(handOff,1,'unapproved policy does not restart or extend original wait');
+});
+
+test('moving protected base permits complete additive same-feature changes and current trusted policy without a rebuild',()=>{
+ const target='d'.repeat(40);
+ const make=(filename,lines,status='added')=>({filename,status,additions:lines.length,deletions:0,changes:lines.length,
+   patch:'@@ -0,0 +1,'+lines.length+' @@\n'+lines.map(l=>'+'+l).join('\n')});
+ const rows=[
+  make('lib/coaching/coach-personality-example.mjs',['export const story="example"']),
+  make('lib/coaching/persona-registry.mjs',["import {story} from './coach-personality-example.mjs'"],'modified'),
+  make('tests/coach-personality-example.test.mjs',["import test from 'node:test'"]),
+ ];
+ const d={status:'ahead',ahead_by:1,behind_by:0,total_commits:1,base_commit:{sha:base},
+   merge_base_commit:{sha:base},commits:[{sha:target}],files:rows};
+ const paths=['components/my-coach-live-dialogue.jsx','lib/coaching/clarity-course.mjs','tests/ci-coaching-rls-guard.test.mjs'];
+ const yes=(files=rows,p=paths)=>safeAdditiveProtectedProductAdvance({...d,files},base,target,p);
+ assert.equal(yes(),true);
+ assert.equal(safeNonOverlappingProductAdvance(d,base,target,paths),true);
+ const policy={...d,files:[...rows,{filename:'scripts/ci-specialist-aggregate.mjs',status:'modified'}]};
+ assert.equal(safeTrustedPolicyAdvance(policy,base,target,paths),true);
+ assert.equal(safeNonOverlappingProductAdvance(policy,base,target,paths),true);
+ assert.equal(yes(rows,[...paths,rows[0].filename]),false);
+ assert.equal(yes(rows,[...paths,'package-lock.json']),false);
+ assert.equal(yes(rows,[...paths,'lib/ci/production-base-impact.mjs']),false);
+ for(const file of ['app/api/app/auth/route.js','lib/auth/permissions.mjs','package.json',
+  'supabase/migrations/critical.sql','components/shared/navigation.jsx','app/[locale]/layout.tsx',
+  '.github/workflows/hh-pr-core-release.yml'])assert.equal(yes([...rows,make(file,['changed'])]),false,file);
+ for(const invalid of [{...rows[1],deletions:1,changes:2},{...rows[1],patch:null},
+  {...rows[1],patch:'@@ -1 +1 @@\n-old\n+new'}, {...rows[1],previous_filename:'old.js'}])
+  assert.equal(yes([rows[0],invalid,rows[2]]),false);
+ assert.equal(safeAdditiveProtectedProductAdvance({...d,commits:[]},base,target,paths),false);
+});
+
+test('positive mergeability accepts a stale PR base snapshot only with exact GitHub merge parents',async()=>{
+ const target='c'.repeat(40),merge='d'.repeat(40);
+ const stale={...pr,mergeable:true,merge_commit_sha:merge};
+ const proof={sha:merge,parents:[{sha:target},{sha:ctx.head}]};
+ let reads=0,waits=[];
+ const api={pr:async()=>stale,target:async()=>target,commit:async sha=>{reads++;assert.equal(sha,merge);return proof;}};
+ assert.equal(await awaitPositiveMergeability(api,ctx,target,async ms=>{waits.push(ms);}),stale);
+ assert.equal(reads,1);assert.deepEqual(waits,[1000]);
+ for(const bad of [{...proof,sha:base},{...proof,parents:[{sha:base},{sha:ctx.head}]},
+  {...proof,parents:[{sha:target},{sha:base}]},{...proof,parents:[...proof.parents,{sha:base}]},null]){
+  assert.equal(await awaitPositiveMergeability({...api,commit:async()=>bad},ctx,target,async()=>{}),null);
+ }
+ assert.equal(await awaitPositiveMergeability({...api,commit:async()=>{throw Error('not yet indexed');}},ctx,target,async()=>{}),null);
+ let targetReads=0;
+ assert.equal(await awaitPositiveMergeability({...api,target:async()=>++targetReads===1?target:base},ctx,target,async()=>{}),null);
+ await assert.rejects(()=>awaitPositiveMergeability({...api,pr:async()=>({...stale,mergeable:false})},ctx,target,async()=>{}),/MERGE_CONFLICT/);
+ await assert.rejects(()=>awaitPositiveMergeability({...api,pr:async()=>({...stale,head:{...stale.head,sha:base}})},ctx,target,async()=>{}),/PR_HEAD_CHANGED/);
+});
+
+test('Merge Ready V3 emits only complete exact-head and accepted-base evidence',()=>{
+ const merge='d'.repeat(40),target='c'.repeat(40),files={testedMergeSha:merge};
+ const env={GITHUB_RUN_ID:'41',GITHUB_RUN_ATTEMPT:'2'};
+ const result={head,base,acceptedBase:target,expected:[path],
+  executed:[{name:path,run_id:51,jobs:2}],reused:[]};
+ const x=mergeReadyReceipt(ctx,files,result,env);
+ assert.equal(x.schema,'HH_MERGE_READY_V3');assert.equal(x.head,head);
+ assert.equal(x.tested_base,base);assert.equal(x.accepted_base,target);
+ assert.equal(x.tested_merge,merge);assert.equal(x.run_attempt,2);
+ assert.deepEqual(x.required,[path]);assert.deepEqual(x.evidence,[{path,run_id:51,jobs:2}]);
+ for(const bad of [{...result,acceptedBase:null},{...result,head:target},{...result,base:target},
+   {...result,executed:[]},{...result,executed:[{...result.executed[0],jobs:0}]},
+   {...result,expected:[path,path]},{...result,policyRevalidatedAgainst:merge}])
+  assert.equal(mergeReadyReceipt(ctx,files,bad,env),null);
+ assert.equal(mergeReadyReceipt(ctx,{},result,env),null);
+ assert.equal(mergeReadyReceipt(ctx,files,result,{...env,GITHUB_RUN_ATTEMPT:'0'}),null);
+ const reused=mergeReadyReceipt(ctx,files,{...result,executed:[],reused:[{name:path,run_id:51,jobs:2,prior_head:target}]},env);
+ assert.equal(reused.evidence[0].prior_head,target);
 });
