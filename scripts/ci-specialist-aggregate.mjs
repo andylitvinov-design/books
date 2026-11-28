@@ -674,7 +674,7 @@ export async function verify(api,ctx,files,options={}) {
       }
       if (nonOverlappingProduct) {
         approvedDisjointBases.add(liveBaseSha);
-        console.log('CI_BASE_ADVANCE_REUSED: ordinary non-overlapping protected product delta; retain exact-HEAD CI without a new build');
+        console.log('CI_BASE_ADVANCE_REUSED: verified independent protected product delta (including mixed candidates); retain exact-HEAD CI without a new build');
       }
       if (unrelatedPublicLeaves) {
         approvedDisjointBases.add(liveBaseSha);

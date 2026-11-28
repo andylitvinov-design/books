@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { verify, requiresCurrentProductionBase, classifyPrState, diagnoseAggregateError, awaitPositiveMergeability } from '../scripts/ci-specialist-aggregate.mjs';
 import { inspectJobs, trustedRequiredJobs, inspectWorkflowRuns } from '../lib/ci/specialist-aggregate.mjs';
-import { safeComposedIndependentAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeIndependentRouterPolicyAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeStandaloneVideoAfterSpecialistScopeAdvance, safeNonOverlappingProductAdvance } from '../lib/ci/production-base-impact.mjs';
+import { safeComposedIndependentAdvance, safeIsolatedFeatureAdvance, safeUnrelatedPublicLeafAdvance, safeIndependentRouterPolicyAdvance, safeMixedProtectedAdvance, safeDetachedCiSourceAdvance, safeStandaloneVideoAfterSpecialistScopeAdvance, safeNonOverlappingProductAdvance, safeIndependentMixedCandidateAdvance } from '../lib/ci/production-base-impact.mjs';
 
 const repo = 'andylitvinov-design/books', head = 'a'.repeat(40), base = 'b'.repeat(40);
 const path = '.github/workflows/mobile.yml';
@@ -1258,4 +1258,37 @@ test('reviewed public readiness delta preserves unrelated exact-HEAD CI includin
  const upgraded=clone(m);upgraded.packages['node_modules/react'].version='20.0.0';assert.equal(accept(delta,paths,{...proof,currentLock:JSON.stringify(upgraded)}),false);
  const bad=clone(b);bad.scripts['test:app']=bad.scripts['test:app'].split(' &&')[0];assert.equal(accept(delta,paths,{...proof,currentPackage:JSON.stringify(bad)}),false);
  const injected=clone(b);injected.scripts.prebuild='echo bypass';assert.equal(accept(delta,paths,{...proof,currentPackage:JSON.stringify(injected)}),false);
+});
+
+
+test('mixed tested candidate: independent protected domain is not stale just because PR has API, migration or feature workflow', async () => {
+  const target='d'.repeat(40);
+  const candidate=['app/api/app/clarity-course/route.js','components/my-coach-live-dialogue.jsx',
+    'supabase/migrations/coaching.sql','.github/workflows/hh-personal-coaching-session.yml'];
+  const rows=['components/shamanica-business-content.tsx','components/tarot-deck.jsx',
+    'tests/shamanica-business.test.mjs'].map(filename=>({filename,status:'modified'}));
+  const delta={status:'ahead',ahead_by:3,behind_by:0,total_commits:3,
+    base_commit:{sha:base},merge_base_commit:{sha:base},
+    commits:[{sha:'e'.repeat(40)},{sha:'f'.repeat(40)},{sha:target}],files:rows};
+  const yes=(d=delta,p=candidate,e)=>safeIndependentMixedCandidateAdvance(d,base,target,p,e);
+  assert.equal(yes(),true);
+  assert.equal(yes(delta,[...candidate,'components/shamanica-intro.jsx']),false);
+  assert.equal(yes(delta,[...candidate,'package-lock.json']),false);
+  assert.equal(yes(delta,[...candidate,'lib/ci/production-base-impact.mjs']),false);
+  for (const filename of [candidate[0],'components/my-coach-intro.jsx','lib/auth/permissions.mjs',
+    'lib/app/generic.js','app/api/other/route.js','components/shared/toolbar.jsx',
+    '.github/workflows/hh-pr-core-release.yml','package.json','unknown.txt']) {
+    assert.equal(yes({...delta,files:[...rows,{filename,status:'modified'}]}),false,filename);
+  }
+  for(const invalid of [{commits:[]},{status:'diverged'},{files:[...rows,rows[0]]},
+    {files:[{...rows[0],status:'renamed',previous_filename:'old.jsx'}]},
+    {files:[{...rows[0],status:'removed'}]}]) assert.equal(yes({...delta,...invalid}),false);
+  // The actual final Specialist verifier reuses exact-HEAD evidence, never a
+  // changed HEAD or an explicit GitHub conflict.
+  const exact={...pr,mergeable:true,base:{...pr.base,sha:target}};
+  const files={base:new Map(),current:new Map(),changedRows:candidate.map(filename=>({filename,status:'M'}))};
+  const api={pr:async()=>exact,target:async()=>target,compare:async()=>delta,runs:async()=>[],jobs:async()=>[]};
+  assert.equal((await verify(api,ctx,files,{maxWaitMs:0})).head,head);
+  await assert.rejects(()=>verify({...api,pr:async()=>({...exact,mergeable:false})},ctx,files,{maxWaitMs:0}),/MERGE_CONFLICT/);
+  await assert.rejects(()=>verify({...api,pr:async()=>({...exact,head:{...exact.head,sha:target}})},ctx,files,{maxWaitMs:0}),/PR_HEAD_CHANGED/);
 });
