@@ -989,7 +989,12 @@ test('Core lint executes once with a full safety fallback before mandatory Next 
   const buildStep=scope.indexOf('name: Exact proposed release production build and TypeScript check');
   assert.ok(lintStep >= 0 && buildStep > lintStep, 'Hard-gated ESLint precedes production build');
   assert.match(scope, /npx --no-install eslint "\$\{files\[@\]\}"/);
-  assert.match(scope, /if \[\[ "\$full_lint" == true \]\]; then\s+npm run lint/);
+  const fullLint=scope.split('if [[ "$full_lint" == true ]]; then')[1]?.split('elif (( ${#files[@]} > 0 )); then')[0] || '';
+  assert.ok(fullLint.includes('require("eslint/package.json").version'), 'parallel lint must check the locked ESLint version');
+  assert.ok(fullLint.includes('require("./package.json").scripts.lint==="eslint ."&&v[0]===9&&v[1]>=34?0:1'), 'only the exact supported original lint script may use workers');
+  assert.match(fullLint, /if node -e '[^\n]+'; then\s+npm run lint -- --concurrency 2\s+else\s+npm run lint\s+fi/);
+  assert.equal((fullLint.match(/npm run lint -- --concurrency 2/g)||[]).length,1);
+  assert.match(scope, /if \[\[ "\$EVENT_NAME" != pull_request \|\| -z "\$BASE_SHA" \]\]; then\s+npm run lint\s+exit 0/);
   for (const sensitive of ['eslint.config.*','.eslintrc*','package.json','package-lock.json','tsconfig.json']) {
     assert.ok(scope.includes(sensitive), 'Missing whole-repository lint fallback: '+sensitive);
   }
