@@ -1692,3 +1692,22 @@ test('moving protected base permits complete additive same-feature changes and c
   assert.equal(yes([rows[0],invalid,rows[2]]),false);
  assert.equal(safeAdditiveProtectedProductAdvance({...d,commits:[]},base,target,paths),false);
 });
+
+test('positive mergeability accepts a stale PR base snapshot only with exact GitHub merge parents',async()=>{
+ const target='c'.repeat(40),merge='d'.repeat(40);
+ const stale={...pr,mergeable:true,merge_commit_sha:merge};
+ const proof={sha:merge,parents:[{sha:target},{sha:ctx.head}]};
+ let reads=0,waits=[];
+ const api={pr:async()=>stale,target:async()=>target,commit:async sha=>{reads++;assert.equal(sha,merge);return proof;}};
+ assert.equal(await awaitPositiveMergeability(api,ctx,target,async ms=>{waits.push(ms);}),stale);
+ assert.equal(reads,1);assert.deepEqual(waits,[1000]);
+ for(const bad of [{...proof,sha:base},{...proof,parents:[{sha:base},{sha:ctx.head}]},
+  {...proof,parents:[{sha:target},{sha:base}]},{...proof,parents:[...proof.parents,{sha:base}]},null]){
+  assert.equal(await awaitPositiveMergeability({...api,commit:async()=>bad},ctx,target,async()=>{}),null);
+ }
+ assert.equal(await awaitPositiveMergeability({...api,commit:async()=>{throw Error('not yet indexed');}},ctx,target,async()=>{}),null);
+ let targetReads=0;
+ assert.equal(await awaitPositiveMergeability({...api,target:async()=>++targetReads===1?target:base},ctx,target,async()=>{}),null);
+ await assert.rejects(()=>awaitPositiveMergeability({...api,pr:async()=>({...stale,mergeable:false})},ctx,target,async()=>{}),/MERGE_CONFLICT/);
+ await assert.rejects(()=>awaitPositiveMergeability({...api,pr:async()=>({...stale,head:{...stale.head,sha:base}})},ctx,target,async()=>{}),/PR_HEAD_CHANGED/);
+});
