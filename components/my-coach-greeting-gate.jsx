@@ -8,6 +8,8 @@ import {getCoachPersona,localCoachText,PUBLIC_COACH_RAIL_IDS,coachSessionHref,CO
 import {greetingSwipeDirection,greetingCoachNeighbor} from '@/lib/coaching/coach-greeting-swipe.mjs'
 import {coachIntroAudioPath,startDirectCoachIntroAudio} from '@/lib/personal-coaching/direct-coach-intro-audio.mjs'
 import MyCoachMotionMedia from './my-coach-motion-media'
+import CaesarGreetingMedia from './caesar-greeting-media'
+import {caesarPresentation,startCaesarGreetingVideo} from '@/lib/coaching/caesar-greeting-video.mjs'
 import {MyCoachInlineProfile} from './my-coach-compact-profile'
 import {COACH_PROGRAM_GROUPS,INTRODUCTORY_COACH_SESSION_ID,coachCourseLocal} from '@/lib/coaching/coach-course-journey.mjs'
 import {MEANING_AXES_COACH_SESSION_ID} from '@/lib/coaching/coach-profile-session-v3.mjs'
@@ -95,6 +97,9 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
  const lang=words[locale]?locale:'en',t=words[lang]
  const router=useRouter(),query=useSearchParams()
  const persona=getCoachPersona(personaId)
+ const caesarMedia=caesarPresentation(personaId,lang)
+ const greetingVideoRef=useRef(null)
+ const [videoVisible,setVideoVisible]=useState(false)
  const [program,setProgram]=useState(()=>COACH_COMPARISON_IDS.includes(query?.get('greetingProgram'))?query.get('greetingProgram'):'clarity')
  const course=getCoachProgramComparison(lang).programs.find(item=>item.id===program)
  const ui=screenWords[lang],presentation=courseLaunchPresentation(lang,course)
@@ -125,7 +130,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
  useEffect(()=>()=>{audioRun.current++;detachAudio.current();player.current?.cancel?.();player.current=null},[])
  useEffect(()=>{audioRun.current++;detachAudio.current();player.current?.cancel?.();player.current=null;
    topicDialog.current?.close();chosen.current=false;switching.current=false;touchOrigin.current=null;setExpandedGroup(null);
-   setGreetingStarted(false);setPhase('preview');setError('');setAudioActive(false);setTime(0);setDuration(null);setExpanded(false)},[personaId,lang])
+   setGreetingStarted(false);setPhase('preview');setError('');setAudioActive(false);setVideoVisible(false);setTime(0);setDuration(null);setExpanded(false)},[personaId,lang])
  useEffect(()=>{if(!expanded)return;const escape=e=>{if(e.key==='Escape')setExpanded(false)};window.addEventListener('keydown',escape);return()=>window.removeEventListener('keydown',escape)},[expanded])
  function selectProgram(id){
    if(!COACH_COMPARISON_IDS.includes(id)||id===program||gate.busy)return
@@ -146,7 +151,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
    audioRun.current++
    detachAudio.current();player.current?.cancel?.()
    player.current=null
-   setGreetingStarted(false);setPhase('preview');setError('');setAudioActive(false)
+   setGreetingStarted(false);setPhase('preview');setError('');setAudioActive(false);setVideoVisible(false)
    // Existing route remounts MyCoachLiveDialogue by persona ID. Do not start Live here.
    router.push(href+'&greetingProgram='+encodeURIComponent(program))
  }
@@ -168,22 +173,24 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
  }
  function playGreeting(){
    if(switching.current||chosen.current)return
+   const clip=caesarMedia?.greeting
    const url=coachIntroAudioPath(personaId,lang)
-   if(!url){setError(ui.error);setPhase('preview');return}
+   if(!clip&&!url){setError(ui.error);setPhase('preview');return}
    audioRun.current++
    const generation=audioRun.current
    detachAudio.current();player.current?.cancel?.()
    player.current=null
-   setError('');setTime(0);setDuration(null);setAudioActive(false);setPhase('playing')
+   setError('');setTime(0);setDuration(null);setAudioActive(false);setVideoVisible(false);setPhase('playing')
    let failed=false
-   function fail(){if(audioRun.current!==generation)return;failed=true;detachAudio.current();player.current=null;setAudioActive(false);setError(ui.error);setPhase('preview')}
+   function fail(){if(audioRun.current!==generation)return;failed=true;detachAudio.current();player.current=null;setAudioActive(false);setVideoVisible(false);setError(ui.error);setPhase('preview')}
    try{
-     const active=startDirectCoachIntroAudio(url,{
+     const options={
        locale:lang,muted:muteRef.current,
-       onStart:()=>{if(audioRun.current===generation){setGreetingStarted(true);setAudioActive(true);setPhase('playing')}},
-       onEnd:()=>{if(audioRun.current===generation){const audio=player.current?.audio;if(!audio?.ended||!Number.isFinite(audio.duration)||audio.duration<=0){fail();return}setDuration(audio.duration);setTime(audio.duration);detachAudio.current();player.current=null;setAudioActive(false);setPhase('complete')}},
+       onStart:()=>{if(audioRun.current===generation){setGreetingStarted(true);setAudioActive(true);setVideoVisible(Boolean(clip));setPhase('playing')}},
+       onEnd:()=>{if(audioRun.current===generation){const audio=player.current?.audio;if(!audio?.ended||!Number.isFinite(audio.duration)||audio.duration<=0){fail();return}setDuration(audio.duration);setTime(audio.duration);detachAudio.current();player.current=null;setAudioActive(false);setVideoVisible(false);setPhase('complete')}},
        onBlocked:fail,onError:fail,
-     })
+     }
+     const active=clip?startCaesarGreetingVideo(greetingVideoRef.current,clip,options):startDirectCoachIntroAudio(url,options)
      if(failed){active.cancel();return}
      player.current=active
      const audio=active.audio
@@ -225,7 +232,7 @@ export default function MyCoachGreetingGate({personaId,locale='en',name,methodId
    data-greeting-phase={phase}>
    <div className={styles.firstView}>
      <div className={styles.cinema} data-coach-greeting-cinema data-expanded={expanded?'true':'false'}>
-       <div className={styles.cinemaMedia} aria-hidden="true"><MyCoachMotionMedia personaId={personaId} phase="greeting" context="greeting"/></div>
+       <div className={styles.cinemaMedia} aria-hidden="true">{caesarMedia?<CaesarGreetingMedia key={lang} media={caesarMedia} videoRef={greetingVideoRef} active={videoVisible} waiting={Boolean(caesarMedia.greeting)&&phase==='playing'&&!videoVisible}/>:<MyCoachMotionMedia personaId={personaId} phase="greeting" context="greeting"/>}</div>
        <div className={styles.cinemaShade} aria-hidden="true"/>
        <div className={styles.cinemaTop}>
          <span className={styles.videoLabel}><GraduationCap size={19} aria-hidden="true"/>{ui.video}</span>

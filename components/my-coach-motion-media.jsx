@@ -12,6 +12,7 @@ import CoachReactionDirectorMedia from './coach-reaction-director-media'
 import CoachPresentationLayers from './coach-presentation-layers'
 import {selectCoachReactionCameraGroup} from '@/lib/coaching/coach-reaction-director.mjs'
 import {qualityScreenedReactionMedia,qualityScreenedPresentation} from '@/lib/coaching/coach-reaction-quality.mjs'
+import {caesarPresentation} from '@/lib/coaching/caesar-greeting-video.mjs'
 
 // Samir has a calm, silent cinematic loop. Keep the original six videos and do not connect decorative motion to TTS or client microphone audio.
 // Merlin and Harry have welcoming smiles, with Harry's existing attentive loop retained.
@@ -64,7 +65,7 @@ export default function MyCoachMotionMedia({personaId,phase='idle',context='card
   const neutralOnly=directorActive&&reactionIntent.kind==='empathy'
   const clip=personaId==='harry'?coachVisualClip(state,visualScene):coachNaturalTake(state,visualScene)
   const samirTake=isGenie?(neutralOnly?'idle':samirMotionTake(state,visualScene)):null
-  const fallbackPoster=supported?(personaId==='harry'?MEDIA_ROOT+'harry-soft-still.webp':isGenie?MEDIA_ROOT+'genie-natural-opening-v2.webp':personaId==='caesar'?MEDIA_ROOT+'caesar-emblem.svg':MEDIA_ROOT+personaId+'-still.webp'):null
+  const fallbackPoster=supported?(personaId==='harry'?MEDIA_ROOT+'harry-soft-still.webp':isGenie?MEDIA_ROOT+'genie-natural-opening-v2.webp':personaId==='caesar'?(caesarPresentation(personaId)?.poster||MEDIA_ROOT+'caesar-emblem.svg'):MEDIA_ROOT+personaId+'-still.webp'):null
   const harryClip=state==='listening'?'attentive':'calm'
   const greetingSrc=state==='greeting'&&(personaId==='merlin'||personaId==='harry')
     ?MEDIA_ROOT+personaId+'-greeting-real-v2.mp4':null
