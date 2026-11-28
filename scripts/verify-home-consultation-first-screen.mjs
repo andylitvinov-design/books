@@ -9,6 +9,39 @@ const origin=process.env.HH_PUBLIC_QA_ORIGIN||"http://127.0.0.1:3100";
 if(!/^http:\/\/(?:127\.0\.0\.1|localhost):\d+$/.test(origin))throw new Error("Local-only Samir QA");
 const output="artifacts/home-first-screen";await mkdir(output,{recursive:true});
 const evidence=[];
+// Native lazy loading in WebKit does not start just because decode() is called.
+// Observe each original photo in a real viewport, then wait for actual load.
+// Keep broken/absent images fatal and restore the original page scroll.
+async function verifyHomePhotoReadiness(page,root,name){
+ const images=root.locator('img');
+ const photos=await images.elementHandles();
+ assert.ok(photos.length>=5,name+": hero and four program photos must exist");
+ const scroll=await page.evaluate(()=>[window.scrollX,window.scrollY]);
+ const read=img=>img.evaluate(el=>({url:el.getAttribute("src"),complete:el.complete,width:el.naturalWidth,loading:el.loading}));
+ const graphics=[];
+ const deadline=Date.now()+20000;
+ const remaining=()=>Math.max(1,deadline-Date.now());
+ try{
+  for(const img of photos){
+   let state=await read(img);
+   if(!state.complete||state.width<=0){
+    await img.scrollIntoViewIfNeeded({timeout:remaining()});
+    try{
+     await page.waitForFunction(el=>el.complete&&el.naturalWidth>0,img,{timeout:remaining()});
+    }catch(error){
+     throw new Error(name+": actual photo did not load "+JSON.stringify(await read(img)),{cause:error});
+    }
+    state=await read(img);
+   }
+   assert.ok(state.complete&&state.width>0,name+": real photo assets loaded "+JSON.stringify(state));
+   graphics.push(state);
+  }
+  assert.equal(await images.count(),photos.length,name+": original photo count preserved");
+  return graphics;
+ }finally{
+  await page.evaluate(([x,y])=>window.scrollTo({left:x,top:y,behavior:"instant"}),scroll);
+ }
+}
 // Real React interactions, synthetic MediaRecorder and intercepted transcription.
 // These tests never open a real microphone or call a speech provider.
 async function installDictationMock(page){
@@ -172,8 +205,7 @@ for(const engine of [chromium,webkit]){
      assert.ok(cards.every((s,i)=>s.x>=0&&s.right<=width+2&&s.width>=width*.85&&s.scrollWidth<=s.clientWidth+2&&(i===0||s.top>=cards[i-1].bottom)),name+": full width horizontal cards, no overflow");
      const copyFits=await root.locator('[data-home-intent-option] strong, [data-home-intent-option] small').evaluateAll(items=>items.every(el=>el.scrollWidth<=el.clientWidth+2));
      assert.ok(copyFits,name+": no clipped copy");
-     const graphics=await root.locator('img').evaluateAll(async imgs=>Promise.all(imgs.map(async img=>{try{await img.decode()}catch{}return {url:img.getAttribute("src"),width:img.naturalWidth}})));
-     assert.ok(graphics.every(img=>img.width>0),name+": real photo assets loaded "+JSON.stringify(graphics));
+     await verifyHomePhotoReadiness(page,root,name);
      assert.equal(await page.locator("iframe").count(),0,name+": no video iframe");
      const dock=page.locator("[data-hh-unified-dock]");
      await dock.waitFor({state:"visible",timeout:30000});

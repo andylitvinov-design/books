@@ -98,3 +98,16 @@ test("paid consultations remain reachable in optional carousel, Ali input owns f
  assert.match(browser,/"mytube","reiki","coach","ai","services","practice","profile"/);
  assert.doesNotMatch(browser,/data-home-quick-booking|data-home-quick-cta/);
 });
+
+test("Home photo QA triggers real lazy loads without hiding missing assets or changing layout",()=>{
+ const browser=read("scripts/verify-home-consultation-first-screen.mjs");
+ const helper=browser.slice(browser.indexOf("async function verifyHomePhotoReadiness("),browser.indexOf("// Real React interactions"));
+ assert.match(helper,/photos\.length>=5/);
+ assert.match(helper,/img\.scrollIntoViewIfNeeded/);
+ assert.match(helper,/el\.complete&&el\.naturalWidth>0/);
+ assert.match(helper,/state\.complete&&state\.width>0/);
+ assert.match(helper,/images\.count\(\),photos\.length/);
+ assert.match(helper,/finally\{\s*await page\.evaluate/);
+ assert.match(browser,/await verifyHomePhotoReadiness\(page,root,name\)/);
+ assert.doesNotMatch(helper,/\.loading\s*=|setAttribute\(["']loading|force:\s*true/);
+});
