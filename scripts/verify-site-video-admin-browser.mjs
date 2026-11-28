@@ -254,6 +254,29 @@ try{
         await save('publish')
         const destination = await editor.locator('.site-video-editor-heading > a').getAttribute('href')
         await navigate(destination)
+        // Owner editor links must open the actual compatibility catalogue, not
+        // the new Support programs entry. Verify the real public disclosure.
+        const methodSlots = ['method-hypnotherapy', 'method-constellations']
+        const archivedSlots = ['service-business', 'service-alchemy', 'service-archetypal', 'consultation']
+        if (slot.id === 'services-intro') {
+          assert.equal(destination, '/' + locale + '/services?assist=quiz#meet-andrey')
+          const about = page.locator('[data-services-unified-panel="about"]')
+          await expect(about).toHaveAttribute('data-expanded', 'true')
+          await expect(about.locator('[data-video-slot="services-intro"] .site-video-player').filter({ hasText: title })).toBeVisible()
+        } else if (methodSlots.includes(slot.id) || archivedSlots.includes(slot.id)) {
+          assert.equal(destination, '/' + locale + '/services?assist=quiz#method-videos')
+          const gallery = page.locator('[data-services-unified-panel="mytube"]')
+          await expect(gallery).toHaveAttribute('data-expanded', 'true')
+          await expect(gallery.locator('#method-videos')).toBeVisible()
+          if (archivedSlots.includes(slot.id)) {
+            const archive = gallery.locator('#method-videos details').filter({ has: page.locator('[data-video-slot="' + slot.id + '"]') })
+            await expect(archive).toHaveCount(1)
+            await expect(archive).not.toHaveAttribute('open', '')
+            await archive.locator(':scope > summary').click()
+            await expect(archive).toHaveAttribute('open', '')
+          }
+          await expect(gallery.locator('[data-video-slot="' + slot.id + '"] .site-video-player').filter({ hasText: title })).toBeVisible()
+        }
         if (slot.id === 'home-intro') {
           // The public Home design intentionally suppresses the archived
           // intro even when its admin record is validly published. Keep the
@@ -261,9 +284,9 @@ try{
           await expect(page.locator('[data-video-slot="home-intro"]')).toHaveCount(0)
           assert.ok(!(await page.content()).includes(title),
             'Retired Home intro must not leak a published admin title: '+locale)
-          // The approved dialogue-first Home has no legacy testimonial gallery.
+          // The approved My Coach Home has no legacy testimonial gallery.
           // Keep testing the real published home and the withdrawn video gate.
-          await expect(page.locator('[data-home-dialogue-entry]')).toHaveCount(1);
+          await expect(page.locator('[data-my-coach-catalog]')).toHaveCount(1);
           await expect(page.locator('[data-personal-testimonials="home"]')).toHaveCount(0);
           continue
         }
@@ -315,8 +338,8 @@ try{
     pass('Concurrent edit rejected; refresh keeps edits and resets review; republish works')
     assert.equal(await page.locator('iframe').count(), 0)
     // Even after an owner republish, the withdrawn intro stays absent from the
-    // new Ali-first Home; do not require the retired testimonial gallery.
-    await expect(page.locator('[data-home-dialogue-entry]')).toHaveCount(1)
+    // My Coach Home; do not require the retired testimonial gallery.
+    await expect(page.locator('[data-my-coach-catalog]')).toHaveCount(1)
     await expect(page.locator('[data-personal-testimonials="home"]')).toHaveCount(0)
     pass('Archived unpublished-quality home introduction cannot reappear in public')
     await save('hide', second)

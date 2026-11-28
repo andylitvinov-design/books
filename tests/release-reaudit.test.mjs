@@ -217,7 +217,7 @@ test('changing paid service choices derives a fresh WhatsApp URL; free choices o
 test('Services re-audit waits for real hydration and decodes even hidden lazy posters', () => {
   const verifier = read('scripts/verify-release-reaudit.mjs');
   const helper = read('scripts/public-poster-readiness.mjs');
-  assert.match(verifier,/path\.endsWith\('\/services'\) \? 'domcontentloaded' : 'networkidle'/);
+  assert.ok(verifier.includes("waitUntil: (path.endsWith('/services') || path.endsWith('/services?assist=quiz')) ? 'domcontentloaded' : 'networkidle'"));
   assert.match(verifier,/await settlePublicDocument\('before-assertions'\)/);
   assert.match(verifier,/await decodeReadyPoster\(image, expect\)/);
   assert.match(helper,/if \(await image\.isVisible\(\)\)/);
@@ -361,6 +361,20 @@ test('release re-audit follows current My Space Today guest Profile and explicit
   assert.ok(start > 0 && finish > start + 1000, 'Real CSP browser journey is preserved');
   const flow = source.slice(start, finish);
   for (const required of [
+    "toHaveURL(origin + '/en/my-page')",
+    "locator('[data-universal-my-page]')",
+    "assertSyntheticLoopback(origin)",
+    "const actual = await cspPage.request.get(myPageApi)",
+    "assert.deepEqual(await actual.json(), { error: 'APP_UNAVAILABLE' })",
+    "assert.equal(actual.status(), 401",
+    "assert.deepEqual(await actual.json(), { error: 'SIGN_IN_REQUIRED' })",
+    "route.request().method() !== 'GET'",
+    "await unavailable.getByRole('button', { name: 'Try again', exact: true }).click()",
+    "assert.ok(fixtureHits > 0",
+    "await cspPage.unroute(myPageApi)",
+    "locator('[data-my-page-public-fallback=\"guest\"] [data-my-page-google]')",
+    "locator('[data-my-page-private-feed]')).toHaveCount(0)",
+    "locator('[data-my-page-discover]').click()",
     "toHaveURL(origin + '/en/app/portrait')",
     "toHaveAttribute('data-csp-class', 'private')",
     "locator('[data-cabinet-guest-overview]')",
@@ -376,7 +390,7 @@ test('release re-audit follows current My Space Today guest Profile and explicit
   ]) assert.ok(flow.includes(required), 'Missing My Space/CSP regression: ' + required);
   assert.ok(!flow.includes("locator('[data-profile-hub-tabs] [data-profile-tab=\"today\"]')"),
     'Anonymous My Space no longer relies on signed-in Today navigation');
-  assert.ok(source.includes("toHaveAttribute('href', '/en/app/portrait')"), 'Private test navigation returns to Profile');
+  assert.ok(source.includes("toHaveAttribute('href', '/en/my-page')"), 'Private test navigation returns to My Page');
   assert.ok(!source.includes('Public profile discovery must retain same-policy soft navigation'));
 });
 
@@ -456,7 +470,7 @@ test('private public-test discovery keeps the current unified seven-destination 
   for (const scope of [first, back]) {
     assert.ok(scope.includes("locator('[data-hh-unified-dock]')"), 'The real single shared dock must mount on private test discovery');
     assert.ok(scope.includes("locator('[data-unified-dock-item]')).toHaveCount(7)"), 'All seven real dock links must remain present');
-    assert.ok(scope.includes("locator('[data-unified-dock-item=\"profile\"]')).toHaveAttribute('href', '/en/app/portrait')"), 'Profile still leads to the actual Cabinet');
+    assert.ok(scope.includes("locator('[data-unified-dock-item=\"profile\"]')).toHaveAttribute('href', '/en/my-page')"), 'Profile still leads to the actual My Page Cabinet');
     assert.ok(scope.includes("locator('.mobile-bottom-navigation')).toHaveCount(0)"), 'No duplicate retired mobile bar');
     assert.ok(!scope.includes("locator('.mobile-bottom-navigation')).toBeVisible()"), 'A retired bar cannot be required as the release condition');
   }
@@ -501,4 +515,13 @@ test('release WebKit warning does not bypass browser, local poster, CSP or build
   assert.match(source, /warningCount: warnings\.length/);
   assert.match(source, /assert\.deepEqual\(errors, \[\]/);
   assert.match(source, /assert\.equal\(failed\.length, 0, 'Re-audit failed; inspect evidence'\)/);
+});
+
+test('release audit retains real default Support and compatibility Reiki outage coverage', () => {
+  const s = read('scripts/verify-release-reaudit.mjs');
+  for (const marker of ["'services', 'services?assist=quiz'", "main[data-support-programs-only] [data-support-program-screen] [data-profile-space-dashboard]", "locator('[data-assist-reiki-session]')).toHaveCount(0)", "if (path.endsWith('/services?assist=quiz'))", "locator('[data-assist-reiki-session] [role=\"status\"] button')"]) assert.ok(s.includes(marker), marker);
+});
+test('CSP journey follows real Support diagnostics and About navigation in both history directions', () => {
+  const s = read('scripts/verify-release-reaudit.mjs');
+  for (const marker of ["[data-express-part=\"diagnostics\"] a[href=\"/en/services/free-situation-review\"]", "await diagnosticsLink.click()", "main[data-free-entry-landing=\"situation\"]", "actualAboutClick?.trusted, true", "historyPhase = 'back-to-diagnostics'", "historyPhase = 'forward-to-diagnostics'", "Support diagnostics stays same-policy"]) assert.ok(s.includes(marker), marker);
 });

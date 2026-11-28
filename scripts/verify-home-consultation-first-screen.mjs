@@ -1,3 +1,4 @@
+import {verifyMyCoachHome} from './verify-my-coach-home-entry.mjs'
 // Real production-build first-screen acceptance for the owner-approved Samir homepage.
 // Only synthetic text; no external chat providers, bookings or payments.
 import assert from "node:assert/strict";
@@ -124,7 +125,7 @@ async function verifyDictation(page,form,marker,calls,baseText,instant=false){
 for(const engine of [chromium,webkit]){
  const browser=await engine.launch();
  try{
-  for(const [locale,path,labels] of [
+  for(const [locale,path] of [
    ["en","/",["Clarity & Stress Relief","Achieving My Goal","Business Support","Reiki Practic"]],
    ["ru","/ru",["Ясность и снятие стресса","Достижение моей цели","Поддержка бизнеса","Reiki Practic"]],
    ["es","/es",["Claridad y alivio del estrés","Alcanzar mi meta","Apoyo empresarial","Reiki Practic"]]
@@ -138,77 +139,27 @@ for(const engine of [chromium,webkit]){
      const dictationCalls=locale==="ru"&&width===390?await installDictationMock(page):null;
      const response=await page.goto(origin+path,{waitUntil:"domcontentloaded",timeout:60000});
      assert.equal(response?.status(),200,name);
-     const root=page.locator("[data-home-dialogue-entry]");
-     await root.waitFor({state:"visible",timeout:30000});
-     await page.locator('[data-home-dialogue-entry][data-home-interactive="true"]').waitFor({state:"visible",timeout:20000});
-     const head=root.locator("[data-home-dialogue-header]");
-     assert.equal((await head.locator("h1").innerText()).trim(),"Holistic House",name);
-     assert.equal(await root.locator('[data-home-mode-button]').count(),0,name+": no audience tabs");
-     assert.equal(await root.locator("[data-home-intent-form]").count(),1,name+": one composer");
-     assert.equal(await root.locator("[data-home-stage-option]").count(),0,name+": no homepage seven-step panel");
-     assert.equal(await root.locator("[data-home-intent-option]").count(),4,name+": four program entries");
-     for(const [i,id] of ["clarity","goal","business","reiki"].entries()){
-       const card=root.locator('[data-home-intent-option="'+id+'"]');
-       assert.equal(await card.count(),1,name+": "+id);
-       assert.ok((await card.innerText()).includes(labels[i]),name+": localized "+id);
-     }
-     assert.equal(await root.locator("[data-home-ali-greeting-play]").count(),1,name+": real greeting control");
-     const hitTargets=await root.locator('[data-home-intent-form] button').evaluateAll(buttons=>buttons.map(button=>{const r=button.getBoundingClientRect();return {width:r.width,height:r.height}}));
-     assert.ok(hitTargets.length===2&&hitTargets.every(r=>r.width>=44&&r.height>=44),name+": safe 44px mobile input controls "+JSON.stringify(hitTargets));
-     const input=root.locator("[data-home-intent-composer]"),send=root.locator("[data-home-send-to-ali]");
-     await input.fill(locale==="ru"?"Хочу разобраться":locale==="es"?"Quiero comprender":"I want clarity");
-     assert.equal(await send.isEnabled(),true,name+": editable send");
-     await input.blur();
-     await page.evaluate(()=>window.scrollTo(0,0));
-     const layout=await root.evaluate(element=>{
-      const keys=["[data-home-dialogue-hero]","[data-home-intent-form]","[data-home-focus-grid]","[data-home-methods]"];
-      return keys.map(key=>{const el=element.querySelector(key);if(!el)return null;const r=el.getBoundingClientRect();return {x:r.x,width:r.width,top:r.top,bottom:r.bottom}})});
-     assert.ok(layout.every(Boolean),name+": all graphic sections rendered");
-     assert.ok(layout[0].top<layout[1].top&&layout[1].top<layout[2].top&&layout[2].top<layout[3].top,name+": hierarchy");
-
-     assert.ok(layout.every(box=>box.x>=-2&&box.x+box.width<=width+2),name+": sections fit");
-     const cards=await root.locator('[data-home-intent-option]').evaluateAll(items=>items.map(el=>{const r=el.getBoundingClientRect();return {x:r.x,right:r.right,top:r.top,bottom:r.bottom,width:r.width,scrollWidth:el.scrollWidth,clientWidth:el.clientWidth}}));
-     assert.equal(cards.length,4,name+": four rows");
-     assert.ok(cards.every((s,i)=>s.x>=0&&s.right<=width+2&&s.width>=width*.85&&s.scrollWidth<=s.clientWidth+2&&(i===0||s.top>=cards[i-1].bottom)),name+": full width horizontal cards, no overflow");
-     const copyFits=await root.locator('[data-home-intent-option] strong, [data-home-intent-option] small').evaluateAll(items=>items.every(el=>el.scrollWidth<=el.clientWidth+2));
-     assert.ok(copyFits,name+": no clipped copy");
-     const graphics=await root.locator('img').evaluateAll(async imgs=>Promise.all(imgs.map(async img=>{try{await img.decode()}catch{}return {url:img.getAttribute("src"),width:img.naturalWidth}})));
-     assert.ok(graphics.every(img=>img.width>0),name+": real photo assets loaded "+JSON.stringify(graphics));
-     assert.equal(await page.locator("iframe").count(),0,name+": no video iframe");
+     await verifyMyCoachHome(page,locale);
      const dock=page.locator("[data-hh-unified-dock]");
      await dock.waitFor({state:"visible",timeout:30000});
      assert.deepEqual(await dock.locator("[data-unified-dock-item]").evaluateAll(xs=>xs.map(x=>x.getAttribute("data-unified-dock-item"))),
        ["mytube","reiki","coach","ai","services","practice","profile"],name+": seven dock targets");
-     await root.locator("[data-home-methods]").evaluate(el=>el.scrollIntoView({block:"center",behavior:"instant"}));
-     const fold=await page.evaluate(()=>{
-       const methods=document.querySelector('[data-home-methods]');
-       const nav=document.querySelector('[data-hh-unified-dock]');
-       const orb=nav?.querySelector('[data-unified-dock-item="ai"] svg');
-       return {methodsBottom:methods?.getBoundingClientRect().bottom,dockTop:nav?.getBoundingClientRect().top,orbTop:orb?.getBoundingClientRect().top};
-     });
-     assert.ok(fold.methodsBottom<=Math.min(fold.dockTop,fold.orbTop)+2,name+": all five method icons reachable above existing dock "+JSON.stringify(fold));
-     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)<=1,name+": zero horizontal overflow");
+     assert.equal(await dock.locator('[data-unified-dock-item="coach"]').getAttribute('aria-current'),'page');
      assert.deepEqual(errors,[],name+": no script errors");
-     evidence.push({engine:engine.name(),locale,width,heroY:Math.round(layout[0].top),programWidth:Math.round(layout[2].width)});
-     if(engine===webkit&&width===390){await page.evaluate(()=>window.scrollTo(0,0));await page.screenshot({path:output+"/samir-"+locale+"-webkit-390.png",fullPage:false});}
+     evidence.push({engine:engine.name(),locale,width,myCoachHome:true});
+     if(engine===webkit&&width===390)await page.screenshot({path:output+"/my-coach-"+locale+"-webkit-390.png",fullPage:false});
      if(width===390){
       for(const [id,count] of [["clarity",3],["goal",8],["business",8],["reiki",5]]){
-       await root.locator('[data-home-intent-option="'+id+'"]').click();
-       await page.waitForURL(origin+"/"+locale+"/programs/"+id);
+       await page.goto(origin+"/"+locale+"/programs/"+id,{waitUntil:"domcontentloaded",timeout:60000});
        const overview=page.locator('[data-public-program="'+id+'"]');
        await overview.waitFor({state:"visible"});
        assert.equal(await overview.locator("[data-program-session]").count(),count,name+": "+id+" sessions");
        const start=overview.locator(id==="reiki"?"[data-reiki-start-free]":"[data-program-start]");
        assert.equal(await start.count(),1,name+": "+id+" primary start");
        assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)<=1,name+": "+id+" no overflow");
-       if(engine===webkit)await page.screenshot({path:output+"/program-"+id+"-"+locale+"-webkit-390.png",fullPage:true});
-       await page.goto(origin+path,{waitUntil:"domcontentloaded",timeout:60000});
-       await page.locator('[data-home-dialogue-entry][data-home-interactive="true"]').waitFor({state:"visible",timeout:20000});
       }
      }
      if(dictationCalls){
-      await verifyDictation(page,root.locator("[data-home-intent-form]"),"[data-home-intent-mic]",dictationCalls,"Хочу разобраться");
-      assert.equal(new URL(page.url()).pathname,path,"dictation alone does not navigate");
       await page.goto(origin+"/ru/app/messages?section=ai",{waitUntil:"domcontentloaded",timeout:60000});
       const form=page.locator("[data-hh-ai-chat-composer]");
       await verifyDictation(page,form,"[data-hh-conversation-mic]",dictationCalls,"Моя цель",true);
@@ -222,4 +173,4 @@ for(const engine of [chromium,webkit]){
  }finally{await browser.close()}
 }
 await writeFile(output+"/samir-first-screen-results.json",JSON.stringify(evidence,null,2));
-console.log("Samir Home Chromium/WebKit first-screen PASS",evidence.length);
+console.log("My Coach Home Chromium/WebKit first-screen PASS",evidence.length);

@@ -131,3 +131,13 @@ test('private My Page sessions link opens actual coaching protocol and unfinishe
  assert.ok(plan.includes('<MyCoachDraftArchive key={accountId} accountId={accountId}'))
  assert.ok(plan.includes('data-my-coach-saved-protocol'))
 })
+
+
+test('My Coach prioritizes its first visible poster without eagerly loading the coach rail',()=>{
+ const catalog=read('components/my-coach-catalog.jsx')
+ const media=read('components/my-coach-motion-media.jsx')
+ assert.match(catalog, /<MyCoachMotionMedia[^>]*context="hero"/)
+ assert.ok(media.includes("loading={context==='hero'||context==='greeting'?'eager':'lazy'}"))
+ assert.ok(media.includes("fetchPriority={context==='hero'||(isGenie&&context==='greeting')?'high':undefined}"))
+ assert.ok(media.includes('preload="metadata"'))
+})

@@ -168,7 +168,7 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
   const masterLink = video.practitionerSlug && video.practitionerName ? (
     <p className="site-video-master-byline">
       <span>{text.master}: </span>
-      <Link className="site-video-master-link" href={`/${locale}/masters/${video.practitionerSlug}#practitioner-videos`}>
+      <Link className="site-video-master-link" prefetch={false} href={`/${locale}/masters/${video.practitionerSlug}#practitioner-videos`}>
         {video.practitionerName} <span className="site-video-master-all">{text.allMasterVideos} →</span>
       </Link>
     </p>

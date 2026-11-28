@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { classifyCspNavigationCancellation } from '../scripts/csp-navigation-diagnostics.mjs';
+import { classifyCspNavigationCancellation, traverseCspHistory } from '../scripts/csp-navigation-diagnostics.mjs';
 const origin = 'http://127.0.0.1:3123';
 const lifecycle = [
   { type: 'init', time: 1, documentProbe: 'old', url: origin + '/en/about' },
@@ -392,4 +392,27 @@ test('English My Space on Back-to-private requires observed old home GET and rea
     {stack:diagnostic(origin+'/api/public/english-intro-video?secret=bad',1500).stack},
     {stack:diagnostic('https://other.test/api/public/english-intro-video',1500).stack},
   ])assert.equal(classifyCspNavigationCancellation({...error,...change},info),null);
+});
+
+
+test('rapid native history waiter cancellation requires independently proven arrival and never repeats traversal', async () => {
+  for (const [engine, direction, method, reason] of [
+    ['webkit','forward','goForward','Load request cancelled'],
+    ['chromium','back','goBack','net::ERR_ABORTED'],
+  ]) {
+    let calls = 0, proofs = 0; const evidence = [];
+    const err = new Error('page.' + method + ': ' + reason + '; maybe frame was detached?\nCall log:');
+    const page = { isClosed: () => false, [method]: async options => { calls++; assert.equal(options.waitUntil,'domcontentloaded'); throw err; } };
+    const opts = { page, direction, engine, readiness:'rapid-history', verifyArrival:async()=>{ proofs++; }, onCancellation:record=>evidence.push(record) };
+    await traverseCspHistory(opts);
+    assert.equal(calls,1); assert.equal(proofs,1); assert.equal(evidence.length,1);
+    assert.equal(evidence[0].method,method);
+    await assert.rejects(traverseCspHistory({...opts,verifyArrival:async()=>{throw new Error('wrong destination');}}), /wrong destination/);
+    assert.equal(calls,2); assert.equal(evidence.length,1);
+    await assert.rejects(traverseCspHistory({...opts,readiness:'loaded-history'}), e=>e===err);
+    await assert.rejects(traverseCspHistory({...opts,engine:'firefox'}), e=>e===err);
+    await assert.rejects(traverseCspHistory({...opts,page:{...page,isClosed:()=>true}}), e=>e===err);
+    await assert.rejects(traverseCspHistory({...opts,page:{...page,[method]:async()=>{throw new Error('Timeout 30000ms exceeded');}}}), /Timeout/);
+    assert.equal(evidence.length,1);
+  }
 });
