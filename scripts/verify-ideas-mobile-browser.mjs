@@ -56,13 +56,19 @@ async function verify(browserType, browser, locale, width) {
       waitUntil: "domcontentloaded", timeout: 60000,
     });
     assert.equal(response?.status(), 200, label + ": route");
-    // Wait for real client JS before the FIRST single-touch interaction.
-    // DOMContentLoaded can precede React hydration.
-    await page.waitForLoadState("load", { timeout: 60000 });
     const hub = page.locator("[data-ideas-discovery]");
     await hub.waitFor({ state: "visible", timeout: 30000 });
     const switchboard = hub.locator("[data-tests-coaching-hub]");
     await switchboard.waitFor({ state: "visible" });
+    // Readiness must prove the actual interactive card is hydrated before
+    // the first real tap. Do not wait for unrelated photos, media or the
+    // document load event. Fonts still settle before geometry assertions.
+    await page.waitForFunction(() => {
+      const card = document.querySelector('[data-tests-coaching-path="profile"]');
+      const key = Object.keys(card || {}).find(name => name.startsWith("__reactProps$"));
+      return Boolean(key && typeof card[key]?.onClick === "function" &&
+        (!document.fonts || document.fonts.status === "loaded"));
+    }, null, { timeout: 30000 });
     const cards = switchboard.locator("[data-tests-coaching-path]");
     assert.equal(await cards.count(), 4, label + ": exactly four clear opening journeys");
     const heading = switchboard.locator("#tests-coaching-title");
@@ -140,8 +146,9 @@ async function verify(browserType, browser, locale, width) {
     assert.ok(primary && primary.height >= 44, label + ": Dao CTA is finger sized");
     const testAction = hub.locator("[data-ideas-free-test]");
     assert.equal(await testAction.getAttribute("aria-expanded"), "false");
-    await hub.locator("#ideas-question").fill(
-      locale === "ru" ? "Меня тревожит стресс" : locale === "es" ? "Tengo ansiedad" : "I feel anxious and stressed");
+    const stressQuestion = locale === "ru" ? "Меня тревожит стресс" :
+      locale === "es" ? "Tengo ansiedad" : "I feel anxious and stressed";
+    await hub.locator("#ideas-question").fill(stressQuestion);
     // Instrument the actual touch path: no synthetic clicks, no hidden retry.
     // A lost iPhone tap must remain a failure with actionable event evidence.
     await testAction.evaluate(el => {
@@ -154,7 +161,17 @@ async function verify(browserType, browser, locale, width) {
         el.addEventListener(kind, event => sample(event, "button"), { capture: true });
       document.addEventListener("click", event => sample(event, "document"), { capture: true });
     });
-    await page.waitForTimeout(120);
+    // Observe committed controlled state and the actual hydrated click
+    // handler rather than sleeping for a fixed interval. Keep one real tap.
+    await page.waitForFunction(expected => {
+      const input = document.querySelector("#ideas-question");
+      const button = document.querySelector("[data-ideas-free-test]");
+      const inputKey = Object.keys(input || {}).find(name => name.startsWith("__reactProps$"));
+      const buttonKey = Object.keys(button || {}).find(name => name.startsWith("__reactProps$"));
+      return Boolean(inputKey && buttonKey && input.value === expected &&
+        input[inputKey]?.value === expected &&
+        typeof button[buttonKey]?.onClick === "function");
+    }, stressQuestion, { timeout: 10000 });
     await testAction.tap();
     const filtered = hub.locator('[data-ideas-filtered-tests]:visible');
     try {

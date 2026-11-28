@@ -93,3 +93,32 @@ test('full Next.js and mobile browser runs remain manual-only, not a PR merge bl
   }
   assert.doesNotMatch(yaml, /continue-on-error:\s*true/);
 });
+
+
+test('Ideas acceptance waits for exact React readiness instead of unrelated page load or fixed delays',()=>{
+  const js=source('scripts/verify-ideas-mobile-browser.mjs');
+  assert.doesNotMatch(js,/waitForLoadState\("load"/);
+  assert.doesNotMatch(js,/waitForTimeout\(/);
+  assert.ok(js.includes('typeof card[key]?.onClick === "function"'));
+  assert.ok(js.includes('document.fonts.status === "loaded"'));
+  assert.ok(js.includes('input[inputKey]?.value === expected'));
+  assert.ok(js.includes('typeof button[buttonKey]?.onClick === "function"'));
+  assert.ok(js.indexOf('typeof card[key]?.onClick') < js.indexOf('await profilePath.tap()'));
+  assert.ok(js.indexOf('input[inputKey]?.value === expected') < js.indexOf('await testAction.tap()'));
+  assert.ok(js.includes('free test chooser did not open'));
+  assert.match(js,/const widths = \[320, 375, 390, 430\]/);
+  assert.match(js,/browserType: webkit/);
+  assert.match(js,/browserType: chromium/);
+});
+
+
+test('unified dock acceptance opens the real legacy Genie disclosure before asserting visibility',()=>{
+  const js=source('scripts/verify-unified-six-dock-browser.mjs');
+  const marker=js.indexOf('const formats=landing.locator("details")');
+  const open=js.indexOf('await formats.locator(":scope > summary").click()',marker);
+  const visible=js.indexOf('await expect(formats.locator("[data-hh-genie-persona-shortcut]")).toBeVisible()',marker);
+  assert.ok(marker>=0&&open>marker&&visible>open);
+  assert.ok(js.includes('await expect(formats).toHaveAttribute("open","")'));
+  assert.ok(js.includes('["therapy","consultation","goal"]'));
+  assert.ok(source('components/app/messenger-ai-landing.tsx').includes('<details className={css.legacyWelcome}>'));
+});
