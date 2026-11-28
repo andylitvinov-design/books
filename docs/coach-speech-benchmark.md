@@ -19,3 +19,11 @@ When a trusted local faster-whisper installation and local CTranslate2 weights a
 `python3 scripts/coach-speech-local-benchmark.py /path/to/corpus --model-dir /local/large-v3 --name large-v3-local --output /private/large-v3.json`
 
 Repeat with local Turbo weights and a separate output. Use --auto for a separate language autodetection experiment. Run the existing Node scorer on the resulting files. No downloads, credentials, cloud API calls or model-installation requests are made by this runner. It verifies every audio hash and mono PCM16/16k format, uses no reference text as model context, and records failed outputs explicitly. Latencies here are local CPU timings only, not hosted Groq or Gemini latency. Local comparison cannot substitute for real provider entitlement, actual live voice accuracy, human-recorded audio or physical iPhone acceptance. Do not commit private result files or recordings.
+
+## Numeric acceptance screen (§7, issue #5839)
+
+After collecting actual paired outputs on the same SHA-256 identified clips, run:
+
+`node scripts/coach-speech-benchmark.mjs --acceptance --latency-kind=hosted_background tests/fixtures/coach-speech-benchmark-v1.json baseline.json candidate.json`
+
+Use `local_cpu` for local inference timings, or omit latency kind when provenance is unknown. The screen checks the 100-clip minimum, per-language coverage, EN/ES WER, 30% relative RU WER reduction, and critical exact-text mismatch counts. A zero baseline WER cannot produce a defined relative reduction. Background p95 is evaluated separately only for complete hosted timing samples; it does not measure coach response latency. Critical exact mismatch is a proxy requiring manual semantic review. The output deliberately never authorizes rollout: it lists outstanding free-tier/privacy, actual audio, human, physical device and LIVE acceptance requirements. Synthetic metrics are not representative human accuracy. No automatic activation, network request or paid usage.
