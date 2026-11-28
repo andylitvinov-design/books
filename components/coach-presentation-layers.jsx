@@ -45,9 +45,9 @@ export default function CoachPresentationLayers({opening,presence,openingActive,
     const epoch=++playbackEpoch.current
     activeSrcRef.current=enabled?targetSrc:null
     progressRef.current=target?{video:target,epoch,start:target.currentTime}:null
-    if(!openingActive&&(!presence||failed[presence.src])&&visibleRef.current===opening?.src){
-      visibleRef.current=null;setVisibleSrc(null);onReady(false)
-    }
+    // If the incoming clip fails before being shown, keep the outgoing
+    // decoded frame. After HD has actually been shown, fail() can only
+    // expose the matching poster, never restart the earlier greeting.
     for(const video of [openingVideo,presenceVideo]){
       if(video&&(!enabled||video!==target))video.pause()
     }
