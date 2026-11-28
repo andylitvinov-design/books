@@ -172,8 +172,34 @@ for(const engine of [chromium,webkit]){
      assert.ok(cards.every((s,i)=>s.x>=0&&s.right<=width+2&&s.width>=width*.85&&s.scrollWidth<=s.clientWidth+2&&(i===0||s.top>=cards[i-1].bottom)),name+": full width horizontal cards, no overflow");
      const copyFits=await root.locator('[data-home-intent-option] strong, [data-home-intent-option] small').evaluateAll(items=>items.every(el=>el.scrollWidth<=el.clientWidth+2));
      assert.ok(copyFits,name+": no clipped copy");
-     const graphics=await root.locator('img').evaluateAll(async imgs=>Promise.all(imgs.map(async img=>{try{await img.decode()}catch{}return {url:img.getAttribute("src"),width:img.naturalWidth}})));
-     assert.ok(graphics.every(img=>img.width>0),name+": real photo assets loaded "+JSON.stringify(graphics));
+     // Lazy program art must enter the actual viewport before WebKit fetches it.
+     // decode() on an offscreen lazy image may reject before a request starts.
+     // Do not change loading=lazy, inject another image, mock network, or swallow
+     // decoding errors: verify each real DOM image after a user-like scroll.
+     const photos=root.locator('img');
+     const photoCount=await photos.count();
+     assert.ok(photoCount>0,name+": real photo elements exist");
+     const graphics=[];
+     for(let i=0;i<photoCount;i++){
+       const photo=photos.nth(i);
+       const src=await photo.getAttribute("src");
+       assert.ok(src,name+": photo source missing at "+i);
+       await photo.scrollIntoViewIfNeeded({timeout:15000});
+       const handle=await photo.elementHandle({timeout:15000});
+       assert.ok(handle,name+": photo detached "+src);
+       try{
+         await page.waitForFunction(img=>img.complete&&img.naturalWidth>0,handle,{timeout:15000});
+         graphics.push(await photo.evaluate(async img=>{
+           await img.decode();
+           return {url:img.getAttribute("src"),width:img.naturalWidth,height:img.naturalHeight};
+         }));
+       }catch(error){
+         throw new Error(name+": actual photo failed to load/decode "+src,{cause:error});
+       }finally{await handle.dispose();}
+     }
+     assert.equal(graphics.length,photoCount,name+": every photo checked");
+     assert.ok(graphics.every(img=>img.width>0&&img.height>0),name+": real photo assets loaded "+JSON.stringify(graphics));
+     await page.evaluate(()=>window.scrollTo(0,0));
      assert.equal(await page.locator("iframe").count(),0,name+": no video iframe");
      const dock=page.locator("[data-hh-unified-dock]");
      await dock.waitFor({state:"visible",timeout:30000});
