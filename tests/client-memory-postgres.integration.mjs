@@ -89,6 +89,7 @@ if(!isolated){
       const source = await readFile(new URL('../supabase/migrations/20261106203000_hh_client_memory_care_journey_v1.sql',import.meta.url),'utf8')
       await db.query(source)
       await db.query(await readFile(new URL('../supabase/migrations/20261122133522_hh_my_coach_durable_protocol_archive_v1_20261122.sql',import.meta.url),'utf8'))
+      await db.query(await readFile(new URL('../supabase/migrations/20261125144854_hh_my_coach_private_protocol_drafts_20261125.sql',import.meta.url),'utf8'))
       await db.query(await readFile(new URL('../docs/coaching/PERSONAL_MEMORY_PROTOCOL_REFS_DRAFT.sql',import.meta.url),'utf8'))
       const force = await db.query(`select relname,relrowsecurity,relforcerowsecurity from pg_class
         where oid in ('app_private.client_ai_memory_settings'::regclass,
@@ -245,6 +246,35 @@ if(!isolated){
         assert.equal((await exportFor(A)).exportStatus,'empty')
         await assert.rejects(()=>manageMyCoachMemorySelection(config,{id:B,claims:{sub:A}},{action:'export'}),
           {code:'ACCOUNT_REQUIRED'})
+        // Start an actual server-issued question and advance through explicit skips.
+        const {coachOpeningProgress,coachOpeningProtocolSnapshot}=await import('../lib/coaching/coach-opening-protocol.mjs')
+        const {coachCourseGateTransition}=await import('../lib/coaching/coach-course-gate-draft.mjs')
+        const {recallCoachCourseCheckpoint}=await import('../lib/app/my-coach-protocol-drafts.js')
+        const current='81000000-0000-4000-8000-000000000003'
+        const openingTurns=['Yes','My name is Anna','New topic','I want to work on a goal','Calm','Yes']
+        const opening=coachOpeningProgress({turns:openingTurns,locale:'en',personaId:'mira'})
+        let draft={revision:1,courseSessionId:protocol.courseSessionId,protocol:{id:current,
+          courseSessionId:protocol.courseSessionId,locale:'en',personaId:'mira',startedAt:'2026-11-27T09:00:00.000Z',provenance:'client_autosaved_unreviewed_draft',
+          opening:coachOpeningProtocolSnapshot(opening),turns:openingTurns.map(content=>({role:'user',content}))}}
+        for(const action of ['course-gate-start','course-gate-answer','course-gate-answer']){
+          const input={action,id:current,revision:draft.revision,requestId:op(120+draft.revision),consent:true,
+            ...(action==='course-gate-answer'?{promptId:draft.courseGate.prompt.id,content:'skip this question'}:{})}
+          draft={...draft,...coachCourseGateTransition(draft,input,'2026-11-27T10:00:00.000Z'),revision:draft.revision+1}
+        }
+        assert.equal(draft.courseGate.prompt.fieldId,'resources')
+        const draftCipher=seal(draft,{accountId:B,recordId:current,field:'my_coach.draft'},config)
+        await as(B,d=>d.query('insert into app_private.my_coach_protocol_drafts(account_id,protocol_id,revision,payload_ciphertext) values($1,$2,$3,$4)',
+          [B,current,draft.revision,draftCipher]))
+        const request={action:'course-gate-recall',id:current,revision:draft.revision,promptId:draft.courseGate.prompt.id,consent:true}
+        const recallFor=(id,changes={})=>recallCoachCourseCheckpoint(config,actor(id),{...request,...changes})
+        await assert.rejects(()=>recallFor(A),{code:'MY_COACH_DRAFT_CONFLICT'})
+        await assert.rejects(()=>recallFor(B,{revision:request.revision-1}),{code:'MY_COACH_DRAFT_CONFLICT'})
+        await assert.rejects(()=>recallFor(B,{promptId:'prompt:1:1'}),{code:'MY_COACH_DRAFT_CONFLICT'})
+        await assert.rejects(()=>recallFor(B,{fieldId:'resources'}),{code:'MY_COACH_DRAFT_INVALID'})
+        assert.deepEqual(await recallFor(B),{status:'ok',item:{value:quote,sessionEndedAt:protocol.completedAt,
+          valueSource:'reviewed_coaching_protocol'}})
+        const unchanged=(await as(B,d=>d.query('select revision,payload_ciphertext from app_private.my_coach_protocol_drafts where account_id=$1 and protocol_id=$2',[B,current]))).rows[0]
+        assert.deepEqual(unchanged,{revision:draft.revision,payload_ciphertext:draftCipher})
         const original=await exportFor(B)
         assert.equal(original.exportStatus,'ok')
         assert.deepEqual(original.items.map(item=>item.value),[quote])
@@ -252,12 +282,14 @@ if(!isolated){
           id:refB,expectedRevision:0,value:'Walking after lunch works for me.'})
         const corrected=await exportFor(B)
         assert.equal(corrected.exportStatus,'ok')
+        assert.equal((await recallFor(B)).item.value,'Walking after lunch works for me.')
         assert.deepEqual(corrected.items.map(item=>[item.value,item.valueSource]),
           [['Walking after lunch works for me.','owner_correction']])
         assert.doesNotMatch(JSON.stringify(corrected),/ciphertext|81000000|82000000|before the meeting/)
         await as(B,d=>d.query('update app_private.client_ai_memory_settings set sensitive_enabled=false where account_id=$1',[B]))
         const denied=await exportFor(B)
         assert.equal(denied.exportStatus,'not_authorized')
+        assert.deepEqual(await recallFor(B),{status:'not_authorized',item:null})
         assert.deepEqual(denied.items,[])
       } finally { await closeDatabase() }
       await as(B,d=>d.query("delete from app_private.my_coach_protocol_records where account_id=$1 and protocol_id=$2",[B,protocolB]))

@@ -257,6 +257,49 @@ const sessionRatingCopy={
   es:{title:'Valora a tu coach',subtitle:'Tu opinión ayuda a mejorar las sesiones.',character:'Carácter',intelligence:'Inteligencia',impression:'Impresión general',send:'Enviar valoración',sending:'Guardando…',saved:'Gracias. Se guardó tu valoración de forma privada.',error:'No se pudo guardar. Puedes reintentar u omitir.',skip:'Omitir',done:'Listo',stars:'Valoración del coach',privacy:'Solo se guardan números en tu cuenta privada; no se envían conversaciones ni audio.'},
 }
 
+const checkpointMemoryCopy={
+  en:{show:'View saved answer',label:'Saved answer from an earlier session',no_match:'No saved answer for this checkpoint.',not_authorized:'Allow sensitive memory in Memory permissions to view saved answers.',partial:'Only part of your selected memory could be checked.',unavailable:'The saved answer is unavailable.'},
+  ru:{show:'Посмотреть сохранённый ответ',label:'Сохранённый ответ из прошлой сессии',no_match:'Для этого пункта нет сохранённого ответа.',not_authorized:'Разрешите чувствительную память в настройках, чтобы просматривать сохранённые ответы.',partial:'Удалось проверить только часть выбранной памяти.',unavailable:'Сохранённый ответ недоступен.'},
+  es:{show:'Ver respuesta guardada',label:'Respuesta guardada de una sesión anterior',no_match:'No hay una respuesta guardada para este punto.',not_authorized:'Activa el permiso de memoria sensible para ver las respuestas guardadas.',partial:'Solo se pudo revisar una parte de tu memoria seleccionada.',unavailable:'La respuesta guardada no está disponible.'},
+}
+function CoachCheckpointMemory({accountId,id,revision,promptId,locale}){
+  const text=checkpointMemoryCopy[locale]||checkpointMemoryCopy.en
+  const pending=useRef(null),[busy,setBusy]=useState(false),[result,setResult]=useState(null)
+  useEffect(()=>{
+    function hide(){
+      if(!document.hidden)return
+      pending.current?.abort()
+      pending.current=null
+      setResult(null);setBusy(false)
+    }
+    document.addEventListener('visibilitychange',hide)
+    return()=>{
+      document.removeEventListener('visibilitychange',hide)
+      pending.current?.abort()
+    }
+  },[])
+  async function read(){
+    if(!accountId||pending.current)return
+    const controller=new AbortController()
+    pending.current=controller;setBusy(true);setResult(null)
+    try{
+      const value=await appFetch('my-coach/draft',{action:'course-gate-recall',consent:true,id,revision,promptId},'POST',
+        {accountId,signal:controller.signal})
+      if(!controller.signal.aborted)setResult(value)
+    }catch{
+      if(!controller.signal.aborted)setResult({status:'unavailable'})
+    }finally{
+      if(pending.current===controller){pending.current=null;setBusy(false)}
+    }
+  }
+  return <aside>
+    <button type="button" disabled={busy} onClick={()=>void read()}>{text.show}</button>
+    {result&&<div aria-live="polite">{result.status==='ok'&&result.item?
+      <><small>{text.label} · {result.item.sessionEndedAt.slice(0,10)}</small><p>{result.item.value}</p></>:
+      <p>{text[result.status]||text.unavailable}</p>}</div>}
+  </aside>
+}
+
 export default function MyCoachLiveDialogue({locale='en',personaId='mira',settings={},methodPreference,onClose,onGuided,initialGoalCourseId=null}){
   const lang=copy[locale]?locale:'en',t=copy[lang]
   const persona=getCoachPersona(personaId)
@@ -316,6 +359,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [restoredDraft,setRestoredDraft]=useState(false)
   const [freshPrivateProfile,setFreshPrivateProfile]=useState(false)
   const [courseGate,setCourseGate]=useState(null),courseGateRef=useRef(null)
+  const [courseGateRecallEnabled,setCourseGateRecallEnabled]=useState(false)
   const [courseGateEnabled,setCourseGateEnabled]=useState(false),[courseGateBusy,setCourseGateBusy]=useState(false),courseGateBusyRef=useRef(false)
   const [courseGateError,setCourseGateError]=useState(false),courseGateAttemptRef=useRef(null)
   const [courseGateAnswer,setCourseGateAnswer]=useState('')
@@ -491,6 +535,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
         if(!controller.signal.aborted&&protocolOwnerRef.current===owner&&!protocolStartedRef.current){
           setProfileV3Enabled(result.profileV3Enabled===true)
           setCourseGateEnabled(result.courseGateEnabled===true)
+          setCourseGateRecallEnabled(result.courseGateRecallEnabled===true)
         }
       }).catch(()=>{})
     return()=>controller.abort()
@@ -2169,6 +2214,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       const thematic=readCourseGateStep(result.draft,p)
       courseGateRef.current=thematic;courseGateAttemptRef.current=null;setCourseGate(thematic);setCourseGateError(false)
       setCourseFieldReview(thematic?.step.review||result.draft.draftCourseReview||null);setCourseGateEnabled(result.courseGateEnabled===true)
+      setCourseGateRecallEnabled(result.courseGateRecallEnabled===true)
       const structured=readProfileV3Step(result.draft,p)
       profileV3Ref.current=structured;setProfileV3(structured)
       setProfileV3Enabled(result.profileV3Enabled===true)
@@ -2697,6 +2743,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
               {courseGate.step.prompt.kind==='confirm'&&<button type="button" disabled={courseGateBusy||!courseGateEnabled||paused} onClick={()=>{const q=courseGateRef.current?.step.prompt
                 if(q)void runCourseGate('course-gate-answer',{promptId:q.id,content:({ru:'да',en:'yes',es:'sí'})[lang]})}}>{({ru:'Подтверждаю',en:'Confirm',es:'Confirmar'})[lang]}</button>}
             </form>:<p>{courseGate.step.paused?({ru:'Проверка приостановлена. Можно завершить сессию.',en:'Review paused. You can finish the session.',es:'Revisión pausada. Puedes terminar la sesión.'})[lang]:({ru:'Проверка пунктов завершена. Можно уточнить ответ или завершить.',en:'Checkpoint review complete. Correct an answer or finish.',es:'Revisión completa. Corrige una respuesta o termina.'})[lang]}</p>}
+            {courseGateRecallEnabled&&courseGateEnabled&&!courseGateBusy&&!courseGateError&&!paused&&!courseGate.step.paused&&
+              courseGate.step.canRecall===true&&courseGate.step.prompt?.kind==='answer'&&<CoachCheckpointMemory
+                key={protocolIdRef.current+':'+courseGate.revision+':'+courseGate.step.prompt.id}
+                accountId={protocolOwnerRef.current} id={protocolIdRef.current} revision={courseGate.revision}
+                promptId={courseGate.step.prompt.id} locale={lang}/>}
             {!courseGate.step.paused&&coachCourseProtocolRows(selectedCourseId,turns,courseGate.step.review,conversationLang).filter(row=>['confirmed','skipped_by_client'].includes(row.status)).map(row=>
               <button key={row.id} type="button" disabled={courseGateBusy||!courseGateEnabled||paused} onClick={()=>void runCourseGate('course-gate-correct',{fieldId:row.id})}>{({ru:'Уточнить',en:'Correct',es:'Corregir'})[lang]}: {row.label}</button>)}
           </div>:<button type="button" disabled={!courseGateCanStart||courseGateBusy} onClick={()=>void runCourseGate('course-gate-start')}>{({ru:'Проверить ответы по протоколу',en:'Start verified checkpoints',es:'Iniciar puntos verificados'})[lang]}</button>}

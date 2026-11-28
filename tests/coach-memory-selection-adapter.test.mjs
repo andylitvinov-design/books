@@ -62,11 +62,12 @@ function fixture(){
  const deps={randomUUID:()=>R,AppError,transaction:async(config,actor,fn)=>fn({query}),
   operationHash:digest,ownerMemoryFingerprint:fp,projectOwnerMemoryArchiveRow:()=>({supported:true,items:[item]}),
   seal:JSON.stringify,openSealed:JSON.parse,OWNER_MEMORY_MAX_CIPHERTEXT_BYTES:4194304,searchOwnerReviewedEvidence,...core}
- const manage=new Function(...Object.keys(deps),body+'\nreturn manageMyCoachMemorySelection')(...Object.values(deps))
- const run=raw=>manage({}, {id:A},raw)
+ const manage=new Function(...Object.keys(deps),body+'\nreturn {manageMyCoachMemorySelection,readOwnerCheckpointMemory}')(...Object.values(deps))
+ const run=raw=>manage.manageMyCoachMemorySelection({}, {id:A},raw)
+ const recall=target=>manage.readOwnerCheckpointMemory({query},{},{id:A},target)
  const save=(n=1)=>({action:'save',confirmed:true,operationId:op(n),expectedSettingsRevision:settings.revision,
   source,sourceFingerprint:fp({},A,item)})
- return {run,save,settings,calls,reviseDuringRead:()=>{changeRevisionAtRecheck=true},change:patch=>{item={...item,...patch}},
+ return {run,save,recall,settings,calls,reviseDuringRead:()=>{changeRevisionAtRecheck=true},change:patch=>{item={...item,...patch}},
   revoke:()=>{settings.sensitive_enabled=false;settings.revision++;if(ref?.status==='active')ref={...ref,status:'blocked',source_hash:null,revision:ref.revision+1}},
   deleteSource:()=>{archive=false;ref=null}}
 }
@@ -195,4 +196,20 @@ test('owner export returns the latest correction without older values',async()=>
  assert.deepEqual(exported.items.map(item=>[item.value,item.valueSource,item.confirmedAt]),
   [['Current correction','owner_correction','2026-11-28T00:00:00Z']])
  assert.doesNotMatch(JSON.stringify(exported),/First correction|A quiet walk|ciphertext/)
+})
+
+test('checkpoint recall returns only current private evidence for the matching historical field',async()=>{
+ const f=fixture()
+ const target={protocolId:B,courseSessionId:'clarity_support',fieldId:'resources',startedAt:'2026-11-27T10:00:00.000Z'}
+ assert.equal((await f.recall(target)).status,'no_match')
+ await f.run(f.save())
+ const recalled=await f.recall(target)
+ assert.deepEqual(recalled,{status:'ok',item:{value:'A quiet walk helps.',
+  sessionEndedAt:'2026-11-22T10:00:00.000Z',valueSource:'reviewed_coaching_protocol'}})
+ for(const patch of [{protocolId:P},{courseSessionId:'goal_result'},{fieldId:'practices'},{startedAt:'2026-11-22T10:00:00.000Z'}])
+  assert.deepEqual(await f.recall({...target,...patch}),{status:'no_match',item:null})
+ f.reviseDuringRead()
+ assert.deepEqual(await f.recall(target),{status:'partial',item:null})
+ f.revoke()
+ assert.deepEqual(await f.recall(target),{status:'not_authorized',item:null})
 })

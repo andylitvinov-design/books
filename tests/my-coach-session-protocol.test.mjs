@@ -688,13 +688,14 @@ test('protocol validation gate: ambiguous confirmation, interrupted echo, exact 
  go('reopen','goal',{turnId:'t5',explicitCorrection:true,coachId:'caesar'});assert.equal(s.accepted.goal,undefined);assert.equal(s.accepted.rating.value,0);assert.equal(coachProtocolGateNext(s).fieldId,'goal')
 })
 
-import {coachCourseGateTransition,coachCourseGateView,coachCourseGateRetry,coachCourseGateArchiveMatches} from '../lib/coaching/coach-course-gate-draft.mjs'
+import {coachCourseGateTransition,coachCourseGateView,coachCourseGateRetry,coachCourseGateArchiveMatches,coachCourseGateRecallTarget} from '../lib/coaching/coach-course-gate-draft.mjs'
 test('server thematic draft adapter binds typed prompts, retains reviewed quote and rejects stale/foreign actions',()=>{
  const protocol={...sample(),courseSessionId:'goal_result',turnLayout:'chronological'}
  assert.equal(typeof coachCourseGateTransition,'function')
  const g=createCoachProtocolGate({sessionId:protocol.id,courseSessionId:'goal_result',fields:[{id:'baseline',kind:'text'}]})
  const previous={protocol,revision:1,courseSessionId:'goal_result',courseGate:{gate:g,prompt:null,review:null,paused:false}}
  assert.equal(coachCourseGateView(previous).completed,false)
+ assert.equal(coachCourseGateView(previous).canRecall,false)
  assert.equal(coachCourseGateArchiveMatches(previous,{...protocol,courseFieldReview:{events:[]}}),false)
  assert.equal(coachCourseGateRetry(previous,{revision:0}),false)
  assert.throws(()=>coachCourseGateTransition(previous,{action:'course-gate-answer',id:protocol.id,revision:1,consent:true,requestId:'bad',promptId:'other',content:'да'},new Date().toISOString()))
@@ -720,10 +721,23 @@ test('all eight coaches and three languages: real opening, server-issued field, 
   let view=step('course-gate-start'),first=view.prompt.fieldId
   const answer=content=>step('course-gate-answer',{promptId:view.prompt.id,content})
   assert.equal(view.acceptedCount,0)
+  assert.equal(view.canRecall,true)
+  const target=coachCourseGateRecallTarget(value,view.prompt.id)
+  assert.equal(target.courseSessionId,course)
+  assert.equal(target.fieldId,first)
+  assert.equal(target.startedAt,value.protocol.startedAt)
+  assert.equal(target.scenarioVersion,'hh-coach-course-report-v1')
+  assert.equal(target.protocolId,value.protocol.id)
+  assert.equal(coachCourseGateRecallTarget(value,'stale'),null)
+  assert.equal(coachCourseGateRecallTarget({...value,courseGate:{...value.courseGate,scenarioVersion:undefined}},view.prompt.id),null)
+  assert.equal(coachCourseGateRecallTarget({...value,courseGate:{...value.courseGate,paused:true}},view.prompt.id),null)
+  assert.equal(coachCourseGateRecallTarget({...value,courseSessionId:'goal_plan'},view.prompt.id),null)
   const offTopic={ru:'Это ответ на другой вопрос',en:'This is an answer to another question',es:'Esta es la respuesta a otra pregunta'}[locale]
   view=answer(offTopic);assert.equal(view.prompt.fieldId,first);assert.equal(view.prompt.kind,'answer');assert.equal(view.acceptedCount,0);assert.equal(view.review,null)
   assert.throws(()=>coachCourseGateTransition(value,request('course-gate-answer',{promptId:'stale',content:f.yes}),'2026-11-26T18:12:00.000Z'))
   view=answer(f.answer);assert.equal(view.prompt.kind,'confirm');assert.equal(view.review,null)
+  assert.equal(view.canRecall,false)
+  assert.equal(coachCourseGateRecallTarget(value,view.prompt.id),null)
   view=answer(f.ambiguous);assert.equal(view.prompt.fieldId,first);assert.equal(view.prompt.kind,'answer');assert.equal(view.acceptedCount,0)
   view=answer(f.answer);view=answer(f.yes)
   assert.notEqual(view.prompt.fieldId,first);assert.equal(view.acceptedCount,1);assert.equal(view.review.events[0].quote,f.answer)
@@ -1021,4 +1035,18 @@ test('course protocol panel renders the actual grouped checkpoints, not a compet
  assert.ok(card.includes('{courseProtocol?<details><summary>{captureT.title}'))
  assert.ok(card.includes('data-coach-opening-name'))
  assert.ok(card.includes('data-coach-profile-checklist'))
+})
+
+test('private checkpoint recall leaves the existing checkpoint write quota available',()=>{
+ const route=readFileSync(new URL('../app/api/app/my-coach/draft/route.js',import.meta.url),'utf8')
+ assert.match(route,/op:'my-coach-course-memory-recall'[^\n]+20,3600/)
+ assert.match(route,/op:'my-coach-course-gate'[^\n]+120,3600/)
+})
+
+test('authenticated draft continuation can render before greeting playback',()=>{
+ const greeting=readFileSync(new URL('../components/my-coach-greeting-gate.jsx',import.meta.url),'utf8')
+ const dialogue=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ assert.match(greeting,/\{resumeControl&&<div className=\{styles\.resumeBelow\}>\{resumeControl\}/)
+ assert.match(dialogue,/resumeControl=\{protocolOwnerReady&&/)
+ assert.match(greeting,/\{greetingStarted&&\(readyTopic\?/)
 })
