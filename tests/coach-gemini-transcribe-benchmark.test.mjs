@@ -4,7 +4,7 @@ import {geminiTranscribePayload,geminiTranscriptText,transcribeGeminiBenchmark} 
 const wav=Buffer.alloc(48);wav.write('RIFF',0);wav.write('WAVE',8)
 test('verbatim, inline audio, no stored interaction, no reference or client context',()=>{
   const p=geminiTranscribePayload(wav,'ru')
-  assert.equal(p.model,'gemini-3.5-transcribe');assert.equal(p.store,false)
+  assert.equal(p.model,'models/gemini-3.5-transcribe');assert.equal(p.store,false)
   assert.deepEqual(p.generation_config.transcription_config,{mode:{type:'verbatim'},language_codes:[]})
   assert.equal(p.input.length,1);assert.equal(p.input[0].data,wav.toString('base64'))
   assert.equal(geminiTranscribePayload(wav,'es',{hints:true,vocabulary:true}).generation_config.transcription_config.language_codes[0],'es-ES')
@@ -17,7 +17,7 @@ test('only completed model output is accepted',()=>{
 })
 test('explicit free and synthetic approval required before network; no retry',async()=>{
   let calls=0
-  const fetcher=async()=>{calls++;return {ok:false,status:429}}
+  const fetcher=async(url,options)=>{calls++;assert.equal(options.headers['Api-Revision'],'2026-05-20');assert.equal(JSON.parse(options.body).model,'models/gemini-3.5-transcribe');assert.equal(options.signal.aborted,false);return {ok:false,status:429}}
   const env={HH_GEMINI_TRANSCRIBE_BENCHMARK_KEY:'mock',HH_GEMINI_TRANSCRIBE_FREE_BENCHMARK_CONFIRMED:'true'}
   await assert.rejects(transcribeGeminiBenchmark(wav,'ru',{env,fetcher}),/NOT_AUTHORIZED/)
   assert.equal(calls,0)
