@@ -1,6 +1,11 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
+import {runInNewContext} from 'node:vm'
+import {issueCoachMemoryTicket,verifyCoachMemoryTicket} from '../lib/coaching/coach-staged-memory-ticket.mjs'
+import {coachOpeningProgress} from '../lib/coaching/coach-opening-protocol.mjs'
+import * as stagedProjection from '../lib/coaching/coach-staged-memory.mjs'
+import {formatCoachPreconsultation} from '../lib/coaching/coach-preconsulting.mjs'
 import {withCoachContext} from '../lib/coaching/context-cloud-messages.mjs'
 import {geminiLiveContextMessage} from '../lib/coaching/gemini-live-transport.mjs'
 import {coachLiveMemoryNote} from '../lib/coaching/coach-live-memory-note.mjs'
@@ -40,7 +45,8 @@ test('Free Live keeps memory off the token and loads only a current approved ser
   assert.match(authority,/input\.shareApproved!==true/)
   assert.match(authority,/verifyCoachMemoryTicket\(input\.stageToken/)
   assert.match(authority,/readStaged\(config,actor/)
-  assert.match(source,/if\(r\.contextSentKey&&\(r\.contextSentKey!==liveContextAccess/)
+  assert.match(source,/r\.contextSentKey&&\(r\.contextSentKey!==liveContextAccess/)
+  assert.match(source,/r\.clarityOpeningMemoryStageToken!==clarityOpeningMemoryStageToken/)
   assert.match(source,/notify\(t\.contextRevoked\);stop\(\);return/)
   const note=coachLiveMemoryNote({prior:{preferredName:'Ana'},priorAllowed:true})
   const packet=geminiLiveContextMessage(note)
@@ -186,4 +192,62 @@ test('an explicit recent introduction beats incomplete unrelated foundation with
  const fallback=projectCoachPriorSessions([newer],'',old)
  assert.equal(coachPriorRecapRole(fallback,fallback.foundation),'earliest_reviewed_not_introductory')
  assert.match(service(),/coachPriorRecapRole\(reviewed,recap\)/)
+})
+
+
+test('first text-model request receives reviewed server context only for the consented provider',async()=>{
+ const secret=Buffer.alloc(32,3),actor={id:'synthetic-owner'}
+ const token=issueCoachMemoryTicket({accountId:actor.id,provider:'groq',secret,priorSessions:true,entry:true,consentRevision:1})
+ const source=service().slice(service().indexOf('export function createStagedCoachModelContextLoader')).replace('export function','function')
+ let reads=0,memoryEnabled=true,revision=1,revokeOnRead=false
+ const make=runInNewContext(source+'\ncreateStagedCoachModelContextLoader',{
+  process,Buffer,verifyCoachMemoryTicket,coachOpeningProgress,...stagedProjection,formatCoachPreconsultation,
+  clientMemoryEnabled:()=>true,readClientMemoryConsentForAccount:async()=>({memory_enabled:memoryEnabled,revision}),
+  createCoachContextLoader:()=>assert.fail('entry consent cannot read the ordinary personal stage'),
+  readCoachEntrySources:async(_cfg,_act,provider,_env,scope)=>{
+   assert.equal(provider,'groq');assert.equal(scope.topicKey,'personal_growth');assert.equal(scope.contextSessionToken,'approved-session')
+   return [{kind:'test_results',sourceKind:'selected_assessment',text:'Approved growth scale'},
+    {kind:'journal_excerpt',sourceKind:'selected_daybook_excerpt',text:'Approved cedar excerpt'}]
+  },
+  listMyCoachProtocols:async(_config,owner)=>{
+   assert.equal(owner.id,actor.id);reads++
+   if(revokeOnRead){memoryEnabled=false;revision++}
+   return {protocols:[{provenance:'client_reviewed_dialogue',completedAt:'2026-11-25T00:00:00Z',
+      goal:'Reviewed cedar practice',clientNextStep:'Keep a private journal'},
+    {provenance:'client_autosaved_unreviewed_draft',completedAt:'2026-11-26T00:00:00Z',goal:'Private draft text'}]}
+  }
+ })
+ const body={locale:'ru',personaId:'mira',openingHistory:[],allowOpeningPrior:true,
+  openingPrior:{name:'Андрей',topic:'Unverified browser topic'},memoryEntryStageToken:token}
+ const read=make({encryptionKey:secret},actor,body)
+ assert.equal(await read('gemini_free',{}),null)
+ assert.equal(await read('openrouter',{}),null)
+ assert.equal(await make({encryptionKey:secret},{id:'different-owner'},body)('groq',{}),null)
+ assert.equal(reads,0)
+ const messages=withCoachContext([{role:'system',content:'Coach policy'},{role:'user',content:'Продолжим'}],await read('groq',{}))
+ assert.equal(messages.at(-1).content,'Продолжим')
+ assert.match(messages.at(-2).content,/Reviewed cedar practice/)
+ assert.doesNotMatch(messages.at(-2).content,/Unverified browser topic|Private draft text/)
+ assert.equal(reads,1)
+ const changed={...body,openingHistory:['да','да, верно','начнем новую тему']}
+ assert.equal(await make({encryptionKey:secret},actor,changed)('groq',{}),null)
+ assert.equal(reads,1)
+ memoryEnabled=false
+ assert.equal(await read('groq',{}),null)
+ assert.equal(reads,1,'disabled memory never opens the archive')
+ memoryEnabled=true;revokeOnRead=true
+ assert.equal(await read('groq',{}),null)
+ assert.equal(reads,2,'a concurrent revocation discards the loaded result')
+ memoryEnabled=true;revokeOnRead=false
+ assert.equal(await read('groq',{}),null)
+ assert.equal(reads,2,'re-enabling memory does not revive an old sharing ticket')
+ const nextToken=issueCoachMemoryTicket({accountId:actor.id,provider:'groq',secret,
+   priorSessions:true,entry:true,consentRevision:revision,topicKey:'personal_growth',contextSessionToken:'approved-session'})
+ const sourceBody={...body,memoryEntryStageToken:nextToken,memoryEntryTopic:'personal_growth',memoryEntryContextSessionToken:'approved-session'}
+ const approved=await make({encryptionKey:secret},actor,sourceBody)('groq',{})
+ const payload=withCoachContext([{role:'user',content:'Продолжим'}],approved)
+ assert.match(payload.at(-2).content,/Approved growth scale/)
+ assert.match(payload.at(-2).content,/Approved cedar excerpt/)
+ assert.equal(await make({encryptionKey:secret},actor,{...sourceBody,memoryEntryTopic:'relationships'})('groq',{}),null)
+
 })

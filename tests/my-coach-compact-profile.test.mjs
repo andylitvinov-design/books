@@ -91,7 +91,7 @@ test('public coach profile is inline before Play; only real session shows stage 
   const inline=live.indexOf('{!sessionHasStarted&&<MyCoachInlineProfile')
   const lamps=live.indexOf('{sessionHasStarted&&<details className={styles.sessionProgress}')
   assert.ok(inline>0&&lamps>inline,'inline profile before director-confirmed progress')
-  assert.match(live,/const stagePosition=groupedSessionPosition\(openingPosition,detailPosition/)
+  assert.match(live,/const stagePosition=approvedClarity\?\.position\|\|groupedSessionPosition\(openingPosition,detailPosition/)
   assert.match(live,/methodStagePosition\(stageIds,stageChecklistTitles,\s*Math\.max\(0,Math\.min\(stageIds\.length-1,visibleStageIndex\)\),progressValid,/)
   assert.match(live,/data-group-progress/)
   assert.match(live,/stagePosition=\{detailPosition\} progressMode=\{progressMode\}/)
