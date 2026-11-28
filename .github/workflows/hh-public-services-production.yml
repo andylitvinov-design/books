@@ -325,7 +325,8 @@ jobs:
         run: printf 'path=%s\n' "$(npm config get cache)" >> "$GITHUB_OUTPUT"
       - name: Restore npm package cache only when application dependencies are needed
         if: ${{ github.event_name != 'pull_request' || steps.scope.outputs.dependency_free != 'true' }}
-        uses: actions/cache@v4
+        # Restore only: never publish a shared cache from this PR job.
+        uses: actions/cache/restore@v4
         with:
           path: ${{ steps.npm_cache_path.outputs.path }}
           key: node-cache-${{ runner.os }}-x64-npm-${{ hashFiles('package-lock.json') }}
@@ -597,6 +598,8 @@ jobs:
         if: always() && steps.scope.outputs.build == 'true' && (github.event_name != 'pull_request' || steps.scope.outputs.pr_heavy == 'true')
         with:
           name: public-services-production-acceptance
+          # Screenshots are already compressed; avoid extra CPU in the merge tail.
+          compression-level: 0
           path: |
             artifacts/public-services-production/
             artifacts/business-quiz-mobile/

@@ -5,7 +5,7 @@ import { parsePrTrigger } from '../lib/ci/specialist-aggregate.mjs';
 import { requiresRealMediaWebKit } from '../lib/ci/merge-check-light.mjs';
 import test from 'node:test';
 import { approvedTelegramPresentation } from '../lib/crm/telegram-presentation.mjs';
-import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, refinePublicServicesPlan, publicServicesDependencyFree, requiresPublicServicesHeavyPr, publicPlaywrightEngines, isTrustedMandalaOwnerPath, isTrustedCoreCiOwnerPath, verifiedCriticalPublicCases, REVIEWED_VOICE_2629_DELTA, REVIEWED_PHRASES_3006_DELTA , exactReleaseProofAddition, EXACT_RELEASE_PROOF_BLOBS, planPrivatePractitionerMediaRows, PRIVATE_PRACTITIONER_MEDIA_OWNERS, PRIVATE_PRACTITIONER_MEDIA_REVIEWED_ADDITIONS } from '../scripts/ci-public-services-plan.mjs';
+import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, refinePublicServicesPlan, publicServicesDependencyFree, isDependencyFreePublicTest, requiresPublicServicesHeavyPr, publicPlaywrightEngines, isTrustedMandalaOwnerPath, isTrustedCoreCiOwnerPath, verifiedCriticalPublicCases, REVIEWED_VOICE_2629_DELTA, REVIEWED_PHRASES_3006_DELTA , exactReleaseProofAddition, EXACT_RELEASE_PROOF_BLOBS, planPrivatePractitionerMediaRows, PRIVATE_PRACTITIONER_MEDIA_OWNERS, PRIVATE_PRACTITIONER_MEDIA_REVIEWED_ADDITIONS } from '../scripts/ci-public-services-plan.mjs';
 
 const workflow = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 const verifyPinnedPublicBrowsers = src => {
@@ -2047,4 +2047,37 @@ test('independent Public Services routing never installs unrelated app dependenc
   assert.ok(!smoke?.includes("steps.scope.outputs.dependency_free != 'true'"),
     'protected composed owner routes still execute dependency-free consent/booking tests');
   assert.match(yaml,/steps.scope.outputs.pr_heavy == 'true'/);
+});
+
+
+test('reviewed Node-only public test edits need no application install but still execute exact tests',()=>{
+  const paths=[
+    'tests/holistic-support-topics.test.mjs','tests/remote-energy-support-mobile-compact.test.mjs',
+    'tests/alchemy-soul-mobile-landing.test.mjs','tests/alchemy-soul-spanish-parity.test.mjs',
+  ];
+  const base='a'.repeat(40),head='b'.repeat(40),z=String.fromCharCode(0);
+  const env={GITHUB_EVENT_NAME:'pull_request',HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head};
+  const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
+  const run=(files,readSource=source)=>planPublicServicesEvent(env,(_bin,args)=>{
+    if(args[0]==='rev-parse')return head;
+    if(args[0]==='merge-base')return '';
+    if(args[0]==='diff')return files.flatMap(path=>['M',path]).join(z)+z;
+    if(args[0]==='show'&&args[1].startsWith('HEAD:'))return readSource(args[1].slice(5));
+    throw Error('unavailable source');
+  });
+  for(const path of paths)assert.equal(isDependencyFreePublicTest(path,source(path)),true,path);
+  const fast=run(paths);
+  assert.equal(fast.reason,'MODIFIED_PUBLIC_TESTS_ONLY');
+  assert.equal(publicServicesDependencyFree(fast),true);
+  for(const append of ["\nimport ts from 'typescript';","\nimport '../lib/unknown.mjs';",
+    "\nawait import('unknown');","\nconst dependency = require('unknown');"]){
+    assert.equal(publicServicesDependencyFree(run(paths,path=>source(path)+append)),false);
+  }
+  assert.equal(publicServicesDependencyFree(run([...paths,'tests/direction-extras.test.mjs'])),false);
+  assert.equal(publicServicesDependencyFree(run(paths,()=>{throw Error('missing');})),false);
+  const yaml=workflow('hh-public-services-production.yml');
+  assert.match(yaml,/Run exact modified public unit tests \(no unrelated browser matrix\)/);
+  assert.match(yaml,/node --test "\$\{files\[@\]\}"/);
+  assert.ok(!yaml.includes('uses: actions/cache@v4'),'read-only restore, no shared cache writes');
+  assert.ok(yaml.includes('compression-level: 0'));
 });

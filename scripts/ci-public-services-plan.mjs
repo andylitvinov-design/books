@@ -785,6 +785,33 @@ function reviewedIHelpPhoto3843(env,rows) {
   return seen.size === REVIEWED_IHELP_PHOTO_3843_DELTA.size;
 }
 
+// These reviewed source-only contracts use Node's standard library, not the
+// app package graph. A newly added import, require, or dynamic execution
+// conservatively restores the regular npm route. Never skip the tests.
+const NODE_ONLY_PUBLIC_TESTS = new Set([
+  'tests/holistic-support-topics.test.mjs',
+  'tests/remote-energy-support-mobile-compact.test.mjs',
+  'tests/alchemy-soul-mobile-landing.test.mjs',
+  'tests/alchemy-soul-spanish-parity.test.mjs',
+]);
+export function isDependencyFreePublicTest(path, source) {
+  if (!NODE_ONLY_PUBLIC_TESTS.has(path) || typeof source !== 'string' ||
+      !source.length || source.length > 200000) return false;
+  const lines = source.split('\n');
+  let imports = 0;
+  for (const line of lines) {
+    // The exact reviewed files use single-line named/default Node imports.
+    // Anything less obvious, including a new local dependency, stays regular.
+    if (/\b(?:require\s*\(|import\s*\(|createRequire\b|execFile\b|spawn\b)/.test(line)) return false;
+    if (/^\s*import\b/.test(line)) {
+      if (!/^\s*import\s+[\w{},\s]+\s+from\s+['"]node:(?:test|assert\/strict|fs|fs\/promises)['"]\s*;?\s*$/.test(line)) return false;
+      imports++;
+    }
+    if (/^\s*export\b.*\bfrom\b/.test(line)) return false;
+  }
+  return imports > 0;
+}
+
 export function planPublicServicesEvent(env = process.env, git = execFileSync) {
   if (env.GITHUB_EVENT_NAME !== 'pull_request') return full('MANUAL_OR_NON_PR_EVENT');
   const base = env.HH_PUBLIC_BASE_SHA;
@@ -930,8 +957,16 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
     const modifiedPublicUnitTest = /^tests\/(?:holistic-|alchemy-|remote-|direction-|public-service)[a-z0-9._-]*\.test\.mjs$/i;
     if (rows.length >= 2 && rows.length <= 24 &&
         rows.every((item,i) => i % 2 === 0 ? item === 'M' : modifiedPublicUnitTest.test(item))) {
+      // Only the reviewed exact Node-only contracts qualify. If any
+      // source read or import proof fails, retain the existing npm path.
+      let dependencyFree = false;
+      try {
+        dependencyFree = rows.every((item,i) => i % 2 === 0 ||
+          (NODE_ONLY_PUBLIC_TESTS.has(item) &&
+            isDependencyFreePublicTest(item, String(git('git',['show','HEAD:'+item],options)))));
+      } catch { /* normal install path */ }
       return {mode:'contracts',reason:'MODIFIED_PUBLIC_TESTS_ONLY',
-        build:false,browser:false,metrics:false,cases:'none'};
+        build:false,browser:false,metrics:false,cases:'none', ...(dependencyFree ? {dependencyFree:true} : {})};
     }
     const changed = [];
     const mandalaOwned = new Set(), coreOwned = new Set(), publicOwned = new Map();
@@ -1170,7 +1205,10 @@ export function publicServicesDependencyFree(plan) {
   return plan?.mode === 'contracts' && plan.build === false &&
     plan.browser === false && plan.metrics === false && plan.cases === 'none' &&
     ['INDEPENDENT_OWNER_OR_CORE','PROTECTED_COMPOSED_COACH_OWNERS',
-      'EXACT_MY_COACH_ONLY_SHARED_API'].includes(plan.reason);
+      'EXACT_MY_COACH_ONLY_SHARED_API'].includes(plan.reason) ||
+    (plan?.mode === 'contracts' && plan.build === false && plan.browser === false &&
+      plan.metrics === false && plan.cases === 'none' &&
+      plan.reason === 'MODIFIED_PUBLIC_TESTS_ONLY' && plan.dependencyFree === true);
 }
 
 async function main() {
