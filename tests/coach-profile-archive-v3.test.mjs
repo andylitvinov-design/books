@@ -61,6 +61,7 @@ test('requires actual finalized question in the transcript, not merely a reconst
 
 import {coachProfileArchiveEnvelope,coachProfileArchiveExtends} from '../lib/coaching/coach-profile-archive-v3.mjs'
 import {coachSavedProfileV3,coachSavedProfileV3Text} from '../lib/coaching/coach-profile-report-v3.mjs'
+import {coachRatingValue,buildCoachRatingRadar} from '../lib/coaching/coach-rating-radar.mjs'
 test('structured proof envelope is track-specific, retains zero, and reports missing values honestly',()=>{
  const b=buildCoachProfileArchiveV3(ledger)
  const p={...protocol,lifeBalanceCheckin:{block:b,receipt:'a'.repeat(64)}}
@@ -68,6 +69,11 @@ test('structured proof envelope is track-specific, retains zero, and reports mis
  const projection=coachSavedProfileV3(p,'ru')
  assert.equal(projection.rows[0].current.value,0)
  assert.equal(projection.rows[0].desired.value,null)
+ const radar=buildCoachRatingRadar(projection.rows)
+ assert.equal(radar.series[0].count,1)
+ assert.deepEqual(radar.series[0].points[0],[110,110])
+ assert.equal(radar.series[1].count,0)
+ assert.equal(radar.series[0].complete,false)
  assert.match(coachSavedProfileV3Text(p,'ru'),/Тело и здоровье: Сейчас 0 \/ Желаемое Не исследовано/)
  assert.throws(()=>coachProfileArchiveEnvelope({...p,profileCheckin:{}}),/COACH_PROFILE_ARCHIVE_INVALID/)
  assert.throws(()=>coachProfileArchiveEnvelope({...protocol,meaningAxesCheckin:p.lifeBalanceCheckin}),/COACH_PROFILE_ARCHIVE_INVALID/)
@@ -163,4 +169,36 @@ test('question issuance does not certify delivery; interrupted attempts cannot b
  assert.equal(block.bindings[0].questionTurnIndex,1)
  assert.equal(block.snapshot.ratings[0].current.value,0)
  assert.equal(block.transcriptLength,3)
+})
+
+test('shared radar retains zero and independent desired scores, rejects unconfirmed or invalid values, and never bridges missing axes',()=>{
+ const rows=Array.from({length:8},(_,i)=>({id:'axis-'+i,label:'Axis '+i,current:null,desired:null}))
+ rows[0].current=0
+ rows[1].current={status:'confirmed',value:5}
+ rows[2].current={status:'proposed',value:8}
+ rows[3].current=11
+ rows[4].current='7'
+ rows[5].desired=8
+ rows[7].current=9
+ const m=buildCoachRatingRadar(rows)
+ assert.equal(m.series[0].count,3)
+ assert.equal(m.series[1].count,1)
+ assert.deepEqual(m.series[0].points[0],[110,110])
+ assert.equal(m.rows[5].current,null)
+ assert.equal(m.rows[5].desired,8)
+ assert.equal(m.series[0].segments.length,2)
+ assert.ok(m.series.every(s=>!s.complete))
+ assert.equal(coachRatingValue({status:'skipped_by_client',value:6}),null)
+ const full=buildCoachRatingRadar(rows.map(r=>({...r,current:10,desired:0})))
+ assert.ok(full.series.every(s=>s.complete&&s.count===8&&s.segments.length===0))
+ const empty=buildCoachRatingRadar(rows.map(r=>({...r,current:null,desired:null})))
+ assert.equal(empty.hasData,false)
+ assert.equal(buildCoachRatingRadar(rows.slice(0,7)),null)
+ assert.equal(buildCoachRatingRadar(rows.map(r=>({...r,id:'duplicate'}))),null)
+})
+test('live result, Clarity and saved archive use one shared read-only chart',()=>{
+ for(const path of ['my-coach-result-preview.jsx','clarity-semantic-result.jsx','app/my-coach-saved-profile-v3.jsx','app/my-coaching-plan.jsx']){
+  const ui=readFileSync(new URL('../components/'+path,import.meta.url),'utf8')
+  assert.ok(ui.includes('<CoachRatingRadar axes='))
+ }
 })

@@ -10,6 +10,7 @@ import AntiStressArchive from './anti-stress-archive'
 import CoachSessionArchiveHeader from './coach-session-archive-header'
 import CourseArchiveReview from './course-archive-review'
 import MyCoachSavedProfileV3 from './my-coach-saved-profile-v3'
+import CoachRatingRadar from '../coach-rating-radar'
 import DaybookDailySettings from './daybook-daily-settings'
 import ReikiHintsSettings from './reiki-hints-settings'
 import CoachMemoryReview from './coach-memory-review'
@@ -180,9 +181,10 @@ function SavedProtocolCheckin({protocol,locale}){
   <MyCoachSavedProfileV3 protocol={protocol} locale={locale}/>
   {rows.length>0&&<div className={styles.reportSection} data-my-coach-saved-meaning-axes>
    <b>{protocol.profileCheckin.version==='hh-coach-profile-intake-v2'?words.updates:words.profile}</b>
+   <CoachRatingRadar axes={rows} title={words.profile} locale={locale} labels={words}/>
    <p>{words.current} / {words.desired}</p>
-   {rows.map(row=><p key={row.id} data-axis-id={row.id} data-rating-status={row.status}>
-    {row.label}: {row.status==='skipped'||row.status==='notCaptured'?words[row.status]:
+   {rows.map((row,index)=><p key={row.id} data-axis-id={row.id} data-rating-status={row.status}>
+    {index+1}. {row.label}: {row.status==='skipped'||row.status==='notCaptured'?words[row.status]:
      <>{row.current??'—'} / {row.desired??'—'}{row.status==='partial'?' · '+words.partial:''}</>}
    </p>)}
   </div>}

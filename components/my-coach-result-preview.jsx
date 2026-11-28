@@ -1,4 +1,5 @@
 import ClaritySemanticResult from './clarity-semantic-result'
+import CoachRatingRadar from './coach-rating-radar'
 import {clarityMethodOutcome} from '@/lib/coaching/clarity-session-fields.mjs'
 // Projection only: a report shows existing reviewed evidence, never invents scores.
 const COPY={
@@ -17,21 +18,8 @@ const label={
  integration:{en:'Integration report',ru:'Итоговый отчёт',es:'Informe de integración'}
 }
 const isScore=field=>field?.status==='confirmed'&&Number.isInteger(field.value)&&field.value>=0&&field.value<=10
-function wheelPoint(index,count,value){
- const angle=-Math.PI/2+index*2*Math.PI/count
- return [100+value*7.8*Math.cos(angle),100+value*7.8*Math.sin(angle)]
-}
-function Wheel({profile}){
- const rows=profile.rows
- if(profile.track!=='outer'||rows.length!==8)return null
- const coords=rows.map((r,i)=>isScore(r.current)?wheelPoint(i,8,r.current.value):null)
- return <svg viewBox="0 0 200 200" role="img" aria-label={profile.title} style={{width:'100%',maxWidth:240,display:'block',margin:'0 auto'}}>
-  {[2,4,6,8,10].map(v=><polygon key={v} points={rows.map((_,i)=>wheelPoint(i,8,v).join(',')).join(' ')} fill="none" stroke="currentColor" opacity=".2"/>)}
-  {rows.map((r,i)=>{const [x,y]=wheelPoint(i,8,10);return <line key={r.id} x1="100" y1="100" x2={x} y2={y} stroke="currentColor" opacity=".22"/>})}
-  {coords.every(Boolean)&&<polygon points={coords.map(p=>p.join(',')).join(' ')} fill="#529b83" fillOpacity=".23" stroke="#529b83" strokeWidth="2"/>}
-  {coords.map((p,i)=>p&&<circle key={rows[i].id} cx={p[0]} cy={p[1]} r="3" fill="#529b83"/>)}
-  {rows.map((r,i)=>{const [x,y]=wheelPoint(i,8,11.6);return <text key={r.id} x={x} y={y+3} fontSize="8" textAnchor="middle" fill="currentColor">{i+1}</text>})}
- </svg>
+function Wheel({profile,locale,t}){
+ return <CoachRatingRadar axes={profile.rows} title={profile.title} locale={locale} labels={t}/>
 }
 function Rating({field,t}){
  return <>{isScore(field)?field.value:field?.status==='skipped_by_client'?t.skipped:t.missing}</>
@@ -48,7 +36,7 @@ export default function MyCoachResultPreview({locale='en',courseSessionId,title,
   <h3 style={{margin:0}}>{activeProfile?.title||label[courseSessionId]?.[lang]||title||t.result}</h3>
   {partial&&<small role="status">{t.partial}</small>}
   {['clarity_day_1','clarity_day_2','clarity_day_3'].includes(courseSessionId)&&<ClaritySemanticResult day={Number(courseSessionId.slice(-1))} rows={rows} locale={lang}/>}
-  {activeProfile&&<><Wheel profile={activeProfile}/><ol style={{margin:0,paddingInlineStart:20}}>{activeProfile.rows.map(row=><li key={row.id}><strong>{row.label}</strong> — {t.current}: <Rating field={row.current} t={t}/>{(row.priority||activeProfile.track==='inner'||isScore(row.desired))&&<> · {t.desired}: <Rating field={row.desired} t={t}/></>}</li>)}</ol></>}
+  {activeProfile&&<><Wheel profile={activeProfile} locale={lang} t={t}/><ol style={{margin:0,paddingInlineStart:20}}>{activeProfile.rows.map(row=><li key={row.id}><strong>{row.label}</strong> — {t.current}: <Rating field={row.current} t={t}/>{(row.priority||activeProfile.track==='inner'||isScore(row.desired))&&<> · {t.desired}: <Rating field={row.desired} t={t}/></>}</li>)}</ol></>}
   {rows.length>0&&<dl style={{margin:0,display:'grid',gap:8}}>{rows.map(row=><div key={row.id}><dt><strong>{row.label}</strong></dt><dd style={{margin:0}}>{isReviewed(row)?<>{row.questionTurnIndex!=null&&<small style={{display:'block'}}>{t.question}: {row.question}</small>}{row.quote}<br/><small>{row.source==='server_verified'?t.verified:t.reviewed}{row.confirmationQuote&&<> · {t.confirmation}: {row.confirmationQuote}</>}</small></>:row.status==='skipped_by_client'?t.skipped:t.missing}</dd></div>)}</dl>}
   {!activeProfile&&!rows.length&&<p>{t.empty}</p>}
   {summary&&<div><strong>{t.takeaway}</strong><p style={{margin:'4px 0',whiteSpace:'pre-wrap'}}>{summary}</p></div>}

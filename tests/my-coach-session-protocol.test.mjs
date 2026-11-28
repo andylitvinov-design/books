@@ -1072,3 +1072,45 @@ test('course protocol panel renders the actual grouped checkpoints, not a compet
  assert.ok(card.includes('data-coach-opening-name'))
  assert.ok(card.includes('data-coach-profile-checklist'))
 })
+
+test('final protocol unlocks only before a request is prepared; ambiguous POST retries remain immutable',async()=>{
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const save=ui.slice(ui.indexOf('  async function saveProtocol(){'),ui.indexOf('  async function closeProtocolToRating(){'))
+ const ref=current=>({current})
+ const snapshot={id:'protocol-1',turns:['original']}
+ let locked=false,saving=false,saved=false,flushCount=0,postCount=0,ready=false,failPost=true,body,revision=7
+ const refs={protocolSaveInFlightRef:ref(false),profileV3BusyRef:ref(false),profileV3FaultRef:ref(false),courseGateBusyRef:ref(false),courseGateAttemptRef:ref(false),protocolOwnerRef:ref('owner'),protocolSaveSnapshotRef:ref(null),restoredProfileProof:ref(null),protocolIdRef:ref('protocol-1'),protocolSaveRequestRef:ref(null),autoSaveRef:ref(true),profileV3Ref:ref(null),courseGateRef:ref(null),turnsRef:ref([]),autoSaveQueueRef:ref({flush:async()=>{flushCount++;return ready?revision:null},stop(){}})}
+ const env={...refs,protocolSaving:false,protocolSaved:false,autoSaveStatus:'active',lang:'en',currentProtocol:()=>({...snapshot}),setProtocolSaveLocked:v=>{locked=v},setProtocolSaving:v=>{saving=v},setProtocolError(){},protocolCopy:{en:{error:'error'}},queuePrivateDraft:()=>true,fetch:async(_url,options)=>{postCount++;if(body)assert.equal(options.body,body);else body=options.body;if(failPost)throw Error('lost response');return {ok:true,status:200,json:async()=>({saved:true,id:snapshot.id})}},setAutoSaveEnabled(){},setProfileV3(){},setProfileV3CanStart(){},setCourseGate(){},setProtocolSaved:v=>{saved=v},setProtocolEditing(){}}
+ const execute=new Function(...Object.keys(env),save+'\nreturn saveProtocol()')
+ assert.equal(await execute(...Object.values(env)),false)
+ assert.equal(locked,false);assert.equal(saving,false);assert.equal(refs.protocolSaveSnapshotRef.current,null);assert.equal(postCount,0)
+ ready=true
+ assert.equal(await execute(...Object.values(env)),false)
+ assert.equal(locked,true);assert.equal(saving,false);assert.equal(postCount,1);assert.equal(flushCount,2)
+ assert.equal(refs.protocolSaveSnapshotRef.current.id,snapshot.id);assert.equal(JSON.parse(body).draftRevision,7)
+ snapshot.turns=['edited'];revision=8;failPost=false
+ assert.equal(await execute(...Object.values(env)),true)
+ assert.equal(saved,true);assert.equal(postCount,2);assert.equal(flushCount,2)
+ assert.equal(JSON.parse(body).protocol.turns[0],'original')
+})
+
+import {thematicScenarioVersion,THEMATIC_EXPANDED_VERSION} from '../lib/coaching/session-blueprint.mjs'
+import {coachExpandedGateReadbackMatches} from '../lib/coaching/coach-course-protocol-schema.mjs'
+test('expanded session gate pins its exact version through review, coach handoff and archive',()=>{
+ const fixtures={ru:{history:['Да','Меня зовут Анна','Новая тема','Хочу поработать над целью','Спокойно','Да'],answer:'работа',yes:'да'},en:{history:['Yes','My name is Anna','New topic','I want to work on a goal','Calm','Yes'],answer:'work',yes:'yes'},es:{history:['Sí','Me llamo Ana','Un tema nuevo','Quiero trabajar en una meta','Tranquila','Sí'],answer:'trabajo',yes:'sí'}}
+ const courses=[...COACH_PROGRAM_SESSIONS,...COACH_COURSE_SESSIONS].filter(item=>thematicScenarioVersion(item.id))
+ assert.equal(courses.length,16)
+ for(const item of courses)for(const [locale,f] of Object.entries(fixtures)){
+  const course=item.id,personaId='mira',opening=coachOpeningProgress({turns:f.history,locale,personaId})
+  const schema=coachCourseProtocolSchema(course,locale,{scenarioVersion:THEMATIC_EXPANDED_VERSION})
+  let value={courseSessionId:course,revision:1,protocol:{...sample(),personaId,locale,courseSessionId:course,turnLayout:'chronological',opening:coachOpeningProtocolSnapshot(opening),turns:f.history.map(content=>({role:'user',content}))}}
+  let n=0
+  const step=(action,extra={})=>{const input={action,id:value.protocol.id,revision:value.revision,consent:true,requestId:'00000000-0000-4000-8000-'+String(++n).padStart(12,'0'),...extra};const next=coachCourseGateTransition(value,input,'2026-11-28T18:12:00.000Z');value={...value,...next,revision:value.revision+1};const view=coachCourseGateView(value);assert.ok(coachExpandedGateReadbackMatches(course,locale,value.protocol.turns,view));return view}
+  let view=step('course-gate-start');assert.equal(view.scenarioVersion,THEMATIC_EXPANDED_VERSION);assert.equal(view.total,schema.checkpoints.length);assert.equal(view.prompt.fieldId,schema.checkpoints[0].id)
+  view=step('course-gate-answer',{promptId:view.prompt.id,content:f.answer});assert.equal(view.prompt.kind,'confirm');view=step('course-gate-answer',{promptId:view.prompt.id,content:f.yes});assert.equal(view.acceptedCount,1);const first=view.review.events[0],pending=view.prompt.fieldId
+  view=step('course-gate-continue',{coachId:'max',resumeConfirmed:true});assert.equal(view.activeCoachId,'max');assert.equal(view.prompt.fieldId,pending);assert.deepEqual(view.review.events[0],first);assert.equal(view.scenarioVersion,THEMATIC_EXPANDED_VERSION)
+  assert.ok(coachCourseGateArchiveMatches(value,{...value.protocol,courseFieldReview:view.review}));assert.equal(coachCourseGateArchiveMatches(value,{...value.protocol,courseSessionId:'goal_result',courseFieldReview:view.review}),false)
+  assert.equal(coachExpandedGateReadbackMatches(course,locale,value.protocol.turns,{...view,scenarioVersion:null}),false);assert.equal(coachExpandedGateReadbackMatches(course,locale,value.protocol.turns,{...view,total:view.total+1}),false)
+  assert.equal(coachExpandedGateReadbackMatches(course,locale,value.protocol.turns,{...view,prompt:{...view.prompt,fieldId:'forged'}}),false)
+ }
+})

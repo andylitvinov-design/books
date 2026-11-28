@@ -4,6 +4,9 @@
  * Editing, shot matching and rendering remain local on the original Studio.
  */
 import {NextResponse} from "next/server";
+import {coachSpeechReviewEnabled,isCoachSpeechReviewRequest} from "@/lib/coaching/coach-speech-review-config.mjs";
+import {shouldUseCoachLargeV3} from "@/lib/coaching/coach-stt-model.mjs";
+import {coachSpeechReviewGlossary} from "@/lib/coaching/coach-speech-review-glossary.mjs";
 import {AppError} from "@/lib/assessments/contracts";
 import {getAppConfig,requireSameOrigin} from "@/lib/app/config";
 import {createRequestAuth} from "@/lib/app/session";
@@ -61,6 +64,8 @@ export async function POST(request){
     if(textOnly&&purpose!==null&&purpose!=="ali_chat"&&purpose!=="my_coach")throw new AppError("AUDIO_STT_PURPOSE_INVALID",400);
     if(purpose==="my_coach"){
       const actor=await createRequestAuth(request,config).verified();
+      if(isCoachSpeechReviewRequest({purpose,filename:file.name,review:form.get("review")})&&(!textOnly||!coachSpeechReviewEnabled(process.env)))
+        throw new AppError("AUDIO_STT_REVIEW_DISABLED",503);
       await consumeRate(config,{op:"my-coach-stt-free-user-minute",userId:actor.id},8,60);
       await consumeRate(config,{op:"my-coach-stt-free-user-day",userId:actor.id},120,86400);
       await consumeRate(config,{op:"my-coach-stt-free-global-minute"},12,60);
@@ -84,6 +89,16 @@ export async function POST(request){
     const multipart=new FormData();
     multipart.set("file",file,file.name.replace(/[^a-z0-9._-]/gi,"_").slice(-70));
     multipart.set("model","whisper-large-v3-turbo");
+    // The background review can switch independently of Basic's response path.
+    // The model-specific flag requires confirmed free entitlement; no retry on another model.
+    if(shouldUseCoachLargeV3({purpose,textOnly,fileName:file.name,
+      freeConfirmed:process.env.HH_MY_COACH_STT_LARGE_V3_FREE_CONFIRMED,
+      basicEnabled:process.env.HH_MY_COACH_STT_LARGE_V3_BASIC_ENABLED}))
+      multipart.set("model","whisper-large-v3");
+    // Never forward a client-provided prompt, prior dialogue or profile.
+    const glossary=coachSpeechReviewGlossary({purpose,textOnly,filename:file.name,language,
+      enabled:process.env.HH_MY_COACH_STT_GLOSSARY_ENABLED==="true"});
+    if(glossary)multipart.set("prompt",glossary);
     // Plain chat dictation needs text only; do not reject a short phrase for missing timecodes.
     multipart.set("response_format",textOnly?"json":"verbose_json");
     if(!textOnly)multipart.set("timestamp_granularities[]","segment");
