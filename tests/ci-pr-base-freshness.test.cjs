@@ -169,8 +169,10 @@ test('hourly coordinator recovers trusted Core base if GH drops PR association',
 test('hourly Core-base fallback uses existing GitHub token and no scheduled work',()=>{
  const hourly=require('node:fs').readFileSync('.github/workflows/hh-pr-full-inventory.yml','utf8');
  assert.match(hourly,/HH_CORE_BASE_TOKEN: \$\{\{ github\.token \}\}/);
- assert.equal((hourly.match(/verifiedRunBase:rows=>baseEvidence\.coreRunBaseForCheck/g)||[]).length,2);
- assert.equal((hourly.match(/token:process\.env\.HH_CORE_BASE_TOKEN/g)||[]).length,2);
+ assert.equal((hourly.match(/verifiedRunBase:rows=>baseEvidence\.coreRunBaseForCheck/g)||[]).length,1);
+ assert.equal((hourly.match(/token:process\.env\.HH_CORE_BASE_TOKEN/g)||[]).length,1);
+ assert.ok(hourly.includes('await assessCurrentBase(live,checks)'));
+ assert.ok(hourly.includes('await assessCurrentBase(live,freshChecks)'));
 });
 
 

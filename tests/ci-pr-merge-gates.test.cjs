@@ -30,8 +30,12 @@ test('both coordinators verify production freshness before native ARM',()=>{
  const s=workflow('hh-native-auto-merge'),t=workflow('hh-pr-full-inventory');
  assert.ok(s.includes('assessBaseFreshness'));
  assert.ok(s.includes('production advanced since sensitive CI verification'));
- assert.equal((t.match(/assessBaseFreshness/g)||[]).length,2);
- assert.ok(t.includes('check:freshChecks.get(unifiedRequired?"hh-merge-check":"hh-core-verified")'));
+ assert.equal((t.match(/assessBaseFreshness/g)||[]).length,1);
+ assert.ok(t.includes('check:checks.get(unifiedRequired?"hh-merge-check":"hh-core-verified")'));
+ assert.ok(t.includes('await assessCurrentBase(live,checks)'));
+ assert.ok(t.includes('await assessCurrentBase(live,freshChecks)'));
+ assert.ok(t.includes('expectedBase:freshness.base,'));
+ assert.ok(t.includes('allowVerifiedBaseAdvance:true'));
 });
 test('native writer never falls back to direct protected merge',()=>{
  const s=workflow('hh-native-auto-merge');

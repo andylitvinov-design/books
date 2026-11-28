@@ -296,3 +296,24 @@ test('critical-check audit reads complete inventories above 100 without treating
  world.github.rest.checks.listForRef=async()=>({data:{total_count:501,check_runs:checks.slice(0,100)}});
  assert.equal((await check(world)).reason,'CRITICAL_CHECK_INVENTORY_INCOMPLETE');
 });
+
+
+test('hourly merge rechecks protected independence instead of requiring stale PR base snapshot',()=>{
+ const hourly=fs.readFileSync('.github/workflows/hh-pr-full-inventory.yml','utf8');
+ assert.ok(hourly.includes('async function assessCurrentBase(pr,checks)'));
+ assert.ok(hourly.includes('["CLASSIFIER_BASE_STALE","BASE_MOVED_DURING_CHECK"]'));
+ assert.ok(hourly.includes('await assessCurrentBase(live,freshChecks)'));
+ assert.ok(hourly.includes('expectedBase:freshness.base,'));
+ assert.ok(hourly.includes('allowVerifiedBaseAdvance:true'));
+ assert.ok(!hourly.includes('live.base.sha!==c.base'));
+});
+test('interrupted Core retry revalidates current protected proof rather than comparing mutable PR base',()=>{
+ const workflow=fs.readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
+ const start=workflow.indexOf('  recover-interrupted-core:');
+ const body=workflow.slice(start);
+ assert.ok(body.includes('async function retryBaseAllowed(pr)'));
+ assert.ok(body.includes('verifiedRunBase:testedBase'));
+ assert.ok(body.includes('!await retryBaseAllowed(latestPr)'));
+ assert.ok(body.includes('selectInterruptedMandatoryJob(jobs)'));
+ assert.ok(!body.includes('latestPr.base.sha !== live.base.sha'));
+});
