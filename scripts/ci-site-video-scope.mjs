@@ -131,10 +131,16 @@ export function exactCoreIdentityLog(log, identity, run) {
   if (typeof log!=='string') return false;
   // Ignore the shell command printed by Actions; only accept the unique
   // standalone runtime marker emitted by the BASE-identical ancestry step.
-  const markers=log.split(/\r?\n/).map(line=>line.replace(/^\d{4}-\d\d-\d\dT[\d:.]+Z\s+/,''))
-    .filter(line=>line.startsWith(CORE_IDENTITY+' '));
+  const lines=log.split(/\r?\n/).map(line=>line.replace(/^\d{4}-\d\d-\d\dT[\d:.]+Z\s+/,''));
+  const markers=lines.flatMap((line,index)=>line.startsWith(CORE_IDENTITY+' ')?[index]:[]);
   const wanted=[CORE_IDENTITY,identity.pr,run.id,run.run_attempt,identity.merge,identity.head,identity.base].join(' ');
-  return markers.length===1 && markers[0].trim()===wanted;
+  // Independently require checkout@v4's actual checked-out SHA and the
+  // marker before the first candidate-controlled readiness script runs.
+  const checkout=lines.findIndex(line=>line==='[command]/usr/bin/git log -1 --format=%H');
+  const readiness=lines.findIndex(line=>line==='##[group]Run node scripts/ci-pr-readiness.mjs');
+  return markers.length===1 && checkout>=0 && readiness>checkout+1 &&
+    lines[checkout+1]?.trim()===identity.merge &&
+    markers[0]>checkout+1 && markers[0]<readiness && lines[markers[0]].trim()===wanted;
 }
 
 export function verifiedCompletedCoreBuild(identity, read) {
