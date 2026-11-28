@@ -20,7 +20,7 @@ test('hourly observed check inventory is complete and owned by Actions',async()=
  const m=s.match(/async function latestChecks\(sha\)\{[\s\S]*?\n            \}/);
  assert.ok(m);
  let response;
- const fn=vm.runInNewContext('('+m[0]+')',{owner:'o',repo:'r',github:{rest:{checks:{listForRef:async()=>({data:response})}}}});
+ const fn=vm.runInNewContext('('+m[0]+')',{hourlyProof:require('../scripts/ci-pr-hourly-ready-proof.cjs'),owner:'o',repo:'r',github:{rest:{checks:{listForRef:async()=>({data:response})}}}});
  response={total_count:2,check_runs:[{id:1,name:'hh-merge-check'}]};
  assert.equal(await fn('a'.repeat(40)),null);
  response={total_count:1,check_runs:[{id:1,name:'hh-merge-check'}]};
@@ -189,3 +189,6 @@ test('unassociated successful Core resolves one PR only when exact trusted run H
   assert.notEqual(bad.outputs.eligible,'true','untrusted or ambiguous run must fail closed');
  }
 });
+
+// Execute hourly proof regressions in the existing mandatory watchdog suite.
+require('./ci-pr-hourly-ready-proof.test.cjs');

@@ -137,7 +137,7 @@ async function verifiedMergeReadyV3({github,owner,repo,pr,run,jobs,target}){
     run.event!=='pull_request'||run.status!=='completed'||run.conclusion!=='success'||
     run.head_branch!==pr.head.ref||run.repository?.full_name!==full||run.head_repository?.full_name!==full||
     !Number.isSafeInteger(run.id)||run.id<1||!Number.isSafeInteger(run.run_attempt)||run.run_attempt<1||
-    !Array.isArray(run.pull_requests)||!Array.isArray(jobs)||jobs.length!==2)return null;
+    !Array.isArray(run.pull_requests)||!Array.isArray(jobs)||jobs.length<2||jobs.length>3)return null;
  const associated=run.pull_requests.length===1&&run.pull_requests[0]?.number===pr.number&&
    run.pull_requests[0]?.head?.sha===pr.head.sha&&run.pull_requests[0]?.head?.ref===pr.head.ref&&
    run.pull_requests[0]?.base?.ref==='codex/public-book-library';
@@ -147,13 +147,21 @@ async function verifiedMergeReadyV3({github,owner,repo,pr,run,jobs,target}){
   return xs.length===1&&Number.isSafeInteger(j.id)&&j.id>0&&j.run_id===run.id&&
     j.status==='completed'&&j.conclusion==='success'?j:null;
  };
+ // A normal successful Core can include its optional skipped ESLint repair.
+ // Reject any other extra job, wrong run ID, duplicate or non-skipped repair.
+ const extras=jobs.filter(j=>!['core-lint-types-build','hh-merge-check'].includes(j?.name));
+ if(extras.length>1||extras.some(j=>j?.name!=='hh-eslint-repair'||j.run_id!==run.id||
+    !Number.isSafeInteger(j.id)||j.id<1||j.status!=='completed'||j.conclusion!=='skipped'))return null;
+ if(new Set(jobs.map(j=>j?.id)).size!==jobs.length)return null;
  const core=successful('core-lint-types-build'),gate=successful('hh-merge-check');
  if(!core||!gate||!READY_V3_STEPS.every(name=>gate.steps?.filter(s=>s.name===name&&
     s.status==='completed'&&s.conclusion==='success').length===1))return null;
  try{
   const reply=(await github.request('GET /repos/{owner}/{repo}/actions/jobs/{job_id}/logs',
     {owner,repo,job_id:gate.id})).data;
-  const x=parseMergeReadyV3(reply);
+  const log=typeof reply==='string'?reply:
+   (Buffer.isBuffer(reply)||reply instanceof ArrayBuffer)?Buffer.from(reply).toString('utf8'):'';
+  const x=parseMergeReadyV3(log);
   if(!x||x.repo!==full||x.pr!==pr.number||x.head!==pr.head.sha||
      x.run_id!==run.id||x.run_attempt!==run.run_attempt||
      x.accepted_base!==target||x.policy_base!==target)return null;

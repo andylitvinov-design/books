@@ -337,13 +337,13 @@ test('native merge accepts queued duplicate only from current protected unified 
  const jobs={20:{...job(gate,20,30),steps:[{name:'Validate exact-head risk and required specialist workflows',status:'completed',conclusion:'success'}]},21:job(queued,21,31)};
  const receipt={name:workflow,run_id:32,jobs:1,prior_head:old,prior_gate_run:33,prior_run_attempt:1};
  const log='CI_PRIOR_HEAD_SPECIALIST_REUSED:'+JSON.stringify([receipt])+'\nSpecialist CI aggregate for PR #42 head='+HEAD+' event_base='+BASE+' tested_base='+BASE;
- const world=({checks=[gate,queued],oldTree=tree,priorConclusion='success',priorAttempt=1,proof=log,changedWorkflow=false}={})=>({
+ const world=({checks=[gate,queued],oldTree=tree,priorConclusion='success',priorAttempt=1,proof=log,changedWorkflow=false,commitOverrides={}}={})=>({
   rest:{
    checks:{listForRef:async()=>({data:{total_count:checks.length,check_runs:checks}})},
    actions:{getJobForWorkflowRun:async({job_id})=>({data:jobs[job_id]}),
     getWorkflowRun:async({run_id})=>({data:run_id===32?{...runs[32],conclusion:priorConclusion,run_attempt:priorAttempt}:runs[run_id]})},
    repos:{getContent:async({ref})=>({data:{type:'file',sha:changedWorkflow&&ref===HEAD?old:tree}})},
-   git:{getCommit:async({commit_sha})=>({data:{sha:commit_sha,tree:{sha:commit_sha===old?oldTree:tree}}})}
+   git:{getCommit:async({commit_sha})=>({data:{sha:commit_sha,tree:{sha:commit_sha===old?oldTree:tree},...commitOverrides[commit_sha]}})}
   },
   request:async endpoint=>({data:endpoint.endsWith('/logs')?proof:{total_count:1,jobs:[{name,run_id:32,status:'completed',conclusion:'success'}]}})
  });
@@ -360,6 +360,23 @@ test('native merge accepts queued duplicate only from current protected unified 
  assert.equal(await quality({pending:[{...queued,status:'in_progress'}]}),false);
  assert.equal(await quality({opts:{priorAttempt:2}}),false);
  assert.equal(await quality({opts:{proof:''}}),false);
+ const priorMerge='1'.repeat(40),testedMerge='2'.repeat(40);
+ const equivalent={...receipt,proof_mode:'equivalent_merge_tree',prior_merge:priorMerge,tested_merge:testedMerge,tested_base:BASE};
+ const equivalentLog='[command]/usr/bin/git log -1 --format=%H\n'+testedMerge+'\nCI_PRIOR_HEAD_SPECIALIST_REUSED:'+JSON.stringify([equivalent])+'\nSpecialist CI aggregate for PR #42 head='+HEAD+' event_base='+BASE+' tested_base='+BASE;
+ const overrides={
+  [HEAD]:{parents:[{sha:old},{sha:BASE}]},
+  [priorMerge]:{parents:[{sha:BASE},{sha:old}]},
+  [testedMerge]:{parents:[{sha:BASE},{sha:HEAD}]}
+ };
+ const options={oldTree:BASE,proof:equivalentLog,commitOverrides:overrides};
+ assert.equal((await audit(options)).ok,true);
+ for(const bad of [
+  {...options,proof:equivalentLog.replace(testedMerge,'3'.repeat(40))},
+  {...options,commitOverrides:{...overrides,[HEAD]:{parents:[{sha:BASE},{sha:old}]}}},
+  {...options,commitOverrides:{...overrides,[priorMerge]:{...overrides[priorMerge],tree:{sha:BASE}}}},
+  {...options,commitOverrides:{...overrides,[testedMerge]:{parents:[{sha:BASE},{sha:old}]}}},
+  {...options,priorAttempt:2}
+ ])assert.equal((await audit(bad)).reason,'CRITICAL_CHECK_PENDING:'+name);
 });
 
  test('hourly merge applies shared queued duplicate proof before eligibility and ARM',()=>{
