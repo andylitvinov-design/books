@@ -173,10 +173,15 @@ test('slots, locales and entities have isolated, validated keys and real public 
   assert.notEqual(videoKey('home-intro', 'en'), videoKey('home-intro', 'ru'))
   assert.notEqual(videoKey('remedy-detail', 'en', 'arsenicum-album'), videoKey('remedy-detail', 'en', 'natrum-muriaticum'))
   assert.equal(videoPagePath('home-intro', 'en'), '/?lang=en')
-  assert.equal(videoPagePath('service-business', 'ru'), '/ru/services#business')
-  assert.equal(videoPagePath('method-hypnotherapy', 'en'), '/en/services#methods')
-  assert.equal(videoPagePath('method-constellations', 'ru'), '/ru/services#methods')
-  assert.equal(videoPagePath('consultation', 'en'), '/en/services#consultation')
+  for (const locale of ['en', 'ru']) {
+    assert.equal(videoPagePath('services-intro', locale), `/${locale}/services?assist=quiz`)
+  }
+  // Spanish service video slots are not published; preserve the existing allowlist.
+  assert.throws(() => videoPagePath('services-intro', 'es'), codeIs('validation'))
+  assert.equal(videoPagePath('service-business', 'ru'), '/ru/services?assist=quiz#business')
+  assert.equal(videoPagePath('method-hypnotherapy', 'en'), '/en/services?assist=quiz#methods')
+  assert.equal(videoPagePath('method-constellations', 'ru'), '/ru/services?assist=quiz#methods')
+  assert.equal(videoPagePath('consultation', 'en'), '/en/services?consultation=1#consultation')
   assert.equal(videoPagePath('remedy-detail', 'ru', 'arsenicum-album'), '/ru/homeopathy/remedies/arsenicum-album')
   assert.equal(videoPagePath('book-detail', 'en', 'example-book'), '/books/example-book?lang=en')
   for (const args of [
