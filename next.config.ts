@@ -156,8 +156,16 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
-      // English has one canonical root. Russian is served at its own /ru URL.
-      { source: "/en", destination: "/", permanent: true },
+      // Owner-approved entry: reuse the existing localized My Coach page.
+      // Redirect before rendering the retired Home (including legacy full=1).
+      { source: "/", has: [{ type: "query", key: "lang", value: "ru" }], destination: "/ru/my-coach", permanent: false },
+      { source: "/", has: [{ type: "query", key: "lang", value: "es" }], destination: "/es/my-coach", permanent: false },
+      { source: "/", destination: "/en/my-coach", permanent: false },
+      { source: "/en", has: [{ type: "query", key: "lang", value: "ru" }], destination: "/ru/my-coach", permanent: false },
+      { source: "/en", has: [{ type: "query", key: "lang", value: "es" }], destination: "/es/my-coach", permanent: false },
+      { source: "/en", destination: "/en/my-coach", permanent: false },
+      { source: "/ru", destination: "/ru/my-coach", permanent: false },
+      { source: "/es", destination: "/es/my-coach", permanent: false },
       // Old campaign/CTA links should always reach the public tool or cabinet.
       { source: "/:locale(en|ru|es)/cabinet", destination: "/:locale/client", permanent: true },
       { source: "/:locale(en|ru|es)/review", destination: "/:locale/services/free-situation-review", permanent: true },

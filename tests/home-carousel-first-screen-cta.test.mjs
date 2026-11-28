@@ -77,7 +77,7 @@ test("slider and benefit-rich banner fit the first mobile fold without impacting
 
 
 
-test("paid consultations remain reachable in optional carousel, Ali input owns first Home screen",()=>{
+test("retained consultation links and My Coach first screen remain independently covered",()=>{
  const carousel=read("components/home-section-carousel.tsx");
  const browser=read("scripts/verify-home-consultation-first-screen.mjs");
  const entry=read("components/home-dialogue-entry.tsx");
@@ -90,9 +90,9 @@ test("paid consultations remain reachable in optional carousel, Ali input owns f
  assert.doesNotMatch(home,/<HomeSectionCarousel/);
  assert.match(entry,/data-home-intent-form/);
  assert.match(entry,/data-home-send-to-ali/);
- assert.match(browser,/data-home-intent-composer/);
- assert.match(browser,/\["clarity","goal","business","reiki"\]\.entries\(\)/);
- assert.match(browser,/data-home-intent-option/);
+ assert.match(browser,/verifyMyCoachHome/);
+ assert.match(browser,/\["clarity",3\]/);
+ assert.match(read("scripts/verify-my-coach-home-entry.mjs"),/data-my-coach-catalog/);
  assert.match(entry,/data-home-intent-option=\{art\.id\}/);
  // The approved seven-slot dock now uses My Reiki; MyVideo lives in Profile.
  assert.match(browser,/"mytube","reiki","coach","ai","services","practice","profile"/);

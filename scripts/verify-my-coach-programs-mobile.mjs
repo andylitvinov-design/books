@@ -1,3 +1,4 @@
+import {verifyMyCoachHome} from './verify-my-coach-home-entry.mjs'
 // Optional browser acceptance using the existing installed browser and isolated dev server.
 // No paid preview, provider, real OAuth or additional scheduled CI.
 import assert from 'node:assert/strict'
@@ -18,7 +19,8 @@ for(const engine of [chromium,webkit]){
     const page=await ctx.newPage()
     await page.route('**/api/app/bootstrap?view=portrait',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({account:{id:'12345678-1234-4234-8234-123456789012',onboardingState:'active'},results:[],runs:[],requests:[],consents:[],services:[]})}))
     await page.route('**/api/app/clarity-course/clock',route=>{assert.equal(route.request().headers()['x-hh-account-id'],'12345678-1234-4234-8234-123456789012');return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({clock:{currentDay:1,complete:false,days:[{day:1,status:'paused',elapsedMs:816000,remainingMs:384000},{day:2,status:'not_started',elapsedMs:0,remainingMs:1200000},{day:3,status:'not_started',elapsedMs:0,remainingMs:1200000}]}})})})
-    await page.goto(origin+'/'+lang+'/my-coach',{waitUntil:'domcontentloaded'})
+    await page.goto(origin+(lang==='en'?'/':'/'+lang),{waitUntil:'domcontentloaded'})
+    await verifyMyCoachHome(page,lang)
     const landingFilters=page.locator('[data-my-coach-landing-kind-switch]')
     const landingMode=mode=>landingFilters.locator('[data-my-coach-landing-mode="'+mode+'"]')
     await landingFilters.waitFor()
