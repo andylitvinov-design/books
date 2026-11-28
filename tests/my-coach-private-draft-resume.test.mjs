@@ -7,14 +7,14 @@ test('restored revision continues, never resets',async()=>{
  queue.offer({courseSessionId:'introductory',protocol:{id:'test',turns:[{role:'user',content:'First'}]}})
  assert.equal(await queue.flush(),9);assert.deepEqual(calls,[9])
 })
-test('owner/revision guard and private text-only resume',()=>{
+test('owner and revision guards preserve the first-party restored session',()=>{
  const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
  const server=readFileSync(new URL('../lib/app/my-coach-protocol-drafts.js',import.meta.url),'utf8')
  assert.match(ui,/initialDraftRevision.current=result.draft.revision/)
  // Both restored and fresh private sessions must bypass the provider path.
  assert.match(ui,/const privateTextOnly=\(restoredDraft&&!restoredRelay\)\|\|freshPrivateProfile/)
- assert.match(ui,/if\(privateTextOnly\)return await sendMessage\(draft.trim\(\),\{forceLocal:true\}\)/)
- assert.match(ui,/if\(privateTextOnly&&voiceTurn\)return null/)
+ assert.match(ui,/if\(privateTextOnly&&!privateResumeVoice\)return await sendMessage\(draft.trim\(\),\{forceLocal:true\}\)/)
+ assert.match(ui,/if\(privateTextOnly&&voiceTurn&&!privateResumeVoice\)return null/)
  assert.match(ui,/if\(restoredDraft\)forceLocal=true/)
  assert.match(ui,/if\(freshPrivateProfile\)forceLocal=true/)
  assert.match(server,/row.state!=='active'\|\|row.revision!==input.revision/)
@@ -283,4 +283,55 @@ test('thematic non-Clarity gates hand off through the existing server continuati
  assert.equal(coachCourseHandoffEligible('life_direction',{gate:{courseSessionId:'life_direction'}}),true)
  assert.equal(coachCourseHandoffEligible('life_direction',{gate:{courseSessionId:'other'}}),false)
  assert.equal(coachCourseHandoffEligible('life_direction',{gate:{courseSessionId:'life_direction'},paused:true}),false)
+})
+
+test('a verified ordinary draft can continue through the voice loop without restarting or cloud synthesis',()=>{
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ const voice=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
+ assert.match(ui,/setRestoredPrivateVoice\(Boolean\(approvedHandoff&&item\.privateHandoff&&!isClarity&&!thematic&&!structured&&!recovered\.privateProfileV3Requested\)\)/)
+ assert.match(ui,/privateTextOnly&&!privateResumeVoice\?<span data-coach-private-text-resume/)
+ assert.match(ui,/<MyCoachSpeechLoop ref=\{speechRef\} privateResume=\{privateResumeVoice\}/)
+ assert.match(ui,/canStart=\{!resumePending&&!courseGateRequired/)
+ assert.match(ui,/if\(privateTextOnly&&voiceTurn&&!privateResumeVoice\)return null/)
+ assert.match(ui,/if\(restoredDraft\)forceLocal=true/)
+ assert.match(ui,/onSessionStart=\{\(\)=>\{setCloudAgreed\(true\);captureBasicIntroduction\(\)\}\}/)
+ assert.match(voice,/function beginVoiceBargeMonitor\(generation\)\{[^]*?if\(privateResume\)return/)
+ assert.match(voice,/if\(privateResume\)return startPrivateResume\(\)/)
+ assert.match(voice,/if\(privateResume\)\{startPrivateResume\(\);return\}/)
+ const start=voice.slice(voice.indexOf('function startPrivateResume('),voice.indexOf('useImperativeHandle('))
+ assert.match(start,/startListening\(\)/)
+ assert.doesNotMatch(start,/sessionStartRef|speakCoachReply|fetch\(/)
+ const reply=voice.slice(voice.indexOf('async function speakCoachReply('),voice.indexOf('function toggle('))
+ assert.ok(reply.indexOf('if(privateResume)')<reply.indexOf("fetch('/api/app/my-coach/voice/synthesize'"))
+ assert.match(reply,/if\(privateResume\)\{\s*if\(\['safety','boundary'\]\.includes\(result.mode\)\|\|!playDeviceFallback\(true\)\)afterSpeech\(\)\s*return/)
+ assert.match(ui,/data-coach-dock-video[\s\S]*?setViewExpanded/)
+})
+
+test('private microphone startup respects user action and never replays the archived introduction',()=>{
+ const voice=readFileSync(new URL('../components/my-coach-speech-loop.jsx',import.meta.url),'utf8')
+ const start=voice.slice(voice.indexOf('function startPrivateResume('),voice.indexOf('useImperativeHandle('))
+ function run({active=false,enabled=true,canStart=true,visible=true,supported=true,ios=false}={}){
+  const calls=[],activeRef={current:active},introStartedRef={current:false},generationRef={current:7},audioContextRef={current:null}
+  const handler=new Function('activeRef','introStartedRef','generationRef','audioContextRef','enabled','canStart','document','window','supported','t',
+   'setNotice','refreshCoachIos27PlaybackRoute','shouldUseCoachingWebAudio','unlockCoachingAudioContext','ios27NeedsSpeechRecovery','primeMicrophonePermission','startListening',
+   start+';return startPrivateResume')(
+   activeRef,introStartedRef,generationRef,audioContextRef,enabled,canStart,{visibilityState:visible?'visible':'hidden'},{navigator:{}},supported,{unsupported:'unsupported'},
+   value=>calls.push(value),()=>calls.push('route'),()=>true,()=>{calls.push('unlock');return {}},()=>ios,()=>calls.push('prime'),()=>calls.push('listen'))
+  return {handler,calls,activeRef,introStartedRef,generationRef}
+ }
+ for(const flags of [{visible:false},{canStart:false},{enabled:false},{active:true},{supported:false}]){
+  const state=run(flags)
+  assert.equal(state.handler(),false)
+  assert.ok(!state.calls.includes('listen'))
+  assert.equal(state.generationRef.current,7)
+ }
+ for(const ios of [true,false]){
+  const state=run({ios})
+  assert.deepEqual(state.calls,[])
+  assert.equal(state.handler(),true)
+  assert.equal(state.handler(),false)
+  assert.deepEqual(state.calls,ios?['route','unlock','listen']:['route','unlock','prime','listen'])
+  assert.equal(state.introStartedRef.current,true)
+  assert.equal(state.generationRef.current,8)
+ }
 })

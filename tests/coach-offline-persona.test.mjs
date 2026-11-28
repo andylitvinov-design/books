@@ -5,7 +5,7 @@ import {normalizeGenerativeCoachInput} from '../lib/coaching/generative-persona.
 import {coachSessionDirective,directedCoachOfflineReply} from '../lib/coaching/coach-session-director.mjs'
 import {methodQuestionVariants} from '../lib/coaching/coach-method-question-variants.mjs'
 import {personaSpeechCue} from '../lib/coaching/coach-persona-speech-variants.mjs'
-import {coachDialoguePolicy} from '../lib/coaching/unified-coach-policy.mjs'
+import {coachDialoguePolicy,nonRepeatingOfflineCoachText,unsolicitedCoachExitOffer} from '../lib/coaching/unified-coach-policy.mjs'
 
 const sample=(personaId='mira',locale='ru',message='Я хочу разобраться со сложным решением',turns=[],elapsedSeconds=0)=>{
  const {input,persona}=normalizeGenerativeCoachInput({
@@ -114,5 +114,21 @@ test('explicit RU/EN/ES request for no advice overrides all method questions',()
   const got=reply(s)
   assert.equal(got.question,'',locale)
   assert.equal(got.planSuggestion,'',locale)
+ }
+})
+
+test('ordinary fatigue and question streak never produce a session exit offer in shared offline policy',()=>{
+ for(const [locale,message,exit] of [
+ ['ru','Я устал','Понимаю. Мы можем продолжить или, если хотите, сделать паузу. Как вам будет лучше?'],
+ ['en','I am tired','Would you prefer to pause or explore one small part?'],
+ ['es','Estoy cansado','Podemos hacer una pausa.']]){
+  assert.equal(unsolicitedCoachExitOffer(exit),true,locale)
+  assert.equal(unsolicitedCoachExitOffer(message),false,locale)
+  const input={locale,message,turns:[]}
+  for(const allowQuestion of [true,false]){
+   const output=nonRepeatingOfflineCoachText(input,exit,{locale,allowQuestion})
+   assert.ok(output.length>0)
+   assert.equal(unsolicitedCoachExitOffer(output),false,locale)
+  }
  }
 })

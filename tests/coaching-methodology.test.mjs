@@ -74,3 +74,19 @@ test('a plan requires all fields and explicit client approval',()=>{
  assert.equal(evaluateCoachingPlan(draft).ready,false);
  assert.equal(evaluateCoachingPlan({...draft,clientApproved:true}).ready,true);
 });
+
+test('ordinary distress leads to manageable exploration; explicit pause, stop and safety remain respected',()=>{
+ for(const [locale,message] of [['en','I feel overwhelmed emotionally'],['ru','Мне очень тяжело'],['es','Me siento desbordado']]){
+  const next=selectNextBestAction({locale,message})
+  assert.equal(next.status,'await_client')
+  assert.equal(next.difficulty,'emotional_distress')
+  assert.equal(next.intervention,'prioritize')
+  assert.equal(next.questionCount,1)
+ }
+ for(const locale of ['en','ru','es']){
+  const next=selectNextBestAction({locale,signals:{pause:true}})
+  assert.equal(next.status,'paused');assert.equal(next.questionCount,0)
+  assert.equal(selectNextBestAction({locale,signals:{stop:true}}).status,'stopped')
+  assert.equal(selectNextBestAction({locale,signals:{safetyHold:true}}).status,'safety_hold')
+ }
+})

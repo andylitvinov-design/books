@@ -142,3 +142,13 @@ test('existing My Coach generated-turn prompt actually includes stage questions 
  assert.match(messages[1].content,/DO NOT copy verbatim/)
  assert.ok(messages.every(m=>m.role!=='system'||!m.content.includes(client.message)))
 })
+
+// Protect every authored persona cue, not just the public coach roster.
+test('all persona speech acts and locales contain no unsolicited session-exit cues',()=>{
+ const exit=/we can stop here|close the lamp for today|ideas can wait|можем остановиться|закрыть лампу на сегодня|идеи могут подождать|podemos parar|cerrar la lámpara por hoy|ideas pueden esperar|would you prefer to pause|сделать паузу|hacer una pausa/iu
+ for(const id of personaIds)for(const lang of ['en','ru','es'])for(const act of ['contact','reflect','clarify','repair','transition','pause','review','action']){
+  const cue=personaSpeechCue(id,act,lang)
+  assert.ok(cue,id+'/'+lang+'/'+act)
+  assert.doesNotMatch(cue,exit,id+'/'+lang+'/'+act)
+ }
+})

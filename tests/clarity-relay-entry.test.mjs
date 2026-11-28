@@ -321,7 +321,7 @@ test('existing voice panel routes Clarity through the trusted relay and binds th
  assert.match(page,/finishCourseSegment\(choice==='switch'\)/)
 })
 
-test('exact paused restored course can continue by voice only with fresh Play; other drafts remain private text',async()=>{
+test('exact paused restored course can continue by voice only with fresh Play and an exact trusted binding',async()=>{
  const {restoredClarityRelayBinding}=await import('../lib/coaching/clarity-relay-client.mjs')
  const protocol={id:id(11),personaId:'mira',courseSessionId:'clarity_day_1',turns:[{role:'user',content:'PRIVATE'}]}
  const input={owner,runId:id(10),protocol,courseSessionId:protocol.courseSessionId,time:{status:'paused',elapsedSeconds:7,remainingSeconds:1193},personaId:'mira'}
@@ -404,4 +404,35 @@ test('relay initialization times out before provider allocation and disposes a l
  b.client.emit('message',frame());await enteredOpen;b.expire();resolveOpen();await b.relay.settled()
  assert.equal(b.client.readyState,3);assert.equal(closes,1)
  assert.equal(b.client.sent.at(-1).type,'hh_clarity_unavailable')
+})
+
+
+test('Clarity browser relay stops capture after missing trusted clock observations, not a fake completion',async()=>{
+ const {connectClarityBrowserRelay}=await import('../lib/coaching/clarity-relay-client.mjs')
+ let socket;const tasks=new Map(),closed=[];let seq=0
+ class BrowserSocket{
+  constructor(){socket=this;this.readyState=0;this.bufferedAmount=0;this.sent=[]}
+  send(raw){this.sent.push(JSON.parse(raw))}
+  close(){this.readyState=3;this.onclose?.()}
+  receive(value){this.onmessage({data:JSON.stringify(value)})}
+ }
+ const accountId='00000000-0000-4000-8000-000000000100',runId='00000000-0000-4000-8000-000000000101',protocolId='00000000-0000-4000-8000-000000000102',visitId='00000000-0000-4000-8000-000000000103'
+ const selection={accountId,runId,protocolId,day:1,body:{courseSessionId:'clarity_day_1',personaId:'mira',consent:true,voiceConsent:true,trainingUseConsent:true}}
+ const h=connectClarityBrowserRelay({selection,explicitPlay:true,isForeground:()=>true,onClock:()=>true,onProvider:()=>{},onClosed:x=>closed.push(x),origin:'https://holistichouse.vercel.app',WebSocketImpl:BrowserSocket,schedule:(fn,ms)=>{tasks.set(++seq,{fn,ms});return seq},cancel:k=>tasks.delete(k)})
+ const initial=tasks.get(seq)
+ socket.readyState=1;socket.onopen()
+ socket.receive({type:'hh_clarity_selection',runId,protocolId,day:1})
+ socket.receive({type:'hh_clarity_ready',decision:'start'})
+ const receipt=elapsedMs=>({type:'hh_clarity_clock',day:1,elapsedMs,status:'active',visitId,coachId:'mira'})
+ socket.receive(receipt(0));assert.equal(h.snapshot().canSendAudio,true)
+ const first=tasks.get(seq);assert.equal(first.ms,20000)
+ initial.fn();assert.equal(closed.length,0)
+ socket.receive(receipt(5000));const latest=tasks.get(seq)
+ assert.notEqual(first,latest);first.fn();assert.equal(closed.length,0)
+ latest.fn();assert.equal(h.snapshot().canSendAudio,false)
+ assert.equal(socket.readyState,3);assert.equal(closed.length,1)
+ assert.equal(closed[0].reason,'observation_unverified');assert.equal(closed[0].terminalVerified,false)
+ assert.equal(closed[0].status,'unverified');assert.equal(closed[0].elapsedMs,5000)
+ assert.equal(closed[0].binding.protocolId,protocolId)
+ assert.equal(h.sendAudio({realtimeInput:{audio:{data:'AAAAAA==',mimeType:'audio/pcm;rate=16000'}}}),false)
 })
