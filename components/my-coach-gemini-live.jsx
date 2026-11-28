@@ -125,14 +125,14 @@ function audioTranscription(value){return typeof value==='string'?value.trim():'
 // ONE unlocked AudioContext. No server audio proxy, retrying cloud TTS,
 // client-side transcript persistence or unconsented fallback.
 const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
-  locale='en',personaId='mira',settings={},courseSessionId='life_direction',voiceName='Puck',enabled=false,
+  locale='en',personaId='mira',settings={},courseSessionId='life_direction',courseScenarioVersion=null,voiceName='Puck',enabled=false,
   canStart=true,elapsedSeconds=0,outputMuted=false,onSessionStart,onVoiceStateChange,
   onMicLevel,onInputInterim,onInputFinal,onOutputInterim,onOutputFinal,
   onInterrupted,onDirectorProgress,onOpeningProgress,onNotice,
   openingPrior=null,allowOpeningPrior=false,
   liveContextAccess='',contextRevision=0,localRecoveryTurns=[],onUnconfirmedInput,
   privateGreetingText='',onPrivateGreeting,onPrivateRecallRequest,clarityOpeningMemoryStageToken='',clarityOpeningMemoryScope=null,
-  methodSession=null,prepareMethodSession,clarityRelaySelection=null,onClarityRelayClock,speechReviewConsent=false,onSpeechReviewCandidate,
+  methodSession=null,prepareMethodSession,clarityRelaySelection=null,onClarityRelayClock,speechReviewConsent=false,speechReviewProvider='groq',onSpeechReviewCandidate,
 },ref){
   const lang=safeLocale(locale),t=ui[lang]
   const [phase,setPhase]=useState('idle')
@@ -143,11 +143,11 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
   const relayClosing=useRef(null)
   const relayStopUnverified=useRef(false)
   const propsRef=useRef({})
-  propsRef.current={locale:lang,personaId,settings,courseSessionId,voiceName,enabled,canStart,
+  propsRef.current={locale:lang,personaId,settings,courseSessionId,courseScenarioVersion,voiceName,enabled,canStart,
     elapsedSeconds,outputMuted,onSessionStart,onVoiceStateChange,onMicLevel,onInputInterim,
     onInputFinal,onOutputInterim,onOutputFinal,onInterrupted,
     onDirectorProgress,onOpeningProgress,onNotice,openingPrior,allowOpeningPrior,
-    liveContextAccess,contextRevision,localRecoveryTurns,onUnconfirmedInput,methodSession,prepareMethodSession,privateGreetingText,onPrivateGreeting,onPrivateRecallRequest,clarityRelaySelection,onClarityRelayClock,clarityOpeningMemoryStageToken,clarityOpeningMemoryScope,speechReviewConsent,onSpeechReviewCandidate}
+    liveContextAccess,contextRevision,localRecoveryTurns,onUnconfirmedInput,methodSession,prepareMethodSession,privateGreetingText,onPrivateGreeting,onPrivateRecallRequest,clarityRelaySelection,onClarityRelayClock,clarityOpeningMemoryStageToken,clarityOpeningMemoryScope,speechReviewConsent,speechReviewProvider,onSpeechReviewCandidate}
 
   const notify=text=>{
     setNotice(text)
@@ -468,7 +468,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     const previous=Array.isArray(preceding)?preceding:r.history.slice(-10)
     // A typed or ASR turn is sent to the SAME bounded server Director.
     // This does NOT request another text/audio model or persist a transcript.
-    const body=JSON.stringify({personaId:p.personaId,locale:p.locale,settings:p.settings,courseSessionId:r.courseSessionId,
+    const body=JSON.stringify({personaId:p.personaId,locale:p.locale,settings:p.settings,courseSessionId:r.courseSessionId,...(r.courseScenarioVersion?{courseScenarioVersion:r.courseScenarioVersion}:{}),
           ...(r.methodSession?{methodId:r.methodSession.methodId,methodSessionId:r.methodSession.methodSessionId}:{}),
           message:text,turns:previous.map(turn=>({...turn,content:turn.content.slice(0,300)})),
           characterSeenIds:[...new Set([...coachCharacterObservedIds(p.localRecoveryTurns),...coachCharacterObservedIds(previous),...r.characterSeenIds])],
@@ -531,10 +531,11 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     const decision=propsRef.current.onInputFinal?.(value,{source:'speech',reviewAvailable:Boolean(audioParts)&&propsRef.current.speechReviewConsent===true})
     if(decision?.transcriptReview){
       if(propsRef.current.speechReviewConsent===true&&audioParts){
+        const reviewProvider=propsRef.current.speechReviewProvider
         r.speechReviewQueue??=createSpeechReviewQueue({request:requestSpeechReview,onResult:(id,text)=>{
-          if(runtime.current===r&&!r.ended&&propsRef.current.speechReviewConsent===true)propsRef.current.onSpeechReviewCandidate?.(id,r.paused?'':text)
+          if(runtime.current===r&&!r.ended&&propsRef.current.speechReviewConsent===true&&propsRef.current.speechReviewProvider===reviewProvider)propsRef.current.onSpeechReviewCandidate?.(id,r.paused?'':text)
         }})
-        if(!r.speechReviewQueue.offer({id:decision.transcriptReview,parts:audioParts,locale:r.locale}))propsRef.current.onSpeechReviewCandidate?.(decision.transcriptReview,'')
+        if(!r.speechReviewQueue.offer({id:decision.transcriptReview,parts:audioParts,locale:r.locale,provider:reviewProvider}))propsRef.current.onSpeechReviewCandidate?.(decision.transcriptReview,'')
       }else propsRef.current.onSpeechReviewCandidate?.(decision.transcriptReview,'')
       r.lastAssistantTurnFinished=false;r.pendingDirectorHint='';return false
     }
@@ -1268,7 +1269,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       signal:r.abort.signal,headers:{'Content-Type':'application/json',...(r.methodSession?{'X-HH-Account-ID':r.methodSession.accountId}:{})},
       body:JSON.stringify({personaId:r.personaId,locale:r.locale,
         ...(r.methodSession?{methodId:r.methodSession.methodId,methodSessionId:r.methodSession.methodSessionId}:{}),
-        settings:r.settings,courseSessionId:r.courseSessionId,voiceName:r.voiceName,consent:true,
+        settings:r.settings,courseSessionId:r.courseSessionId,...(r.courseScenarioVersion?{courseScenarioVersion:r.courseScenarioVersion}:{}),voiceName:r.voiceName,consent:true,
         voiceConsent:true,trainingUseConsent:true}),
     })}
     catch{throw Error('GEMINI_LIVE_TOKEN_NETWORK')}
@@ -1482,7 +1483,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
       pendingContext:'',pendingDirectorHint:'',latestDirectorHint:'',sidebandTimer:null,
       bargeDetector:new GeminiLiveBargeDetector(),pendingMic:[],
       reconnects:0,voiceName:p.voiceName,locale:p.locale,personaId:p.personaId,
-      settings:p.settings,courseSessionId:p.courseSessionId,allowOpeningPrior:p.allowOpeningPrior===true,
+      settings:p.settings,courseSessionId:p.courseSessionId,courseScenarioVersion:p.courseScenarioVersion,allowOpeningPrior:p.allowOpeningPrior===true,
       methodSession:p.methodSession,prepareMethodSession:p.prepareMethodSession,methodCheckpointQueue:Promise.resolve(),
       openingPrior:p.allowOpeningPrior===true?p.openingPrior:null,
       speechReviewBuffer:createSpeechReviewBuffer(),speechReviewQueue:null,
@@ -1547,7 +1548,9 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     const previous=r.history.slice(-10)
     r.history.push({role:'user',content:body})
     r.history=r.history.slice(-20)
-    r.speechReviewBuffer?.clear()
+    // A typed turn supersedes pending acoustic review; no late candidate may
+    // attach to the new dialogue or upload after the transport changes input.
+    r.speechReviewBuffer?.clear();r.speechReviewQueue?.cancel();r.speechReviewQueue=null
     if(propsRef.current.onInputFinal?.(body,{source:'typed'})===true){stop();return true}
     r.openingHistory.push(body)
     r.openingHistory=r.openingHistory.slice(0,33)
@@ -1562,8 +1565,8 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     hasLiveSession:()=>Boolean(runtime.current?.paused||runtime.current&&!runtime.current.ended),
     isResumeUnavailable:()=>runtime.current?.paused===true&&runtime.current.resumeUnavailable===true}),[startSession])
   useEffect(()=>{
-    if(!speechReviewConsent){const r=runtime.current;r?.speechReviewBuffer?.clear();r?.speechReviewQueue?.cancel();if(r)r.speechReviewQueue=null}
-  },[speechReviewConsent])
+    const r=runtime.current;r?.speechReviewBuffer?.clear();r?.speechReviewQueue?.cancel();if(r)r.speechReviewQueue=null
+  },[speechReviewConsent,speechReviewProvider])
   useEffect(()=>{
     runtime.current?.player?.setMuted(outputMuted)
     if(outputMuted)runtime.current?.privateGreeting?.cancel()
@@ -1601,7 +1604,7 @@ const MyCoachGeminiLive=forwardRef(function MyCoachGeminiLive({
     // Changing persona, language, voice or consent must never silently keep
     // streaming captured audio under the previous server-locked token.
     if(runtime.current)stop()
-  },[personaId,lang,voiceName,courseSessionId,enabled])
+  },[personaId,lang,voiceName,courseSessionId,courseScenarioVersion,enabled])
   const label=phase==='paused'?t.continue:phase==='speaking'?t.interrupt:phase==='idle'?t.start:
     phase==='loading'?t.connecting:phase==='thinking'?t.thinking:({ru:'Пауза',en:'Pause',es:'Pausa'})[lang]
   return <div className={styles.root} data-my-coach-voice={phase}

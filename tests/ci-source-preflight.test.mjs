@@ -224,3 +224,24 @@ test('delegated preflight reports unchecked types honestly and still demands exa
   assert.equal(report.typecheckDelegated,true);
   assert.equal(report.status,'passed');
 });
+
+
+test('only proven additive test registration can delegate duplicate tsc with a manifest edit',()=>{
+  const cfg=readFileSync('next.config.ts','utf8');
+  const files=['package.json','tests/coach-new.test.mjs'];
+  const p=(paths,extra={})=>mayDelegateTypesToNext(paths,{eventName:'pull_request',route:'FULL',ciOnly:'false',nextConfig:cfg,additiveTestRegistration:true,...extra});
+  assert.equal(p(files),true);
+  assert.equal(p(files,{route:'CORE'}),true);
+  assert.equal(p(files,{additiveTestRegistration:false}),false);
+  assert.equal(p(files,{ciOnly:'true'}),false);
+  assert.equal(p(files,{eventName:'workflow_dispatch'}),false);
+  assert.equal(p(files,{route:'DOCK'}),false);
+  for(const path of ['package-lock.json','tsconfig.json','next.config.ts','lib/ci/specialist-aggregate.mjs','app/api/coaching/route.js','components/coaching-session.tsx','lib/auth/session.ts'])assert.equal(p([...files,path]),false,path);
+  assert.equal(p([...files,'components/public.tsx'],{route:'CORE'}),true);
+  assert.equal(p(files,{nextConfig:cfg+'\nconst x={typescript:{ignoreBuildErrors:true}};'}),false);
+  const source=readFileSync('scripts/ci-source-preflight.mjs','utf8');
+  assert.ok(source.includes("git(['show',base+':'+policy])!==readFileSync(policy,'utf8')"));
+  assert.ok(source.includes("git(['diff','--no-renames','--name-only','-z',base,'HEAD'])"));
+  assert.ok(source.includes("classifyPackageImpact({changed,basePackage,currentPackage}).mode==='core'"));
+  assert.ok(source.includes('verifiedAdditiveTypeRegistration(base,paths)'));
+});

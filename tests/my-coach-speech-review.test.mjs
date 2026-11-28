@@ -50,3 +50,27 @@ test('waiting audio expires during slow request and timeout reports once',async(
  assert.equal(offer(3),true);clock.advance(8000);assert.deepEqual(results,[[2,''],[1,''],[3,'']])
  complete('late');await Promise.resolve();assert.deepEqual(results,[[2,''],[1,''],[3,'']]);assert.deepEqual(calls,[1])
 })
+
+import './coach-gemini-speech-review.test.mjs'
+
+import {coachSpeechReviewEnabled,isCoachSpeechReviewRequest} from '../lib/coaching/coach-speech-review-config.mjs'
+test('optional review has independent default-off server gate',()=>{
+ const env={HH_MY_COACH_SPEECH_REVIEW_ENABLED:'true',HH_AUDIO_STT_FREE_CONFIRMED:'true',HH_FIRST_VIDEO_GROQ_FREE_CONFIRMED:'true',HH_FIRST_VIDEO_GROQ_API_KEY:'synthetic'}
+ assert.equal(coachSpeechReviewEnabled(env),true)
+ for(const key of Object.keys(env))assert.equal(coachSpeechReviewEnabled({...env,[key]:''}),false)
+ assert.equal(coachSpeechReviewEnabled({}),false)
+ assert.equal(isCoachSpeechReviewRequest({purpose:'my_coach',filename:'coach-review.wav'}),true)
+ assert.equal(isCoachSpeechReviewRequest({purpose:'my_coach',filename:'other.wav',review:'yes'}),true)
+ assert.equal(isCoachSpeechReviewRequest({purpose:'my_coach',filename:'dictation.wav'}),false)
+ assert.equal(isCoachSpeechReviewRequest({purpose:'ali_chat',filename:'coach-review.wav',review:'yes'}),false)
+})
+
+import {readFileSync} from 'node:fs'
+test('typed input retires the review queue before committing the new turn',()=>{
+ const live=readFileSync(new URL('../components/my-coach-gemini-live.jsx',import.meta.url),'utf8')
+ const start=live.indexOf('r.inputText=\'\'\n    const previous=r.history.slice(-10)')
+ assert.ok(start>=0)
+ const end=live.indexOf("onInputFinal?.(body,{source:'typed'})",start)
+ assert.ok(end>start)
+ assert.match(live.slice(start,end),/speechReviewBuffer\?\.clear\(\);r\.speechReviewQueue\?\.cancel\(\);r\.speechReviewQueue=null/)
+})
