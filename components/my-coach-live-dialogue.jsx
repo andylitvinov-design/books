@@ -35,7 +35,7 @@ import MyCoachEarlyExit from './my-coach-early-exit'
 import {coachCompletionDestination,coachEarlyExitDestination,coachShouldOfferEarlyExit} from '@/lib/coaching/coach-early-exit.mjs'
 import MyCoachSpeechLoop from './my-coach-speech-loop'
 import MyCoachGeminiLive from './my-coach-gemini-live'
-import {shouldReviewSpeech,observeSpeechCandidate,canObserveOrdinarySpeech} from '@/lib/coaching/coach-speech-evidence.mjs'
+import {shouldReviewSpeech,observeSpeechCandidate,canObserveOrdinarySpeech,visibleSpeechReview} from '@/lib/coaching/coach-speech-evidence.mjs'
 import {addSpeechAmendment,speechPersonalCorrection} from '@/lib/personal-coaching/speech-amendments.mjs'
 import MyCoachStagedMemoryControls from './my-coach-staged-memory-controls'
 import {coachExplicitRecall,privateCoachRecallText,coachReturningSalutation} from '@/lib/coaching/coach-private-recall.mjs'
@@ -272,6 +272,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
   const [speechReviewProvider,setSpeechReviewProvider]=useState('groq')
   const geminiReviewOffered=process.env.NEXT_PUBLIC_HH_MY_COACH_GEMINI_TRANSCRIBE_ENABLED==='true'
   const [speechReviews,setSpeechReviews]=useState([])
+  const visibleSpeechReviews=speechReviews.filter(visibleSpeechReview)
   const speechReviewSerial=useRef(0)
   const speechAmendmentsRef=useRef([])
   const [speechAmendments,setSpeechAmendments]=useState([])
@@ -2772,15 +2773,15 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
             <span>{busy?t.sending:t.send}</span><ArrowRight size={20} aria-hidden="true"/>
           </button>
         </form>}
-        {speechReviews.length>0&&<section aria-label={({ru:'Уточнение речи',en:'Speech review',es:'Revisión de voz'})[lang]}>
-          {speechReviews.map(row=><div key={row.id} style={{padding:'6px 0',overflowWrap:'anywhere'}}>
+        {visibleSpeechReviews.length>0&&<section aria-label={({ru:'Уточнение речи',en:'Speech review',es:'Revisión de voz'})[lang]}>
+          {visibleSpeechReviews.map(row=><div key={row.id} style={{padding:'6px 0',overflowWrap:'anywhere'}}>
             <small>{({ru:'Проверьте расшифровку',en:'Review transcription',es:'Revisa la transcripción'})[lang]}: {row.raw}</small>
             {row.pending&&<small> · {({ru:'Уточняется…',en:'Checking…',es:'Comprobando…'})[lang]}</small>}
             {row.candidate&&<p>{row.provider==='gemini'?'Gemini 3.5 Transcribe': 'Whisper'}: {row.candidate}</p>}
             {row.previous&&row.previous!==row.candidate&&<button type="button" onClick={()=>setSpeechReviews(rows=>rows.map(item=>item.id===row.id?{...item,edited:row.previous}:item))}>{({ru:'Прежнее исправление (не проверено по новому аудио)',en:'Previous correction (not verified against new audio)',es:'Corrección anterior (no verificada con el audio nuevo)'})[lang]}: {row.previous}</button>}
             <textarea rows={2} maxLength={1200} aria-label={({ru:'Правильный текст',en:'Correct transcription',es:'Texto correcto'})[lang]} value={row.edited??row.candidate} onChange={event=>{const text=event.target.value;setSpeechReviews(rows=>rows.map(item=>item.id===row.id?{...item,edited:text}:item))}}/>
             <button type="button" disabled={row.pending||!(row.edited??row.candidate).trim()||!turns.length||protocolSaving||protocolSaved||protocolSaveLocked||Boolean(courseGate)} onClick={()=>confirmSpeechAmendment(row)}>{({ru:'Подтвердить для протокола',en:'Confirm for transcript',es:'Confirmar para la transcripción'})[lang]}</button>
-            <button type="button" disabled={Boolean(draft.trim())||busy||row.pending} onClick={()=>{if(draft.trim())return;setDraft(row.edited??(row.candidate||row.raw));setSpeechReviews(rows=>rows.filter(item=>item.id!==row.id))}}>{({ru:'Уточнить и повторить текстом',en:'Edit and repeat as text',es:'Editar y repetir por texto'})[lang]}</button>
+            {!row.observationOnly&&<button type="button" disabled={Boolean(draft.trim())||busy||row.pending} onClick={()=>{if(draft.trim())return;setDraft(row.edited??(row.candidate||row.raw));setSpeechReviews(rows=>rows.filter(item=>item.id!==row.id))}}>{({ru:'Уточнить и повторить текстом',en:'Edit and repeat as text',es:'Editar y repetir por texto'})[lang]}</button>}
             <button type="button" onClick={()=>setSpeechReviews(rows=>rows.filter(item=>item.id!==row.id))}>{({ru:'Скрыть',en:'Dismiss',es:'Descartar'})[lang]}</button>
           </div>)}
         </section>}

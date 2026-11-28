@@ -116,7 +116,7 @@ test('suspended scheduler cannot send expired audio or promote late responses',a
  assert.deepEqual(results,[[2,''],[3,'']]);q.cancel()
 })
 
-import {observeSpeechCandidate,canObserveOrdinarySpeech} from '../lib/coaching/coach-speech-evidence.mjs'
+import {observeSpeechCandidate,canObserveOrdinarySpeech,visibleSpeechReview} from '../lib/coaching/coach-speech-evidence.mjs'
 import {coachOrdinarySpeechReviewEnabled} from '../lib/coaching/coach-speech-review-config.mjs'
 test('ordinary observation is explicitly gated and excludes sensitive, typed and over-budget turns',()=>{
  const a={enabled:true,source:'speech',reviewAvailable:true,sensitive:false,raw:'Я не согласен',count:0}
@@ -134,4 +134,17 @@ test('matching observation disappears; disagreement is only a candidate; edit wi
  assert.equal(mismatch.raw,row.raw);assert.equal(mismatch.candidate,'Я согласен');assert.equal(mismatch.pending,false)
  assert.equal(observeSpeechCandidate({...row,edited:'мой текст'},'Я согласен').edited,'мой текст')
  assert.equal(observeSpeechCandidate({...row,observationOnly:false},'').pending,false)
+})
+
+test('ordinary pending and matching results never open the correction surface',()=>{
+ const row={observationOnly:true,raw:'Я устал',locale:'ru',pending:true,edited:null,candidate:''}
+ assert.equal(visibleSpeechReview(row),false)
+ assert.equal(visibleSpeechReview(observeSpeechCandidate(row,'Я устал.')),false)
+ assert.equal(visibleSpeechReview(observeSpeechCandidate(row,'Я не устал')),true)
+ assert.equal(visibleSpeechReview({...row,observationOnly:false}),true)
+ assert.equal(visibleSpeechReview({...row,pending:false,candidate:''}),false)
+ const ui=readFileSync(new URL('../components/my-coach-live-dialogue.jsx',import.meta.url),'utf8')
+ assert.ok(ui.includes('speechReviews.filter(visibleSpeechReview)'))
+ assert.ok(ui.includes('{visibleSpeechReviews.map(row=>'))
+ assert.ok(ui.includes('{!row.observationOnly&&<button type="button" disabled={Boolean(draft.trim())||busy||row.pending}'))
 })
