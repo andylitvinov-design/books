@@ -254,7 +254,7 @@ test('P1 source-system conflicts hold fast slots without starving the rotating m
  }));
  const seen=new Set();
  for(let tick=0;tick<10;tick++){
-  const chosen=planCandidates([...lower,urgent],NOW+tick*600000);
+  const chosen=planCandidates([...lower,urgent],NOW+tick*1_200_000);
   assert.equal(chosen.length,6);
   assert.equal(chosen[0].pr_number,9001,'highest-ranked conflict must be inspected');
   for(const item of chosen.slice(2))seen.add(item.pr_number);
@@ -1321,7 +1321,7 @@ test('conflict-only queue rotates six exact-head inspections instead of repeatin
   title:'fix(video): actual DIRTY merge conflict '+i,mergeable:false,mergeable_state:'dirty'
  }));
  const first=planCandidates(conflicts,NOW);
- const next=planCandidates(conflicts,NOW+600000);
+ const next=planCandidates(conflicts,NOW+1_200_000);
  assert.equal(first.length,6);
  assert.equal(next.length,6);
  assert.ok(first.every(t=>t.lane==='conflict'));
@@ -2702,6 +2702,24 @@ test('manual conflict probes cover a stable even-size population at :13/:33/:53'
   for(const task of tasks)seen.add(task.pr_number);
  }
  assert.equal(seen.size,56,'no stable manual hint positions are skipped');
+});
+test('actual 20-minute cadence covers all conflict and source positions without increasing inspection caps',()=>{
+ const epoch=Date.parse('2026-11-28T05:13:00Z');
+ for(const [lane,count,cap,turns] of [['conflict',34,6,8],['repair',29,16,4]]){
+  const items=Array.from({length:count},(_,i)=>pr(8200+i,lane,{
+   title:lane==='conflict'?'fix(video): actual DIRTY conflict':'fix: source repair',
+   mergeable:lane!=='conflict',mergeable_state:lane==='conflict'?'dirty':'clean'
+  }));
+  const seen=new Set();
+  for(let tick=0;tick<turns;tick++){
+   const tasks=planCandidates(items,epoch+tick*1_200_000);
+   assert.ok(tasks.length<=cap,'existing inspection limit remains');
+   assert.equal(new Set(tasks.map(x=>x.pr_number)).size,tasks.length);
+   assert.ok(tasks.every(x=>x.lane===lane));
+   for(const task of tasks)seen.add(task.pr_number);
+  }
+  assert.equal(seen.size,count,'every stable candidate is reachable: '+lane);
+ }
 });
 test('processed legacy receipts rotate to a free exact-HEAD task without duplicate claims',async()=>{
  const count=19,freeNumber=6018;

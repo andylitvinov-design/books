@@ -222,7 +222,7 @@ function planCandidates(prs,now){
   return probes;
  };
  // During conflict-only backlogs, rotate a bounded window rather than reread
- // the same 16 already handed-off exact HEADs on each ten-minute cycle.
+ // the same 16 already handed-off exact HEADs on each actual recovery window.
  if(!source.length&&!ci){
   const conflicts=ranked.filter(pr=>laneOf(pr)==='conflict');
   const room=Math.min(MAX_CONFLICT_ONLY_INSPECT,conflicts.length);
@@ -234,7 +234,7 @@ function planCandidates(prs,now){
   const tail=conflicts.slice(fast.length);
   const rotating=Math.max(0,Math.min(tail.length,
    MAX_CONFLICT_ONLY_INSPECT-fast.length-oldCandidates.length-probes.length));
-  const offset=tail.length?(Math.floor(now/600000)*Math.max(1,rotating))%tail.length:0;
+  const offset=watchdogRotationStart(tail.length,rotating,now);
   const hintNumbers=new Set(probes.map(pr=>pr.number));
   return [...fast,...oldCandidates,...probes,
    ...Array.from({length:rotating},(_,i)=>tail[(offset+i)%tail.length])]
@@ -262,7 +262,7 @@ function planCandidates(prs,now){
  for(const pr of probes)add(pr);
  const sourceRoom=Math.max(0,MAX_INSPECT-picked.length-(conflict&&!chosen.has(conflict.number)?1:0));
  const tail=source.filter(pr=>!chosen.has(pr.number));
- const offset=tail.length?(Math.floor(now/600000)*Math.max(1,sourceRoom))%tail.length:0;
+ const offset=watchdogRotationStart(tail.length,sourceRoom,now);
  for(let i=0;i<tail.length&&picked.length<MAX_INSPECT-(conflict&&!chosen.has(conflict.number)?1:0);i++)add(tail[(offset+i)%tail.length]);
  add(conflict);
  // Legacy is a read-only hourly lane; never let the generic refill loop
@@ -270,7 +270,7 @@ function planCandidates(prs,now){
  const rest=ranked.filter(pr=>!chosen.has(pr.number)&&laneOf(pr)!=='legacy')
   .sort((a,b)=>a.number-b.number);
  const room=Math.min(MAX_INSPECT-picked.length,rest.length);
- const start=rest.length?(Math.floor(now/600000)*Math.max(1,room))%rest.length:0;
+ const start=watchdogRotationStart(rest.length,room,now);
  for(let i=0;i<room;i++)add(rest[(start+i)%rest.length]);
  const hintNumbers=new Set(probes.map(pr=>pr.number));
  return picked.map(pr=>{
