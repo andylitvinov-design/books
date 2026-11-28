@@ -809,7 +809,11 @@ test('wave 4: Core owns duplicate global TypeScript on production PRs; specialis
     const yaml=read(name);
     const step=yaml.split('      - name: '+label+'\n')[1]?.split(/\n      - /)[0];
     assert.ok(step?.includes(guard),name+' delegates production-PR typecheck only');
-    assert.match(yaml,/run: npm run build/,name+' retains independent build needed by real acceptance');
+    if(name==='hh-owner-telegram-video.yml') {
+      // Full compile in BOTH lanes; only duplicate Next lint delegated to mandatory Core.
+      assert.match(yaml,/if \[\[ "\$GITHUB_EVENT_NAME" == pull_request && "\$\{GITHUB_BASE_REF:-\}" == codex\/public-book-library \]\]; then\s+npm run build -- --no-lint\s+else\s+npm run build\s+fi/);
+      assert.match(yaml,/node scripts\/ensure-owner-video-renderer\.mjs --verify-trace/);
+    } else assert.match(yaml,/run: npm run build/,name+' retains independent build needed by real acceptance');
   }
   for(const [name,required] of [
     ['hh-live-audio-ci.yml','node --test tests/live-audio-pilot.test.mjs'],
