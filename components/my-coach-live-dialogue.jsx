@@ -538,7 +538,7 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     })
     return ()=>controller.abort()
   },[])
-  useEffect(()=>{if(transcriptRef.current)transcriptRef.current.scrollTop=transcriptRef.current.scrollHeight},[turns,speechPreview,streamingPreview,privateRecall])
+  useEffect(()=>{if(transcriptRef.current)transcriptRef.current.scrollTop=transcriptRef.current.scrollHeight},[turns,speechPreview,streamingPreview])
   useEffect(()=>{
     if(['idle','paused','ready'].includes(voiceState.phase)){
       micWaveRef.current?.style.setProperty('--coach-mic-level','0')
@@ -2225,12 +2225,10 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
       setGreetingAccepted(true)
     })
     if(privateProfile){toggleComposer();return}
-    // Start in the original user gesture; automatic owner-only preconsultation
-    // is read-only and never becomes provider consent or a new spoken turn.
-    if(saveToAccount&&greetingIdentity.hasPreviousProtocol){
-      if(!protocolIdRef.current)protocolIdRef.current=crypto.randomUUID()
-      void loadPrivateRecall(conversationLang)
-    }
+    // Start in the original user gesture. The existing approved context path
+    // provides continuity; never auto-open an owner-only archive preview here.
+    if(saveToAccount&&greetingIdentity.hasPreviousProtocol&&!protocolIdRef.current)
+      protocolIdRef.current=crypto.randomUUID()
     if(liveVoiceSelected&&liveVoiceReady&&!busy&&!paused&&!replaying)
       speechRef.current?.startSession?.()
   }
@@ -2626,11 +2624,6 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
                 <span className={styles.responseSource}> · {t.offline}</span>}
             </strong><p>{turn.content}</p>
           </div>)}
-          {privateRecall&&privateRecall.owner===protocolOwnerRef.current&&privateRecall.sessionId===protocolIdRef.current&&<div className={styles.transcriptCoach} data-coach-private-recall>
-            <strong>{name} · {({ru:'Приватная память',en:'Private memory',es:'Memoria privada'})[lang]}</strong>
-            <p>{privateRecall.reply}</p>
-            <small>{({ru:'Приватный просмотр из вашего кабинета. Только подтверждённые итоги с отдельным разрешением могут прозвучать голосом коуча; черновики остаются локальными.',en:'Private account preview. Only reviewed conclusions with separate sharing permission can be spoken in the coach voice; drafts stay local.',es:'Vista privada de tu cuenta. Solo las conclusiones revisadas con permiso separado pueden leerse con la voz del coach; los borradores quedan en el dispositivo.'})[lang]}</small>
-          </div>}
           {streamingPreview&&<div className={styles.transcriptCoach} data-coach-stream-preview aria-live="off">
             <strong>{name} · {{ru:'Черновик ответа',en:'Draft reply',es:'Borrador de respuesta'}[lang]}</strong>
             <p>{streamingPreview}</p>
@@ -2641,6 +2634,11 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
           
         </div>
       </section>
+          {privateRecall&&privateRecall.owner===protocolOwnerRef.current&&privateRecall.sessionId===protocolIdRef.current&&<details className={styles.voicePrivacyDetails} data-coach-private-recall>
+            <summary>{({ru:'Приватная память',en:'Private memory',es:'Memoria privada'})[lang]}</summary>
+            <p>{privateRecall.reply}</p>
+            <small>{({ru:'Приватный просмотр из вашего кабинета. Только подтверждённые итоги с отдельным разрешением могут прозвучать голосом коуча; черновики остаются локальными.',en:'Private account preview. Only reviewed conclusions with separate sharing permission can be spoken in the coach voice; drafts stay local.',es:'Vista privada de tu cuenta. Solo las conclusiones revisadas con permiso separado pueden leerse con la voz del coach; los borradores quedan en el dispositivo.'})[lang]}</small>
+          </details>}
       <details ref={composerDetailsRef} className={styles.textComposer} open>
         <summary>{ui.type}</summary>
         {authRequired?<div className={styles.auth} role="status"><LockKeyhole size={20} aria-hidden="true"/>
