@@ -1,0 +1,762 @@
+{
+  "version": "hh-coach-stt-benchmark-v1",
+  "notice": "Authored synthetic reference phrases only; no actual client data or provider outputs. Record consented or synthetic WAV files before measuring ASR.",
+  "fixtures": [
+    {
+      "id": "ru-short-1",
+      "locale": "ru",
+      "category": "short",
+      "critical": false,
+      "reference": "Уставшим"
+    },
+    {
+      "id": "ru-short-2",
+      "locale": "ru",
+      "category": "short",
+      "critical": false,
+      "reference": "Сосредоточенным"
+    },
+    {
+      "id": "ru-short-3",
+      "locale": "ru",
+      "category": "short",
+      "critical": false,
+      "reference": "Растерянным"
+    },
+    {
+      "id": "ru-short-4",
+      "locale": "ru",
+      "category": "short",
+      "critical": false,
+      "reference": "Не знаю"
+    },
+    {
+      "id": "ru-short-5",
+      "locale": "ru",
+      "category": "short",
+      "critical": false,
+      "reference": "Всё хорошо"
+    },
+    {
+      "id": "ru-short-6",
+      "locale": "ru",
+      "category": "short",
+      "critical": false,
+      "reference": "Пока не уверен"
+    },
+    {
+      "id": "ru-negation-1",
+      "locale": "ru",
+      "category": "negation",
+      "critical": true,
+      "reference": "Я не хочу менять работу"
+    },
+    {
+      "id": "ru-negation-2",
+      "locale": "ru",
+      "category": "negation",
+      "critical": true,
+      "reference": "Я хочу менять работу"
+    },
+    {
+      "id": "ru-negation-3",
+      "locale": "ru",
+      "category": "negation",
+      "critical": true,
+      "reference": "Нет, я не согласен"
+    },
+    {
+      "id": "ru-negation-4",
+      "locale": "ru",
+      "category": "negation",
+      "critical": true,
+      "reference": "Да, я согласен"
+    },
+    {
+      "id": "ru-negation-5",
+      "locale": "ru",
+      "category": "negation",
+      "critical": true,
+      "reference": "Мне не страшно"
+    },
+    {
+      "id": "ru-negation-6",
+      "locale": "ru",
+      "category": "negation",
+      "critical": true,
+      "reference": "Мне страшно"
+    },
+    {
+      "id": "ru-terms-1",
+      "locale": "ru",
+      "category": "terms",
+      "critical": false,
+      "reference": "Психосоматическая реакция"
+    },
+    {
+      "id": "ru-terms-2",
+      "locale": "ru",
+      "category": "terms",
+      "critical": false,
+      "reference": "Системные расстановки"
+    },
+    {
+      "id": "ru-terms-3",
+      "locale": "ru",
+      "category": "terms",
+      "critical": false,
+      "reference": "Архетипический образ"
+    },
+    {
+      "id": "ru-terms-4",
+      "locale": "ru",
+      "category": "terms",
+      "critical": false,
+      "reference": "Эмоциональная регуляция"
+    },
+    {
+      "id": "ru-terms-5",
+      "locale": "ru",
+      "category": "terms",
+      "critical": false,
+      "reference": "Телесная осознанность"
+    },
+    {
+      "id": "ru-terms-6",
+      "locale": "ru",
+      "category": "terms",
+      "critical": false,
+      "reference": "Когнитивный диссонанс"
+    },
+    {
+      "id": "ru-terms-7",
+      "locale": "ru",
+      "category": "terms",
+      "critical": false,
+      "reference": "Внутренняя опора"
+    },
+    {
+      "id": "ru-terms-8",
+      "locale": "ru",
+      "category": "terms",
+      "critical": false,
+      "reference": "Границы в отношениях"
+    },
+    {
+      "id": "ru-terms-9",
+      "locale": "ru",
+      "category": "terms",
+      "critical": false,
+      "reference": "Гомеопатический препарат"
+    },
+    {
+      "id": "ru-terms-10",
+      "locale": "ru",
+      "category": "terms",
+      "critical": false,
+      "reference": "Практика Рейки"
+    },
+    {
+      "id": "ru-terms-11",
+      "locale": "ru",
+      "category": "terms",
+      "critical": false,
+      "reference": "Бизнес стратегия"
+    },
+    {
+      "id": "ru-terms-12",
+      "locale": "ru",
+      "category": "terms",
+      "critical": false,
+      "reference": "Медитация и дыхание"
+    },
+    {
+      "id": "ru-numbers-1",
+      "locale": "ru",
+      "category": "numbers",
+      "critical": true,
+      "reference": "Три встречи по двадцать минут"
+    },
+    {
+      "id": "ru-numbers-2",
+      "locale": "ru",
+      "category": "numbers",
+      "critical": true,
+      "reference": "Не пятнадцать, а пятьдесят"
+    },
+    {
+      "id": "ru-numbers-3",
+      "locale": "ru",
+      "category": "numbers",
+      "critical": true,
+      "reference": "Моя цель — десять клиентов"
+    },
+    {
+      "id": "ru-numbers-4",
+      "locale": "ru",
+      "category": "numbers",
+      "critical": true,
+      "reference": "В среду в восемь утра"
+    },
+    {
+      "id": "ru-numbers-5",
+      "locale": "ru",
+      "category": "numbers",
+      "critical": true,
+      "reference": "Меня зовут Марина"
+    },
+    {
+      "id": "ru-numbers-6",
+      "locale": "ru",
+      "category": "numbers",
+      "critical": true,
+      "reference": "Имя Саша, не Маша"
+    },
+    {
+      "id": "ru-mixed-1",
+      "locale": "ru",
+      "category": "mixed",
+      "critical": false,
+      "reference": "Я работаю в Google"
+    },
+    {
+      "id": "ru-mixed-2",
+      "locale": "ru",
+      "category": "mixed",
+      "critical": false,
+      "reference": "У нас есть Zoom meeting"
+    },
+    {
+      "id": "ru-mixed-3",
+      "locale": "ru",
+      "category": "mixed",
+      "critical": false,
+      "reference": "Использую метод GROW"
+    },
+    {
+      "id": "ru-mixed-4",
+      "locale": "ru",
+      "category": "mixed",
+      "critical": false,
+      "reference": "Мне нужен feedback"
+    },
+    {
+      "id": "ru-mixed-5",
+      "locale": "ru",
+      "category": "mixed",
+      "critical": false,
+      "reference": "Сначала опора, затем next step"
+    },
+    {
+      "id": "ru-mixed-6",
+      "locale": "ru",
+      "category": "mixed",
+      "critical": false,
+      "reference": "Встреча в Toronto"
+    },
+    {
+      "id": "en-short-1",
+      "locale": "en",
+      "category": "short",
+      "critical": false,
+      "reference": "Exhausted"
+    },
+    {
+      "id": "en-short-2",
+      "locale": "en",
+      "category": "short",
+      "critical": false,
+      "reference": "Overwhelmed"
+    },
+    {
+      "id": "en-short-3",
+      "locale": "en",
+      "category": "short",
+      "critical": false,
+      "reference": "Focused"
+    },
+    {
+      "id": "en-short-4",
+      "locale": "en",
+      "category": "short",
+      "critical": false,
+      "reference": "I don't know"
+    },
+    {
+      "id": "en-short-5",
+      "locale": "en",
+      "category": "short",
+      "critical": false,
+      "reference": "Not yet"
+    },
+    {
+      "id": "en-short-6",
+      "locale": "en",
+      "category": "short",
+      "critical": false,
+      "reference": "I feel fine"
+    },
+    {
+      "id": "en-negation-1",
+      "locale": "en",
+      "category": "negation",
+      "critical": true,
+      "reference": "I do not want to change jobs"
+    },
+    {
+      "id": "en-negation-2",
+      "locale": "en",
+      "category": "negation",
+      "critical": true,
+      "reference": "I want to change jobs"
+    },
+    {
+      "id": "en-negation-3",
+      "locale": "en",
+      "category": "negation",
+      "critical": true,
+      "reference": "No, I do not agree"
+    },
+    {
+      "id": "en-negation-4",
+      "locale": "en",
+      "category": "negation",
+      "critical": true,
+      "reference": "Yes, I agree"
+    },
+    {
+      "id": "en-negation-5",
+      "locale": "en",
+      "category": "negation",
+      "critical": true,
+      "reference": "I am not afraid"
+    },
+    {
+      "id": "en-negation-6",
+      "locale": "en",
+      "category": "negation",
+      "critical": true,
+      "reference": "I am afraid"
+    },
+    {
+      "id": "en-terms-1",
+      "locale": "en",
+      "category": "terms",
+      "critical": false,
+      "reference": "Psychosomatic response"
+    },
+    {
+      "id": "en-terms-2",
+      "locale": "en",
+      "category": "terms",
+      "critical": false,
+      "reference": "Systemic constellations"
+    },
+    {
+      "id": "en-terms-3",
+      "locale": "en",
+      "category": "terms",
+      "critical": false,
+      "reference": "Archetypal imagery"
+    },
+    {
+      "id": "en-terms-4",
+      "locale": "en",
+      "category": "terms",
+      "critical": false,
+      "reference": "Emotional regulation"
+    },
+    {
+      "id": "en-terms-5",
+      "locale": "en",
+      "category": "terms",
+      "critical": false,
+      "reference": "Somatic awareness"
+    },
+    {
+      "id": "en-terms-6",
+      "locale": "en",
+      "category": "terms",
+      "critical": false,
+      "reference": "Cognitive dissonance"
+    },
+    {
+      "id": "en-terms-7",
+      "locale": "en",
+      "category": "terms",
+      "critical": false,
+      "reference": "Inner resources"
+    },
+    {
+      "id": "en-terms-8",
+      "locale": "en",
+      "category": "terms",
+      "critical": false,
+      "reference": "Relationship boundaries"
+    },
+    {
+      "id": "en-terms-9",
+      "locale": "en",
+      "category": "terms",
+      "critical": false,
+      "reference": "Homeopathic remedy"
+    },
+    {
+      "id": "en-terms-10",
+      "locale": "en",
+      "category": "terms",
+      "critical": false,
+      "reference": "Reiki practice"
+    },
+    {
+      "id": "en-terms-11",
+      "locale": "en",
+      "category": "terms",
+      "critical": false,
+      "reference": "Business strategy"
+    },
+    {
+      "id": "en-terms-12",
+      "locale": "en",
+      "category": "terms",
+      "critical": false,
+      "reference": "Mindful breathing"
+    },
+    {
+      "id": "en-numbers-1",
+      "locale": "en",
+      "category": "numbers",
+      "critical": true,
+      "reference": "Three sessions of twenty minutes"
+    },
+    {
+      "id": "en-numbers-2",
+      "locale": "en",
+      "category": "numbers",
+      "critical": true,
+      "reference": "Not fifteen but fifty"
+    },
+    {
+      "id": "en-numbers-3",
+      "locale": "en",
+      "category": "numbers",
+      "critical": true,
+      "reference": "My goal is ten clients"
+    },
+    {
+      "id": "en-numbers-4",
+      "locale": "en",
+      "category": "numbers",
+      "critical": true,
+      "reference": "Wednesday at eight in the morning"
+    },
+    {
+      "id": "en-numbers-5",
+      "locale": "en",
+      "category": "numbers",
+      "critical": true,
+      "reference": "My name is Marina"
+    },
+    {
+      "id": "en-numbers-6",
+      "locale": "en",
+      "category": "numbers",
+      "critical": true,
+      "reference": "My name is Alex, not Alice"
+    },
+    {
+      "id": "en-mixed-1",
+      "locale": "en",
+      "category": "mixed",
+      "critical": false,
+      "reference": "I work with Google"
+    },
+    {
+      "id": "en-mixed-2",
+      "locale": "en",
+      "category": "mixed",
+      "critical": false,
+      "reference": "My friend says gracias"
+    },
+    {
+      "id": "en-mixed-3",
+      "locale": "en",
+      "category": "mixed",
+      "critical": false,
+      "reference": "I use the GROW model"
+    },
+    {
+      "id": "en-mixed-4",
+      "locale": "en",
+      "category": "mixed",
+      "critical": false,
+      "reference": "We meet in Toronto"
+    },
+    {
+      "id": "en-mixed-5",
+      "locale": "en",
+      "category": "mixed",
+      "critical": false,
+      "reference": "The word is опора"
+    },
+    {
+      "id": "en-mixed-6",
+      "locale": "en",
+      "category": "mixed",
+      "critical": false,
+      "reference": "I need a rendezvous"
+    },
+    {
+      "id": "es-short-1",
+      "locale": "es",
+      "category": "short",
+      "critical": false,
+      "reference": "Agotado"
+    },
+    {
+      "id": "es-short-2",
+      "locale": "es",
+      "category": "short",
+      "critical": false,
+      "reference": "Abrumada"
+    },
+    {
+      "id": "es-short-3",
+      "locale": "es",
+      "category": "short",
+      "critical": false,
+      "reference": "Concentrado"
+    },
+    {
+      "id": "es-short-4",
+      "locale": "es",
+      "category": "short",
+      "critical": false,
+      "reference": "No lo sé"
+    },
+    {
+      "id": "es-short-5",
+      "locale": "es",
+      "category": "short",
+      "critical": false,
+      "reference": "Todavía no"
+    },
+    {
+      "id": "es-short-6",
+      "locale": "es",
+      "category": "short",
+      "critical": false,
+      "reference": "Estoy bien"
+    },
+    {
+      "id": "es-negation-1",
+      "locale": "es",
+      "category": "negation",
+      "critical": true,
+      "reference": "No quiero cambiar de trabajo"
+    },
+    {
+      "id": "es-negation-2",
+      "locale": "es",
+      "category": "negation",
+      "critical": true,
+      "reference": "Quiero cambiar de trabajo"
+    },
+    {
+      "id": "es-negation-3",
+      "locale": "es",
+      "category": "negation",
+      "critical": true,
+      "reference": "No estoy de acuerdo"
+    },
+    {
+      "id": "es-negation-4",
+      "locale": "es",
+      "category": "negation",
+      "critical": true,
+      "reference": "Sí estoy de acuerdo"
+    },
+    {
+      "id": "es-negation-5",
+      "locale": "es",
+      "category": "negation",
+      "critical": true,
+      "reference": "No tengo miedo"
+    },
+    {
+      "id": "es-negation-6",
+      "locale": "es",
+      "category": "negation",
+      "critical": true,
+      "reference": "Tengo miedo"
+    },
+    {
+      "id": "es-terms-1",
+      "locale": "es",
+      "category": "terms",
+      "critical": false,
+      "reference": "Respuesta psicosomática"
+    },
+    {
+      "id": "es-terms-2",
+      "locale": "es",
+      "category": "terms",
+      "critical": false,
+      "reference": "Constelaciones sistémicas"
+    },
+    {
+      "id": "es-terms-3",
+      "locale": "es",
+      "category": "terms",
+      "critical": false,
+      "reference": "Imagen arquetípica"
+    },
+    {
+      "id": "es-terms-4",
+      "locale": "es",
+      "category": "terms",
+      "critical": false,
+      "reference": "Regulación emocional"
+    },
+    {
+      "id": "es-terms-5",
+      "locale": "es",
+      "category": "terms",
+      "critical": false,
+      "reference": "Conciencia corporal"
+    },
+    {
+      "id": "es-terms-6",
+      "locale": "es",
+      "category": "terms",
+      "critical": false,
+      "reference": "Disonancia cognitiva"
+    },
+    {
+      "id": "es-terms-7",
+      "locale": "es",
+      "category": "terms",
+      "critical": false,
+      "reference": "Recursos internos"
+    },
+    {
+      "id": "es-terms-8",
+      "locale": "es",
+      "category": "terms",
+      "critical": false,
+      "reference": "Límites en las relaciones"
+    },
+    {
+      "id": "es-terms-9",
+      "locale": "es",
+      "category": "terms",
+      "critical": false,
+      "reference": "Remedio homeopático"
+    },
+    {
+      "id": "es-terms-10",
+      "locale": "es",
+      "category": "terms",
+      "critical": false,
+      "reference": "Práctica de Reiki"
+    },
+    {
+      "id": "es-terms-11",
+      "locale": "es",
+      "category": "terms",
+      "critical": false,
+      "reference": "Estrategia empresarial"
+    },
+    {
+      "id": "es-terms-12",
+      "locale": "es",
+      "category": "terms",
+      "critical": false,
+      "reference": "Respiración consciente"
+    },
+    {
+      "id": "es-numbers-1",
+      "locale": "es",
+      "category": "numbers",
+      "critical": true,
+      "reference": "Tres sesiones de veinte minutos"
+    },
+    {
+      "id": "es-numbers-2",
+      "locale": "es",
+      "category": "numbers",
+      "critical": true,
+      "reference": "No quince sino cincuenta"
+    },
+    {
+      "id": "es-numbers-3",
+      "locale": "es",
+      "category": "numbers",
+      "critical": true,
+      "reference": "Mi objetivo es diez clientes"
+    },
+    {
+      "id": "es-numbers-4",
+      "locale": "es",
+      "category": "numbers",
+      "critical": true,
+      "reference": "El miércoles a las ocho de la mañana"
+    },
+    {
+      "id": "es-numbers-5",
+      "locale": "es",
+      "category": "numbers",
+      "critical": true,
+      "reference": "Me llamo Marina"
+    },
+    {
+      "id": "es-numbers-6",
+      "locale": "es",
+      "category": "numbers",
+      "critical": true,
+      "reference": "Me llamo Ana, no Eva"
+    },
+    {
+      "id": "es-mixed-1",
+      "locale": "es",
+      "category": "mixed",
+      "critical": false,
+      "reference": "Trabajo en Google"
+    },
+    {
+      "id": "es-mixed-2",
+      "locale": "es",
+      "category": "mixed",
+      "critical": false,
+      "reference": "Tenemos un Zoom meeting"
+    },
+    {
+      "id": "es-mixed-3",
+      "locale": "es",
+      "category": "mixed",
+      "critical": false,
+      "reference": "Uso el método GROW"
+    },
+    {
+      "id": "es-mixed-4",
+      "locale": "es",
+      "category": "mixed",
+      "critical": false,
+      "reference": "Necesito feedback"
+    },
+    {
+      "id": "es-mixed-5",
+      "locale": "es",
+      "category": "mixed",
+      "critical": false,
+      "reference": "Mi cita es en Toronto"
+    },
+    {
+      "id": "es-mixed-6",
+      "locale": "es",
+      "category": "mixed",
+      "critical": false,
+      "reference": "La palabra es grounding"
+    }
+  ]
+}
