@@ -32,7 +32,13 @@ export function worktreeSources(baseSha, cwd = process.cwd()) {
   // Always compare the immutable base manifest to the exact proposed checkout.
   const basePackage = execFileSync('git', ['show',baseSha + ':package.json'], {cwd,encoding:'utf8',maxBuffer:2e6});
   const currentPackage = readFileSync(join(cwd,'package.json'),'utf8');
-  return {base,current,basePackage,currentPackage};
+  // Immutable merge parent and actual proposed checkout; missing evidence remains strict.
+  let baseLock,currentLock;
+  try {
+    baseLock=execFileSync('git',['show',baseSha+':package-lock.json'],{cwd,encoding:'utf8',maxBuffer:2e6});
+    currentLock=readFileSync(join(cwd,'package-lock.json'),'utf8');
+  } catch { /* no readiness compatibility proof */ }
+  return {base,current,basePackage,currentPackage,baseLock,currentLock};
 }
 
 // Use the exact tested merge checkout, including both sides of renames, rather
@@ -611,7 +617,7 @@ export async function verify(api,ctx,files,options={}) {
       // One general loose-base rule for complete non-overlapping ordinary product changes.
       // Preserve the actual tested HEAD and all required specialist outcomes.
       const nonOverlappingProduct = pinnedChangeRows && live.mergeable === true &&
-        safeNonOverlappingProductAdvance(diff, ctx.base, liveBaseSha, changed);
+        safeNonOverlappingProductAdvance(diff, ctx.base, liveBaseSha, changed, files);
       if (!documentationOnly && !independentlyRevalidated &&
           !isolatedCiPolicy && !unrelatedCiMaintenance && !inertPublicImages &&
           !independentPresentation && !disjointPublicSource && !independentQa &&
@@ -622,7 +628,7 @@ export async function verify(api,ctx,files,options={}) {
           typeof api.target === 'function' && maxWait > 0 &&
           (safeComposedIndependentAdvance(diff, ctx.base, liveBaseSha, changed) ||
            safeDetachedCiSourceAdvance(diff, ctx.base, liveBaseSha, changed) ||
-           safeNonOverlappingProductAdvance(diff, ctx.base, liveBaseSha, changed) ||
+           safeNonOverlappingProductAdvance(diff, ctx.base, liveBaseSha, changed, files) ||
            safeIsolatedFeatureAdvance(diff, ctx.base, liveBaseSha, changed, true) ||
            (changedRows.every(row => !row.previous_filename &&
              ['M','A','modified','added'].includes(row.status)) &&
