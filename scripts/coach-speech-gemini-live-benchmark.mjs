@@ -7,11 +7,14 @@ const args=process.argv.slice(2)
 if(args.length===1&&args[0]==='--init-ledger'){
   initLedger();console.log(JSON.stringify({ledgerInitialized:true,network:false}));process.exit(0)
 }
-const known=/^(--synthetic-only|--check-only|--offline-only|--hints|--vocabulary|--id=[\w-]+|--output=.+)$/
+const known=/^(--synthetic-only|--check-only|--offline-only|--hints|--vocabulary|--local-model=(large-v3|turbo)|--id=[\w-]+|--output=.+)$/
 if(args.some(a=>!known.test(a))||new Set(args.map(a=>a.split('=')[0])).size!==args.length||!args.includes('--synthetic-only'))throw Error('USE_COMMITTED_SYNTHETIC_FIXTURE_ONLY')
 const id=args.find(a=>a.startsWith('--id='))?.slice(5)
 const output=args.find(a=>a.startsWith('--output='))?.slice(9)
 const check=args.includes('--check-only'),offline=args.includes('--offline-only')
+const localModel=args.find(a=>a.startsWith('--local-model='))?.slice(14)
+if(localModel&&!offline||offline&&(args.includes('--hints')||args.includes('--vocabulary')))throw Error('INVALID_COMPARISON_MODE')
+const attemptedProvider=offline?(localModel==='large-v3'?'whisper-large-v3-local':localModel==='turbo'?'whisper-large-v3-turbo-local':'whisper-local-fallback-chain'):MODEL
 if(!id||check&&offline||!check&&!output)throw Error('USE --synthetic-only --id=ru-short-1 [--check-only OR --output=FILE] [--offline-only] [--hints] [--vocabulary]')
 const fixtures=JSON.parse(readFileSync(new URL('../tests/fixtures/coach-speech-benchmark-v1.json',import.meta.url),'utf8')).fixtures
 const fixture=fixtures.find(f=>f.id===id)
@@ -37,8 +40,13 @@ try{
       reason=/^(STT_|FREE_QUOTA_|QUOTA_)[A-Z_]+$/.test(e?.message||'')?e.message:'STT_UNAVAILABLE'
     }
   }
-  if(offline||!primary)fallback=offlineWhisper(pcm,fixture.locale)
-  const result={fixtureId:id,locale:fixture.locale,audioId,seconds:pcm.length/32000,primaryModel:MODEL,
+  if(offline||!primary){
+    const localEnv={...process.env}
+    if(localModel==='large-v3')delete localEnv.HH_STT_LOCAL_TURBO_DIR
+    if(localModel==='turbo')delete localEnv.HH_STT_LOCAL_LARGE_V3_DIR
+    fallback=offlineWhisper(pcm,fixture.locale,localEnv)
+  }
+  const result={fixtureId:id,locale:fixture.locale,audioId,seconds:pcm.length/32000,primaryModel:MODEL,attemptedProvider,
     hints:args.includes('--hints'),vocabulary:args.includes('--vocabulary'),primary,fallback,reason,partial:true}
   writeFileSync(fd,JSON.stringify(result,null,2))
   console.log(JSON.stringify({id,provider:primary?MODEL:fallback?.provider??null,reason,recognized:Boolean(primary||fallback),partial:true}))
